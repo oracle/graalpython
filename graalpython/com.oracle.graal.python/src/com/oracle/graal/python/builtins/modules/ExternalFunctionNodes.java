@@ -42,19 +42,22 @@ package com.oracle.graal.python.builtins.modules;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ExternalFunctionNodeGen;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -70,10 +73,9 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -88,58 +90,119 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    abstract static class ExternalFunctionNode extends PRootNode implements IndirectCallNode {
-        private final Signature signature;
-        private final Object callable;
-        private final String name;
+    static final class ExternalFunctionNode extends PRootNode {
+        private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
 
+        @Child private InvokeExternalFunctionNode invokeNode;
+        @Child private CalleeContext calleeContext = CalleeContext.create();
+
+        @CompilationFinal private ConditionProfile customLocalsProfile;
+
+        private ExternalFunctionNode(PythonLanguage lang, InvokeExternalFunctionNode invokeNode) {
+            super(lang);
+            this.invokeNode = invokeNode;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, ensureCustomLocalsProfile());
+            try {
+                return null;
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+        }
+
+        @Override
+        public String getName() {
+            return invokeNode.getName();
+        }
+
+        @Override
+        public String toString() {
+            return "<external function root " + getName() + ">";
+        }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            // everything that is implemented in C is internal
+            return true;
+        }
+
+        private ConditionProfile ensureCustomLocalsProfile() {
+            if (customLocalsProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                customLocalsProfile = ConditionProfile.createBinaryProfile();
+            }
+            return customLocalsProfile;
+        }
+
+        public static ExternalFunctionNode create(PythonLanguage lang, InvokeExternalFunctionNode invokeNode) {
+            return new ExternalFunctionNode(lang, invokeNode);
+        }
+    }
+
+    static final class InvokeExternalFunctionNode extends PNodeWithContext implements IndirectCallNode {
         @Child private CExtNodes.ConvertArgsToSulongNode toSulongNode;
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
+        @Child private AsPythonObjectStealingNode asPythonObjectNode = AsPythonObjectStealingNodeGen.create();
         @Child private InteropLibrary lib;
-        @Child private CalleeContext calleeContext = CalleeContext.create();
+        @Child private PRaiseNode raiseNode;
+        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
+
+        private final Object callable;
+        private final String name;
+
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         @Override
-        public Assumption needNotPassFrameAssumption() {
+        public final Assumption needNotPassFrameAssumption() {
             return nativeCodeDoesntNeedMyFrame;
         }
 
         @Override
-        public Assumption needNotPassExceptionAssumption() {
+        public final Assumption needNotPassExceptionAssumption() {
             return nativeCodeDoesntNeedExceptionState;
         }
 
         @Override
         public Node copy() {
-            ExternalFunctionNode node = (ExternalFunctionNode) super.copy();
+            InvokeExternalFunctionNode node = (InvokeExternalFunctionNode) super.copy();
             node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
             node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
             return node;
         }
 
-        ExternalFunctionNode(PythonLanguage lang, String name, Object callable, Signature signature, CExtNodes.ConvertArgsToSulongNode convertArgsNode) {
-            super(lang);
+        InvokeExternalFunctionNode(String name, Object callable) {
+            this(name, callable, null);
+        }
+
+        InvokeExternalFunctionNode(String name, Object callable, ConvertArgsToSulongNode convertArgsNode) {
             this.name = name;
             this.callable = callable;
-            this.signature = signature;
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : CExtNodes.AllToSulongNode.create();
+            this.releaseNativeWrapperNode = ReleaseNativeWrapperNodeGen.create();
             this.lib = InteropLibrary.getFactory().create(callable);
         }
 
-        @Specialization
-        Object doIt(VirtualFrame frame,
-                        @Cached("createCountingProfile()") ConditionProfile customLocalsProfile,
-                        @Cached CExtNodes.AsPythonObjectStealingNode asPythonObjectNode,
-                        @Cached ReleaseNativeWrapperNode releaseNativeWrapperNode,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached PRaiseNode raiseNode) {
-            CalleeContext.enter(frame, customLocalsProfile);
-
-            Object[] frameArgs = PArguments.getVariableArguments(frame);
+        public Object execute(VirtualFrame frame, Object[] frameArgs) {
             Object[] arguments = new Object[frameArgs.length];
             toSulongNode.executeInto(frameArgs, 0, arguments, 0);
+
+            PythonContext ctx = getContext();
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -149,16 +212,15 @@ public abstract class ExternalFunctionNodes {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(callable, arguments))));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
+                throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
+                throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
                 ForeignCallContext.exit(frame, ctx, state);
-                calleeContext.exit(frame, this);
 
                 releaseNativeWrapperNode.execute(arguments);
             }
@@ -172,38 +234,37 @@ public abstract class ExternalFunctionNodes {
             return callable;
         }
 
-        @Override
-        public String getName() {
+        public final String getName() {
             return name;
+        }
+
+        private PRaiseNode ensureRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
+        private PythonContext getContext() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
+            return contextRef.get();
         }
 
         @Override
         public String toString() {
-            return "<external function root " + name + ">";
+            return "invoke external function " + name;
         }
 
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
+        public static InvokeExternalFunctionNode create(String name, Object callable) {
+            return new InvokeExternalFunctionNode(name, callable);
         }
 
-        @Override
-        public Signature getSignature() {
-            return signature;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            // everything that is implemented in C is internal
-            return true;
-        }
-
-        public static ExternalFunctionNode create(PythonLanguage lang, String name, Object callable, Signature signature) {
-            return ExternalFunctionNodeGen.create(lang, name, callable, signature, null);
-        }
-
-        public static ExternalFunctionNode create(PythonLanguage lang, String name, Object callable, Signature signature, ConvertArgsToSulongNode convertArgsNode) {
-            return ExternalFunctionNodeGen.create(lang, name, callable, signature, convertArgsNode);
+        public static InvokeExternalFunctionNode create(String name, Object callable, ConvertArgsToSulongNode convertArgsNode) {
+            return new InvokeExternalFunctionNode(name, callable, convertArgsNode);
         }
     }
 
@@ -264,16 +325,33 @@ public abstract class ExternalFunctionNodes {
 
     abstract static class MethodDescriptorRoot extends PRootNode {
         @Child private CalleeContext calleeContext = CalleeContext.create();
-        @Child FunctionInvokeNode invokeNode;
-        @Child ReadIndexedArgumentNode readSelfNode;
+        @Child private FunctionInvokeNode invokeNode;
+        @Child private InvokeExternalFunctionNode externalInvokeNode;
+        @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
 
         private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
 
         @TruffleBoundary
-        MethodDescriptorRoot(PythonLanguage language, RootCallTarget callTarget) {
+        MethodDescriptorRoot(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
             super(language);
-            this.readSelfNode = ReadIndexedArgumentNode.create(0);
-            this.invokeNode = FunctionInvokeNode.createBuiltinFunction(callTarget);
+            this.invokeNode = functionInvokeNode;
+        }
+
+        @TruffleBoundary
+        MethodDescriptorRoot(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language);
+            this.externalInvokeNode = externalInvokeNode;
+        }
+
+        final Object invokeFunction(VirtualFrame frame, Object[] arguments) {
+            if (externalInvokeNode != null) {
+                return externalInvokeNode.execute(frame, arguments);
+            } else {
+                assert externalInvokeNode == null;
+                Object[] parguments = PArguments.create(arguments.length);
+                System.arraycopy(arguments, 0, parguments, PArguments.USER_ARGUMENTS_OFFSET, arguments.length);
+                return invokeNode.execute(frame, parguments);
+            }
         }
 
         @Override
@@ -283,7 +361,12 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         public String getName() {
-            return invokeNode.getCurrentRootNode().getName();
+            if (externalInvokeNode != null) {
+                return externalInvokeNode.getName();
+            } else {
+                assert externalInvokeNode == null;
+                return invokeNode.getCurrentRootNode().getName();
+            }
         }
 
         @Override
@@ -311,8 +394,15 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        MethKeywordsRoot(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethKeywordsRoot(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.factory = PythonObjectFactory.create();
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+        }
+
+        MethKeywordsRoot(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
@@ -325,9 +415,7 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
                 PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), factory.createDict(kwargs));
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, factory.createTuple(args), factory.createDict(kwargs)});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -344,8 +432,14 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
-        MethVarargsRoot(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethVarargsRoot(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.factory = PythonObjectFactory.create();
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+        }
+
+        MethVarargsRoot(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
         }
@@ -356,9 +450,7 @@ public abstract class ExternalFunctionNodes {
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args));
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, factory.createTuple(args)});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -373,8 +465,12 @@ public abstract class ExternalFunctionNodes {
     static class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
 
-        MethNoargsRoot(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethNoargsRoot(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+        }
+
+        MethNoargsRoot(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
         }
 
         @Override
@@ -382,9 +478,7 @@ public abstract class ExternalFunctionNodes {
             enterCalleeContext(frame);
             try {
                 Object self = readSelfNode.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, PNone.NONE);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, PNone.NONE});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -400,8 +494,13 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        MethORoot(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethORoot(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readArgNode = ReadIndexedArgumentNode.create(1);
+        }
+
+        MethORoot(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
         }
 
@@ -411,9 +510,7 @@ public abstract class ExternalFunctionNodes {
             try {
                 Object self = readSelfNode.execute(frame);
                 Object arg = readArgNode.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, arg);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, arg});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -431,8 +528,15 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        MethFastcallWithKeywordsRoot(PythonLanguage language, RootCallTarget fun) {
-            super(language, fun);
+        MethFastcallWithKeywordsRoot(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.factory = PythonObjectFactory.create();
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+        }
+
+        MethFastcallWithKeywordsRoot(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
@@ -452,9 +556,7 @@ public abstract class ExternalFunctionNodes {
                     fastcallKwnames[i] = kwargs[i].getName();
                     fastcallArgs[args.length + i] = kwargs[i].getValue();
                 }
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(fastcallArgs), args.length, factory.createTuple(fastcallKwnames));
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, factory.createTuple(fastcallArgs), args.length, factory.createTuple(fastcallKwnames)});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -471,8 +573,14 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
-        MethFastcallRoot(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethFastcallRoot(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.factory = PythonObjectFactory.create();
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+        }
+
+        MethFastcallRoot(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
         }
@@ -483,9 +591,7 @@ public abstract class ExternalFunctionNodes {
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, factory.createTuple(args), args.length});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -505,8 +611,14 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
-        AllocFuncRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        AllocFuncRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readArgNode = ReadIndexedArgumentNode.create(1);
+            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
+        }
+
+        AllocFuncRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
@@ -517,9 +629,7 @@ public abstract class ExternalFunctionNodes {
             try {
                 Object self = readSelfNode.execute(frame);
                 Object arg = readArgNode.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, asSsizeTNode.executeLong(frame, arg, 1, Long.BYTES));
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, asSsizeTNode.executeLong(frame, arg, 1, Long.BYTES)});
             } catch (UnexpectedResultException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
@@ -542,8 +652,14 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
 
-        GetAttrFuncRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        GetAttrFuncRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readArgNode = ReadIndexedArgumentNode.create(1);
+            this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
+        }
+
+        GetAttrFuncRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
         }
@@ -554,11 +670,9 @@ public abstract class ExternalFunctionNodes {
             try {
                 Object self = readSelfNode.execute(frame);
                 Object arg = readArgNode.execute(frame);
-                Object[] arguments = PArguments.create();
                 // TODO we should use 'CStringWrapper' for 'arg' but it does currently not support
                 // PString
-                PArguments.setVariableArguments(arguments, self, asCharPointerNode.execute(arg));
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, asCharPointerNode.execute(arg)});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -579,8 +693,15 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
 
-        SetAttrFuncRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        SetAttrFuncRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readArg1Node = ReadIndexedArgumentNode.create(1);
+            this.readArg2Node = ReadIndexedArgumentNode.create(2);
+            this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
+        }
+
+        SetAttrFuncRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
@@ -593,11 +714,9 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelfNode.execute(frame);
                 Object arg1 = readArg1Node.execute(frame);
                 Object arg2 = readArg2Node.execute(frame);
-                Object[] arguments = PArguments.create();
                 // TODO we should use 'CStringWrapper' for 'arg1' but it does currently not support
                 // PString
-                PArguments.setVariableArguments(arguments, self, asCharPointerNode.execute(arg1), arg2);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, asCharPointerNode.execute(arg1), arg2});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -618,8 +737,15 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
-        RichCmpFuncRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        RichCmpFuncRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readArg1Node = ReadIndexedArgumentNode.create(1);
+            this.readArg2Node = ReadIndexedArgumentNode.create(2);
+            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
+        }
+
+        RichCmpFuncRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
@@ -632,9 +758,7 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelfNode.execute(frame);
                 Object arg1 = readArg1Node.execute(frame);
                 Object arg2 = readArg2Node.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, arg1, asSsizeTNode.executeInt(frame, arg2, 1, Integer.BYTES));
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, arg1, asSsizeTNode.executeInt(frame, arg2, 1, Integer.BYTES)});
             } catch (UnexpectedResultException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
@@ -658,8 +782,15 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
-        SSizeObjArgProcRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        SSizeObjArgProcRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readArg1Node = ReadIndexedArgumentNode.create(1);
+            this.readArg2Node = ReadIndexedArgumentNode.create(2);
+            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
+        }
+
+        SSizeObjArgProcRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
@@ -672,9 +803,7 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelfNode.execute(frame);
                 Object arg1 = readArg1Node.execute(frame);
                 Object arg2 = readArg2Node.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, asSsizeTNode.executeLong(frame, arg1, 1, Long.BYTES), arg2);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, asSsizeTNode.executeLong(frame, arg1, 1, Long.BYTES), arg2});
             } catch (UnexpectedResultException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
@@ -697,8 +826,14 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg0Node;
         @Child private ReadIndexedArgumentNode readArg1Node;
 
-        MethReverseRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethReverseRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readArg0Node = ReadIndexedArgumentNode.create(0);
+            this.readArg1Node = ReadIndexedArgumentNode.create(1);
+        }
+
+        MethReverseRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readArg0Node = ReadIndexedArgumentNode.create(0);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
         }
@@ -709,9 +844,7 @@ public abstract class ExternalFunctionNodes {
             try {
                 Object arg0 = readArg0Node.execute(frame);
                 Object arg1 = readArg1Node.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, arg1, arg0);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{arg1, arg0});
             } finally {
                 exitCalleeContext(frame);
             }
@@ -732,8 +865,13 @@ public abstract class ExternalFunctionNodes {
 
         private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
-        MethPowRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethPowRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+        }
+
+        MethPowRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
         }
 
@@ -745,16 +883,14 @@ public abstract class ExternalFunctionNodes {
                 Object[] varargs = readVarargsNode.executeObjectArray(frame);
                 Object arg0 = varargs[0];
                 Object arg1 = profile.profile(varargs.length > 1) ? varargs[1] : PNone.NONE;
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, arg0, arg1);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, getArguments(self, arg0, arg1));
             } finally {
                 exitCalleeContext(frame);
             }
         }
 
-        void setArguments(Object[] arguments, Object arg0, Object arg1, Object arg2) {
-            PArguments.setVariableArguments(arguments, arg0, arg1, arg2);
+        Object[] getArguments(Object arg0, Object arg1, Object arg2) {
+            return new Object[]{arg0, arg1, arg2};
         }
 
         @Override
@@ -766,15 +902,19 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for native reverse power function (with an optional third argument).
      */
-    static class MethRPowRootNode extends MethPowRootNode {
+    static final class MethRPowRootNode extends MethPowRootNode {
 
-        MethRPowRootNode(PythonLanguage language, RootCallTarget callTarget) {
-            super(language, callTarget);
+        MethRPowRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
+            super(language, functionInvokeNode);
+        }
+
+        MethRPowRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
+            super(language, externalInvokeNode);
         }
 
         @Override
-        void setArguments(Object[] arguments, Object arg0, Object arg1, Object arg2) {
-            PArguments.setVariableArguments(arguments, arg1, arg0, arg2);
+        Object[] getArguments(Object arg0, Object arg1, Object arg2) {
+            return new Object[]{arg1, arg0, arg2};
         }
     }
 
@@ -787,8 +927,14 @@ public abstract class ExternalFunctionNodes {
 
         private final int op;
 
-        MethRichcmpOpRootNode(PythonLanguage language, RootCallTarget callTarget, int op) {
-            super(language, callTarget);
+        MethRichcmpOpRootNode(PythonLanguage language, FunctionInvokeNode functionInvokeNode, int op) {
+            super(language, functionInvokeNode);
+            this.readArgNode = ReadIndexedArgumentNode.create(1);
+            this.op = op;
+        }
+
+        MethRichcmpOpRootNode(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode, int op) {
+            super(language, externalInvokeNode);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.op = op;
         }
@@ -799,9 +945,7 @@ public abstract class ExternalFunctionNodes {
             try {
                 Object self = readSelfNode.execute(frame);
                 Object arg = readArgNode.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, arg, op);
-                return invokeNode.execute(frame, arguments);
+                return invokeFunction(frame, new Object[]{self, arg, op});
             } finally {
                 exitCalleeContext(frame);
             }
