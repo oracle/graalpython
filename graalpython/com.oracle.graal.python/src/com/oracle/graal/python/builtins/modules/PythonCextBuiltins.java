@@ -54,7 +54,6 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
@@ -587,7 +586,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyErr_Occurred", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = "PyErr_Occurred", maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
@@ -885,7 +884,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_NoValue", minNumOfPositionalArgs = 0)
+    @Builtin(name = "Py_NoValue")
     @GenerateNodeFactory
     abstract static class Py_NoValue extends PythonBuiltinNode {
         @Specialization
@@ -894,7 +893,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_None", minNumOfPositionalArgs = 0)
+    @Builtin(name = "Py_None")
     @GenerateNodeFactory
     abstract static class PyNoneNode extends PythonBuiltinNode {
         @Specialization
@@ -1349,7 +1348,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         private static byte[] subRangeIfNeeded(byte[] ary, long n) {
-            if (ary.length > n && n >= 0 && n < Integer.MAX_VALUE) {
+            if (ary.length > n && n >= 0) {
+                // cast to int is guaranteed because of 'ary.length > n'
                 return Arrays.copyOf(ary, (int) n);
             } else {
                 return ary;
@@ -1463,7 +1463,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyHash_Imag", minNumOfPositionalArgs = 0)
+    @Builtin(name = "PyHash_Imag")
     @GenerateNodeFactory
     abstract static class PyHashImagNode extends PythonBuiltinNode {
         @Specialization
@@ -1556,7 +1556,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyThreadState_Get", minNumOfPositionalArgs = 0)
+    @Builtin(name = "PyThreadState_Get")
     @GenerateNodeFactory
     abstract static class PyThreadState_Get extends NativeBuiltin {
 
@@ -1624,7 +1624,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_DIRECT", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_DIRECT")
     @GenerateNodeFactory
     public abstract static class MethDirectNode extends PythonBuiltinNode {
         @Specialization
@@ -1639,7 +1639,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_KEYWORDS", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_KEYWORDS")
     @GenerateNodeFactory
     public abstract static class MethKeywordsNode extends PythonBuiltinNode {
         @Specialization
@@ -1654,7 +1654,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_VARARGS", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_VARARGS")
     @GenerateNodeFactory
     public abstract static class MethVarargsNode extends PythonBuiltinNode {
         @Specialization
@@ -1669,7 +1669,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_NOARGS", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_NOARGS")
     @GenerateNodeFactory
     public abstract static class MethNoargsNode extends PythonBuiltinNode {
         @Specialization
@@ -1684,7 +1684,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_O", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_O")
     @GenerateNodeFactory
     public abstract static class MethONode extends PythonBuiltinNode {
         @Specialization
@@ -1699,7 +1699,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_FASTCALL", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_FASTCALL")
     @GenerateNodeFactory
     public abstract static class MethFastcallNode extends PythonBuiltinNode {
         @Specialization
@@ -1714,7 +1714,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_FASTCALL_WITH_KEYWORDS", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_FASTCALL_WITH_KEYWORDS")
     @GenerateNodeFactory
     public abstract static class MethFastcallWithKeywordsNode extends PythonBuiltinNode {
         @Specialization
@@ -1729,7 +1729,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_ALLOC", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_ALLOC")
     @GenerateNodeFactory
     public abstract static class MethAllocNode extends PythonBuiltinNode {
         @Specialization
@@ -1744,7 +1744,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_GETATTR", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_GETATTR")
     @GenerateNodeFactory
     public abstract static class MethGetattrNode extends PythonBuiltinNode {
         @Specialization
@@ -1759,7 +1759,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_SETATTR", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_SETATTR")
     @GenerateNodeFactory
     public abstract static class MethSetattrNode extends PythonBuiltinNode {
         @Specialization
@@ -1774,7 +1774,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_RICHCMP", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_RICHCMP")
     @GenerateNodeFactory
     public abstract static class MethRichcmpNode extends PythonBuiltinNode {
         @Specialization
@@ -1789,7 +1789,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_SSIZE_OBJ_ARG", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_SSIZE_OBJ_ARG")
     @GenerateNodeFactory
     public abstract static class MethSSizeObjArgNode extends PythonBuiltinNode {
         @Specialization
@@ -1804,7 +1804,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_REVERSE", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_REVERSE")
     @GenerateNodeFactory
     public abstract static class MethReverseNode extends PythonBuiltinNode {
         @Specialization
@@ -1819,7 +1819,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_POW", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_POW")
     @GenerateNodeFactory
     public abstract static class MethPowNode extends PythonBuiltinNode {
         @Specialization
@@ -1834,7 +1834,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_REVERSE_POW", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_REVERSE_POW")
     @GenerateNodeFactory
     public abstract static class MethRPowNode extends PythonBuiltinNode {
         @Specialization
@@ -1876,7 +1876,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_LT", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_LT")
     @GenerateNodeFactory
     public abstract static class MethLtNode extends MethRichcmpOpBaseNode {
         protected MethLtNode() {
@@ -1884,7 +1884,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_LE", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_LE")
     @GenerateNodeFactory
     public abstract static class MethLeNode extends MethRichcmpOpBaseNode {
         protected MethLeNode() {
@@ -1892,7 +1892,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_EQ", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_EQ")
     @GenerateNodeFactory
     public abstract static class MethEqNode extends MethRichcmpOpBaseNode {
         protected MethEqNode() {
@@ -1900,7 +1900,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_NE", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_NE")
     @GenerateNodeFactory
     public abstract static class MethNeNode extends MethRichcmpOpBaseNode {
         protected MethNeNode() {
@@ -1908,7 +1908,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_GT", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_GT")
     @GenerateNodeFactory
     public abstract static class MethGtNode extends MethRichcmpOpBaseNode {
         protected MethGtNode() {
@@ -1916,7 +1916,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_GE", minNumOfPositionalArgs = 0)
+    @Builtin(name = "METH_GE")
     @GenerateNodeFactory
     public abstract static class MethGeNode extends MethRichcmpOpBaseNode {
         protected MethGeNode() {
@@ -2154,18 +2154,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class UpcallCextPtrNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
-        Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.CextUpcallNode upcallNode) {
-            Object[] argsWithoutCallee = new Object[args.length - 1];
-            System.arraycopy(args, 1, argsWithoutCallee, 0, argsWithoutCallee.length);
             return upcallNode.execute(frame, cextModule, args);
         }
 
         @Specialization(guards = "!isStringCallee(args)")
-        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.DirectUpcallNode upcallNode) {
-            Object[] argsWithoutCallee = new Object[args.length - 1];
-            System.arraycopy(args, 1, argsWithoutCallee, 0, argsWithoutCallee.length);
             return upcallNode.execute(frame, args);
         }
     }
@@ -2507,7 +2503,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             byte[] ary = getByteArrayNode.execute(frame, asPythonObjectNode.execute(object));
             PBytes result;
-            if (size < Integer.MAX_VALUE && size >= 0 && size < ary.length) {
+            if (size >= 0 && size < ary.length) {
+                // cast to int is guaranteed because of 'size < ary.length'
                 result = factory().createBytes(Arrays.copyOf(ary, (int) size));
             } else {
                 result = factory().createBytes(ary);
@@ -2772,10 +2769,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private CoderResult decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, String errors) {
+        private void decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, String errors) {
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-            return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
+            decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
     }
 
@@ -2816,6 +2813,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     Number parse = parse(source);
                     return factory().createTuple(new Object[]{doubleValue(parse)});
                 } catch (ParseException e) {
+                    // ignore
                 }
             }
             return raiseNative(frame, getNativeNullNode.execute(module), PythonBuiltinClassType.ValueError, "could not convert string to float: %s", source);
@@ -2873,7 +2871,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String joinFormatCode(int formatCode, int precision) {
-            return "." + precision + Character.toString((char) formatCode);
+            return "." + precision + (char) formatCode;
         }
 
         private PTuple createResult(Object str, double val) {
@@ -2919,10 +2917,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private CoderResult decode(CharBuffer resultBuffer, ByteBuffer inputBuffer, String encoding, String errors) {
+        private void decode(CharBuffer resultBuffer, ByteBuffer inputBuffer, String encoding, String errors) {
             CharsetDecoder decoder = Charset.forName(encoding).newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-            return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
+            decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
     }
 
@@ -3361,7 +3359,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Native_Options", minNumOfPositionalArgs = 0)
+    @Builtin(name = "PyTruffle_Native_Options")
     @GenerateNodeFactory
     abstract static class PyTruffleNativeOptions extends PythonBuiltinNode {
         private static final int TRACE_MEM = 0x1;
