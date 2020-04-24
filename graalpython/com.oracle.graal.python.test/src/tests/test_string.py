@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -817,6 +817,22 @@ class UnicodeTest(unittest.TestCase):
                          '\U0010FFFFx\U0010FFFF')
         self.assertEqual('x'.center(4, '\U0010FFFF'),
                          '\U0010FFFFx\U0010FFFF\U0010FFFF')
+
+    def test_capitalize(self):
+        self.checkequal('', '', 'capitalize')
+        self.checkequal('A', 'a', 'capitalize')
+        self.checkequal('A', 'A', 'capitalize')
+        self.checkequal('-', '-', 'capitalize')
+        self.checkequal('Aa', 'aa', 'capitalize')
+        self.checkequal('Aa', 'AA', 'capitalize')
+        self.checkequal('1234a', '1234a', 'capitalize')
+        self.checkequal('1234a', '1234A', 'capitalize')
+        self.checkequal('A1234a', 'a1234a', 'capitalize')
+        self.checkequal('A1234a', 'A1234A', 'capitalize')
+        self.checkequal('Foo', 'foo', 'capitalize')
+        self.checkequal('Aa bb cc', 'AA BB CC', 'capitalize')
+        self.checkequal('Aa bb cc', 'aa bB cc', 'capitalize')
+        self.checkequal('Aa bb   cc', 'aa bb   cC', 'capitalize')
 
     # Whether the "contained items" of the container are integers in
     # range(0, 256) (i.e. bytes, bytearray) or strings of length 1

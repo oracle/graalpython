@@ -110,7 +110,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 if (frame != null) {
                     Node location = element.getLocation();
                     // only include frames of non-builtin python functions
-                    if (PArguments.isPythonFrame(frame) && location != null && !location.getRootNode().isInternal()) {
+                    if (PArguments.isPythonFrame(frame) && location != null && location.getRootNode() != null && !location.getRootNode().isInternal()) {
                         // create the PFrame and refresh frame values
                         PFrame escapedFrame = materializeNode.execute(null, location, false, true, frame);
                         cur = factory.createTraceback(escapedFrame, exception);

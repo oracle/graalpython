@@ -921,7 +921,11 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String capitalize(String self) {
-            return self.substring(0, 1).toUpperCase() + self.substring(1);
+            if (self.isEmpty()) {
+                return "";
+            } else {
+                return self.substring(0, 1).toUpperCase() + self.substring(1).toLowerCase();
+            }
         }
     }
 
