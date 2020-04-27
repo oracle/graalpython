@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -59,7 +60,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 public abstract class CodeNodes {
 
@@ -128,9 +128,6 @@ public abstract class CodeNodes {
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
-
-            funcdef.append("outer").append(outerName).append("()");
-            return funcdef.toString();
         }
 
         private ContextReference<PythonContext> getContextRef() {

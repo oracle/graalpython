@@ -966,7 +966,7 @@ public class Python3Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			 ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); 
+			 ArgDefListBuilder args = new ArgDefListBuilder(); 
 			setState(247);
 			match(OPEN_PAREN);
 			setState(249);
@@ -1620,7 +1620,7 @@ public class Python3Parser extends Parser {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			 ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); 
+			 ArgDefListBuilder args = new ArgDefListBuilder(); 
 			setState(508);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,63,_ctx) ) {
@@ -5052,13 +5052,14 @@ public class Python3Parser extends Parser {
 
 	public static class LambdefContext extends ParserRuleContext {
 		public SSTNode result;
+		public Token l;
 		public VarargslistContext varargslist;
 		public TestContext test;
-		public TerminalNode LAMBDA() { return getToken(Python3Parser.LAMBDA, 0); }
 		public TerminalNode COLON() { return getToken(Python3Parser.COLON, 0); }
 		public TestContext test() {
 			return getRuleContext(TestContext.class,0);
 		}
+		public TerminalNode LAMBDA() { return getToken(Python3Parser.LAMBDA, 0); }
 		public VarargslistContext varargslist() {
 			return getRuleContext(VarargslistContext.class,0);
 		}
@@ -5076,7 +5077,7 @@ public class Python3Parser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(1006);
-			match(LAMBDA);
+			_localctx.l = match(LAMBDA);
 			 ArgDefListBuilder args = null; 
 			setState(1011);
 			_errHandler.sync(this);
@@ -5117,13 +5118,14 @@ public class Python3Parser extends Parser {
 
 	public static class Lambdef_nocondContext extends ParserRuleContext {
 		public SSTNode result;
+		public Token l;
 		public VarargslistContext varargslist;
 		public Test_nocondContext test_nocond;
-		public TerminalNode LAMBDA() { return getToken(Python3Parser.LAMBDA, 0); }
 		public TerminalNode COLON() { return getToken(Python3Parser.COLON, 0); }
 		public Test_nocondContext test_nocond() {
 			return getRuleContext(Test_nocondContext.class,0);
 		}
+		public TerminalNode LAMBDA() { return getToken(Python3Parser.LAMBDA, 0); }
 		public VarargslistContext varargslist() {
 			return getRuleContext(VarargslistContext.class,0);
 		}
@@ -5141,7 +5143,7 @@ public class Python3Parser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(1019);
-			match(LAMBDA);
+			_localctx.l = match(LAMBDA);
 			 ArgDefListBuilder args = null; 
 			setState(1024);
 			_errHandler.sync(this);
@@ -7371,7 +7373,7 @@ public class Python3Parser extends Parser {
 				 
 				                SSTNode value; 
 				                SSTNode name;
-				                ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.DictComp);
+				                ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.DictComp);
 				                generator.setHasAnnotations(true);
 				                
 				            
@@ -7631,7 +7633,7 @@ public class Python3Parser extends Parser {
 				                    case PSet: scopeKind = ScopeInfo.ScopeKind.SetComp; break;
 				                    default: scopeKind = ScopeInfo.ScopeKind.GenExp;
 				                }
-				                ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), scopeKind); 
+				                ScopeInfo generator = scopeEnvironment.pushScope("generator", scopeKind); 
 				                generator.setHasAnnotations(true);
 				            
 				setState(1480);
@@ -8010,7 +8012,7 @@ public class Python3Parser extends Parser {
 				enterOuterAlt(_localctx, 1);
 				{
 
-				                    ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.GenExp); 
+				                    ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.GenExp); 
 				                    generator.setHasAnnotations(true);
 				                
 				setState(1551);

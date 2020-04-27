@@ -90,6 +90,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(defineModule = "marshal")
@@ -775,7 +777,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_FROZENSET:
                     return readFrozenSet(depth, lib);
                 case TYPE_CODE:
-                    return readCode(depth, lib);
+                    return readCode(depth);
                 default:
                     throw raise(ValueError, "bad marshal data");
             }

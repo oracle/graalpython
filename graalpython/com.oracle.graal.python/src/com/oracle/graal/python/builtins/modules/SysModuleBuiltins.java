@@ -192,7 +192,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
-                        !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
+                        !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
                         DONT_WRITE_BYTECODE,  // dont_write_bytecode
                         false, // hash_randomization
                         context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
