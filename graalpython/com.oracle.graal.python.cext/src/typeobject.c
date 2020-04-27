@@ -512,7 +512,12 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__getattr__", cls->tp_getattro, -2);
     ADD_SLOT_PRIMITIVE("__setattr__", cls->tp_setattro, -3);
     ADD_SLOT_CONV("__clear__", native_int_to_bool, cls->tp_clear, -1, NULL);
-    if (cls->tp_richcompare) {
+
+    /* IMPORTANT NOTE: If the class already provides 'tp_richcompare' but this is the default
+       'object.__truffle_richcompare__' function, then we need to break a recursive cycle since
+       the default function dispatches to the individual comparison functions which would in
+       this case again invoke 'object.__truffle_richcompare__'. */
+    if (cls->tp_richcompare && cls->tp_richcompare != PyBaseObject_Type.tp_richcompare) {
         ADD_SLOT_CONV("__compare__", native_to_java_stealing_exported, cls->tp_richcompare, -3, JWRAPPER_RICHCMP);
         ADD_SLOT_CONV("__lt__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_LT);
         ADD_SLOT_CONV("__le__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_LE);

@@ -207,7 +207,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -475,7 +474,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        Object doPythonCallable(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") LazyPythonClass type,
+        Object doPythonCallable(String name, PythonNativeWrapper callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") LazyPythonClass type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
@@ -483,7 +482,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
 
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, createFunctionInvokeNode(managedCallable));
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, null);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
             }
@@ -512,10 +511,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
             Object managedCallable = nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, createFunctionInvokeNode(managedCallable));
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, null);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
             }
+
+            // Special case: if the returned 'wrappedCallTarget' is null, this indicates we want to
+            // call a Python callable without wrapping and arguments conversion. So, directly use
+            // the callable.
             return managedCallable;
         }
 
@@ -523,40 +526,27 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, LazyPythonClass type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, createInvokeExternalFunctionNode(name, callable, wrapper.createConvertArgsToSulongNode()));
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, callable, wrapper.createConvertArgsToSulongNode());
             return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
-        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             return doNativeCallableWithType(name, callable, wrapper, null, lang);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
-        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, LazyPythonClass type, @SuppressWarnings("unused") PNone wrapper,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, createInvokeExternalFunctionNode(name, callable, AllToSulongNode.create())));
+            RootCallTarget callTarget = PExternalFunctionWrapper.createCallTarget(ExternalFunctionNode.create(lang, name, callable));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
-        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang);
-        }
-
-        private static FunctionInvokeNode createFunctionInvokeNode(Object callable) {
-            if (callable instanceof PBuiltinFunction) {
-                return FunctionInvokeNode.create((PBuiltinFunction) callable);
-            } else if (callable instanceof PFunction) {
-                return FunctionInvokeNode.create((PFunction) callable);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("unsupported callable");
         }
 
         static boolean isNativeWrapper(Object obj) {
@@ -565,10 +555,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         static boolean isDecoratedManagedFunction(Object obj) {
             return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
-        }
-
-        private static InvokeExternalFunctionNode createInvokeExternalFunctionNode(String name, Object callable, ConvertArgsToSulongNode convertArgsNode) {
-            return InvokeExternalFunctionNode.create(name, callable, convertArgsNode);
         }
     }
 
@@ -1656,10 +1642,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
         }
 
-        protected abstract RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode);
+        protected abstract RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode);
 
-        protected abstract RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode);
-
+        @TruffleBoundary
         protected static RootCallTarget createCallTarget(RootNode n) {
             return Truffle.getRuntime().createCallTarget(n);
         }
@@ -1677,15 +1662,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    // this should directly (== without argument conversion) call a managed
-                    // function; so directly use the function. null indicates this
-                    return null;
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(ExternalFunctionNode.create(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        // this should directly (== without argument conversion) call a managed
+                        // function; so directly use the function. null indicates this
+                        return null;
+                    } else {
+                        return createCallTarget(ExternalFunctionNode.create(language, name, callable));
+                    }
                 }
             };
         }
@@ -1699,13 +1683,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethKeywordsRoot(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethKeywordsRoot(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethKeywordsRoot(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethKeywordsRoot(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1719,13 +1702,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethVarargsRoot(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethVarargsRoot(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethVarargsRoot(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethVarargsRoot(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1739,13 +1721,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethNoargsRoot(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethNoargsRoot(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethNoargsRoot(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethNoargsRoot(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1759,13 +1740,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethORoot(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethORoot(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethORoot(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethORoot(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1779,13 +1759,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallArgsToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethFastcallRoot(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethFastcallRoot(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethFastcallRoot(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethFastcallRoot(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1799,13 +1778,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallWithKeywordsArgsToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethFastcallWithKeywordsRoot(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethFastcallWithKeywordsRoot(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1819,13 +1797,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new AllocFuncRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new AllocFuncRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new AllocFuncRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new AllocFuncRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1839,13 +1816,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new GetAttrFuncRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new GetAttrFuncRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new GetAttrFuncRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new GetAttrFuncRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1859,13 +1835,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new SetAttrFuncRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new SetAttrFuncRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new SetAttrFuncRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new SetAttrFuncRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1879,13 +1854,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new RichCmpFuncRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new RichCmpFuncRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new RichCmpFuncRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new RichCmpFuncRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1899,13 +1873,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new SSizeObjArgProcRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new SSizeObjArgProcRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1919,13 +1892,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethReverseRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethReverseRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethReverseRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethReverseRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1939,13 +1911,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethPowRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethPowRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethPowRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethPowRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1959,13 +1930,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethRPowRootNode(language, functionInvokeNode));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethRPowRootNode(language, externalInvokeNode));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethRPowRootNode(language, name, callable));
+                    } else {
+                        return createCallTarget(new MethRPowRootNode(language, name, callable, convertArgsToSulongNode));
+                    }
                 }
             };
         }
@@ -1991,13 +1961,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
 
                 @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, FunctionInvokeNode functionInvokeNode) {
-                    return createCallTarget(new MethRichcmpOpRootNode(language, functionInvokeNode, op));
-                }
-
-                @Override
-                protected RootCallTarget createCallTarget(PythonLanguage language, InvokeExternalFunctionNode externalInvokeNode) {
-                    return createCallTarget(new MethRichcmpOpRootNode(language, externalInvokeNode, op));
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+                    if (convertArgsToSulongNode == null) {
+                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, op));
+                    } else {
+                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, convertArgsToSulongNode, op));
+                    }
                 }
             };
         }
