@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.IntNo
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.ExternalFunctionNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.InvokeExternalFunctionNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
@@ -523,7 +522,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeWrapper(callable)")
-        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, LazyPythonClass type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, callable, wrapper.createConvertArgsToSulongNode());
@@ -1649,6 +1647,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return Truffle.getRuntime().createCallTarget(n);
         }
 
+        @TruffleBoundary
         protected ConvertArgsToSulongNode createConvertArgsToSulongNode() {
             return convertArgsNodeSupplier.get();
         }
@@ -1662,6 +1661,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         // this should directly (== without argument conversion) call a managed
@@ -1683,6 +1683,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethKeywordsRoot(language, name, callable));
@@ -1702,6 +1703,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethVarargsRoot(language, name, callable));
@@ -1721,6 +1723,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethNoargsRoot(language, name, callable));
@@ -1740,6 +1743,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethORoot(language, name, callable));
@@ -1759,6 +1763,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallArgsToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethFastcallRoot(language, name, callable));
@@ -1778,6 +1783,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallWithKeywordsArgsToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable));
@@ -1797,6 +1803,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new AllocFuncRootNode(language, name, callable));
@@ -1816,6 +1823,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new GetAttrFuncRootNode(language, name, callable));
@@ -1835,6 +1843,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new SetAttrFuncRootNode(language, name, callable));
@@ -1854,6 +1863,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new RichCmpFuncRootNode(language, name, callable));
@@ -1873,6 +1883,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable));
@@ -1892,6 +1903,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethReverseRootNode(language, name, callable));
@@ -1911,6 +1923,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethPowRootNode(language, name, callable));
@@ -1930,6 +1943,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethRPowRootNode(language, name, callable));
@@ -1961,6 +1975,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
 
                 @Override
+                @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
                     if (convertArgsToSulongNode == null) {
                         return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, op));

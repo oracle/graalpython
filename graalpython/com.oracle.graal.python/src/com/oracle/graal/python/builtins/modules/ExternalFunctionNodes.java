@@ -162,6 +162,7 @@ public abstract class ExternalFunctionNodes {
             return invokeNode;
         }
 
+        @TruffleBoundary
         public static ExternalFunctionNode create(PythonLanguage lang, String name, Object callable) {
             return new ExternalFunctionNode(lang, name, callable);
         }
