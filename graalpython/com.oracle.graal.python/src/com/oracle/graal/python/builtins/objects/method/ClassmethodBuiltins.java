@@ -85,8 +85,14 @@ public class ClassmethodBuiltins extends PythonBuiltins {
     abstract static class GetNode extends PythonBuiltinNode {
         @Child MakeMethodNode makeMethod = MakeMethodNode.create();
 
+        /**
+         * N.b.: cachedCallable.notNull is sufficient here, because
+         * {@link PDecoratedMethod#setCallable} can only be called when the callable was previously
+         * {@code null}. So if it ever was not null and we cached that, it is being held alive by
+         * the {@code self} argument now and there cannot be a race.
+         */
         @Specialization(guards = {"isNoValue(type)", "cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
-        protected Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+        Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
                         @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
                         @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable,
                         @Cached GetClassNode getClass) {
@@ -94,21 +100,24 @@ public class ClassmethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(type)", replaces = "getCached")
-        protected Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+        Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
                         @Cached GetClassNode getClass,
                         @Cached BranchProfile uninitialized) {
             return doGet(self, getClass.execute(obj), uninitialized);
         }
 
+        /**
+         * @see #getCached
+         */
         @Specialization(guards = {"!isNoValue(type)", "cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
-        protected Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+        Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
                         @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable) {
             return makeMethod.execute(type, cachedCallable.get());
         }
 
         @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
-        protected Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+        Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @Cached("create()") BranchProfile uninitialized) {
             return doGet(self, type, uninitialized);
         }

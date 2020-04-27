@@ -70,6 +70,9 @@ public class StaticmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     abstract static class GetNode extends PythonBuiltinNode {
+        /**
+         * @see ClassmethodBuiltins.GetNode#getCached
+         */
         @Specialization(guards = {"cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
         protected Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
                         @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,

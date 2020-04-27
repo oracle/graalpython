@@ -42,6 +42,18 @@ package com.oracle.graal.python.util;
 
 import java.lang.ref.WeakReference;
 
+/**
+ * A class to hold on weakly to objects cached in the AST. Be careful when using it! In general, you
+ * should only hold on to user objects in single-context mode, so you probably want to check
+ * {@link com.oracle.graal.python.PythonLanguage#singleContextAssumption
+ * PythonLanguage#singleContextAssumption} in your AST.
+ *
+ * Furthermore, you will want to consider races. Make sure you don't guard on references being the
+ * same as object fields that could change in between the guard and the specialization execution,
+ * for example. I.e., if you're weakly holding on to an object argument <emph>and</emph> a field in
+ * that object, and that field may change, you cannot just guard on the field being the same as the
+ * cached value, for example, because only the argument object is being held alive.
+ */
 public final class WeakASTReference extends WeakReference<Object> {
     public WeakASTReference(Object referent) {
         super(referent);
