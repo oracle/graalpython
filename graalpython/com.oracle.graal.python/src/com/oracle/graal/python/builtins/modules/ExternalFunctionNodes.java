@@ -92,10 +92,10 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    static final class ExternalFunctionNode extends PRootNode {
+    static final class MethDirectRoot extends PRootNode {
         private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
 
-        @Child private InvokeExternalFunctionNode invokeNode;
+        @Child private ExternalFunctionInvokeNode invokeNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
         private final String name;
@@ -103,11 +103,11 @@ public abstract class ExternalFunctionNodes {
 
         @CompilationFinal private ConditionProfile customLocalsProfile;
 
-        private ExternalFunctionNode(PythonLanguage lang, String name, Object callable) {
+        private MethDirectRoot(PythonLanguage lang, String name, Object callable) {
             super(lang);
             this.name = name;
             this.callable = callable;
-            this.invokeNode = InvokeExternalFunctionNode.create();
+            this.invokeNode = ExternalFunctionInvokeNode.create();
         }
 
         @Override
@@ -154,21 +154,24 @@ public abstract class ExternalFunctionNodes {
             return customLocalsProfile;
         }
 
-        private InvokeExternalFunctionNode ensureInvokeNode() {
+        private ExternalFunctionInvokeNode ensureInvokeNode() {
             if (invokeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                invokeNode = insert(InvokeExternalFunctionNode.create());
+                invokeNode = insert(ExternalFunctionInvokeNode.create());
             }
             return invokeNode;
         }
 
         @TruffleBoundary
-        public static ExternalFunctionNode create(PythonLanguage lang, String name, Object callable) {
-            return new ExternalFunctionNode(lang, name, callable);
+        public static MethDirectRoot create(PythonLanguage lang, String name, Object callable) {
+            return new MethDirectRoot(lang, name, callable);
         }
     }
 
-    static final class InvokeExternalFunctionNode extends PNodeWithContext implements IndirectCallNode {
+    /**
+     * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
+     */
+    static final class ExternalFunctionInvokeNode extends PNodeWithContext implements IndirectCallNode {
         @Child private CExtNodes.ConvertArgsToSulongNode toSulongNode;
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
@@ -193,17 +196,17 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         public Node copy() {
-            InvokeExternalFunctionNode node = (InvokeExternalFunctionNode) super.copy();
+            ExternalFunctionInvokeNode node = (ExternalFunctionInvokeNode) super.copy();
             node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
             node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
             return node;
         }
 
-        InvokeExternalFunctionNode() {
+        ExternalFunctionInvokeNode() {
             this.toSulongNode = CExtNodes.AllToSulongNode.create();
         }
 
-        InvokeExternalFunctionNode(ConvertArgsToSulongNode convertArgsNode) {
+        ExternalFunctionInvokeNode(ConvertArgsToSulongNode convertArgsNode) {
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : CExtNodes.AllToSulongNode.create();
         }
 
@@ -268,12 +271,12 @@ public abstract class ExternalFunctionNodes {
             return contextRef.get();
         }
 
-        public static InvokeExternalFunctionNode create() {
-            return new InvokeExternalFunctionNode();
+        public static ExternalFunctionInvokeNode create() {
+            return new ExternalFunctionInvokeNode();
         }
 
-        public static InvokeExternalFunctionNode create(ConvertArgsToSulongNode convertArgsNode) {
-            return new InvokeExternalFunctionNode(convertArgsNode);
+        public static ExternalFunctionInvokeNode create(ConvertArgsToSulongNode convertArgsNode) {
+            return new ExternalFunctionInvokeNode(convertArgsNode);
         }
     }
 
@@ -335,7 +338,7 @@ public abstract class ExternalFunctionNodes {
     abstract static class MethodDescriptorRoot extends PRootNode {
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
-        @Child private InvokeExternalFunctionNode externalInvokeNode;
+        @Child private ExternalFunctionInvokeNode externalInvokeNode;
         @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
 
         private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
@@ -353,7 +356,7 @@ public abstract class ExternalFunctionNodes {
             this.name = name;
             this.callable = callable;
             if (convertArgsToSulongNode != null) {
-                this.externalInvokeNode = InvokeExternalFunctionNode.create(convertArgsToSulongNode);
+                this.externalInvokeNode = ExternalFunctionInvokeNode.create(convertArgsToSulongNode);
             } else {
                 this.invokeNode = CallVarargsMethodNode.create();
             }

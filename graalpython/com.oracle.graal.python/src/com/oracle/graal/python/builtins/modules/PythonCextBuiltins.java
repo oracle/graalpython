@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.IntNodeFactory;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.ExternalFunctionNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
@@ -537,7 +537,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
         PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, LazyPythonClass type, @SuppressWarnings("unused") PNone wrapper,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            RootCallTarget callTarget = PExternalFunctionWrapper.createCallTarget(ExternalFunctionNode.create(lang, name, callable));
+            RootCallTarget callTarget = PExternalFunctionWrapper.createCallTarget(MethDirectRoot.create(lang, name, callable));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
 
@@ -1668,7 +1668,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         // function; so directly use the function. null indicates this
                         return null;
                     } else {
-                        return createCallTarget(ExternalFunctionNode.create(language, name, callable));
+                        return createCallTarget(MethDirectRoot.create(language, name, callable));
                     }
                 }
             };
