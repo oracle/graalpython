@@ -63,6 +63,7 @@ uint32_t Py_Truffle_Options;
 cache_t cache;
 ptr_cache_t ptr_cache;
 ptr_cache_t ptr_cache_stealing;
+type_ptr_cache_t type_ptr_cache;
 
 alloc_upcall_fun_t alloc_upcall;
 free_upcall_fun_t free_upcall;
@@ -95,9 +96,10 @@ static void initialize_upcall_functions() {
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_handle_cache() {
-    cache = (cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
-    ptr_cache = (ptr_cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
-    ptr_cache_stealing = (ptr_cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 1);
+    cache = (cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
+    ptr_cache = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
+    ptr_cache_stealing = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 1);
+    type_ptr_cache = (type_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
 }
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
@@ -312,7 +314,7 @@ PyObject* get_tp_name(PyTypeObject* obj) {
 
 /** to be used from Java code only; reads native 'tp_mro' field */
 PyObject* get_tp_mro(PyTypeObject* obj) {
-	return native_to_java_slim(obj->tp_mro);
+	return native_to_java(obj->tp_mro);
 }
 
 /** to be used from Java code only; reads native 'tp_subclasses' field */

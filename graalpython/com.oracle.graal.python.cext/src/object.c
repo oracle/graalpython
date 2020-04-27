@@ -154,7 +154,7 @@ PyObject* PyObject_Repr(PyObject* o) {
 }
 
 PyObject* PyObject_Call(PyObject* callable, PyObject* args, PyObject* kwargs) {
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java_slim(callable), native_to_java_slim(args), native_to_java_slim(kwargs));
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java(callable), native_to_java(args), native_to_java(kwargs));
 }
 
 PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
@@ -279,7 +279,7 @@ PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, size_t 
 	    Py_XINCREF(arg);
 		PyTuple_SetItem(targs, i, arg);
 	}
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java_slim(func), native_to_java_slim(targs), native_to_java_slim(kwargs));
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java(func), native_to_java(targs), native_to_java(kwargs));
 }
 
 PyObject* PyObject_Type(PyObject* obj) {

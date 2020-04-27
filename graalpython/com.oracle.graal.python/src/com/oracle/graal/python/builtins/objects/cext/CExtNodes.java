@@ -1020,7 +1020,7 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static PythonAbstractNativeObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
@@ -1030,8 +1030,11 @@ public abstract class CExtNodes {
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode) {
+            if (lib.isNull(object)) {
+                return PNone.NO_VALUE;
+            }
             CApiContext cApiContext = context.getCApiContext();
-            if (!lib.isNull(object) && cApiContext != null) {
+            if (cApiContext != null) {
                 return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
             }
             return new PythonAbstractNativeObject(object);
@@ -1044,7 +1047,7 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
@@ -1054,8 +1057,11 @@ public abstract class CExtNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode) {
+            if (lib.isNull(object)) {
+                return PNone.NO_VALUE;
+            }
             CApiContext cApiContext = context.getCApiContext();
-            if (!lib.isNull(object) && cApiContext != null) {
+            if (cApiContext != null) {
                 return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
             }
             return new PythonAbstractNativeObject(object);
@@ -1070,8 +1076,7 @@ public abstract class CExtNodes {
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
-            // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they
-            // cannot
+            // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they cannot
             // be used in the user value space but might be passed-through
 
             // do not modify reference count at all; this is for non-'PyObject*' pointers
@@ -1270,6 +1275,7 @@ public abstract class CExtNodes {
                         @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+            // this is just a shortcut
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return PNone.NO_VALUE;
             }
@@ -1305,6 +1311,38 @@ public abstract class CExtNodes {
                 return PNone.NO_VALUE;
             }
             return toJavaNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), true));
+        }
+    }
+
+    /**
+     * Does the same conversion as the native function {@code native_pointer_to_java}. The node
+     * tries to avoid calling the native function for resolving native handles.
+     */
+    @GenerateUncached
+    public abstract static class VoidPtrToJavaNode extends ToJavaBaseNode {
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
+                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
+            // must try resolving it. At least we know that it's not a native type.
+            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), false));
+        }
+
+        @Specialization(guards = "isForeignObject(value)", limit = "1")
+        static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
+                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @CachedLibrary("value") InteropLibrary interopLibrary,
+                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+            // this branch is not a shortcut; it actually returns a different object
+            if (isNullProfile.profile(interopLibrary.isNull(value))) {
+                return new PythonAbstractNativeObject((TruffleObject) value);
+            }
+            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
         }
     }
 
@@ -3021,8 +3059,7 @@ public abstract class CExtNodes {
                     cApiContext.checkAccess(ptrObject, lib);
                 }
 
-                // directly reading the member is only possible if the pointer object is typed
-                // but
+                // directly reading the member is only possible if the pointer object is typed but
                 // if so, it is the faster way
                 if (lib.hasMembers(ptrObject)) {
                     return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberName()));
