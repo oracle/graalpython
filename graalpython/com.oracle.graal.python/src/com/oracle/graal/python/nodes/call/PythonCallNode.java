@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,10 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -41,11 +44,17 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -276,7 +285,34 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    @Fallback
+    protected static boolean isSysExcInfo(Class<? extends PythonBuiltinBaseNode> nodeClass) {
+        CompilerAsserts.neverPartOfCompilation();
+        return nodeClass == SysModuleBuiltins.ExcInfoNode.class;
+    }
+
+    protected boolean canDoFastSysExcInfo() {
+        if (getParent() instanceof GetItemNode) {
+            return ((GetItemNode) getParent()).getSlice() instanceof IntegerLiteralNode && ((IntegerLiteralNode) ((GetItemNode) getParent()).getSlice()).getValue() == 0;
+        }
+        return false;
+    }
+
+    @Specialization(limit = "1", guards = {"callable == callableCached", "isSysExcInfo(nodeClass)", "canDoFastSysExcInfo()"})
+    Object fastSysExcInfoCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable,
+                    @SuppressWarnings("unused") @Cached("callable") PBuiltinMethod callableCached,
+                    @SuppressWarnings("unused") @Cached("callableCached.getFunction()") PBuiltinFunction func,
+                    @SuppressWarnings("unused") @Cached("func.getNodeClass()") Class<? extends PythonBuiltinBaseNode> nodeClass,
+                    @Cached PythonObjectFactory factory,
+                    @Cached GetClassNode getClassNode,
+                    @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
+        return SysModuleBuiltins.ExcInfoNode.fast(frame, getClassNode, getCaughtExceptionNode, factory);
+    }
+
+    public static boolean isForeignInvoke(Object obj) {
+        return obj instanceof ForeignInvoke;
+    }
+
+    @Specialization(guards = "!isForeignInvoke(callable)")
     Object call(VirtualFrame frame, Object callable) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame);

@@ -101,6 +101,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
     }
 
+    public Class<? extends PythonBuiltinBaseNode> getNodeClass() {
+        return getBuiltinNodeFactory() != null ? getBuiltinNodeFactory().getNodeClass() : null;
+    }
+
     public Signature getSignature() {
         return signature;
     }
