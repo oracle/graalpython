@@ -47,7 +47,7 @@ from distutils.sysconfig import get_config_var, get_config_vars
 import _sysconfig
 
 __dir__ = __file__.rpartition("/")[0]
-cflags_warnings = ["-Wno-int-to-pointer-cast", "-Wno-int-conversion", "-Wno-incompatible-pointer-types-discards-qualifiers", "-Wno-pointer-type-mismatch"]
+cflags_warnings = ["-Wno-int-to-pointer-cast", "-Wno-int-conversion", "-Wno-incompatible-pointer-types-discards-qualifiers", "-Wno-pointer-type-mismatch", "-Wno-braced-scalar-init"]
 libpython_name = "libpython"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'

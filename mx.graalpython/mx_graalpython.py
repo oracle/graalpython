@@ -150,7 +150,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         dists += extra_dists
 
     if not os.environ.get("CI"):
-        graalpython_args.insert(0, "--llvm.enableLVI=true")
         # Try eagerly to include tools for convenience when running Python
         if not mx.suite("tools", fatalIfMissing=False):
             SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
@@ -269,7 +268,14 @@ def _fetch_tags_for_platform(parsed_args, platform):
         os.chdir(d)
         try:
             tarfile = 'unittest-tags-{}.tar.bz2'.format(platform)
-            mx.run(['curl', '-O', '{}/{}'.format(parsed_args.tags_directory_url.rstrip('/'), tarfile)])
+            url = '{}/{}'.format(parsed_args.tags_directory_url.rstrip('/'), tarfile)
+            print(mx.colorize('Download from %s' % (url), color='magenta', bright=True, stream=sys.stdout))
+            mx.run(['curl', '-O', url])
+            out = mx.OutputCapture()
+            mx.run(['file', tarfile], out=out)
+            if 'HTML' in out.data:
+                if not mx.ask_yes_no('Download failed! please download %s manually to %s and type (y) to continue.' % (url, d), default='y'):
+                    sys.exit(1)
             os.mkdir(platform)
             mx.run(['tar', 'xf', tarfile, '-C', platform])
             return _read_tags(platform)
@@ -948,6 +954,18 @@ def update_import_cmd(args):
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
 
+    # update vm-tests.json vm version
+    with open(join(overlaydir, "python", "graal-common.json"), 'r') as fp:
+        d = json.load(fp)
+        oraclejdk8_ver = d['jdks']['oraclejdk8']['version']
+
+    with open(join(overlaydir, "python", "vm-tests.json"), 'r') as fp:
+        d = json.load(fp)
+        d['downloads']['JAVA_HOME']['version'] = oraclejdk8_ver
+
+    with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
+        json.dump(d, fp, indent=2)
+        
     repos_updated = []
 
     # now allow dependent repos to hook into update
