@@ -304,6 +304,7 @@ def update_unittest_tags(args):
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
 
+
 class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
@@ -378,15 +379,15 @@ def set_env(**environ):
         os.environ.update(old_environ)
 
 
-def python_gvm(args=None):
+def python_gvm(args=None, **kwargs):
     "Build and run a GraalVM graalpython launcher"
-    return _python_graalvm_launcher(args or [])
+    return _python_graalvm_launcher(args or [], **kwargs)
 
 
-def python_svm(args=None):
+def python_svm(args=None, **kwargs):
     "Build and run the native graalpython image"
     with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher((args or []) + ["svm"])
+        return _python_graalvm_launcher((args or []) + ["svm"], **kwargs)
 
 
 def python_so(args):
@@ -395,8 +396,10 @@ def python_so(args):
         return _python_graalvm_launcher((args or []) + ["svm"])
 
 
-def _python_graalvm_launcher(args):
+def _python_graalvm_launcher(args, extra_dy=None):
     dy = "/vm,/tools"
+    if extra_dy:
+        dy += "," + extra_dy
     if "sandboxed" in args:
         args.remove("sandboxed")
         dy += ",/sulong-managed,/graalpython-enterprise"
