@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,3 +48,18 @@ def test_eq():
     assert range(10, 20, -30) == range(20, 30, -40)
 
     assert range(True) == range(1)
+
+def test_count():
+    assert range(10).count(2) == 1
+    assert range(3).count(-1) == 0
+    assert range(3).count(0) == 1
+    assert range(3).count(1) == 1
+    assert range(3).count(2) == 1
+    assert range(3).count(3) == 0
+    assert type(range(3).count(-1)) == int
+    assert type(range(3).count(1)) == int
+    # assert range(10**20).count(1) == 1
+    # assert range(10**20).count(10**20)
+    # assert range(1, 2**100, 2).count(2**87)
+    # assert range(1, 2**100, 2).count(2**87+1)
+    assert range(10).count(2**80 // 2**79) == 1

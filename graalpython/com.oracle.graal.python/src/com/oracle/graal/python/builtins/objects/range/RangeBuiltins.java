@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -304,6 +305,39 @@ public class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        int doInt(PRange self, long elem) {
+            assert self.getStep() != 0;
+            if (elem >= self.getStart() && elem < self.getStop()) {
+                long normalized = elem - self.getStart();
+                if (normalized % self.getStep() == 0) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        int doInt(PRange self, PInt elem) {
+            assert self.getStep() != 0;
+            BigInteger value = elem.getValue();
+            BigInteger start = BigInteger.valueOf(self.getStart());
+            BigInteger stop = BigInteger.valueOf(self.getStop());
+            BigInteger step = BigInteger.valueOf(self.getStep());
+            if (value.compareTo(start) >= 0 && value.compareTo(stop) < 0) {
+                BigInteger normalized = value.subtract(start);
+                if (normalized.remainder(step).equals(BigInteger.ZERO)) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        static boolean isFallback(Object value) {
+            return !(value instanceof Integer || value instanceof Long || value instanceof PInt);
+        }
+
+        @Specialization(guards = "isFallback(elem)")
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
