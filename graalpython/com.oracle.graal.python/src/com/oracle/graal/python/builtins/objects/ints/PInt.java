@@ -288,7 +288,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
-    private static long longValueExact(BigInteger value) {
+    static long longValueExact(BigInteger value) {
         return value.longValueExact();
     }
 
