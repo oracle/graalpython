@@ -47,11 +47,13 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private ExceptionStateNodes.SaveExceptionStateNode saveExceptionStateNode;
     @Child private ExceptionStateNodes.RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
+    private final ConditionProfile contextChainProfile = ConditionProfile.createCountingProfile();
 
     protected void tryChainExceptionFromHandler(PException handlerException, TruffleException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
@@ -78,10 +80,10 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         }
     }
 
-    public static void chainExceptions(PBaseException currentException, PBaseException context) {
+    public void chainExceptions(PBaseException currentException, PBaseException context) {
         if (currentException.getContext() == null && currentException != context) {
             PBaseException e = context;
-            while (e != null) {
+            while (contextChainProfile.profile(e != null)) {
                 if (e.getContext() == currentException) {
                     e.setContext(null);
                 }

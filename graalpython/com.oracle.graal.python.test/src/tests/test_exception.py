@@ -525,6 +525,26 @@ class ExceptionTests(unittest.TestCase):
             except Exception as exc:
                 e = exc
 
+    def test_implicit_chaining_nontrivial_loop(self):
+        try:
+            try:
+                raise TypeError
+            except Exception as outer:
+                try:
+                    try:
+                        raise OverflowError
+                    except Exception:
+                        raise NameError
+                except Exception:
+                    raise outer
+        except Exception as e:
+            exc = e
+        self.assertEqual(type(exc), TypeError)
+        self.assertEqual(type(exc.__context__), NameError)
+        self.assertEqual(type(exc.__context__.__context__), OverflowError)
+        # This is where it would loop back to TypeError, if not for the loop breaker
+        self.assertIsNone(exc.__context__.__context__.__context__)
+
     def test_explicit_chaining(self):
         try:
             try:

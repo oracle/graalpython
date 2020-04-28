@@ -46,6 +46,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Use this node to get the traceback object of an exception object. The traceback may need to be
@@ -57,8 +58,9 @@ public abstract class GetExceptionTracebackNode extends Node {
 
     @Specialization
     static PTraceback doExisting(PBaseException e,
-                    @Cached GetTracebackNode getTracebackNode) {
-        if (e.getTraceback() == null) {
+                    @Cached GetTracebackNode getTracebackNode,
+                    @Cached("createBinaryProfile()") ConditionProfile nullProfile) {
+        if (nullProfile.profile(e.getTraceback() == null)) {
             return null;
         }
         return getTracebackNode.execute(e.getTraceback());

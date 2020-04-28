@@ -74,7 +74,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 // any thrown Python exception is visible in the finally block
                 exceptionProfile.enter();
                 activeException = e;
-                e.reify(frame);
+                e.setCatchingFrameReference(frame);
                 e.markFrameEscaped();
                 tryChainPreexistingException(frame, e);
                 gen.setActiveException(frame, activeExceptionIndex, e);

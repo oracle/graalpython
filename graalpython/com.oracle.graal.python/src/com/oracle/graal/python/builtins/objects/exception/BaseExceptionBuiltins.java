@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -213,9 +214,14 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBoolean(value)")
-        public Object setSuppressContext(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
-                        @Cached("create()") PRaiseNode raise) {
-            throw raise.raise(TypeError, "attribute value type must be bool");
+        public Object setSuppressContext(PBaseException self, Object value,
+                                         @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
+            try {
+                self.setSuppressContext(castToJavaBooleanNode.execute(value));
+            } catch (CastToJavaBooleanNode.CannotCastException e) {
+                raise(TypeError, "attribute value type must be bool");
+            }
+            return PNone.NONE;
         }
     }
 

@@ -53,7 +53,7 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
             } catch (PException handledException) {
                 exceptionProfile.enter();
                 // any thrown Python exception is visible in the finally block
-                handledException.reify(frame);
+                handledException.setCatchingFrameReference(frame);
                 tryChainPreexistingException(frame, handledException);
                 ExceptionState exceptionState = saveExceptionState(frame);
                 SetCaughtExceptionNode.execute(frame, handledException);

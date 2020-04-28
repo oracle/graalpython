@@ -213,8 +213,11 @@ public final class PException extends RuntimeException implements TruffleExcepti
         return tracebackCutoffTarget != null && element.getTarget() == tracebackCutoffTarget;
     }
 
-    public void reify(PFrame.Reference frameInfo) {
+    public void setCatchingFrameReference(PFrame.Reference frameInfo) {
         this.frameInfo = frameInfo;
+        if (pythonException.hasTraceback()) {
+            ensureTraceback();
+        }
     }
 
     /**
@@ -224,15 +227,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
      * 
      * @param frame The current frame of the exception handler.
      */
-    public void reify(VirtualFrame frame) {
-        reify(PArguments.getCurrentFrameInfo(frame));
-        if (pythonException.hasTraceback()) {
-            ensureTraceback();
-        }
+    public void setCatchingFrameReference(VirtualFrame frame) {
+        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame));
     }
 
     /**
-     * Shortcut for {@link #reify(PFrame.Reference) reify} and @{link {@link #getReifiedException()}
+     * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference) reify} and @{link {@link #getReifiedException()}
      * getReifiedException}
      */
     public PBaseException reifyAndGetPythonException(VirtualFrame frame) {
@@ -246,7 +246,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     /**
      * Ensure that the contained exception object has a traceback with the frame supplied by
-     * {@link #reify(PFrame.Reference) reify} and return it. This method should be prefered to
+     * {@link #setCatchingFrameReference(PFrame.Reference) reify} and return it. This method should be prefered to
      * {@link PException#getExceptionObject() getExceptionObject}, which doesn't ensure traceback
      * correctness.
      */

@@ -171,7 +171,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                     ExceptionState exceptionState = saveExceptionState(frame);
                     if (exception instanceof PException) {
                         PException pException = (PException) exception;
-                        pException.reify(frame);
+                        pException.setCatchingFrameReference(frame);
                         SetCaughtExceptionNode.execute(frame, pException);
                     }
                     try {

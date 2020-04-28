@@ -847,12 +847,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (indicatesError) {
                 // consume exception
                 context.setCurrentException(null);
-                if (!errOccurred) {
-                    if (isPrimitiveResult) {
-                        throw raise.raise(PythonErrorType.SystemError, "%s returned error value without setting an error", name);
-                    } else {
-                        throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
-                    }
+                if (!errOccurred && !isPrimitiveResult) {
+                    throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
                     throw currentException.getExceptionForReraise();
                 }

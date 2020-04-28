@@ -153,8 +153,7 @@ public class PThreadState extends PythonNativeWrapper {
             PException currentException = context.getCurrentException();
             Object result = null;
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.getReifiedException();
-                result = getClassNode.execute(exceptionObject);
+                result = getClassNode.execute(currentException.getExceptionObject());
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -192,8 +191,7 @@ public class PThreadState extends PythonNativeWrapper {
             PException currentException = context.getCaughtException();
             Object result = null;
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.getReifiedException();
-                result = getClassNode.execute(exceptionObject);
+                result = getClassNode.execute(currentException.getExceptionObject());
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -364,6 +362,7 @@ public class PThreadState extends PythonNativeWrapper {
                 e = new PException(null, null);
             }
             e.setTraceback(new LazyTraceback(value));
+            context.setCurrentException(e);
             return value;
         }
 
@@ -390,6 +389,7 @@ public class PThreadState extends PythonNativeWrapper {
                 e = new PException(null, null);
             }
             e.setTraceback(new LazyTraceback(value));
+            context.setCaughtException(e);
             return value;
         }
 
