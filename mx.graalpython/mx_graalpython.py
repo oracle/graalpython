@@ -286,6 +286,7 @@ def _fetch_tags_for_platform(parsed_args, platform):
 def update_unittest_tags(args):
     parser = ArgumentParser('mx python-update-unittest-tags')
     parser.add_argument('tags_directory_url')
+    parser.add_argument('--untag', action='store_true', help="Allow untagging existing tests")
     parsed_args = parser.parse_args(args)
 
     current_tags = _read_tags()
@@ -293,6 +294,8 @@ def update_unittest_tags(args):
     darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
 
     result_tags = linux_tags & darwin_tags
+    if not parsed_args.untag:
+        result_tags |= current_tags
     _write_tags(result_tags)
 
     diff = linux_tags - darwin_tags
