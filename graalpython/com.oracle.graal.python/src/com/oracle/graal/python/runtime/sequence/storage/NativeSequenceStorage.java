@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 
@@ -107,8 +109,10 @@ public class NativeSequenceStorage extends SequenceStorage {
      */
     @Override
     public void ensureCapacity(int newCapacity) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        if (newCapacity > capacity) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PythonLanguage.getCore().raise(PythonErrorType.BufferError, "cannot resize buffer");
+        }
     }
 
     @Override
