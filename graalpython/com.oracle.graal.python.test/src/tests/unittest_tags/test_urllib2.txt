@@ -12,6 +12,10 @@
 *HandlerTests.test_full_url_setter
 *HandlerTests.test_http
 *HandlerTests.test_http_body_empty_seq
+*HandlerTests.test_http_body_file
+*HandlerTests.test_http_body_fileobj
+*HandlerTests.test_http_body_iterable
+*HandlerTests.test_http_body_pipe
 *HandlerTests.test_http_closed
 *HandlerTests.test_http_doubleslash
 *HandlerTests.test_http_handler_debuglevel
@@ -21,6 +25,7 @@
 *HandlerTests.test_proxy
 *HandlerTests.test_proxy_basic_auth
 *HandlerTests.test_proxy_https
+*HandlerTests.test_proxy_https_proxy_authorization
 *HandlerTests.test_proxy_no_proxy
 *HandlerTests.test_proxy_no_proxy_all
 *HandlerTests.test_redirect
@@ -42,6 +47,8 @@
 *OpenerDirectorTests.test_raise
 *RequestHdrsTests.test_password_manager
 *RequestHdrsTests.test_password_manager_default_port
+*RequestHdrsTests.test_request_headers_dict
+*RequestHdrsTests.test_request_headers_methods
 *RequestTests.test_data
 *RequestTests.test_deleting_data_should_remove_content_length
 *RequestTests.test_get_full_url

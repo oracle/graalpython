@@ -12,8 +12,14 @@
 *NormalizeTest.test_latin_modifier
 *NormalizeTest.test_locale_alias
 *NormalizeTest.test_valencia_modifier
+*TestCDelocalizeTest.test_atof
+*TestCDelocalizeTest.test_atoi
+*TestCDelocalizeTest.test_delocalize
 *TestCNumberFormatting.test_grouping
 *TestCNumberFormatting.test_grouping_and_padding
+*TestEnUSDelocalize.test_atof
+*TestEnUSDelocalize.test_atoi
+*TestEnUSDelocalize.test_delocalize
 *TestEnUSNumberFormatting.test_currency
 *TestFormatPatternArg.test_onlyOnePattern
 *TestFrFRNumberFormatting.test_currency
@@ -28,3 +34,8 @@
 *TestMiscellaneous.test_getpreferredencoding
 *TestMiscellaneous.test_getsetlocale_issue1813
 *TestMiscellaneous.test_invalid_iterable_in_localetuple
+*TestMiscellaneous.test_setlocale_category
+*TestMiscellaneous.test_strcoll_3303
+*TestfrFRDelocalizeTest.test_atof
+*TestfrFRDelocalizeTest.test_atoi
+*TestfrFRDelocalizeTest.test_delocalize
