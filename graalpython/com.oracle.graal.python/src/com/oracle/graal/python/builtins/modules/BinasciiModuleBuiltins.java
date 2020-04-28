@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -81,6 +83,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
@@ -152,12 +156,55 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             byte[] output = new byte[length / 2];
             for (int i = 0; i < length / 2; i++) {
                 try {
-                    output[i] = Byte.valueOf(data.substring(i, i + 2), 16);
+                    output[i] = (byte) (digitValue(self, data.charAt(i * 2)) * 16 + digitValue(self, data.charAt(i * 2 + 1)));
                 } catch (NumberFormatException e) {
                     throw nonHexError(self);
                 }
             }
             return factory().createBytes(output);
+        }
+
+        @Specialization
+        PBytes a2b(PythonModule self, PArray buffer,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
+
+            return a2b(self, toByteArray.execute(buffer.getSequenceStorage()));
+        }
+
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "2")
+        PBytes a2b(PythonModule self, Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+
+            try {
+                return a2b(self, bufferLib.getBufferBytes(buffer));
+            } catch (UnsupportedMessageException e) {
+                throw raise(SystemError, "bad argument to internal function");
+            }
+        }
+
+        @TruffleBoundary
+        private PBytes a2b(PythonModule self, byte[] bytes) {
+            int length = bytes.length;
+            if (length % 2 != 0) {
+                throw oddLengthError(self);
+            }
+            byte[] output = new byte[length / 2];
+            for (int i = 0; i < length / 2; i++) {
+                output[i] = (byte) (digitValue(self, (char) bytes[i * 2]) * 16 + digitValue(self, (char) bytes[i * 2 + 1]));
+            }
+            return factory().createBytes(output);
+        }
+
+        private int digitValue(PythonModule self, char b) {
+            if (b >= '0' && b <= '9') {
+                return b - '0';
+            } else if (b >= 'a' && b <= 'f') {
+                return b - 'a' + 10;
+            } else if (b >= 'A' && b <= 'F') {
+                return b - 'A' + 10;
+            } else {
+                throw nonHexError(self);
+            }
         }
 
         private PException oddLengthError(PythonModule self) {
@@ -300,39 +347,35 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "b2a_hex", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class B2aHexNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
-        private static final StringBuilder newStringBuilder() {
-            return new StringBuilder();
-        }
 
-        @TruffleBoundary
-        private static final void sbAppend(StringBuilder sb, String str) {
-            sb.append(str);
-        }
+        @CompilationFinal(dimensions = 1) private static final byte[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-        @TruffleBoundary
-        private static final String sbToString(StringBuilder sb) {
-            return sb.toString();
-        }
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "2")
+        PBytes b2a(Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
 
-        @TruffleBoundary
-        private static final String toHexString(byte b) {
-            return Integer.toHexString(b);
+            try {
+                return b2a(bufferLib.getBufferBytes(buffer));
+            } catch (UnsupportedMessageException e) {
+                throw raise(SystemError, "bad argument to internal function");
+            }
         }
 
         @Specialization
-        String b2a(PBytes data,
+        PBytes b2a(PArray data,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            byte[] bytes = toByteArray.execute(data.getSequenceStorage());
-            StringBuilder sb = newStringBuilder();
+            return b2a(toByteArray.execute(data.getSequenceStorage()));
+        }
+
+        @TruffleBoundary
+        private PBytes b2a(byte[] bytes) {
+            byte[] output = new byte[bytes.length * 2];
             for (int i = 0; i < bytes.length; i++) {
-                String hexString = toHexString(bytes[i]);
-                if (hexString.length() < 2) {
-                    sbAppend(sb, "0");
-                }
-                sbAppend(sb, hexString);
+                int v = bytes[i] & 0xff;
+                output[i * 2] = HEX_DIGITS[v >> 4];
+                output[i * 2 + 1] = HEX_DIGITS[v & 0xf];
             }
-            return sbToString(sb);
+            return factory().createBytes(output);
         }
     }
 
