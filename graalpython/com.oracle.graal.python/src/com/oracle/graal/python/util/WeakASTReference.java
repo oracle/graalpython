@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,51 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.method;
+package com.oracle.graal.python.util;
 
-import com.oracle.graal.python.builtins.BoundBuiltinCallable;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import java.lang.ref.WeakReference;
 
 /**
- * Storage for both classmethods and staticmethods
+ * A class to hold on weakly to objects cached in the AST. Be careful when using it! In general, you
+ * should only hold on to user objects in single-context mode, so you probably want to check
+ * {@link com.oracle.graal.python.PythonLanguage#singleContextAssumption
+ * PythonLanguage#singleContextAssumption} in your AST.
+ *
+ * Furthermore, you will want to consider races. Make sure you don't guard on references being the
+ * same as object fields that could change in between the guard and the specialization execution,
+ * for example. I.e., if you're weakly holding on to an object argument <emph>and</emph> a field in
+ * that object, and that field may change, you cannot just guard on the field being the same as the
+ * cached value, for example, because only the argument object is being held alive.
  */
-public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
-    private Object callable;
-
-    public PDecoratedMethod(LazyPythonClass cls) {
-        super(cls);
+public final class WeakASTReference extends WeakReference<Object> {
+    public WeakASTReference(Object referent) {
+        super(referent);
     }
 
-    public PDecoratedMethod(LazyPythonClass cls, Object callable) {
-        this(cls);
-        this.callable = callable;
+    public boolean is(Object obj) {
+        return get() != null && get() == obj;
     }
 
-    public Object getCallable() {
-        return callable;
+    public boolean isNot(Object obj) {
+        return get() != null && get() != obj;
     }
 
-    public void setCallable(Object callable) {
-        assert this.callable == null;
-        this.callable = callable;
-    }
-
-    public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
-        return this;
-    }
-
-    public String getName() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
-    }
-
-    public Signature getSignature() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
+    public boolean notNull() {
+        return get() != null;
     }
 }
