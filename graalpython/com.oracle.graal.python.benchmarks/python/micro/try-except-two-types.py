@@ -44,7 +44,9 @@ def count(num):
         try:
             if i % 2:
                 raise ValueError
-        except Exception as e:
+            if i % 3:
+                raise ArithmeticError("1")
+        except Exception:
             cnt += 1
 
     return cnt

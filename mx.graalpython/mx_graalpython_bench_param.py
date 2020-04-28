@@ -90,9 +90,11 @@ MICRO_BENCHMARKS = {
     'mmap-file': ITER_10 + ['1000'],
     'generate-functions-sized': ITER_15 + ['500_000_000'],
     'try-except-sized': ITER_10 + ['100_000_000'],
-    'try-except-simple': ITER_10 + ['100_000_000'],
+    'try-except-simple': ITER_10 + ['500_000_000'],
     'try-except-store-sized': ITER_10 + ['100_000_000'],
-    'try-except-store-simple': ITER_10 + ['100_000_000'],
+    'try-except-store-simple': ITER_10 + ['500_000_000'],
+    'try-except-store-two-types': ITER_10 + ['100_000_000'],
+    'try-except-two-types': ITER_10 + ['100_000_000'],
     'tuple-indexing-from-constructor': ITER_10 + ['10000000'],
     'tuple-indexing-from-literal': ITER_10 + ['10000000'],
 }
