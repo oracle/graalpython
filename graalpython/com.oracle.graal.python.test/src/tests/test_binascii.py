@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -59,6 +59,16 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(type(binascii.b2a_base64(b)), bytes)
         if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
             self.assertEqual(type(binascii.b2a_base64(b, newline=False)), bytes)
+            
+    def test_a2b_hex(self):
+        b = self.type2test(b'68656c6c6f')
+        self.assertEqual(binascii.unhexlify(b), b'hello')
+        b = self.type2test(b'68656C6c6F')
+        self.assertEqual(binascii.unhexlify(b), b'hello')
+
+    def test_b2a_hex(self):
+        b = self.type2test(b'helloo')
+        self.assertEqual(binascii.hexlify(b), b'68656c6c6f6f')
 
 class ArrayBinASCIITest(BinASCIITest):
     def type2test(self, s):
