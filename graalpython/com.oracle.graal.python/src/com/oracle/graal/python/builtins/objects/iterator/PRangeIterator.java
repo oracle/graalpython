@@ -58,7 +58,7 @@ public final class PRangeIterator extends PIntegerIterator {
     public int getLength(ConditionProfile stepProfile, ConditionProfile positveRangeProfile) {
         if (stepProfile.profile(step > 0)) {
             if (positveRangeProfile.profile(index >= 0 && index < stop)) {
-                return (stop - index) / step;
+                return (stop - index - 1) / step + 1;
             }
             return PRange.getLenOfRange(index, stop, step);
         } else {
