@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
@@ -81,11 +82,11 @@ public final class TracebackBuiltins extends PythonBuiltins {
     abstract static class MaterializeTruffleStacktraceNode extends Node {
         public abstract void execute(PTraceback tb);
 
-        @Specialization(guards = "isMaterialized(tb)")
+        @Specialization(guards = "tb.isMaterialized()")
         void doExisting(@SuppressWarnings("unused") PTraceback tb) {
         }
 
-        @Specialization(guards = "!isMaterialized(tb)")
+        @Specialization(guards = "!tb.isMaterialized()")
         void doMaterialize(PTraceback tb,
                         @Cached MaterializeFrameNode materializeFrameNode,
                         @Cached GetTracebackNode getTracebackNode,
@@ -111,15 +112,16 @@ public final class TracebackBuiltins extends PythonBuiltins {
              */
             int lineno = -2;
             PTraceback next = null;
-            if (tb.getNextChain() != null) {
-                next = getTracebackNode.execute(tb.getNextChain());
+            if (tb.getLazyTraceback().getNextChain() != null) {
+                next = getTracebackNode.execute(tb.getLazyTraceback().getNextChain());
             }
             TruffleStackTraceElement nextElement = null;
             // The logic of skipping and cutting off frames here and in GetTracebackNode must be the
             // same
-            boolean skipFirst = tb.getException().shouldHideLocation();
-            for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
-                if (tb.getException().shouldCutOffTraceback(element)) {
+            PException pException = tb.getLazyTraceback().getException();
+            boolean skipFirst = pException.shouldHideLocation();
+            for (TruffleStackTraceElement element : pException.getTruffleStackTrace()) {
+                if (pException.shouldCutOffTraceback(element)) {
                     if (element.getLocation() != null) {
                         SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
                         if (sourceSection != null) {
@@ -160,16 +162,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 tb.setLineno(pFrame.getLine());
             }
             tb.setNext(next);
-            tb.clearException(); // Marks the Truffle stacktrace part as materialized
+            tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
         }
 
         private PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
             // create the PFrame and refresh frame values
             return materializeFrameNode.execute(null, element.getLocation(), false, true, element.getFrame());
-        }
-
-        protected static boolean isMaterialized(PTraceback tb) {
-            return tb.getException() == null;
         }
     }
 

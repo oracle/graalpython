@@ -43,17 +43,15 @@ package com.oracle.graal.python.builtins.objects.traceback;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class PTraceback extends PythonBuiltinObject {
 
     private PFrame frame;
     private PFrame.Reference frameInfo;
-    private PException exception;
     private int lineno = -2;
     private PTraceback next;
-    private LazyTraceback nextChain;
+    private LazyTraceback lazyTraceback;
 
     public PTraceback(LazyPythonClass cls, PFrame frame, int lineno, PTraceback next) {
         super(cls);
@@ -62,12 +60,11 @@ public final class PTraceback extends PythonBuiltinObject {
         this.next = next;
     }
 
-    public PTraceback(LazyPythonClass cls, LazyTraceback tb) {
+    public PTraceback(LazyPythonClass cls, LazyTraceback lazyTraceback) {
         super(cls);
-        this.frame = tb.getFrame();
-        this.frameInfo = tb.getFrameInfo();
-        this.exception = tb.getException();
-        this.nextChain = tb.getNextChain();
+        this.lazyTraceback = lazyTraceback;
+        this.frameInfo = lazyTraceback.getFrameInfo();
+        this.frame = lazyTraceback.getFrame();
     }
 
     public PFrame getFrame() {
@@ -86,12 +83,8 @@ public final class PTraceback extends PythonBuiltinObject {
         return lineno;
     }
 
-    public PException getException() {
-        return exception;
-    }
-
-    public LazyTraceback getNextChain() {
-        return nextChain;
+    public LazyTraceback getLazyTraceback() {
+        return lazyTraceback;
     }
 
     public PTraceback getNext() {
@@ -106,8 +99,12 @@ public final class PTraceback extends PythonBuiltinObject {
         this.lineno = lineno;
     }
 
-    public void clearException() {
-        this.exception = null;
+    public void markMaterialized() {
+        this.lazyTraceback = null;
+    }
+
+    public boolean isMaterialized() {
+        return lazyTraceback == null;
     }
 
     public static final String TB_FRAME = "tb_frame";
