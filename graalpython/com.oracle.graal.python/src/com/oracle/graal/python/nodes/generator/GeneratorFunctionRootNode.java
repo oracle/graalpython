@@ -57,6 +57,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.SourceSection;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
@@ -129,4 +130,10 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
         RootNode rootNode = callTarget.getRootNode();
         return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
     }
+
+    @Override
+    public SourceSection getSourceSection() {
+        return getFunctionRootNode().getSourceSection();
+    }
+    
 }

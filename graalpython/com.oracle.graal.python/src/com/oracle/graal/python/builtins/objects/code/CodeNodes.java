@@ -100,7 +100,7 @@ public abstract class CodeNodes {
 
                 RootCallTarget ct = (RootCallTarget) createCode.get();
                 PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                return factory.createCode(ct, codedata, firstlineno, lnotab);
+                return factory.createCode(ct, codedata, flags, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
@@ -124,7 +124,7 @@ public abstract class CodeNodes {
                     ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filenamePath, createCode);
                 }
                 PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                return factory.createCode(ct, codedata, firstlineno, lnotab);
+                return factory.createCode(ct, codedata, flags, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

@@ -128,9 +128,10 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget, byte[] codestring, int firstlineno, byte[] lnotab) {
+    public PCode(LazyPythonClass cls, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
         this(cls, callTarget);
         this.codestring = codestring;
+        this.flags = flags;
         this.firstlineno = firstlineno;
         this.lnotab = lnotab;
     }
