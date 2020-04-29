@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -358,11 +357,7 @@ public class PThreadState extends PythonNativeWrapper {
         PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCurrentException();
-            if (e == null) {
-                e = new PException(null, null);
-            }
-            e.setTraceback(new LazyTraceback(value));
-            context.setCurrentException(e);
+            context.setCurrentException(PException.fromExceptionInfo(e.getExceptionObject(), value));
             return value;
         }
 
@@ -385,11 +380,7 @@ public class PThreadState extends PythonNativeWrapper {
         PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCaughtException();
-            if (e == null) {
-                e = new PException(null, null);
-            }
-            e.setTraceback(new LazyTraceback(value));
-            context.setCaughtException(e);
+            context.setCaughtException(PException.fromExceptionInfo(e.getExceptionObject(), value));
             return value;
         }
 
@@ -408,21 +399,11 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         private static void setCurrentException(PythonContext context, PBaseException exceptionObject) {
-            PException newException = new PException(exceptionObject, null);
-            PException currentException = context.getCurrentException();
-            if (currentException != null) {
-                newException.setTraceback(currentException.getTraceback());
-            }
-            context.setCurrentException(newException);
+            context.setCurrentException(PException.fromExceptionInfo(exceptionObject, context.getCurrentException().getTraceback()));
         }
 
         private static void setCaughtException(PythonContext context, PBaseException exceptionObject) {
-            PException newException = new PException(exceptionObject, null);
-            PException currentException = context.getCaughtException();
-            if (currentException != null) {
-                newException.setTraceback(currentException.getTraceback());
-            }
-            context.setCaughtException(newException);
+            context.setCaughtException(PException.fromExceptionInfo(exceptionObject, context.getCaughtException().getTraceback()));
         }
 
         @Specialization(guards = {"!isCurrentExceptionMember(key)", "!isCaughtExceptionMember(key)"})

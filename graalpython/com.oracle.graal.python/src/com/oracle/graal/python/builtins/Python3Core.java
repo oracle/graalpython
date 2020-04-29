@@ -37,8 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
-import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
@@ -176,6 +177,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -190,8 +192,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -657,7 +657,7 @@ public final class Python3Core implements PythonCore {
             errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
         LOGGER.log(Level.SEVERE, errorMessage);
-        PException e = new PException(null, null);
+        PException e = new PException(null, (Node) null);
         e.setMessage(errorMessage);
         throw e;
     }

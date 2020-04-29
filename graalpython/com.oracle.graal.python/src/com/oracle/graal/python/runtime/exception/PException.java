@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -66,7 +67,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
     private static final long serialVersionUID = -6437116280384996361L;
 
     /** A marker object indicating that there is for sure no exception. */
-    public static final PException NO_EXCEPTION = new PException(null, null);
+    public static final PException NO_EXCEPTION = new PException(null, (Node) null);
 
     private Node location;
     private String message = null;
@@ -84,11 +85,32 @@ public final class PException extends RuntimeException implements TruffleExcepti
         this.location = node;
     }
 
+    public PException(PBaseException actual, LazyTraceback traceback) {
+        this.pythonException = actual;
+        this.traceback = traceback;
+        reified = true;
+    }
+
     public static PException fromObject(PBaseException actual, Node node) {
         // If this is a reraise, make sure the previous traceback gets reified
         actual.ensureReified();
         PException pException = new PException(actual, node);
         actual.setException(pException);
+        return pException;
+    }
+
+    public static PException fromExceptionInfo(PBaseException pythonException, PTraceback traceback) {
+        LazyTraceback lazyTraceback = null;
+        if (traceback != null) {
+            lazyTraceback = new LazyTraceback(traceback);
+        }
+        return fromExceptionInfo(pythonException, lazyTraceback);
+    }
+
+    public static PException fromExceptionInfo(PBaseException pythonException, LazyTraceback traceback) {
+        pythonException.ensureReified();
+        PException pException = new PException(pythonException, traceback);
+        pythonException.setException(pException);
         return pException;
     }
 

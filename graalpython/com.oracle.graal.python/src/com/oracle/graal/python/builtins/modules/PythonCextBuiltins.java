@@ -541,15 +541,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            getContext().setCurrentException(new PException(val, null));
+            getContext().setCurrentException(PException.fromExceptionInfo(val, (LazyTraceback) null));
             return PNone.NONE;
         }
 
         @Specialization
         Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
-            PException e = new PException(val, null);
-            e.setTraceback(new LazyTraceback(tb));
-            getContext().setCurrentException(e);
+            getContext().setCurrentException(PException.fromExceptionInfo(val, tb));
             return PNone.NONE;
         }
     }
@@ -610,9 +608,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
-            PException e = new PException(val, null);
-            e.setTraceback(new LazyTraceback(tb));
-            getContext().setCaughtException(e);
+            getContext().setCaughtException(PException.fromExceptionInfo(val, tb));
             return PNone.NONE;
         }
 
