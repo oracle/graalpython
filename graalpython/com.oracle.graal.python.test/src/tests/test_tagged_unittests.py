@@ -209,13 +209,19 @@ if __name__ == "__main__":
                     f.write("\n")
             if not passing_only_patterns:
                 os.unlink(tagfile)
+                print("No successful tests remaining")
+                break
 
             if p.returncode == 0:
+                print(f"Suite succeeded with {len(passing_only_patterns)} tests")
                 break
+            else:
+                print(f"Suite failed, retrying with {len(passing_only_patterns)} tests")
 
         else:
             # we tried the last time and failed, so our tags don't work for
             # some reason
+            print("The suite failed even in the last attempt, untagging completely")
             try:
                 os.unlink(tagfile)
             except Exception:
