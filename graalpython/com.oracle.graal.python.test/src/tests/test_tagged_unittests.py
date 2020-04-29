@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
     retag = False
-    maxrepeats = 2
+    maxrepeats = 4
     for arg in sys.argv[1:]:
         if arg == "--retag":
             retag = True
