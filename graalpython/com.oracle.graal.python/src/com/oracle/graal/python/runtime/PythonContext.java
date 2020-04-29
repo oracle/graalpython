@@ -92,7 +92,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -758,8 +758,8 @@ public final class PythonContext {
     /**
      * Trigger any pending asynchronous actions
      */
-    public void triggerAsyncActions(VirtualFrame frame, Node location) {
-        handler.triggerAsyncActions(frame, location);
+    public void triggerAsyncActions(VirtualFrame frame, BranchProfile asyncProfile) {
+        handler.triggerAsyncActions(frame, asyncProfile);
     }
 
     public AsyncHandler getAsyncHandler() {
