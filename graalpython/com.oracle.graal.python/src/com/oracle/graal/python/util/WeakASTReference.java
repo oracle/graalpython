@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,61 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.util;
+
+import java.lang.ref.WeakReference;
+
 /**
+ * A class to hold on weakly to objects cached in the AST. Be careful when using it! In general, you
+ * should only hold on to user objects in single-context mode, so you probably want to check
+ * {@link com.oracle.graal.python.PythonLanguage#singleContextAssumption
+ * PythonLanguage#singleContextAssumption} in your AST.
  *
+ * Furthermore, you will want to consider races. Make sure you don't guard on references being the
+ * same as object fields that could change in between the guard and the specialization execution,
+ * for example. I.e., if you're weakly holding on to an object argument <emph>and</emph> a field in
+ * that object, and that field may change, you cannot just guard on the field being the same as the
+ * cached value, for example, because only the argument object is being held alive.
  */
-package com.oracle.graal.python.nodes.interop;
-
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
-
-@ImportStatic(PGuards.class)
-@GenerateUncached
-public abstract class PForeignToPTypeNode extends Node {
-
-    public abstract Object executeConvert(Object value);
-
-    protected static boolean isOtherClass(Class<?> clazz) {
-        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class || clazz == Character.class);
+public final class WeakASTReference extends WeakReference<Object> {
+    public WeakASTReference(Object referent) {
+        super(referent);
     }
 
-    @Specialization(guards = {"value.getClass() == cachedClass", "isOtherClass(cachedClass)"}, limit = "1")
-    protected static Object fromObjectCached(Object value,
-                    @Cached("value.getClass()") @SuppressWarnings("unused") Class<?> cachedClass) {
-        return value;
+    public boolean is(Object obj) {
+        return get() != null && get() == obj;
     }
 
-    @Specialization
-    protected static int fromByte(byte value) {
-        return value;
+    public boolean isNot(Object obj) {
+        return get() != null && get() != obj;
     }
 
-    @Specialization
-    protected static int fromShort(short value) {
-        return value;
-    }
-
-    @Specialization
-    protected static double fromFloat(float value) {
-        return value;
-    }
-
-    @Specialization
-    protected static String fromChar(char value) {
-        return String.valueOf(value);
-    }
-
-    @Fallback
-    protected static Object fromObjectGeneric(Object value) {
-        return value;
-    }
-
-    public static PForeignToPTypeNode create() {
-        return PForeignToPTypeNodeGen.create();
+    public boolean notNull() {
+        return get() != null;
     }
 }

@@ -173,6 +173,15 @@ class ExceptionTests(unittest.TestCase):
         else:
             assert False, "named exception should be unbound after except block"
 
+
+    def test_sys_exc_info(self):
+        self.assertEqual(sys.exc_info()[0], None)
+        try:
+            raise ValueError
+        except:
+            self.assertEqual(sys.exc_info()[0], ValueError)
+
+
     def test_raise_non_exception(self):
         try:
             raise object()

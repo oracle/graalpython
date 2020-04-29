@@ -53,6 +53,10 @@ public final class PInt extends PythonBuiltinObject {
         this.value = value;
     }
 
+    public static long abs(long a) {
+        return (a < 0) ? -a : a;
+    }
+
     public BigInteger getValue() {
         return value;
     }
@@ -294,6 +298,15 @@ public final class PInt extends PythonBuiltinObject {
 
     public PInt min(PInt val) {
         return (compareTo(val) < 0 ? this : val);
+    }
+
+    public int bitLength() {
+        return bitLength(value);
+    }
+
+    @TruffleBoundary
+    public static int bitLength(BigInteger value) {
+        return value.bitLength();
     }
 
     public int bitCount() {

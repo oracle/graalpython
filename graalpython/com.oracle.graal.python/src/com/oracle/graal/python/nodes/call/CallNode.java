@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -147,21 +147,13 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, (PFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(guards = "isPFunction(callable.getFunction())")
-    protected Object builtinMethodCallDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
-        // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, (PFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
-    }
-
     @Specialization(limit = "1", guards = {"callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"}, assumptions = "singleContextAssumption()")
     protected Object builtinMethodCallBuiltinDirectCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached("callable") PBuiltinMethod cachedCallable,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, (PBuiltinFunction) cachedCallable.getFunction(), createArgs.execute(cachedCallable, arguments, keywords));
+        return dispatch.executeCall(frame, cachedCallable.getFunction(), createArgs.execute(cachedCallable, arguments, keywords));
     }
 
     @Specialization(guards = "isPBuiltinFunction(callable.getFunction())", replaces = "builtinMethodCallBuiltinDirectCached")
@@ -169,7 +161,7 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, (PBuiltinFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
+        return dispatch.executeCall(frame, callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
     @Specialization(guards = "!isFunction(callable.getFunction())")
@@ -202,7 +194,7 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(replaces = {"doObjectAndType", "decoratedMethodCall", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallDirect", "builtinMethodCallBuiltinDirectCached",
+    @Specialization(replaces = {"doObjectAndType", "decoratedMethodCall", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallBuiltinDirectCached",
                     "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"})
     protected Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
@@ -224,12 +216,7 @@ public abstract class CallNode extends PNodeWithContext {
             }
         } else if (callableObject instanceof PBuiltinMethod) {
             PBuiltinMethod method = (PBuiltinMethod) callableObject;
-            Object func = method.getFunction();
-            if (func instanceof PFunction) {
-                return builtinMethodCallDirect(frame, method, arguments, keywords, dispatch, createArgs);
-            } else if (func instanceof PBuiltinFunction) {
-                return builtinMethodCallBuiltinDirect(frame, method, arguments, keywords, dispatch, createArgs);
-            }
+            return builtinMethodCallBuiltinDirect(frame, method, arguments, keywords, dispatch, createArgs);
         }
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(callableObject, SpecialMethodNames.__CALL__));
     }

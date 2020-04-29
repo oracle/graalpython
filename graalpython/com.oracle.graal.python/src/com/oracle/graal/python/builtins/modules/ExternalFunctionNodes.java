@@ -47,8 +47,10 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunction
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -78,9 +80,11 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ExternalFunctionNodes {
 
@@ -128,6 +132,7 @@ public abstract class ExternalFunctionNodes {
         Object doIt(VirtualFrame frame,
                         @Cached("createCountingProfile()") ConditionProfile customLocalsProfile,
                         @Cached CExtNodes.AsPythonObjectStealingNode asPythonObjectNode,
+                        @Cached ReleaseNativeWrapperNode releaseNativeWrapperNode,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
             CalleeContext.enter(frame, customLocalsProfile);
@@ -135,6 +140,7 @@ public abstract class ExternalFunctionNodes {
             Object[] frameArgs = PArguments.getVariableArguments(frame);
             Object[] arguments = new Object[frameArgs.length];
             toSulongNode.executeInto(frameArgs, 0, arguments, 0);
+
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
             Object state = ForeignCallContext.enter(frame, ctx, this);
@@ -153,6 +159,8 @@ public abstract class ExternalFunctionNodes {
                 PArguments.setException(frame, ctx.getCaughtException());
                 ForeignCallContext.exit(frame, ctx, state);
                 calleeContext.exit(frame, this);
+
+                releaseNativeWrapperNode.execute(arguments);
             }
         }
 
@@ -196,6 +204,61 @@ public abstract class ExternalFunctionNodes {
 
         public static ExternalFunctionNode create(PythonLanguage lang, String name, Object callable, Signature signature, ConvertArgsToSulongNode convertArgsNode) {
             return ExternalFunctionNodeGen.create(lang, name, callable, signature, convertArgsNode);
+        }
+    }
+
+    /**
+     * Decrements the ref count by one of any
+     * {@link com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper} object.
+     * <p>
+     * This node avoids memory leaks for arguments given to native.<br>
+     * Problem description:<br>
+     * {@link com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper} objects given to C
+     * code may go to native, i.e., a handle will be allocated. In this case, no ref count
+     * manipulation is done since the C code considers the reference to be borrowed and the Python
+     * code just doesn't do it because we have a GC. This means that the handle will stay allocated
+     * and we are leaking the wrapper object.
+     * </p>
+     */
+    abstract static class ReleaseNativeWrapperNode extends Node {
+
+        public abstract void execute(Object[] nativeArguments);
+
+        @Specialization(guards = {"nativeArguments.length == cachedLength", "nativeArguments.length < 8"}, limit = "1")
+        @ExplodeLoop
+        static void doCachedLength(Object[] nativeArguments,
+                        @Cached("nativeArguments.length") int cachedLength,
+                        @Cached(value = "createClassProfiles(cachedLength)", dimensions = 1) ValueProfile[] classProfiles,
+                        @Cached SubRefCntNode subRefCntNode) {
+
+            for (int i = 0; i < cachedLength; i++) {
+                doCheck(classProfiles[i].profile(nativeArguments[i]), subRefCntNode);
+            }
+        }
+
+        @Specialization(replaces = "doCachedLength")
+        static void doGeneric(Object[] nativeArguments,
+                        @Cached("createClassProfile()") ValueProfile classProfile,
+                        @Cached SubRefCntNode freeNode) {
+
+            for (int i = 0; i < nativeArguments.length; i++) {
+                doCheck(classProfile.profile(nativeArguments[i]), freeNode);
+            }
+        }
+
+        private static void doCheck(Object argument, SubRefCntNode refCntNode) {
+            if (CApiGuards.isNativeWrapper(argument)) {
+                // in the cached case, refCntNode acts as a branch profile
+                refCntNode.dec(argument);
+            }
+        }
+
+        static ValueProfile[] createClassProfiles(int length) {
+            ValueProfile[] classProfiles = new ValueProfile[length];
+            for (int i = 0; i < classProfiles.length; i++) {
+                classProfiles[i] = ValueProfile.createClassProfile();
+            }
+            return classProfiles;
         }
     }
 

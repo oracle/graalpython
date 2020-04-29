@@ -68,6 +68,7 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
     }
 
     public void setCallable(Object callable) {
+        assert this.callable == null;
         this.callable = callable;
     }
 

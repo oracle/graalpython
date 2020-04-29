@@ -74,4 +74,7 @@ public abstract class CApiGuards {
         return -5 <= i && i < 257;
     }
 
+    public static boolean isSmallIntegerWrapper(PrimitiveNativeWrapper nativeWrapper) {
+        return nativeWrapper.isIntLike() && isSmallLong(nativeWrapper.getLong());
+    }
 }

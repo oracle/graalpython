@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,29 +37,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
+
+def count(num):
+    cnt = 0
+    for i in range(num):
+        try:
+            if i % 2:
+                raise ValueError
+            if i % 3:
+                raise ArithmeticError("1")
+        except Exception as e:
+            cnt += 1
+
+    return cnt
 
 
-def test_eq():
-    # same start, just one element (the start) => step does not matter
-    assert range(10, 20, 10) == range(10, 30, 20)
+def measure(num):
+    result = count(num)
+    print("last value: %s " % result)
 
-    # empty ranges are always equal
-    assert range(10, 20, -30) == range(20, 30, -40)
 
-    assert range(True) == range(1)
+def __benchmark__(num=1000000):
+    measure(num)
 
-def test_count():
-    assert range(10).count(2) == 1
-    assert range(3).count(-1) == 0
-    assert range(3).count(0) == 1
-    assert range(3).count(1) == 1
-    assert range(3).count(2) == 1
-    assert range(3).count(3) == 0
-    assert type(range(3).count(-1)) == int
-    assert type(range(3).count(1)) == int
-    # assert range(10**20).count(1) == 1
-    # assert range(10**20).count(10**20)
-    # assert range(1, 2**100, 2).count(2**87)
-    # assert range(1, 2**100, 2).count(2**87+1)
-    assert range(10).count(2**80 // 2**79) == 1

@@ -1044,6 +1044,18 @@ def _sys_version(sys_version=None):
         version, buildno, builddate, buildtime = match.groups()
         compiler = ""
 
+    elif "GraalVM" in sys_version:
+        # GraalVM
+        name = "GraalVM"
+        match = _sys_version_parser.match(sys_version)
+        if match is None:
+            raise ValueError("failed to parse GraalVM sys.version: %s" %
+                             repr(sys_version))
+
+        version, buildno, builddate, buildtime, compiler = \
+              match.groups()
+        compiler = ""
+
     else:
         # CPython
         match = _sys_version_parser.match(sys_version)

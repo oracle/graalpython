@@ -51,7 +51,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -69,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
@@ -82,6 +82,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -300,6 +301,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "exc_info", needsFrame = true)
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
+
+        public static Object fast(VirtualFrame frame, GetClassNode getClassNode, GetCaughtExceptionNode getCaughtExceptionNode, PythonObjectFactory factory) {
+            final PException currentException = getCaughtExceptionNode.execute(frame);
+            if (currentException == null) {
+                return factory.createTuple(new PNone[]{PNone.NONE});
+            }
+            return factory.createTuple(new Object[]{getClassNode.execute(currentException.getExceptionObject())});
+        }
 
         @Specialization
         public Object run(VirtualFrame frame,
