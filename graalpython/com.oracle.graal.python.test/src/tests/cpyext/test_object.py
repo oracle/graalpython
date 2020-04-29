@@ -481,7 +481,7 @@ class TestObject(object):
                                             obj = (PyUnicodeObject *) malloc(struct_size + (size + 1) * char_size);
                                             if (obj == NULL)
                                                 return NULL;
-                                            obj = PyObject_INIT(obj, &PyUnicode_Type);
+                                            obj = (PyUnicodeObject *) PyObject_INIT(obj, testStrSubclassPtr);
                                             if (obj == NULL)
                                                 return NULL;
                                         
@@ -543,7 +543,8 @@ class TestObject(object):
                                                    int marker;""",
                                        tp_base="&PyUnicode_Type",
                                        tp_new="nstr_tpnew",
-                                       post_ready_code="testStrSubclassPtr = &TestStrSubclassType; Py_INCREF(testStrSubclassPtr);"
+                                     ready_code="TestStrSubclassType.tp_richcompare = PyUnicode_Type.tp_richcompare;",
+                                     post_ready_code="testStrSubclassPtr = &TestStrSubclassType; Py_INCREF(testStrSubclassPtr);"
                                        )
         tester = TestStrSubclass("hello\nworld")
         assert tester == "hello\nworld"

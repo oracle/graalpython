@@ -687,10 +687,10 @@ void* native_unicode_as_string(PyObject *string) {
             return NULL;
         }
         _PyUnicode_CONVERT_BYTES(Py_UCS2, Py_UCS4, start, start + len, target);
-        result = polyglot_from_string_n((const char *)target, sizeof(Py_UCS4) * len, "UTF-32");
+        result = polyglot_from_string_n((const char *)target, sizeof(Py_UCS4) * len, "UTF-32LE");
         free(target);
         return result;
     }
     assert(kind == PyUnicode_4BYTE_KIND);
-    return polyglot_from_string_n((const char *)data, sizeof(Py_UCS4) * len, "UTF-32");
+    return polyglot_from_string_n((const char *)data, sizeof(Py_UCS4) * len, "UTF-32LE");
 }
