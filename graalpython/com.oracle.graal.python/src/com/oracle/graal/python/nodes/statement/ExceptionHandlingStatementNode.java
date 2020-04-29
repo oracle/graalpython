@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -53,7 +54,8 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private ExceptionStateNodes.SaveExceptionStateNode saveExceptionStateNode;
     @Child private ExceptionStateNodes.RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
-    private final ConditionProfile contextChainProfile = ConditionProfile.createCountingProfile();
+    @CompilationFinal private ConditionProfile contextChainHandledProfile;
+    @CompilationFinal private ConditionProfile contextChainContextProfile;
 
     protected void tryChainExceptionFromHandler(PException handlerException, TruffleException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
@@ -67,7 +69,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         if (handledException instanceof PException) {
             PException pException = (PException) handledException;
             PException preexisting = getExceptionForChaining(frame);
-            if (preexisting != null && pException.getExceptionObject().getContext() == null) {
+            if (preexisting != null) {
                 chainExceptions(pException.getExceptionObject(), preexisting.getReifiedException());
             }
         }
@@ -75,15 +77,23 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
 
     protected void tryChainPreexistingException(VirtualFrame frame, PBaseException handledException) {
         PException preexisting = getExceptionForChaining(frame);
-        if (preexisting != null && handledException.getContext() == null) {
+        if (preexisting != null) {
             chainExceptions(handledException, preexisting.getReifiedException());
         }
     }
 
     public void chainExceptions(PBaseException currentException, PBaseException context) {
-        if (currentException.getContext() == null && currentException != context) {
-            PBaseException e = context;
-            while (contextChainProfile.profile(e != null)) {
+        if (currentException != context) {
+            PBaseException e = currentException;
+            while (getContextChainHandledProfile().profile(e != null)) {
+                if (e.getContext() == context) {
+                    // We have already chained this exception in an inner block, do nothing
+                    return;
+                }
+                e = e.getContext();
+            }
+            e = context;
+            while (getContextChainContextProfile().profile(e != null)) {
                 if (e.getContext() == currentException) {
                     e.setContext(null);
                 }
@@ -120,5 +130,21 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());
         }
         return getCaughtExceptionNode.execute(frame);
+    }
+
+    private ConditionProfile getContextChainHandledProfile() {
+        if (contextChainContextProfile == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextChainContextProfile = ConditionProfile.createCountingProfile();
+        }
+        return contextChainContextProfile;
+    }
+
+    private ConditionProfile getContextChainContextProfile() {
+        if (contextChainContextProfile == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextChainContextProfile = ConditionProfile.createCountingProfile();
+        }
+        return contextChainContextProfile;
     }
 }
