@@ -106,7 +106,7 @@ if __name__ == "__main__":
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_test_result = re.compile(r"""(test\S+) \(([^\s]+)\)(?:\n.*?)? \.\.\. \b(ok|skipped(?: ["'][^\n]+)?|ERROR|FAIL)$""", re.MULTILINE | re.DOTALL)
+    re_test_result = re.compile(r"""\b(test\S+) \(([^\s]+)\)(?:\n.*?)?? \.\.\. (ok|skipped|ERROR|FAIL|)\b$""", re.MULTILINE | re.DOTALL)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
