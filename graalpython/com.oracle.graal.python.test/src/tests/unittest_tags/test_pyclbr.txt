@@ -1,3 +1,4 @@
+*PyclbrTest.test_decorators
 *PyclbrTest.test_nested
 *ReadmoduleTests.test_dotted_name_not_a_package
 *ReadmoduleTests.test_module_has_no_spec
