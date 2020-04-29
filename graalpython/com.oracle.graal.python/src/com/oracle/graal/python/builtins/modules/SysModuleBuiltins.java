@@ -51,6 +51,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -310,8 +311,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
-                PBaseException exception = currentException.getReifiedException();
-                PTraceback traceback = getTracebackNode.execute(currentException.getTraceback());
+                PBaseException exception = currentException.getEscapedException();
+                LazyTraceback lazyTraceback = currentException.getTraceback();
+                PTraceback traceback = null;
+                if (lazyTraceback != null) {
+                    traceback = getTracebackNode.execute(lazyTraceback);
+                }
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
             }
         }

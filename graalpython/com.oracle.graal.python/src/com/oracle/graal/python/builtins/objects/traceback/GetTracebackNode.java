@@ -100,10 +100,9 @@ import com.oracle.truffle.api.nodes.Node;
  * <ul>
  * <li>When you catch a {@link PException PException} and need to obtain its corresponding
  * {@link com.oracle.graal.python.builtins.objects.exception.PBaseException PBaseException}, use the
- * {@link PException#reifyAndGetPythonException(VirtualFrame) reifyAndGetPythonException} method,
- * unless you're just doing a simple class check. Try to avoid the
- * {@link PException#getExceptionObject() getExceptionObject} method unless you know what you're
- * doing.</li>
+ * {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame)} method, unless you're
+ * just doing a simple class check. Try to avoid the {@link PException#getExceptionObject()
+ * getExceptionObject} method unless you know what you're doing.</li>
  * <li>{@link PException PException} must never be rethrown after it has been possibly exposed to
  * the program, because its Truffle stacktrace may already be frozen and it would not capture more
  * frames. If you need to rethrow without the catching site appearing in the traceback, use

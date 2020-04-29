@@ -215,7 +215,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBoolean(value)")
         public Object setSuppressContext(PBaseException self, Object value,
-                                         @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
+                        @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
             try {
                 self.setSuppressContext(castToJavaBooleanNode.execute(value));
             } catch (CastToJavaBooleanNode.CannotCastException e) {

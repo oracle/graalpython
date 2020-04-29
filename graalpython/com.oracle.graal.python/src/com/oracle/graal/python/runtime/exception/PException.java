@@ -77,6 +77,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
     private CallTarget tracebackCutoffTarget;
     private PFrame.Reference frameInfo;
     private LazyTraceback traceback;
+    private boolean reified = false;
 
     public PException(PBaseException actual, Node node) {
         this.pythonException = actual;
@@ -84,6 +85,8 @@ public final class PException extends RuntimeException implements TruffleExcepti
     }
 
     public static PException fromObject(PBaseException actual, Node node) {
+        // If this is a reraise, make sure the previous traceback gets reified
+        actual.ensureReified();
         PException pException = new PException(actual, node);
         actual.setException(pException);
         return pException;
@@ -136,7 +139,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
     /**
      * Return the associated {@link PBaseException}. This method doesn't ensure traceback
      * consistency and should be avoided unless you can guarantee that the exception will not escape
-     * to the program. Use {@link PException#reifyAndGetPythonException(VirtualFrame)
+     * to the program. Use {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame)
      * reifyAndGetPythonException}.
      */
     @Override
@@ -215,9 +218,6 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     public void setCatchingFrameReference(PFrame.Reference frameInfo) {
         this.frameInfo = frameInfo;
-        if (pythonException.hasTraceback()) {
-            ensureTraceback();
-        }
     }
 
     /**
@@ -232,26 +232,25 @@ public final class PException extends RuntimeException implements TruffleExcepti
     }
 
     /**
-     * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference) reify} and @{link {@link #getReifiedException()}
-     * getReifiedException}
+     * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference) reify} and @{link
+     * {@link #getEscapedException()}}
      */
-    public PBaseException reifyAndGetPythonException(VirtualFrame frame) {
+    public PBaseException setCatchingFrameAndGetEscapedException(VirtualFrame frame) {
         this.frameInfo = PArguments.getCurrentFrameInfo(frame);
-        return this.getReifiedException();
+        return this.getEscapedException();
     }
 
     public void markFrameEscaped() {
-        this.frameInfo.markAsEscaped();
+        if (this.frameInfo != null) {
+            this.frameInfo.markAsEscaped();
+        }
     }
 
     /**
-     * Ensure that the contained exception object has a traceback with the frame supplied by
-     * {@link #setCatchingFrameReference(PFrame.Reference) reify} and return it. This method should be prefered to
-     * {@link PException#getExceptionObject() getExceptionObject}, which doesn't ensure traceback
-     * correctness.
+     * Get the python exception while ensuring that the traceback frame is marked as escaped
      */
-    public PBaseException getReifiedException() {
-        ensureTraceback();
+    public PBaseException getEscapedException() {
+        markFrameEscaped();
         return pythonException;
     }
 
@@ -260,7 +259,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
      * traceback may not be the same as it is mutable and thus may change after being caught.
      */
     public LazyTraceback getTraceback() {
-        ensureTraceback();
+        ensureReified();
         return traceback;
     }
 
@@ -271,22 +270,28 @@ public final class PException extends RuntimeException implements TruffleExcepti
      * object itself being explicitly reraised with `raise e`).
      */
     public void setTraceback(LazyTraceback traceback) {
+        ensureReified();
         this.traceback = traceback;
     }
 
-    private void ensureTraceback() {
-        // The exception may be null when the exception state is manually created by C
-        if (traceback == null && pythonException != null) {
+    /**
+     * If not done already, create the traceback for this exception state using the frame previously
+     * provided to {@link #setCatchingFrameReference(PFrame.Reference) setCatchingFrameReference}
+     * and sync it to the attached python exception
+     */
+    public void ensureReified() {
+        if (!reified) {
             // Frame may be null when the catch handler is the C boundary, which is internal and
             // shouldn't leak to the traceback
             if (frameInfo != null) {
+                assert frameInfo != PFrame.Reference.EMPTY;
                 frameInfo.markAsEscaped();
             }
-            pythonException.reifyException(frameInfo);
             // Make a snapshot of the traceback at the point of the exception handler. This may be
             // called later than in the exception handler, but only in cases when the exception
             // hasn't escaped to the prgram and thus couldn't have changed in the meantime
-            traceback = pythonException.getTraceback();
+            traceback = pythonException.internalReifyException(frameInfo);
+            reified = true;
         }
     }
 
@@ -298,7 +303,6 @@ public final class PException extends RuntimeException implements TruffleExcepti
      * end of `finally`, `__exit__`...
      */
     public PException getExceptionForReraise() {
-        ensureTraceback();
-        return pythonException.getExceptionForReraise(traceback);
+        return pythonException.getExceptionForReraise(getTraceback());
     }
 }

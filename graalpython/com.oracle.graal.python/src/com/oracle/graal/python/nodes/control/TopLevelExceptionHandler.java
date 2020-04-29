@@ -115,7 +115,7 @@ public class TopLevelExceptionHandler extends RootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         if (exception != null) {
-            printExc(frame, exception.getReifiedException());
+            printExc(frame, exception.getEscapedException());
             return null;
         } else {
             assert getContext().getCurrentException() == null;
@@ -123,7 +123,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 assert !PArguments.isPythonFrame(frame);
-                PBaseException pythonException = e.getReifiedException();
+                PBaseException pythonException = e.getEscapedException();
                 printExc(frame, pythonException);
                 if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);

@@ -568,7 +568,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (currentException == null) {
                 result = getNativeNullNode.execute(module);
             } else {
-                PBaseException exception = currentException.getReifiedException();
+                PBaseException exception = currentException.getEscapedException();
                 Object traceback = null;
                 if (currentException.getTraceback() != null) {
                     traceback = getTracebackNode.execute(currentException.getTraceback());
@@ -591,7 +591,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClass) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.getReifiedException();
+                PBaseException exceptionObject = currentException.getEscapedException();
                 return getClass.execute(exceptionObject);
             }
             return errorMarker;
@@ -858,7 +858,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
                 // the exception here must have already been reified, because we
                 // got it from the context
-                sysExc.setCause(currentException.getReifiedException());
+                sysExc.setCause(currentException.getEscapedException());
                 throw PException.fromObject(sysExc, this);
             }
         }

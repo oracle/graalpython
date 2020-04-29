@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -320,7 +319,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             StringBuilder sb = new StringBuilder();
             PBaseException pythonCause = null;
             if (e instanceof PException) {
-                PBaseException excObj = ((PException) e).getReifiedException();
+                PBaseException excObj = ((PException) e).getEscapedException();
                 pythonCause = excObj;
                 sb.append(callReprNode.executeObject(null, excObj));
             } else {
@@ -330,7 +329,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             Throwable cause = e;
             while ((cause = cause.getCause()) != null) {
                 if (e instanceof PException) {
-                    PBaseException pythonException = ((PException) e).getReifiedException();
+                    PBaseException pythonException = ((PException) e).getEscapedException();
                     if (pythonCause != null) {
                         pythonCause.setCause(pythonException);
                     }

@@ -60,7 +60,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     protected void tryChainExceptionFromHandler(PException handlerException, TruffleException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
         if (handledException != handlerException && handledException instanceof PException) {
-            chainExceptions(handlerException.getExceptionObject(), ((PException) handledException).getReifiedException());
+            chainExceptions(handlerException.getExceptionObject(), (PException) handledException);
         }
     }
 
@@ -70,7 +70,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             PException pException = (PException) handledException;
             PException preexisting = getExceptionForChaining(frame);
             if (preexisting != null) {
-                chainExceptions(pException.getExceptionObject(), preexisting.getReifiedException());
+                chainExceptions(pException.getExceptionObject(), preexisting);
             }
         }
     }
@@ -78,11 +78,12 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     protected void tryChainPreexistingException(VirtualFrame frame, PBaseException handledException) {
         PException preexisting = getExceptionForChaining(frame);
         if (preexisting != null) {
-            chainExceptions(handledException, preexisting.getReifiedException());
+            chainExceptions(handledException, preexisting);
         }
     }
 
-    public void chainExceptions(PBaseException currentException, PBaseException context) {
+    public void chainExceptions(PBaseException currentException, PException contextException) {
+        PBaseException context = contextException.getExceptionObject();
         if (currentException != context) {
             PBaseException e = currentException;
             while (getContextChainHandledProfile().profile(e != null)) {
@@ -100,7 +101,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
                 e = e.getContext();
             }
             if (context != null) {
-                context.markAsEscaped();
+                contextException.markFrameEscaped();
             }
             currentException.setContext(context);
         }

@@ -126,32 +126,29 @@ public final class PBaseException extends PythonObject {
         this.exception = exception;
     }
 
-    /**
-     * use {@link GetExceptionTracebackNode}
-     */
+    public void ensureReified() {
+        if (exception != null) {
+            // If necessary, this will call back to this object to set the traceback
+            exception.ensureReified();
+        }
+    }
+
     public LazyTraceback getTraceback() {
+        ensureReified();
         return traceback;
     }
 
     public void setTraceback(LazyTraceback traceback) {
+        ensureReified();
         this.traceback = traceback;
     }
 
     public void setTraceback(PTraceback traceback) {
-        this.traceback = new LazyTraceback(traceback);
+        setTraceback(new LazyTraceback(traceback));
     }
 
     public void clearTraceback() {
         this.traceback = null;
-    }
-
-    /**
-     * It should usually not be necessary to use this method because that would mean that the
-     * exception wasn't correctly reified. But it can make sense to do reification at a later point
-     * for best-effort results.
-     */
-    public boolean hasTraceback() {
-        return this.traceback != null;
     }
 
     /**
@@ -202,33 +199,10 @@ public final class PBaseException extends PythonObject {
         return getFormattedMessage(null);
     }
 
-    /**
-     * Create the traceback for this exception using the provided {@link PFrame} instance (which
-     * usually is the frame of the function that caught the exception).
-     * <p>
-     * This function (or {@link #reifyException(PFrame.Reference)} must be called before handing out
-     * exceptions into the Python value space because otherwise the stack will not be correct if the
-     * exception object escapes the current function.
-     * </p>
-     *
-     * @param pyFrame The exception handler frame. Permitted to be null, in which case the frame
-     *            will be omitted from the traceback.
-     */
-    public void reifyException(PFrame pyFrame) {
-        traceback = new LazyTraceback(pyFrame, exception, traceback);
-    }
-
-    /**
-     * Create the traceback for this exception using the provided {@link PFrame.Reference} (which
-     * usually is the frame of the function that caught the exception).
-     * <p>
-     * In contrast to {@link #reifyException(PFrame)}, this method can be used without materializing
-     * the frame immediately.
-     * </p>
-     */
-    public void reifyException(PFrame.Reference curFrameInfo) {
+    public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {
         assert curFrameInfo != PFrame.Reference.EMPTY;
         traceback = new LazyTraceback(curFrameInfo, exception, traceback);
+        return traceback;
     }
 
     @ExportMessage
@@ -241,20 +215,15 @@ public final class PBaseException extends PythonObject {
     RuntimeException throwException(@Cached("createBinaryProfile()") ConditionProfile hasExc,
                     @Cached GetLazyClassNode getClass,
                     @Cached PRaiseNode raiseNode) {
-        PException exc = getException();
-        if (hasExc.profile(exc != null)) {
-            throw exc;
-        } else {
-            Object[] newArgs = messageArgs;
-            if (newArgs == null) {
-                newArgs = EMPTY_ARGS;
-            }
-            Object format = messageFormat;
-            if (format == null) {
-                format = PNone.NO_VALUE;
-            }
-            throw raiseNode.execute(getClass.execute(this), this, format, newArgs);
+        Object[] newArgs = messageArgs;
+        if (newArgs == null) {
+            newArgs = EMPTY_ARGS;
         }
+        Object format = messageFormat;
+        if (format == null) {
+            format = PNone.NO_VALUE;
+        }
+        throw raiseNode.execute(getClass.execute(this), this, format, newArgs);
     }
 
     /**
@@ -282,15 +251,8 @@ public final class PBaseException extends PythonObject {
      **/
     public PException getExceptionForReraise(LazyTraceback traceback) {
         setTraceback(traceback);
-        markAsEscaped();
         PException newException = PException.fromObject(this, exception.getLocation());
         newException.setHideLocation(true);
         return newException;
-    }
-
-    public void markAsEscaped() {
-        if (traceback != null && traceback.getFrameInfo() != null) {
-            traceback.getFrameInfo().markAsEscaped();
-        }
     }
 }

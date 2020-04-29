@@ -112,7 +112,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                 _y = next.execute(frame, _i);
             } catch (PException e) {
                 e.expectStopIteration(stopIterProfile1);
-                return getGetValue().executeObject(frame, e.reifyAndGetPythonException(frame));
+                return getGetValue().executeObject(frame, e.setCatchingFrameAndGetEscapedException(frame));
             }
             access.setIterator(frame, iteratorSlot, _i);
         }
@@ -168,7 +168,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                         throw _e;
                     } else {
                         try {
-                            PBaseException pythonException = ((PException) _s).reifyAndGetPythonException(frame);
+                            PBaseException pythonException = ((PException) _s).setCatchingFrameAndGetEscapedException(frame);
                             _y = getCallThrowNode().execute(frame, _m,
                                             new Object[]{_i, getExceptionClassNode().execute(pythonException),
                                                             pythonException,
@@ -177,7 +177,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                         } catch (PException _e2) {
                             access.setIterator(frame, iteratorSlot, null);
                             _e2.expectStopIteration(stopIterProfile2);
-                            return getGetValue().executeObject(frame, _e2.reifyAndGetPythonException(frame));
+                            return getGetValue().executeObject(frame, _e2.setCatchingFrameAndGetEscapedException(frame));
                         }
                     }
                 } else {
@@ -202,7 +202,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     } catch (PException _e) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e.expectStopIteration(stopIterProfile3);
-                        return getGetValue().executeObject(frame, _e.reifyAndGetPythonException(frame));
+                        return getGetValue().executeObject(frame, _e.setCatchingFrameAndGetEscapedException(frame));
                     }
                 }
             }
