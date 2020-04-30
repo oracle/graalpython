@@ -110,6 +110,10 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
 
     @Override
     public void executeVoid(VirtualFrame frame) {
+        // The following statement is a no-op, but it helps graal to optimize the exception handler
+        // by moving the cast to PException to the beginning
+        saveExceptionState(frame);
+
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
