@@ -63,7 +63,7 @@ public abstract class PSequence extends PythonBuiltinObject {
             return (PSequence) value;
         }
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PSequence required.");
+        throw new IllegalStateException("PSequence required.");
     }
 
     public static PSequence expect(Object value) throws UnexpectedResultException {

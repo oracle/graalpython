@@ -118,79 +118,79 @@ public class NativeSequenceStorage extends SequenceStorage {
     @Override
     public SequenceStorage copy() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public SequenceStorage createEmpty(int newCapacity) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public Object[] getInternalArray() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public Object[] getCopyOfInternalArray() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public Object getItemNormalized(int idx) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
         CompilerAsserts.neverPartOfCompilation();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public void insertItem(int idx, Object value) throws SequenceStoreException {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
         CompilerAsserts.neverPartOfCompilation();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public void reverse() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public boolean equals(SequenceStorage other) {
         CompilerAsserts.neverPartOfCompilation();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public SequenceStorage generalizeFor(Object value, SequenceStorage other) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public Object getIndicativeValue() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override
     public void copyItem(int idxTo, int idxFrom) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AssertionError("should not reach");
+        throw new IllegalStateException("should not reach");
     }
 
     @Override

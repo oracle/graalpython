@@ -160,7 +160,7 @@ public final class PGenerator extends PythonBuiltinObject {
             return (PGenerator) value;
         }
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PGenerator required.");
+        throw new IllegalStateException("PGenerator required.");
     }
 
     public PCode getCode() {
