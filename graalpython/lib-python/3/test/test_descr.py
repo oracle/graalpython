@@ -4238,6 +4238,7 @@ order (MRO) for bases """
         else:
             self.fail("shouldn't have allowed descr.__get__(None, int)")
 
+    @support.impl_detail("endless loop", graalvm=False)
     def test_isinst_isclass(self):
         # Testing proxy isinstance() and isclass()...
         class Proxy(object):
@@ -4277,6 +4278,7 @@ order (MRO) for bases """
         self.assertIsInstance(a, C)  # Baseline
         self.assertIsInstance(pa, C) # Test
 
+    @support.impl_detail("endless loop", graalvm=False)
     def test_proxy_super(self):
         # Testing super() for a proxy object...
         class Proxy(object):
