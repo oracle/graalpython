@@ -40,9 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import java.util.Iterator;
-
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -71,7 +70,7 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the keys
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictKeysIterator extends PJavaIteratorIterator<Object> {
+    public static final class PDictKeysIterator extends PHashingStorageIterator<Object> {
         public PDictKeysIterator(LazyPythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.keys().iterator());
         }
@@ -89,8 +88,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the values
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictValuesIterator extends PJavaIteratorIterator<Object> {
-        public PDictValuesIterator(LazyPythonClass clazz, Iterator<Object> iterator) {
+    public static final class PDictValuesIterator extends PHashingStorageIterator<Object> {
+        public PDictValuesIterator(LazyPythonClass clazz, HashingStorageIterator<Object> iterator) {
             super(clazz, iterator);
         }
     }
@@ -107,8 +106,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the items
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
-        public PDictItemsIterator(LazyPythonClass clazz, Iterator<DictEntry> iterator) {
+    public static final class PDictItemsIterator extends PHashingStorageIterator<DictEntry> {
+        public PDictItemsIterator(LazyPythonClass clazz, HashingStorageIterator<DictEntry> iterator) {
             super(clazz, iterator);
         }
     }

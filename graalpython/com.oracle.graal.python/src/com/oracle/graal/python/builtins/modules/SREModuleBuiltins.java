@@ -207,8 +207,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object arg1, Object arg2,
-                        @Cached("create()") BranchProfile syntaxError,
-                        @Cached("create()") BranchProfile typeError,
+                        @Cached BranchProfile potentialSyntaxError,
+                        @Cached BranchProfile syntaxError,
+                        @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);
@@ -218,15 +219,23 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
             } catch (RuntimeException e) {
-                if (e instanceof TruffleException && ((TruffleException) e).isSyntaxError()) {
-                    syntaxError.enter();
-                    throw raise(ValueError, "%s", e);
+                if (e instanceof TruffleException) {
+                    potentialSyntaxError.enter(); // this guards the TruffleBoundary invoke
+                    if (isSyntaxError(e)) {
+                        syntaxError.enter();
+                        throw raise(ValueError, "%s", e);
+                    }
                 }
                 // just re-throw
                 throw e;
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
+        }
+
+        @TruffleBoundary
+        private static boolean isSyntaxError(RuntimeException e) {
+            return ((TruffleException) e).isSyntaxError();
         }
     }
 

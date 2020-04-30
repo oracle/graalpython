@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -42,6 +43,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class PGenerator extends PythonBuiltinObject {
 
@@ -75,25 +77,38 @@ public final class PGenerator extends PythonBuiltinObject {
         PArguments.setControlData(arguments, generatorArgs);
         PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
         // set generator closure to the generator frame locals
+        CompilerAsserts.partialEvaluationConstant(cellSlots);
         FrameSlot[] freeVarSlots = cellSlots.getFreeVarSlots();
+        CompilerAsserts.partialEvaluationConstant(freeVarSlots);
         FrameSlot[] cellVarSlots = cellSlots.getCellVarSlots();
+        CompilerAsserts.partialEvaluationConstant(cellVarSlots);
         Assumption[] cellVarAssumptions = cellSlots.getCellVarAssumptions();
 
         if (closure != null) {
             assert closure.length == freeVarSlots.length : "generator creation: the closure must have the same length as the free var slots array";
-            for (int i = 0; i < closure.length; i++) {
-                generatorFrame.setObject(freeVarSlots[i], closure[i]);
-            }
+            assignClosure(closure, generatorFrame, freeVarSlots);
         } else {
             assert freeVarSlots.length == 0;
         }
+        assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
+        PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
+        return new PGenerator(clazz, name, callTargets, frameDescriptor, arguments, closure, iterator);
+    }
+
+    @ExplodeLoop
+    private static void assignCells(MaterializedFrame generatorFrame, FrameSlot[] cellVarSlots, Assumption[] cellVarAssumptions) {
         // initialize own cell vars to new cells (these cells will be used by nested functions to
         // create their own closures)
         for (int i = 0; i < cellVarSlots.length; i++) {
             generatorFrame.setObject(cellVarSlots[i], new PCell(cellVarAssumptions[i]));
         }
-        PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(clazz, name, callTargets, frameDescriptor, arguments, closure, iterator);
+    }
+
+    @ExplodeLoop
+    private static void assignClosure(PCell[] closure, MaterializedFrame generatorFrame, FrameSlot[] freeVarSlots) {
+        for (int i = 0; i < freeVarSlots.length; i++) {
+            generatorFrame.setObject(freeVarSlots[i], closure[i]);
+        }
     }
 
     private PGenerator(LazyPythonClass clazz, String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {

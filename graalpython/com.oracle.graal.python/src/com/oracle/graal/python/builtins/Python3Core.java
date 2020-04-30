@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltin
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.lzma.LZMADecompressorBuiltins;
+import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
@@ -328,6 +329,7 @@ public final class Python3Core implements PythonCore {
                         new ReversedBuiltins(),
                         new PZipBuiltins(),
                         new EnumerateBuiltins(),
+                        new MapBuiltins(),
                         new SentinelIteratorBuiltins(),
                         new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),

@@ -75,6 +75,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PDictValuesView("dict_values"),
     PEllipsis("ellipsis"),
     PEnumerate("enumerate", BuiltinNames.BUILTINS),
+    PMap("map", BuiltinNames.BUILTINS),
     PFloat("float", BuiltinNames.BUILTINS),
     PFrame("frame"),
     PFrozenSet("frozenset", BuiltinNames.BUILTINS),

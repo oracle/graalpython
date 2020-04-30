@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
 import static com.oracle.graal.python.nodes.BuiltinNames.INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.LIST;
+import static com.oracle.graal.python.nodes.BuiltinNames.MAP;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMORYVIEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
@@ -123,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescri
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -2949,8 +2951,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Specialization
-        Object doMapping(LazyPythonClass klass, PHashingCollection obj) {
-            return factory().createMappingproxy(klass, obj.getDictStorage());
+        Object doMapping(LazyPythonClass klass, PHashingCollection obj,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage) {
+            return factory().createMappingproxy(klass, getStorage.execute(obj));
         }
 
         @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
@@ -3145,6 +3148,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doObjectIndirect(LazyPythonClass self, @SuppressWarnings("unused") Object callable) {
             return factory().createStaticmethod(self);
+        }
+    }
+
+    @Builtin(name = MAP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PMap)
+    @GenerateNodeFactory
+    public abstract static class MapNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        PMap doit(LazyPythonClass self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
+            return factory().createMap(self);
         }
     }
 }

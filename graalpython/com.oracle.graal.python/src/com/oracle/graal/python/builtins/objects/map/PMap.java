@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,34 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.common;
+package com.oracle.graal.python.builtins.objects.map;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
-public abstract class PHashingCollection extends PythonBuiltinObject {
+public final class PMap extends PythonBuiltinObject {
+    @CompilationFinal private Object function;
+    @CompilationFinal(dimensions = 1) private Object[] iterators;
 
-    public PHashingCollection(LazyPythonClass cls) {
-        super(cls);
+    public PMap(LazyPythonClass clazz) {
+        super(clazz);
     }
 
-    public abstract HashingStorage getDictStorage();
-
-    public abstract void setDictStorage(HashingStorage newStorage);
-
-    public abstract int size();
-
-    public HashingStorageIterable<Object> items() {
-        return HashingStorageLibrary.getUncached().values(getDictStorage());
+    public Object getFunction() {
+        return function;
     }
 
-    public HashingStorageIterable<Object> keys() {
-        return HashingStorageLibrary.getUncached().keys(getDictStorage());
+    public void setFunction(Object function) {
+        this.function = function;
     }
 
-    public HashingStorageIterable<DictEntry> entries() {
-        return HashingStorageLibrary.getUncached().entries(getDictStorage());
+    public Object[] getIterators() {
+        return iterators;
+    }
+
+    public void setIterators(Object[] iterators) {
+        this.iterators = iterators;
     }
 }

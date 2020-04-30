@@ -312,7 +312,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/dict/DictValuesBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/dict/DictValuesIteratorBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/dict/PDict.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/dict/PJavaIteratorIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/enumerate/EnumerateBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/enumerate/PEnumerate.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/exception/BaseExceptionBuiltins.java,zippy.copyright

@@ -39,7 +39,6 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
@@ -75,11 +74,8 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
                 return false;
             }
         } catch (FrameSlotTypeException e) {
-            if (raise == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raise = insert(PRaiseNode.create());
-            }
-            throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
         }
         body.executeVoid(frame);
         if (contextRef == null) {

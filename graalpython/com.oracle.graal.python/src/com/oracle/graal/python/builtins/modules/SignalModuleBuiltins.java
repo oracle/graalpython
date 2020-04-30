@@ -263,10 +263,10 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
+        @SuppressWarnings("unchecked")
         private static ConcurrentLinkedDeque<SignalTriggerAction> getQueue(PythonModule self, ReadAttributeFromObjectNode readNode) {
             Object queueObject = readNode.execute(self, signalQueueKey);
             if (queueObject instanceof ConcurrentLinkedDeque) {
-                @SuppressWarnings("unchecked")
                 ConcurrentLinkedDeque<SignalTriggerAction> queue = (ConcurrentLinkedDeque<SignalTriggerAction>) queueObject;
                 return queue;
             } else {

@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import os
 import re
+import subprocess
 from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
@@ -234,7 +235,10 @@ class PyPyVm(AbstractPythonIterationsControlVm):
     def interpreter(self):
         home = mx.get_env(ENV_PYPY_HOME)
         if not home:
-            mx.abort("{} is not set!".format(ENV_PYPY_HOME))
+            try:
+                return subprocess.check_output("which %s" % PyPyVm.PYPY_INTERPRETER, shell=True).decode().strip()
+            except OSError:
+                mx.abort("{} is not set!".format(ENV_PYPY_HOME))
         return join(home, 'bin', PyPyVm.PYPY_INTERPRETER)
 
     def name(self):

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,34 +38,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.common;
+package com.oracle.graal.python.builtins.objects.dict;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public abstract class PHashingCollection extends PythonBuiltinObject {
+public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
 
-    public PHashingCollection(LazyPythonClass cls) {
-        super(cls);
+    private final HashingStorageIterator<T> iterator;
+    private int index;
+
+    public PHashingStorageIterator(LazyPythonClass clazz, HashingStorageIterator<T> iterator) {
+        super(clazz);
+        this.iterator = iterator;
     }
 
-    public abstract HashingStorage getDictStorage();
-
-    public abstract void setDictStorage(HashingStorage newStorage);
-
-    public abstract int size();
-
-    public HashingStorageIterable<Object> items() {
-        return HashingStorageLibrary.getUncached().values(getDictStorage());
+    public HashingStorageIterator<T> getIterator() {
+        return iterator;
     }
 
-    public HashingStorageIterable<Object> keys() {
-        return HashingStorageLibrary.getUncached().keys(getDictStorage());
+    @TruffleBoundary
+    public final Object next() {
+        assert hasNext();
+        index++;
+        return iterator.next();
     }
 
-    public HashingStorageIterable<DictEntry> entries() {
-        return HashingStorageLibrary.getUncached().entries(getDictStorage());
+    @TruffleBoundary
+    public final boolean hasNext() {
+        return iterator.hasNext();
+    }
+
+    public int getIndex() {
+        return index;
     }
 }
