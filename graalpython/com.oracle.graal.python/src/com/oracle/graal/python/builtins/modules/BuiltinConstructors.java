@@ -182,7 +182,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
-import com.oracle.graal.python.nodes.util.CoerceToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -1861,16 +1860,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        Object strOneArg(VirtualFrame frame, LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached CoerceToStringNode coerceToStringNode) {
-            Object result = coerceToStringNode.execute(frame, obj);
+        Object strOneArg(LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            Object result = lib.asPString(obj);
 
             // try to return a primitive if possible
             if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
             }
 
-            // CoerceToStringNode guarantees that the returned object is an instanceof of 'str'
+            // PythonObjectLibrary guarantees that the returned object is an instanceof of 'str'
             return result;
         }
 
@@ -1906,11 +1905,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * into a natively allocated subtype structure
          */
         @Specialization(guards = {"isSubtypeOfString(frame, isSubtype, cls)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
-        Object doNativeSubclass(VirtualFrame frame, PythonNativeClass cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+        Object doNativeSubclass(@SuppressWarnings("unused") VirtualFrame frame, PythonNativeClass cls, Object obj, @SuppressWarnings("unused") Object encoding,
+                        @SuppressWarnings("unused") Object errors,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
-                        @Cached CoerceToStringNode castToStringNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached CExtNodes.StringSubtypeNew subtypeNew) {
-            return subtypeNew.call(cls, castToStringNode.execute(frame, obj));
+            return subtypeNew.call(cls, lib.asPString(obj));
         }
 
         protected static boolean isSubtypeOfString(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {

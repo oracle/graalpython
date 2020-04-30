@@ -42,9 +42,13 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -55,6 +59,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Object.class)
 final class DefaultPythonObjectExports {
@@ -228,7 +233,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
     static boolean isForeignObject(Object receiver,
                     @CachedLibrary("receiver") InteropLibrary lib) {
         try {
@@ -238,5 +242,20 @@ final class DefaultPythonObjectExports {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException(e);
         }
+    }
+
+    @ExportMessage
+    static Object asPString(Object receiver,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Cached.Exclusive @Cached PRaiseNode raise) {
+        if (lib.isString(receiver)) {
+            try {
+                return lib.asString(receiver);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(e);
+            }
+        }
+        throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
     }
 }

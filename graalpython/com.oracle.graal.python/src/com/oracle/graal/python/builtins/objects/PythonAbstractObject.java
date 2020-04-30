@@ -60,6 +60,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -69,6 +70,7 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
@@ -143,6 +145,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -895,6 +898,35 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             throw raise.raise(PythonBuiltinClassType.TypeError, "expected %p.__fspath__() to return str or bytes, not %p", this, pathObject);
         }
         return path;
+    }
+
+    @ExportMessage
+    public Object asPStringWithState(ThreadState state,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached ConditionProfile gotState) {
+        return asPString(this, lookup, gotState, state, callNode, isSubtypeNode, lib, raise);
+    }
+
+    @Ignore
+    public static Object asPString(Object receiver, LookupInheritedAttributeNode.Dynamic lookup, ConditionProfile gotState, ThreadState state, CallUnaryMethodNode callNode,
+                    IsSubtypeNode isSubtypeNode, PythonObjectLibrary lib, PRaiseNode raise) throws PException {
+        Object func = lookup.execute(receiver, __STR__);
+
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.executeObject(func, receiver);
+        } else {
+            result = callNode.executeObject(PArguments.frameForCall(state), func, receiver);
+        }
+
+        if (!isSubtypeNode.execute(lib.getLazyPythonClass(result), PythonBuiltinClassType.PString)) {
+            throw raise.raise(TypeError, "__str__ returned non-string (type %p)", result);
+        }
+        return result;
     }
 
     @ExportMessage

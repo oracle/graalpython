@@ -145,4 +145,9 @@ final class DefaultPythonStringExports {
     static String asPath(String value) {
         return value;
     }
+
+    @ExportMessage
+    static String asPString(String receiver) {
+        return receiver;
+    }
 }

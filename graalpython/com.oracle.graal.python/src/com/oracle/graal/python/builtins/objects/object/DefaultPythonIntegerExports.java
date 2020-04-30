@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -231,5 +232,11 @@ final class DefaultPythonIntegerExports {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;
             }
         }
+    }
+
+    @ExportMessage
+    @CompilerDirectives.TruffleBoundary
+    static String asPString(Integer receiver) {
+        return Integer.toString(receiver);
     }
 }

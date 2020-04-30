@@ -237,4 +237,9 @@ final class DefaultPythonBooleanExports {
             }
         }
     }
+
+    @ExportMessage
+    static String asPString(Boolean receiver) {
+        return receiver ? "True" : "False";
+    }
 }

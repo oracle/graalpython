@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -249,5 +250,11 @@ final class DefaultPythonLongExports {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;
             }
         }
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    static String asPString(Long x) {
+        return Long.toString(x);
     }
 }
