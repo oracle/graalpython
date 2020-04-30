@@ -357,7 +357,6 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(repr(range(1, 2)), 'range(1, 2)')
         self.assertEqual(repr(range(1, 2, 3)), 'range(1, 2, 3)')
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_pickling(self):
         testcases = [(13,), (0, 11), (-22, 10), (20, 3, -1),
                      (13, 21, 3), (-2, 2, 2), (2**65, 2**65+2)]
