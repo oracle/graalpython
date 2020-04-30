@@ -1482,17 +1482,24 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffleTraceBack_Here", minNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTraceBack_Here", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffleTraceBackHereNode extends PythonBinaryBuiltinNode {
+    abstract static class PyTraceBackHereNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PTraceback tbHere(PFrame frame, PTraceback tb) {
-            return factory().createTraceback(frame, frame.getLine(), tb);
-        }
+        int tbHere(PFrame frame,
+                        @Cached GetTracebackNode getTracebackNode) {
+            PythonContext context = getContext();
+            PException currentException = context.getCurrentException();
+            if (currentException != null) {
+                PTraceback traceback = null;
+                if (currentException.getTraceback() != null) {
+                    traceback = getTracebackNode.execute(currentException.getTraceback());
+                }
+                PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
+                context.setCurrentException(PException.fromExceptionInfo(currentException.getExceptionObject(), newTraceback));
+            }
 
-        @Specialization
-        PTraceback tbHere(PFrame frame, @SuppressWarnings("unused") PNone tb) {
-            return factory().createTraceback(frame, frame.getLine(), null);
+            return 0;
         }
     }
 
