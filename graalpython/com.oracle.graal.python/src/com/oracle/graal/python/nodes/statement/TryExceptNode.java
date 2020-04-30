@@ -120,38 +120,35 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         } catch (ControlFlowException e) {
             throw e;
         } catch (Exception e) {
-            boolean handled = false;
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
             }
             if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
-                handled = catchException(frame, (TruffleException) e);
-            }
-            if (!handled) {
-                if (shouldCatchAll == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    shouldCatchAll = getContext().getOption(PythonOptions.CatchAllExceptions);
-                }
-                if (shouldCatchAll) {
-                    PException pe = PException.fromObject(getBaseException(e), this);
-                    // Re-attach truffle stacktrace
-                    pe.initCause(e.getCause());
-                    // Host exceptions have their stacktrace already filled in, call this to set
-                    // the cutoff point to the catch site
-                    pe.getTruffleStackTrace();
-                    try {
-                        handled = catchException(frame, pe);
-                    } catch (PException handlerException) {
-                        if (handlerException.getExceptionObject() == pe.getExceptionObject()) {
-                            throw e;
-                        }
-                    }
+                boolean handled = catchException(frame, (TruffleException) e);
+                if (handled) {
+                    return;
                 }
             }
-            if (!handled) {
-                throw e;
+            if (shouldCatchAll == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                shouldCatchAll = getContext().getOption(PythonOptions.CatchAllExceptions);
             }
+            if (shouldCatchAll) {
+                PException pe = PException.fromObject(getBaseException(e), this);
+                // Re-attach truffle stacktrace
+                pe.initCause(e.getCause());
+                // Host exceptions have their stacktrace already filled in, call this to set
+                // the cutoff point to the catch site
+                pe.getTruffleStackTrace();
+                boolean handled = catchException(frame, pe);
+                if (handled) {
+                    return;
+                } else {
+                    throw pe;
+                }
+            }
+            throw e;
         }
         orelse.executeVoid(frame);
     }
