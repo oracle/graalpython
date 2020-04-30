@@ -505,10 +505,12 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @ValueType
         protected static final class ReprState {
+            private final PDict self;
             private final HashingStorage dictStorage;
             private final StringBuilder result;
 
-            ReprState(HashingStorage dictStorage, StringBuilder result) {
+            ReprState(PDict self, HashingStorage dictStorage, StringBuilder result) {
+                this.self = self;
                 this.dictStorage = dictStorage;
                 this.result = result;
             }
@@ -549,7 +551,7 @@ public final class DictBuiltins extends PythonBuiltins {
                 }
 
                 Object value = lib.getItem(s.dictStorage, key);
-                Object valueRepr = value != s.dictStorage ? reprValueNode.executeObject(value, __REPR__) : "{...}";
+                Object valueRepr = value != s.self ? reprValueNode.executeObject(value, __REPR__) : "{...}";
                 String valueReprString = castStr.execute(valueRepr);
                 if (nullValueCheck.profile(valueReprString == null)) {
                     throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", valueRepr);
@@ -573,7 +575,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             StringBuilder keyValue = new StringBuilder("{");
             HashingStorage dictStorage = self.getDictStorage();
-            lib.forEach(dictStorage, consumerNode, new ReprState(dictStorage, keyValue));
+            lib.forEach(dictStorage, consumerNode, new ReprState(self, dictStorage, keyValue));
             return sbAppend(keyValue, "}").toString();
         }
 
