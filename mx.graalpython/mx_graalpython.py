@@ -965,7 +965,7 @@ def update_import_cmd(args):
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
         json.dump(d, fp, indent=2)
-        
+
     repos_updated = []
 
     # now allow dependent repos to hook into update
@@ -1266,8 +1266,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
             # build_args=['-H:+RemoveSaturatedTypeFlows'],
-            # build_args=['-H:+TruffleCheckBlackListedMethods'],
-            build_args=[],
+            build_args=['-H:+TruffleCheckBlackListedMethods'],
             language='python',
         )
     ],
