@@ -57,7 +57,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PBaseException extends PythonObject {
     private static final Object[] EMPTY_ARGS = new Object[0];
@@ -212,8 +211,7 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    RuntimeException throwException(@Cached("createBinaryProfile()") ConditionProfile hasExc,
-                    @Cached GetLazyClassNode getClass,
+    RuntimeException throwException(@Cached GetLazyClassNode getClass,
                     @Cached PRaiseNode raiseNode) {
         Object[] newArgs = messageArgs;
         if (newArgs == null) {
@@ -249,8 +247,8 @@ public final class PBaseException extends PythonObject {
      * Reraises shouldn't be visible in the stacktrace. We mark them as such.
      * </p>
      **/
-    public PException getExceptionForReraise(LazyTraceback traceback) {
-        setTraceback(traceback);
+    public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
+        setTraceback(reraiseTraceback);
         PException newException = PException.fromObject(this, exception.getLocation());
         newException.setHideLocation(true);
         return newException;

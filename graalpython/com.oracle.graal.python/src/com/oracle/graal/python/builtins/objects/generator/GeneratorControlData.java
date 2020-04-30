@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.exception.PException;
 
 public final class GeneratorControlData {

@@ -165,7 +165,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
         }
 
-        private PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
+        private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
             // create the PFrame and refresh frame values
             return materializeFrameNode.execute(null, element.getLocation(), false, true, element.getFrame());
         }
