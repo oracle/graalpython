@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -122,12 +123,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             boolean skipFirst = pException.shouldHideLocation();
             for (TruffleStackTraceElement element : pException.getTruffleStackTrace()) {
                 if (pException.shouldCutOffTraceback(element)) {
-                    if (element.getLocation() != null) {
-                        SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
-                        if (sourceSection != null) {
-                            lineno = sourceSection.getStartLine();
-                        }
-                    }
+                    lineno = getLineno(element);
                     break;
                 }
                 if (skipFirst) {
@@ -163,6 +159,17 @@ public final class TracebackBuiltins extends PythonBuiltins {
             }
             tb.setNext(next);
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
+        }
+
+        @TruffleBoundary
+        private static int getLineno(TruffleStackTraceElement element) {
+            if (element.getLocation() != null) {
+                SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
+                if (sourceSection != null) {
+                    return sourceSection.getStartLine();
+                }
+            }
+            return -2;
         }
 
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
