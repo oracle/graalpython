@@ -579,7 +579,6 @@ def test_top_level_exception_handler():
         """)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     out, err = proc.communicate()
     assert proc.wait() == 1
-    assert out == ''
     expected = dedent("""\
         Traceback (most recent call last):
           File "<string>", line 6, in <module>
@@ -587,5 +586,5 @@ def test_top_level_exception_handler():
           File "<string>", line 3, in reraise
         RuntimeError: test
         """).strip()
-    assert err.strip() == expected, f"Expected stderr:\n{expected}\nGot:\n{err.strip()}"
+    assert expected in err.strip(), f"Expected tracback in stderr:\n{expected}\nGot stderr:\n{err.strip()}"
 
