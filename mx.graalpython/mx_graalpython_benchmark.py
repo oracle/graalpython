@@ -258,7 +258,7 @@ class GraalPythonVm(GuestVm):
 
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        extra_polyglot_args = ["--experimental-options"] + self._extra_polyglot_args
+        extra_polyglot_args = ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
 
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
@@ -291,7 +291,7 @@ class GraalPythonVm(GuestVm):
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
-        extra_polyglot_args += ["--experimental-options", "--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
+        extra_polyglot_args += ["--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
