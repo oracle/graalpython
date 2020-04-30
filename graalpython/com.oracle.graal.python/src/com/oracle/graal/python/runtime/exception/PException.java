@@ -92,8 +92,6 @@ public final class PException extends RuntimeException implements TruffleExcepti
     }
 
     public static PException fromObject(PBaseException actual, Node node) {
-        // If this is a reraise, make sure the previous traceback gets reified
-        actual.ensureReified();
         PException pException = new PException(actual, node);
         actual.setException(pException);
         return pException;

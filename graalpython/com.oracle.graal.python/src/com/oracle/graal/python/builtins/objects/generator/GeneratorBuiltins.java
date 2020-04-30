@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -176,6 +176,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     abstract static class ThrowNode extends PythonBuiltinNode {
 
         @Child private MaterializeFrameNode materializeFrameNode;
+        @Child private GetTracebackNode getTracebackNode;
 
         @ImportStatic({PGuards.class, SpecialMethodNames.class})
         public abstract static class PrepareExceptionNode extends Node {
@@ -292,6 +293,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         private Object doThrow(PGenerator self, PBaseException instance) {
             instance.setContext(null); // Will be filled when caught
             if (self.isStarted()) {
+                instance.ensureReified();
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 PException pException = PException.fromObject(instance, null);
@@ -305,7 +307,12 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PFrame pFrame = ensureMaterializeFrameNode().execute(null, location, false, false, generatorFrame);
-                instance.setTraceback(new LazyTraceback(pFrame, PException.fromObject(instance, location), instance.getTraceback()));
+                PTraceback existingTraceback = null;
+                if (instance.getTraceback() != null) {
+                    existingTraceback = ensureGetTracebackNode().execute(instance.getTraceback());
+                }
+                PTraceback newTraceback = factory().createTraceback(pFrame, pFrame.getLine(), existingTraceback);
+                instance.setTraceback(newTraceback);
                 throw PException.fromObject(instance, location);
             }
         }
@@ -322,6 +329,14 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 materializeFrameNode = insert(MaterializeFrameNode.create());
             }
             return materializeFrameNode;
+        }
+
+        private GetTracebackNode ensureGetTracebackNode() {
+            if (getTracebackNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTracebackNode = insert(GetTracebackNode.create());
+            }
+            return getTracebackNode;
         }
     }
 

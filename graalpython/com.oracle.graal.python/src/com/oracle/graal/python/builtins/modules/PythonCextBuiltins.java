@@ -865,8 +865,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // consume exception
                 context.setCurrentException(null);
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
-                // the exception here must have already been reified, because we
-                // got it from the context
                 sysExc.setCause(currentException.getEscapedException());
                 throw PException.fromObject(sysExc, this);
             }

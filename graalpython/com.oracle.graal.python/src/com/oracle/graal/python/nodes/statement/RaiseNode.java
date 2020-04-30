@@ -112,15 +112,25 @@ public abstract class RaiseNode extends StatementNode {
     // raise <exception>
     @Specialization(guards = "isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
+                    @Cached BranchProfile isReraise,
                     @Cached PRaiseNode raise) {
+        if (exception.getException() != null) {
+            isReraise.enter();
+            exception.ensureReified();
+        }
         throw raise.raise(exception);
     }
 
     // raise <exception> from *
     @Specialization(guards = "!isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause,
+                    @Cached BranchProfile isReraise,
                     @Cached PRaiseNode raise,
                     @Cached SetExceptionCauseNode setExceptionCauseNode) {
+        if (exception.getException() != null) {
+            isReraise.enter();
+            exception.ensureReified();
+        }
         setExceptionCauseNode.execute(frame, exception, cause);
         throw raise.raise(exception);
     }

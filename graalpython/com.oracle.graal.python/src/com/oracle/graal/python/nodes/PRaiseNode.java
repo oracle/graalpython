@@ -104,6 +104,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     public static PException raise(Node raisingNode, PBaseException exc) {
+        exc.ensureReified();
         if (raisingNode.isAdoptable()) {
             throw PException.fromObject(exc, raisingNode);
         } else {
