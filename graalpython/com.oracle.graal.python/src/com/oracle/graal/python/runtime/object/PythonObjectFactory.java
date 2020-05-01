@@ -774,7 +774,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMap createMap(LazyPythonClass cls) {
-        return trace(new PMap(cls));
+        return trace(new PMap(cls, makeStorage(cls)));
     }
 
     public PZip createZip(LazyPythonClass cls, Object[] iterables) {

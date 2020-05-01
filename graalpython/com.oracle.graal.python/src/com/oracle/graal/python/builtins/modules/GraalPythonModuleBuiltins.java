@@ -48,10 +48,11 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -102,8 +103,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.llvm.api.Toolchain;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = BuiltinNames.__GRAALPYTHON__)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {

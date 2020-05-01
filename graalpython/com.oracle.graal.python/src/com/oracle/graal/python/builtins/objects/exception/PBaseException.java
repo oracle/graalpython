@@ -170,8 +170,11 @@ public final class PBaseException extends PythonObject {
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
                 return typeName + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
+            } else if (hasMessageFormat) {
+                return typeName + ": " + messageFormat;
+            } else {
+                return typeName;
             }
-            return typeName + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
             return typeName;
         } else if (args.getSequenceStorage().length() == 1) {
