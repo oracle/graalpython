@@ -44,14 +44,15 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
 
     private final HashingStorageIterator<T> iterator;
     private int index;
 
-    public PHashingStorageIterator(LazyPythonClass clazz, HashingStorageIterator<T> iterator) {
-        super(clazz);
+    public PHashingStorageIterator(LazyPythonClass clazz, DynamicObject storage, HashingStorageIterator<T> iterator) {
+        super(clazz, storage);
         this.iterator = iterator;
     }
 

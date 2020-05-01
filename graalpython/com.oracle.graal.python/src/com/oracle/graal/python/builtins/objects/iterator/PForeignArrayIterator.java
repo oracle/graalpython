@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PForeignArrayIterator extends PythonBuiltinObject {
 
@@ -49,8 +50,8 @@ public class PForeignArrayIterator extends PythonBuiltinObject {
     private int size;
     private int cursor;
 
-    public PForeignArrayIterator(LazyPythonClass cls, Object foreignArray, int size) {
-        super(cls);
+    public PForeignArrayIterator(LazyPythonClass cls, DynamicObject storage, Object foreignArray, int size) {
+        super(cls, storage);
         this.foreignArray = foreignArray;
         this.size = size;
     }

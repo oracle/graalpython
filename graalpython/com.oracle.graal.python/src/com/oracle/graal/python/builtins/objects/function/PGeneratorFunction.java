@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,18 +28,17 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PGeneratorFunction extends PFunction {
 
-    public static PGeneratorFunction create(LazyPythonClass clazz, String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure,
+    public static PGeneratorFunction create(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure,
                     Object[] defaultValues, PKeyword[] kwDefaultValues) {
-        return new PGeneratorFunction(clazz, name, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues);
+        return new PGeneratorFunction(name, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues);
     }
 
-    private PGeneratorFunction(LazyPythonClass clazz, String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
+    private PGeneratorFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
                     PKeyword[] kwDefaultValues) {
-        super(clazz, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure);
+        super(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure);
     }
 
     @Override

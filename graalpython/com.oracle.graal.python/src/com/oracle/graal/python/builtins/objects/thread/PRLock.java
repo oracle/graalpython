@@ -45,6 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PRLock extends AbstractPythonLock {
     private static class InternalReentrantLock extends ReentrantLock {
@@ -62,8 +63,8 @@ public final class PRLock extends AbstractPythonLock {
 
     private final InternalReentrantLock lock;
 
-    public PRLock(LazyPythonClass cls) {
-        super(cls);
+    public PRLock(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
         this.lock = allocateLock();
     }
 

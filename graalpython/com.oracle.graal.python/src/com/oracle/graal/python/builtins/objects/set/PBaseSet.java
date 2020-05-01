@@ -30,18 +30,19 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PBaseSet extends PHashingCollection {
 
     protected final HashingStorage set;
 
-    public PBaseSet(LazyPythonClass clazz) {
-        super(clazz);
+    public PBaseSet(LazyPythonClass clazz, DynamicObject storage) {
+        super(clazz, storage);
         this.set = EconomicMapStorage.create();
     }
 
-    public PBaseSet(LazyPythonClass clazz, HashingStorage set) {
-        super(clazz);
+    public PBaseSet(LazyPythonClass clazz, DynamicObject storage, HashingStorage set) {
+        super(clazz, storage);
         this.set = set;
     }
 

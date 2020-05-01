@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import java.util.Random;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PRandom extends PythonBuiltinObject {
     private static class PythonRandom extends Random {
@@ -59,8 +60,8 @@ public class PRandom extends PythonBuiltinObject {
 
     private PythonRandom javaRandom;
 
-    public PRandom(LazyPythonClass cls) {
-        super(cls);
+    public PRandom(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
         resetJavaRandom();
     }
 

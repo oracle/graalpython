@@ -31,12 +31,13 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PImmutableSequence extends PSequence {
 
-    public PImmutableSequence(LazyPythonClass cls) {
-        super(cls);
+    public PImmutableSequence(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
     }
 
     @Override

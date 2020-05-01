@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -63,17 +63,10 @@ public class PythonObject extends PythonAbstractObject {
     private PHashingCollection dict;
     private final DynamicObject storage;
 
-    public PythonObject(LazyPythonClass pythonClass) {
-        assert pythonClass != null : getClass().getSimpleName();
-        this.storedPythonClass = pythonClass;
-        this.storage = TypeNodes.GetInstanceShape.doSlowPath(pythonClass).newInstance();
-        assert getLazyPythonClass() == pythonClass;
-    }
-
-    public PythonObject(LazyPythonClass pythonClass, Shape instanceShape) {
+    public PythonObject(LazyPythonClass pythonClass, DynamicObject storage) {
         assert pythonClass != null;
         this.storedPythonClass = pythonClass;
-        this.storage = instanceShape.newInstance();
+        this.storage = storage;
     }
 
     public final PythonAbstractClass getPythonClass() {

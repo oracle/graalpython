@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -96,7 +95,7 @@ public class ModuleRootNode extends PClosureRootNode {
             getWriteModuleDoc().doWrite(frame, doc);
         }
         if (hasAnnotations()) {
-            getWriteAnnotations().doWrite(frame, new PDict(PythonBuiltinClassType.PDict));
+            getWriteAnnotations().doWrite(frame, new PDict());
         }
     }
 

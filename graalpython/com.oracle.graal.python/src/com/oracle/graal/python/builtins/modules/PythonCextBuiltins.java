@@ -1649,8 +1649,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
 
-        public PExternalFunctionWrapper(LazyPythonClass cls, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
-            super(cls);
+        public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
+            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.newInstance());
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
         }
 
@@ -1672,7 +1672,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethDirectNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1694,7 +1694,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethKeywordsNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1714,7 +1714,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethVarargsNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1734,7 +1734,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethNoargsNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1754,7 +1754,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethONode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1774,7 +1774,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethFastcallNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallArgsToSulongNode::create) {
+            return new PExternalFunctionWrapper(FastCallArgsToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1794,7 +1794,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethFastcallWithKeywordsNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallWithKeywordsArgsToSulongNode::create) {
+            return new PExternalFunctionWrapper(FastCallWithKeywordsArgsToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1814,7 +1814,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethAllocNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
+            return new PExternalFunctionWrapper(BinaryFirstToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1834,7 +1834,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethGetattrNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
+            return new PExternalFunctionWrapper(BinaryFirstToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1854,7 +1854,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethSetattrNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
+            return new PExternalFunctionWrapper(TernaryFirstThirdToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1874,7 +1874,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethRichcmpNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
+            return new PExternalFunctionWrapper(TernaryFirstSecondToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1894,7 +1894,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethSSizeObjArgNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
+            return new PExternalFunctionWrapper(TernaryFirstThirdToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1914,7 +1914,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethReverseNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1934,7 +1934,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethPowNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1954,7 +1954,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethRPowNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+            return new PExternalFunctionWrapper(AllToSulongNode::create) {
 
                 @Override
                 @TruffleBoundary
@@ -1986,8 +1986,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
-
+            return new PExternalFunctionWrapper(TernaryFirstSecondToSulongNode::create) {
                 @Override
                 @TruffleBoundary
                 protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {

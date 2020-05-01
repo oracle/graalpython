@@ -45,6 +45,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
@@ -64,8 +65,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    public PythonManagedClass(LazyPythonClass typeClass, String name, PythonAbstractClass... baseClasses) {
-        super(typeClass);
+    public PythonManagedClass(LazyPythonClass typeClass, DynamicObject storage, String name, PythonAbstractClass... baseClasses) {
+        super(typeClass, storage);
         this.className = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
@@ -118,7 +119,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
-    public Shape getInstanceShape() {
+    public final Shape getInstanceShape() {
         return instanceShape;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.traceback;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -51,7 +50,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 public final class PTraceback extends PythonBuiltinObject {
 
     /** A marker object to indicate the end of a traceback chain. */
-    public static final PTraceback NO_TRACEBACK = new PTraceback(PythonBuiltinClassType.PTraceback, null, (PException) null);
+    public static final PTraceback NO_TRACEBACK = new PTraceback(null, (PException) null);
 
     public static final String TB_FRAME = "tb_frame";
     public static final String TB_NEXT = "tb_next";
@@ -72,15 +71,15 @@ public final class PTraceback extends PythonBuiltinObject {
     private final int lasti;
     private PTraceback next;
 
-    public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception) {
-        super(clazz);
+    public PTraceback(PFrame frame, PException exception) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
         this.frame = frame;
         this.exception = exception;
         this.lasti = 0;
     }
 
-    public PTraceback(LazyPythonClass clazz, PFrame frame, PTraceback next) {
-        super(clazz);
+    public PTraceback(PFrame frame, PTraceback next) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
         this.frame = frame;
         this.exception = next.exception;
         this.next = next;

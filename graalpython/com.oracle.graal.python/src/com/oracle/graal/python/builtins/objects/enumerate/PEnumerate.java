@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,14 +27,15 @@ package com.oracle.graal.python.builtins.objects.enumerate;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PEnumerate extends PythonBuiltinObject {
 
     private final Object iterator;
     private long index;
 
-    public PEnumerate(LazyPythonClass clazz, Object iterator, long start) {
-        super(clazz);
+    public PEnumerate(LazyPythonClass clazz, DynamicObject storage, Object iterator, long start) {
+        super(clazz, storage);
         this.iterator = iterator;
         this.index = start;
     }

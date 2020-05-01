@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PMMap extends PythonObject {
@@ -62,8 +63,8 @@ public final class PMMap extends PythonObject {
     private final long length;
     private final long offset;
 
-    public PMMap(LazyPythonClass pythonClass, SeekableByteChannel mappedByteBuffer, long length, long offset) {
-        super(pythonClass);
+    public PMMap(LazyPythonClass pythonClass, DynamicObject storage, SeekableByteChannel mappedByteBuffer, long length, long offset) {
+        super(pythonClass, storage);
         this.mappedByteBuffer = mappedByteBuffer;
         this.length = length;
         this.offset = offset;

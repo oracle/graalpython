@@ -154,6 +154,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         if (!dynamicObject.getShape().isValid()) {
             dynamicObject.updateShape();
         }
+        assert dynamicObject.getShape().isValid();
         Object attrKey = attrKey(key);
         dynamicObject.define(attrKey, value);
         return true;

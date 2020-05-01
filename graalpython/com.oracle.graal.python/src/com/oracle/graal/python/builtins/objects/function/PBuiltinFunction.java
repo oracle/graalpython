@@ -61,8 +61,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final PNone[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, int numDefaults, RootCallTarget callTarget) {
-        super(clazz);
+    public PBuiltinFunction(String name, LazyPythonClass enclosingType, int numDefaults, RootCallTarget callTarget) {
+        super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.newInstance());
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingType = enclosingType;

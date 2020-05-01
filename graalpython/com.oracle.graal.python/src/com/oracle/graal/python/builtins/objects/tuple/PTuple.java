@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,19 +32,20 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PTuple extends PImmutableSequence {
 
     private SequenceStorage store;
     private long hash = -1;
 
-    public PTuple(LazyPythonClass cls, Object[] elements) {
-        super(cls);
+    public PTuple(LazyPythonClass cls, DynamicObject storage, Object[] elements) {
+        super(cls, storage);
         this.store = new ObjectSequenceStorage(elements);
     }
 
-    public PTuple(LazyPythonClass cls, SequenceStorage store) {
-        super(cls);
+    public PTuple(LazyPythonClass cls, DynamicObject storage, SequenceStorage store) {
+        super(cls, storage);
         this.store = store;
     }
 

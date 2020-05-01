@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,22 +42,19 @@ package com.oracle.graal.python.builtins.objects.lzma;
 
 import java.io.ByteArrayOutputStream;
 
-import org.tukaani.xz.FinishableOutputStream;
-
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
+
+import org.tukaani.xz.FinishableOutputStream;
 
 public class PLZMACompressor extends PythonObject {
 
     private FinishableOutputStream lzmaStream;
     private ByteArrayOutputStream bos;
 
-    public PLZMACompressor(LazyPythonClass clazz) {
-        super(clazz);
-    }
-
-    public PLZMACompressor(LazyPythonClass clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        super(clazz);
+    public PLZMACompressor(LazyPythonClass clazz, DynamicObject storage, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        super(clazz, storage);
         this.lzmaStream = lzmaStream;
         this.bos = bos;
     }
