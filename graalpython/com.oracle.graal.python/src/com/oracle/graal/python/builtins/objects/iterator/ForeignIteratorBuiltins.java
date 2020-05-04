@@ -63,7 +63,7 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         public Object next(PForeignArrayIterator foreignIter,
                         @Cached PForeignToPTypeNode fromForeignNode,
                         @CachedLibrary(limit = "3") InteropLibrary interop) {
-            if (foreignIter.getCursor() >= foreignIter.getSize()) {
+            if (foreignIter.getCursor() >= foreignIter.getSize(interop)) {
                 throw raise(StopIteration);
             }
 

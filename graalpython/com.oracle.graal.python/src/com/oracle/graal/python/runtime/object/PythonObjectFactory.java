@@ -783,7 +783,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PForeignArrayIterator createForeignArrayIterator(Object iterable, InteropLibrary lib) {
-        return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, PythonBuiltinClassType.PForeignArrayIterator.newInstance(), iterable, lib));
+        return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, PythonBuiltinClassType.PForeignArrayIterator.newInstance(), iterable));
     }
 
     public PBuffer createBuffer(LazyPythonClass cls, Object iterable, boolean readonly) {

@@ -49,20 +49,18 @@ import com.oracle.truffle.api.object.DynamicObject;
 public class PForeignArrayIterator extends PythonBuiltinObject {
 
     private final Object foreignArray;
-    private final InteropLibrary lib;
     private int cursor;
 
-    public PForeignArrayIterator(LazyPythonClass cls, DynamicObject storage, Object foreignArray, InteropLibrary lib) {
+    public PForeignArrayIterator(LazyPythonClass cls, DynamicObject storage, Object foreignArray) {
         super(cls, storage);
         this.foreignArray = foreignArray;
-        this.lib = lib;
     }
 
     public Object getForeignArray() {
         return foreignArray;
     }
 
-    public int getSize() {
+    public int getSize(InteropLibrary lib) {
         try {
             return (int) lib.getArraySize(foreignArray);
         } catch (UnsupportedMessageException ex) {
