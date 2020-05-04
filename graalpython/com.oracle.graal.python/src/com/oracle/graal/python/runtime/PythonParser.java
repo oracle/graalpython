@@ -68,8 +68,8 @@ public interface PythonParser {
          */
         Eval,
         /**
-         * Used for building Truffle tree from deserialized ANTLR parser result. 
-         * The result expression or statement is not wrapped in any expression. 
+         * Used for building Truffle tree from deserialized ANTLR parser result. The result
+         * expression or statement is not wrapped in any expression.
          */
         Deserialization;
     }

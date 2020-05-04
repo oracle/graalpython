@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.objects.code;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -101,7 +101,8 @@ public abstract class CodeNodes {
 
                 RootCallTarget ct = (RootCallTarget) createCode.get();
                 PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                return factory.createCode(cls, ct, ((PClosureFunctionRootNode)ct.getRootNode()).getSignature(),  nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+                return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
+                                firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
@@ -148,23 +149,27 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         DataInputStream dis = new DataInputStream(bais);
         ScopeInfo globalScope = null;
         SSTNode sstNode = null;
-        try {
-            // Just to be sure that the serialization version is ok.
-            byte version = dis.readByte();
-            if (version != SerializationUtils.VERSION) {
-                assert true : "It looks like that there is used old version of data serialization in .pyc files. It can happen, if you use developement vertsion of GraalPython. Remove them.";
-                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
+        if (data.length != 0) {
+            try {
+                // Just to be sure that the serialization version is ok.
+                byte version = dis.readByte();
+                if (version != SerializationUtils.VERSION) {
+                    assert true : "It looks like that there is used old version of data serialization in .pyc files. It can happen, if you use developement vertsion of GraalPython. Remove them.";
+                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
+                }
+                globalScope = ScopeInfo.read(dis, null);
+                int offset = dis.readInt();
+                sstNode = new SSTDeserializer(dis, globalScope, source, offset).readNode();
+                if (cellvars != null || freevars != null) {
+                    ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
+                    rootScope.setCellVars(cellvars);
+                    rootScope.setFreeVars(freevars);
+                }
+            } catch (IOException e) {
+                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + source.getPath());
             }
-            globalScope = ScopeInfo.read(dis, null);
-            int offset = dis.readInt();
-            sstNode = new SSTDeserializer(dis, globalScope, source, offset).readNode();
-            if (cellvars != null || freevars != null) {
-                ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
-                rootScope.setCellVars(cellvars);
-                rootScope.setFreeVars(freevars);
-            }
-        } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + source.getPath());
+        } else {
+            return new BadOPCodeNode(PythonLanguage.getCore().getLanguage());
         }
         PythonCore core = PythonLanguage.getCore();
         PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source);

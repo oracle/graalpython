@@ -135,5 +135,5 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     public SourceSection getSourceSection() {
         return getFunctionRootNode().getSourceSection();
     }
-    
+
 }
