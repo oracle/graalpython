@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SELF;
 
 import java.util.List;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class Signature {
@@ -82,7 +83,7 @@ public final class Signature {
     public Signature createWithSelf() {
         String[] parameterIdsWithSelf = new String[getParameterIds().length + 1];
         parameterIdsWithSelf[0] = SELF;
-        System.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
+        PythonUtils.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
 
         return new Signature(-1, takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
                         parameterIdsWithSelf, keywordOnlyNames);
@@ -97,7 +98,7 @@ public final class Signature {
     }
 
     /**
-     * 
+     *
      * @return The index to the positional only argument marker ('/'). Which means that all
      *         positional only argument have index smaller then this.
      */

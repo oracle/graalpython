@@ -33,6 +33,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class ByteSequenceStorage extends TypedSequenceStorage {
@@ -171,7 +172,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         byte[] newArray = new byte[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new ByteSequenceStorage(newArray);
         }
 

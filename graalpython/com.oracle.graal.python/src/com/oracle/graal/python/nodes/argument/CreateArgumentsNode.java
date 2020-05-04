@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNo
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -266,7 +267,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     assert upfront == 1;
                     Object[] varargs = new Object[num_args + 1];
                     varargs[0] = self;
-                    System.arraycopy(args_w, 0, varargs, 1, num_args);
+                    PythonUtils.arraycopy(args_w, 0, varargs, 1, num_args);
                     PArguments.setVariableArguments(scope_w, varargs);
                 } else if (num_args > args_left) {
                     PArguments.setVariableArguments(scope_w, Arrays.copyOfRange(args_w, args_left, args_w.length));
@@ -422,7 +423,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(guards = "upfront < co_argcount")
         int doIt(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
             int take = Math.min(num_args, co_argcount - upfront);
-            System.arraycopy(args_w, 0, scope_w, PArguments.USER_ARGUMENTS_OFFSET + upfront, take);
+            PythonUtils.arraycopy(args_w, 0, scope_w, PArguments.USER_ARGUMENTS_OFFSET + upfront, take);
             return upfront + take;
         }
 

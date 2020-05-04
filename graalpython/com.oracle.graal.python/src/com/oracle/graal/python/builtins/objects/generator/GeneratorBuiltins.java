@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -186,7 +187,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] array = getObjectArrayNode.execute(val);
             Object[] args = new Object[array.length + 1];
-            System.arraycopy(array, 0, args, 1, array.length);
+            PythonUtils.arraycopy(array, 0, args, 1, array.length);
             args[0] = typ;
             Object instance = callTyp.execute(frame, typ, args);
             if (instance instanceof PBaseException) {

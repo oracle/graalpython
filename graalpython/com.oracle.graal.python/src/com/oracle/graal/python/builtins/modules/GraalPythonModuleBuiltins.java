@@ -80,6 +80,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -248,7 +249,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             if (modulePath != null) {
                 Object[] outPath = new Object[modulePath.length];
-                System.arraycopy(modulePath, 0, outPath, 0, modulePath.length);
+                PythonUtils.arraycopy(modulePath, 0, outPath, 0, modulePath.length);
                 LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
                 return factory().createList(outPath);
             } else {

@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -722,7 +723,7 @@ public abstract class TypeNodes {
                     currentMRO = new PythonAbstractClass[]{cls};
                 } else {
                     currentMRO = new PythonAbstractClass[baseMRO.length + 1];
-                    System.arraycopy(baseMRO, 0, currentMRO, 1, baseMRO.length);
+                    PythonUtils.arraycopy(baseMRO, 0, currentMRO, 1, baseMRO.length);
                     currentMRO[0] = cls;
                 }
             } else {

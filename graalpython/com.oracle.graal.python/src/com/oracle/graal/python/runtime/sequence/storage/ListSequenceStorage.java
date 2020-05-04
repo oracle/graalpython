@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.util.PythonUtils;
 
 public final class ListSequenceStorage extends TypedSequenceStorage {
 
@@ -144,7 +145,7 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         PList[] newArray = new PList[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new ListSequenceStorage(newArray);
         }
 
