@@ -517,7 +517,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 long size = lib.getArraySize(iterable);
                 if (size < Integer.MAX_VALUE) {
-                    return factory().createForeignArrayIterator(iterable, (int) size);
+                    return factory().createForeignArrayIterator(iterable, lib);
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
@@ -819,7 +819,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 long size = lib.getArraySize(object);
                 if (size <= Integer.MAX_VALUE && size >= 0) {
-                    PForeignArrayIterator iterable = factory().createForeignArrayIterator(object, (int) size);
+                    PForeignArrayIterator iterable = factory().createForeignArrayIterator(object, lib);
                     return getCallStrNode().executeObject(frame, asList.execute(frame, iterable));
                 }
             } catch (UnsupportedMessageException e) {
