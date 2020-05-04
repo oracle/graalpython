@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -69,6 +71,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_signal")
@@ -209,19 +212,40 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             try {
                 return toIntExact(signum);
             } catch (ArithmeticException ae) {
-                throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
+                throw raiseIntTooLarge();
             }
         }
 
-        @Specialization
+        private int getSignum(PInt signum) {
+            try {
+                return signum.intValueExact();
+            } catch (ArithmeticException ae) {
+                throw raiseIntTooLarge();
+            }
+        }
+
+        private PException raiseIntTooLarge() {
+            throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
+        }
+
         @TruffleBoundary
-        Object signal(@SuppressWarnings("unused") PythonModule self, long signalNumber, int id) {
-            int signum = getSignum(signalNumber);
+        @Specialization
+        Object signalPiI(@SuppressWarnings("unused") PythonModule self, PInt signalNumber, int id) {
+            return signal(getSignum(signalNumber), id);
+        }
+
+        @TruffleBoundary
+        @Specialization
+        Object signalLI(@SuppressWarnings("unused") PythonModule self, long signalNumber, int id) {
+            return signal(getSignum(signalNumber), id);
+        }
+
+        private Object signal(int signum, int id) {
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, id);
             } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.ValueError, e);
+                throw raiseHandlerTypeError();
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {
@@ -234,12 +258,28 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
-        @Specialization
         @TruffleBoundary
-        Object signal(PythonModule self, long signalNumber, Object handler,
+        @Specialization(guards = "isNotID(handler)", limit = "1")
+        Object signalPiFun(PythonModule self, PInt signalNumber, Object handler,
+                        @CachedLibrary("handler") PythonObjectLibrary handlerLib,
                         @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
                         @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
-            int signum = getSignum(signalNumber);
+            return signal(self, getSignum(signalNumber), handlerLib, handler, readQueueNode, readSemaNode);
+        }
+
+        @TruffleBoundary
+        @Specialization(guards = "isNotID(handler)", limit = "1")
+        Object signalLFun(PythonModule self, long signalNumber, Object handler,
+                        @CachedLibrary("handler") PythonObjectLibrary handlerLib,
+                        @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
+                        @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
+            return signal(self, getSignum(signalNumber), handlerLib, handler, readQueueNode, readSemaNode);
+        }
+
+        private Object signal(PythonModule self, int signum, PythonObjectLibrary handlerLib, Object handler, ReadAttributeFromObjectNode readQueueNode, ReadAttributeFromObjectNode readSemaNode) {
+            if (!handlerLib.isCallable(handler)) {
+                raiseHandlerTypeError();
+            }
             ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
             Semaphore semaphore = getSemaphore(self, readSemaNode);
             Object retval;
@@ -281,6 +321,14 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } else {
                 throw new IllegalStateException("the signal trigger semaphore was modified!");
             }
+        }
+
+        private PException raiseHandlerTypeError() {
+            throw raise(PythonErrorType.TypeError, "TypeError: signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object");
+        }
+
+        static boolean isNotID(Object val) {
+            return !(val instanceof Integer);
         }
     }
 }
