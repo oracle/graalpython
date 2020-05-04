@@ -91,7 +91,7 @@ public final class PCell extends PythonAbstractObject {
         assert constantAssumption == effectivelyFinal;
         if (constantAssumption.isValid()) {
             if (this.ref != null) {
-                constantAssumption.invalidate();
+                invalidateAssumption(constantAssumption);
             }
         }
         this.ref = ref;
