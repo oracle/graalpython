@@ -31,3 +31,4 @@
 *TestCase.test_sinkstate_yield
 *TestCase.test_stop_sequence
 *TestCase.test_unicode_join_endcase
+*TestCase.test_writelines
