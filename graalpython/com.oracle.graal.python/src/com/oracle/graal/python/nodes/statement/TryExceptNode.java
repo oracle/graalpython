@@ -141,10 +141,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             if (shouldCatchAll) {
                 PException pe = PException.fromObject(getBaseException(e), this);
                 // Re-attach truffle stacktrace
-                pe.initCause(e.getCause());
-                // Host exceptions have their stacktrace already filled in, call this to set
-                // the cutoff point to the catch site
-                pe.getTruffleStackTrace();
+                moveTruffleStacktTrace(e, pe);
                 boolean handled = catchException(frame, pe);
                 if (handled) {
                     return;
@@ -155,6 +152,14 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             throw e;
         }
         orelse.executeVoid(frame);
+    }
+
+    @TruffleBoundary
+    private static void moveTruffleStacktTrace(Throwable e, PException pe) {
+        pe.initCause(e.getCause());
+        // Host exceptions have their stacktrace already filled in, call this to set
+        // the cutoff point to the catch site
+        pe.getTruffleStackTrace();
     }
 
     @TruffleBoundary
