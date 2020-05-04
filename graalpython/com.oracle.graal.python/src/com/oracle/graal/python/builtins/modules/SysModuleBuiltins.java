@@ -51,6 +51,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -79,6 +81,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -91,8 +94,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -300,6 +301,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "exc_info", needsFrame = true)
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
+
+        public static Object fast(VirtualFrame frame, GetClassNode getClassNode, GetCaughtExceptionNode getCaughtExceptionNode, PythonObjectFactory factory) {
+            final PException currentException = getCaughtExceptionNode.execute(frame);
+            if (currentException == null) {
+                return factory.createTuple(new PNone[]{PNone.NONE});
+            }
+            return factory.createTuple(new Object[]{getClassNode.execute(currentException.getExceptionObject())});
+        }
 
         @Specialization
         public Object run(VirtualFrame frame,

@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import os
 import re
+import subprocess
 from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
@@ -234,7 +235,10 @@ class PyPyVm(AbstractPythonIterationsControlVm):
     def interpreter(self):
         home = mx.get_env(ENV_PYPY_HOME)
         if not home:
-            mx.abort("{} is not set!".format(ENV_PYPY_HOME))
+            try:
+                return subprocess.check_output("which %s" % PyPyVm.PYPY_INTERPRETER, shell=True).decode().strip()
+            except OSError:
+                mx.abort("{} is not set!".format(ENV_PYPY_HOME))
         return join(home, 'bin', PyPyVm.PYPY_INTERPRETER)
 
     def name(self):
@@ -258,7 +262,7 @@ class GraalPythonVm(GuestVm):
 
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        extra_polyglot_args = ["--experimental-options"] + self._extra_polyglot_args
+        extra_polyglot_args = ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
 
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
@@ -291,7 +295,7 @@ class GraalPythonVm(GuestVm):
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
-        extra_polyglot_args += ["--experimental-options", "--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
+        extra_polyglot_args += ["--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):

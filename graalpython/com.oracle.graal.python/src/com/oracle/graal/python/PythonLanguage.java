@@ -474,7 +474,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             return newSource(ctxt, sourceBuilder);
         } catch (IOException e) {
-            throw new AssertionError();
+            throw new IllegalStateException(e);
         }
     }
 

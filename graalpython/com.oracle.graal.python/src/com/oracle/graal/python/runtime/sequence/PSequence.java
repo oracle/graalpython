@@ -40,13 +40,14 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 public abstract class PSequence extends PythonBuiltinObject {
 
-    public PSequence(LazyPythonClass cls) {
-        super(cls);
+    public PSequence(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
     }
 
     public abstract SequenceStorage getSequenceStorage();
@@ -63,7 +64,7 @@ public abstract class PSequence extends PythonBuiltinObject {
             return (PSequence) value;
         }
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PSequence required.");
+        throw new IllegalStateException("PSequence required.");
     }
 
     public static PSequence expect(Object value) throws UnexpectedResultException {

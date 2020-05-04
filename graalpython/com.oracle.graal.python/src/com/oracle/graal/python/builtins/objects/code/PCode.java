@@ -73,6 +73,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
@@ -118,8 +119,8 @@ public final class PCode extends PythonBuiltinObject {
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget) {
-        super(cls);
+    public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget) {
+        super(cls, storage);
         this.callTarget = callTarget;
         if (callTarget.getRootNode() instanceof PRootNode) {
             this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
@@ -129,20 +130,20 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PCode(LazyPythonClass cls, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
-        this(cls, callTarget);
+        this(cls, storage, callTarget);
         this.codestring = codestring;
         this.flags = flags;
         this.firstlineno = firstlineno;
         this.lnotab = lnotab;
     }
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
+    public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget, Signature signature,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
-        super(cls);
+        super(cls, storage, storage);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.flags = flags;
@@ -253,7 +254,7 @@ public final class PCode extends PythonBuiltinObject {
                 if (node instanceof SimpleLiteralNode) {
                     constants.add(((SimpleLiteralNode) node).getValue());
                 } else if (node instanceof FunctionDefinitionNode) {
-                    constants.add(new PCode(PythonBuiltinClassType.PCode, ((FunctionDefinitionNode) node).getCallTarget()));
+                    constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.newInstance(), ((FunctionDefinitionNode) node).getCallTarget()));
                 } else if (node instanceof GeneratorExpressionNode) {
                     // TODO: we do it this way here since we cannot deserialize generator
                     // expressions right now

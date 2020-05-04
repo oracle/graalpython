@@ -29,26 +29,26 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PList extends PMutableSequence {
     private final ListLiteralNode origin;
     private SequenceStorage store;
 
-    public PList(LazyPythonClass cls, SequenceStorage store) {
-        super(cls);
+    public PList(LazyPythonClass cls, DynamicObject storage, SequenceStorage store) {
+        super(cls, storage);
         this.origin = null;
         this.store = store;
     }
 
-    public PList(LazyPythonClass cls, SequenceStorage store, ListLiteralNode origin) {
-        super(cls);
+    public PList(LazyPythonClass cls, DynamicObject storage, SequenceStorage store, ListLiteralNode origin) {
+        super(cls, storage);
         this.origin = origin;
         this.store = store;
     }
@@ -84,21 +84,6 @@ public final class PList extends PMutableSequence {
         store.reverse();
     }
 
-    public final void insert(int index, Object value) {
-        try {
-            store.insertItem(index, value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value, null);
-
-            try {
-                store.insertItem(index, value);
-            } catch (SequenceStoreException e1) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException();
-            }
-        }
-    }
-
     @Ignore
     @Override
     public final boolean equals(Object other) {
@@ -127,7 +112,7 @@ public final class PList extends PMutableSequence {
             return (PList) value;
         }
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PList required.");
+        throw new IllegalStateException("PList required.");
     }
 
     public static PList expect(Object value) throws UnexpectedResultException {

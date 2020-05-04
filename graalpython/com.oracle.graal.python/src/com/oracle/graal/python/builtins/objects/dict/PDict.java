@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -35,23 +36,28 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PDict extends PHashingCollection {
 
     private HashingStorage dictStorage;
 
-    public PDict(LazyPythonClass cls, HashingStorage dictStorage) {
-        super(cls);
+    public PDict() {
+        this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.newInstance());
+    }
+
+    public PDict(LazyPythonClass cls, DynamicObject storage, HashingStorage dictStorage) {
+        super(cls, storage);
         this.dictStorage = dictStorage;
     }
 
-    public PDict(LazyPythonClass cls) {
-        super(cls);
+    public PDict(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
         this.dictStorage = new EmptyStorage();
     }
 
-    public PDict(LazyPythonClass cls, PKeyword[] keywords) {
-        super(cls);
+    public PDict(LazyPythonClass cls, DynamicObject storage, PKeyword[] keywords) {
+        super(cls, storage);
         this.dictStorage = (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage();
     }
 
@@ -92,21 +98,7 @@ public final class PDict extends PHashingCollection {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        StringBuilder buf = new StringBuilder("{");
-        HashingStorageLibrary lib = HashingStorageLibrary.getUncached();
-        int length = lib.length(dictStorage);
-        int i = 0;
-
-        for (HashingStorage.DictEntry entry : lib.entries(dictStorage)) {
-            buf.append(entry.getKey() + ": " + entry.getValue());
-            if (i < length - 1) {
-                buf.append(", ");
-            }
-            i++;
-        }
-
-        buf.append("}");
-        return buf.toString();
+        return "PDict<" + dictStorage.getClass().getSimpleName() + ">";
     }
 
     @Override

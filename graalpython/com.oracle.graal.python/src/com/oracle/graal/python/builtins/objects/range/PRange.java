@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,7 @@ package com.oracle.graal.python.builtins.objects.range;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
@@ -43,16 +43,16 @@ public final class PRange extends PImmutableSequence {
     private final int step;
     private final int length;
 
-    public PRange(LazyPythonClass clazz, int stop) {
-        this(clazz, 0, stop, 1);
+    public PRange(int stop) {
+        this(0, stop, 1);
     }
 
-    public PRange(LazyPythonClass clazz, int start, int stop) {
-        this(clazz, start, stop, 1);
+    public PRange(int start, int stop) {
+        this(start, stop, 1);
     }
 
-    public PRange(LazyPythonClass clazz, int start, int stop, int step) {
-        super(clazz);
+    public PRange(int start, int stop, int step) {
+        super(PythonBuiltinClassType.PRange, PythonBuiltinClassType.PRange.newInstance());
         if (step == 0) {
             CompilerDirectives.transferToInterpreter();
             throw PRaiseNode.getUncached().raise(ValueError, "range() arg 3 must not be zero");

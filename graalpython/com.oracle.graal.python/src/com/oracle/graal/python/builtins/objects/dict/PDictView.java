@@ -40,19 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import java.util.Iterator;
-
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PDictView extends PythonBuiltinObject {
     private final PHashingCollection dict;
     private final String name;
 
-    public PDictView(LazyPythonClass clazz, String name, PHashingCollection dict) {
-        super(clazz);
+    public PDictView(LazyPythonClass clazz, DynamicObject storage, String name, PHashingCollection dict) {
+        super(clazz, storage);
         this.name = name;
         assert dict != null;
         this.dict = dict;
@@ -71,16 +71,16 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the keys
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictKeysIterator extends PJavaIteratorIterator<Object> {
-        public PDictKeysIterator(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, dict.keys().iterator());
+    public static final class PDictKeysIterator extends PHashingStorageIterator<Object> {
+        public PDictKeysIterator(LazyPythonClass clazz, DynamicObject storage, PHashingCollection dict) {
+            super(clazz, storage, dict.keys().iterator());
         }
     }
 
     public static final class PDictKeysView extends PDictView {
 
-        public PDictKeysView(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, "dict_keys", dict);
+        public PDictKeysView(LazyPythonClass clazz, DynamicObject storage, PHashingCollection dict) {
+            super(clazz, storage, "dict_keys", dict);
         }
     }
 
@@ -89,16 +89,16 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the values
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictValuesIterator extends PJavaIteratorIterator<Object> {
-        public PDictValuesIterator(LazyPythonClass clazz, Iterator<Object> iterator) {
-            super(clazz, iterator);
+    public static final class PDictValuesIterator extends PHashingStorageIterator<Object> {
+        public PDictValuesIterator(LazyPythonClass clazz, DynamicObject storage, HashingStorageIterator<Object> iterator) {
+            super(clazz, storage, iterator);
         }
     }
 
     public static final class PDictValuesView extends PDictView {
 
-        public PDictValuesView(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, "dict_values", dict);
+        public PDictValuesView(LazyPythonClass clazz, DynamicObject storage, PHashingCollection dict) {
+            super(clazz, storage, "dict_values", dict);
         }
     }
 
@@ -107,16 +107,16 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the items
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
-        public PDictItemsIterator(LazyPythonClass clazz, Iterator<DictEntry> iterator) {
-            super(clazz, iterator);
+    public static final class PDictItemsIterator extends PHashingStorageIterator<DictEntry> {
+        public PDictItemsIterator(LazyPythonClass clazz, DynamicObject storage, HashingStorageIterator<DictEntry> iterator) {
+            super(clazz, storage, iterator);
         }
     }
 
     public static final class PDictItemsView extends PDictView {
 
-        public PDictItemsView(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, "dict_items", dict);
+        public PDictItemsView(LazyPythonClass clazz, DynamicObject storage, PHashingCollection dict) {
+            super(clazz, storage, "dict_items", dict);
         }
     }
 

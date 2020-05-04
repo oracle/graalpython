@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PZipImporter extends PythonBuiltinObject {
     /**
@@ -114,8 +115,8 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(LazyPythonClass cls, PDict zipDirectoryCache, String separator) {
-        super(cls);
+    public PZipImporter(LazyPythonClass cls, DynamicObject storage, PDict zipDirectoryCache, String separator) {
+        super(cls, storage);
         this.archive = null;
         this.prefix = null;
         this.separator = separator;

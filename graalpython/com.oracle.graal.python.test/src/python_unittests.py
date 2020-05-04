@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@ import csv
 import gzip
 import os
 import re
+import html
 import subprocess
 from collections import defaultdict
 from json import dumps
@@ -79,6 +80,30 @@ PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
 PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
 PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
 
+TEST_TYPES = ('array','buffer','code','frame','long','memoryview','unicode','exceptions',
+            'baseexception','range','builtin','bytes','thread','property','class','dictviews',
+            'sys','imp','rlcompleter','types','coroutines','dictcomps','int_literal','mmap',
+            'module','numeric_tower','syntax','traceback','typechecks','int','keyword','raise',
+            'descr','generators','list','complex','tuple','enumerate','super','float',
+            'bool','fstring','dict','iter','string','scope','with','set')
+
+TEST_APP_SCRIPTING = ('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
+            'pickle','pickletester','pickle','picklebuffer','pickletools','codecs','functools',
+            'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport',
+            'zipapp','gzip','bz2','builtin')
+
+TEST_SERVER_SCRIPTING_DS = ('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
+                            'fork','forkserver','main_handling','spawn','socket','socket','socketserver',
+                            'signal','mmap','resource','thread','dummy_thread','threading','threading_local',
+                            'threadsignals','dummy_threading','threadedtempfile','thread','hashlib','re',
+                            'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING
+
+
+USE_CASE_GROUPS = {
+        'Python Language and Built-in Types': TEST_TYPES,
+        'Application Scripting': TEST_APP_SCRIPTING,
+        'Server-Side Scripting and Data Science': TEST_SERVER_SCRIPTING_DS
+         }
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -305,7 +330,7 @@ def process_output(output_lines):
     unittests = []
     # stats tracked per unittest
     unittest_tests = defaultdict(list)
-    error_messages = defaultdict(set)
+    error_messages = defaultdict(dict)
     java_exceptions = defaultdict(set)
     stats = defaultdict(StatEntry)
 
@@ -320,7 +345,12 @@ def process_output(output_lines):
         # extract python reported python error messages
         match = re.match(PTRN_ERROR, line)
         if match:
-            error_messages[unittests[-1]].add((match.group('error'), match.group('message')))
+            error_message = (match.group('error'), match.group('message'))
+            error_message_dict = error_messages[unittests[-1]]
+            d = error_message_dict.get(error_message)
+            if not d:
+                d = 0
+            error_message_dict[error_message] = d + 1
             continue
 
         # extract java exceptions
@@ -507,7 +537,7 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
                 Col.CPY_NUM_SKIPPED: cpy_unittest_stats.num_skipped if cpy_unittest_stats else None,
                 Col.CPY_NUM_PASSES: cpy_unittest_stats.num_passes if cpy_unittest_stats else None,
                 # errors
-                Col.PYTHON_ERRORS: dumps(list(unittest_errmsg)),
+                Col.PYTHON_ERRORS: dumps(list(unittest_errmsg.items())),
             })
 
             # update totals that ran in some way
@@ -645,8 +675,6 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         '''.format('\n'.join([_fmt(cmp) for cmp in components]))
 
     def progress_bar(value, color='success'):
-        if 0.0 <= value <= 1.0:
-            value = 100 * value
         return '''
         <div class="progress">
           <div class="progress-bar progress-bar-{color}" role="progressbar" aria-valuenow="{value}"
@@ -684,7 +712,7 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         def format_val(row, k):
             value = row[k]
             if k == Col.PYTHON_ERRORS:
-                return '<code class="h6">{}</code>'.format(value)
+                return "(click to expand)"
             elif k == Col.UNITTEST:
                 _class = "text-info"
             elif k == Col.NUM_PASSES and value > 0:
@@ -700,7 +728,8 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
             return '<span class="{} h6"><b>{}</b></span>'.format(_class, value)
 
         _tbody = '\n'.join([
-                '<tr class="{cls}"><td>{i}</td>{vals}</tr>'.format(
+                '<tr class="{cls}" data-errors="{errors}"><td>{i}</td>{vals}</tr>'.format(
+                    errors = html.escape(row[Col.PYTHON_ERRORS], quote=True), # put the errors data into a data attribute
                     cls='info' if i % 2 == 0 else '', i=i,
                     vals=' '.join(['<td>{}</td>'.format(format_val(row, k)) for k in tcols]))
                 for i, row in enumerate(trows)])
@@ -722,6 +751,30 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
                     "lengthMenu": [[50, 100, 200, -1], [50, 100, 200, "All"]],
                     paging: false, scrollX: true, scrollCollapse: true, "order": []
                 }});
+                // expand and show the errors when a row is clicked upon
+                $(table_id).on('click', 'td', function () {{
+                    var tr = $(this).closest('tr');
+                    var row = table.row( tr );
+
+                    if ( row.child.isShown() ) {{
+                        row.child.hide();
+                        tr.removeClass('shown');
+                    }}
+                    else {{
+                        var data = tr.data('errors');
+                        if (data) {{
+                            function formatEntry(entry) {{
+                                var description = entry[0][0];
+                                var text = ('' + entry[0][1]).replace(/(.{{195}} )/g, '$1<br/>&nbsp;&nbsp;&nbsp;&nbsp;'); // break long lines
+                                var count = (entry[1] > 1 ? ('<font color="red"> (x ' + entry[1] + ')</font>') : '');
+                                return description + ': ' + text + count + '<br/>';
+                            }}
+                            var e = '<font style="font-family: monospace; font-size: 12px">' + data.map(formatEntry).join("") + '</font>';
+                            row.child( e ).show();
+                            tr.addClass('shown');
+                        }}
+                    }}
+                }} );
             }}
             $(document).ready(function() {{ initTable('#{table_id}'); }});
         </script>
@@ -742,6 +795,26 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         for cnt, name in sorted(((cnt, name) for name, cnt in java_issues.items()), reverse=True)
     ])
 
+    modules_dnf = ul('Unittests that did not finish', [
+        '<b>{}</b>'.format(r[Col.UNITTEST])
+        for r in rows if r[Col.NUM_ERRORS] == -1
+    ])
+    
+    usecase_scores = dict()
+    for usecase_name, usecase_modules in USE_CASE_GROUPS.items():
+        score_sum = 0
+        for m in usecase_modules:
+            for r in rows:
+                if ("test_" + m + ".py") == r[Col.UNITTEST]:
+                    if r[Col.NUM_PASSES] > 0 and r[Col.NUM_TESTS] > 0:
+                        score_sum += r[Col.NUM_PASSES] / r[Col.NUM_TESTS]
+        usecase_scores[usecase_name] = score_sum / len(usecase_modules)
+            
+    
+    use_case_stats_info = ul("<b>Summary per Use Case</b>", 
+                                [ grid((progress_bar(avg_score * 100, color="info"), 3), '<b>{}</b>'.format(usecase_name)) +
+                                  grid(", ".join(USE_CASE_GROUPS[usecase_name])) for usecase_name, avg_score in usecase_scores.items()])
+
     total_stats_info = ul("<b>Summary</b>", [
         grid('<b># total</b> unittests: {}'.format(totals[Stat.UT_TOTAL])),
         grid((progress_bar(totals[Stat.UT_PERCENT_RUNS], color="info"), 3),
@@ -755,10 +828,13 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
 
     table_stats = table('stats', CSV_HEADER, rows)
 
-    content = ' <br> '.join([total_stats_info, table_stats,
+    content = ' <br> '.join([use_case_stats_info,
+                             total_stats_info,
+                             table_stats,
                              missing_modules_info,
                              cannot_import_modules_info,
-                             java_issues_info])
+                             java_issues_info,
+                             modules_dnf])
 
     report = HTML_TEMPLATE.format(
         title='GraalPython Unittests Stats',

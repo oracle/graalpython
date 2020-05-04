@@ -73,7 +73,7 @@ public class InnerRootNode extends ExpressionNode {
             return true;
         }
         if (StandardTags.RootBodyTag.class == tag && root instanceof ModuleRootNode) {
-            // Module execution doesn't process any arguments as a functin so can be marked with
+            // Module execution doesn't process any arguments as a function so can be marked with
             // RootTag and RootBodyTag as well.
             return true;
         }

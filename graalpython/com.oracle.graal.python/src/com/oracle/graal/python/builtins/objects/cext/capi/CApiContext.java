@@ -87,7 +87,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
@@ -362,10 +362,10 @@ public final class CApiContext extends CExtContext {
         }
 
         @Override
-        public void execute(VirtualFrame frame, Node location, PythonContext context) {
+        public void execute(PythonContext context) {
             Object[] pArguments = PArguments.create(1);
             PArguments.setArgument(pArguments, 0, nativeObjectReferences);
-            GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
+            GenericInvokeNode.getUncached().execute(context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
         }
     }
 
@@ -375,6 +375,7 @@ public final class CApiContext extends CExtContext {
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
         private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
+        private final BranchProfile asyncProfile = BranchProfile.create();
         private final PythonContext context;
 
         protected TriggerAsyncActionsRootNode(PythonContext context) {
@@ -387,7 +388,7 @@ public final class CApiContext extends CExtContext {
             CalleeContext.enter(frame, customLocalsProfile);
             try {
                 doGc();
-                context.triggerAsyncActions(frame, this);
+                context.triggerAsyncActions(frame, asyncProfile);
             } finally {
                 calleeContext.exit(frame, this);
             }
@@ -577,14 +578,14 @@ public final class CApiContext extends CExtContext {
         allocatedMemory += size;
     }
 
-    public void increaseMemoryPressure(VirtualFrame frame, Node location, long size) {
+    public void increaseMemoryPressure(VirtualFrame frame, long size, BranchProfile asyncProfile) {
         if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
 
         doGc();
-        getContext().triggerAsyncActions(frame, location);
+        getContext().triggerAsyncActions(frame, asyncProfile);
 
         if (allocatedMemory + size > getContext().getOption(PythonOptions.MaxNativeMemory)) {
             throw new OutOfMemoryError("native memory");

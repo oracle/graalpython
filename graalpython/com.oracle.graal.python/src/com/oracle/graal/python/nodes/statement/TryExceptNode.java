@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -124,7 +123,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 throw ex;
             }
             return;
-        } catch (Exception e) {
+        } catch (Exception | StackOverflowError | AssertionError e) {
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
@@ -159,8 +158,8 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @TruffleBoundary
-    private PBaseException getBaseException(Exception t) {
-        return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{t});
+    private PBaseException getBaseException(Throwable e) {
+        return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{e});
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
@@ -258,8 +257,8 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 Object isinstanceFunc = getattr.execute(builtins, BuiltinNames.ISINSTANCE);
                 PTuple caughtClasses = factory().createTuple(literalCatches.toArray());
 
-                if (isinstanceFunc instanceof PBuiltinMethod && ((PBuiltinMethod) isinstanceFunc).getFunction() instanceof PBuiltinFunction) {
-                    RootCallTarget callTarget = ((PBuiltinFunction) ((PBuiltinMethod) isinstanceFunc).getFunction()).getCallTarget();
+                if (isinstanceFunc instanceof PBuiltinMethod) {
+                    RootCallTarget callTarget = ((PBuiltinMethod) isinstanceFunc).getFunction().getCallTarget();
                     catchesFunction = new CatchesFunction(callTarget, caughtClasses);
                 } else {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

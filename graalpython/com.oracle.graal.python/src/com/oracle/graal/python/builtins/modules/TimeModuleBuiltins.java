@@ -61,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "time")
@@ -293,11 +295,17 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
         @Specialization
-        @TruffleBoundary
-        Object sleep(long seconds) {
-            long secs = seconds;
+        Object sleep(VirtualFrame frame, long seconds,
+                        @Shared("branchProfile") @Cached BranchProfile profile) {
+            long deadline = (long) timeSeconds() + seconds;
+            doSleep(seconds, deadline);
+            getContext().triggerAsyncActions(frame, profile);
+            return PNone.NONE;
+        }
 
-            long deadline = (long) timeSeconds() + secs;
+        @TruffleBoundary
+        private static void doSleep(long seconds, long deadline) {
+            long secs = seconds;
             do {
                 try {
                     Thread.sleep(seconds * 1000);
@@ -310,16 +318,20 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     break;
                 }
             } while (true);
-
-            return PNone.NONE;
         }
 
         @Specialization
-        @TruffleBoundary
-        Object sleep(double seconds) {
-            double secs = seconds;
+        Object sleep(VirtualFrame frame, double seconds,
+                        @Shared("branchProfile") @Cached BranchProfile profile) {
+            double deadline = timeSeconds() + seconds;
+            doSleep(seconds, deadline);
+            getContext().triggerAsyncActions(frame, profile);
+            return PNone.NONE;
+        }
 
-            double deadline = timeSeconds() + secs;
+        @TruffleBoundary
+        private static void doSleep(double seconds, double deadline) {
+            double secs = seconds;
             do {
                 double milliseconds = secs * 1000;
                 long millis = Math.round(Math.floor(milliseconds));
@@ -335,8 +347,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     break;
                 }
             } while (true);
-
-            return PNone.NONE;
         }
     }
 

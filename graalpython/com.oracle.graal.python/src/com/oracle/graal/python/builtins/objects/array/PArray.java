@@ -28,17 +28,18 @@ package com.oracle.graal.python.builtins.objects.array;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PArray extends PMutableSequence {
 
     private SequenceStorage store;
 
-    public PArray(LazyPythonClass clazz) {
-        super(clazz);
+    public PArray(LazyPythonClass clazz, DynamicObject storage) {
+        super(clazz, storage);
     }
 
-    public PArray(LazyPythonClass clazz, SequenceStorage store) {
-        super(clazz);
+    public PArray(LazyPythonClass clazz, DynamicObject storage, SequenceStorage store) {
+        super(clazz, storage);
         this.store = store;
     }
 

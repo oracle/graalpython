@@ -524,7 +524,6 @@ class OperatorPickleTestCase:
         with support.swap_item(sys.modules, 'operator', self.module2):
             return pickle.loads(pickled)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_attrgetter(self):
         attrgetter = self.module.attrgetter
         class A:
@@ -553,7 +552,6 @@ class OperatorPickleTestCase:
                 self.assertEqual(repr(f2), repr(f))
                 self.assertEqual(f2(a), f(a))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_itemgetter(self):
         itemgetter = self.module.itemgetter
         a = 'ABCDE'
@@ -569,7 +567,6 @@ class OperatorPickleTestCase:
                 self.assertEqual(repr(f2), repr(f))
                 self.assertEqual(f2(a), f(a))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_methodcaller(self):
         methodcaller = self.module.methodcaller
         class A:

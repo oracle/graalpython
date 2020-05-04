@@ -1,6 +1,5 @@
 *OperatorPickleTestCase.test_attrgetter
 *OperatorPickleTestCase.test_itemgetter
-*OperatorPickleTestCase.test_methodcaller
 *OperatorTestCase.test_abs
 *OperatorTestCase.test_add
 *OperatorTestCase.test_attrgetter
@@ -27,7 +26,6 @@
 *OperatorTestCase.test_lshift
 *OperatorTestCase.test_lt
 *OperatorTestCase.test_matmul
-*OperatorTestCase.test_methodcaller
 *OperatorTestCase.test_mod
 *OperatorTestCase.test_mul
 *OperatorTestCase.test_ne

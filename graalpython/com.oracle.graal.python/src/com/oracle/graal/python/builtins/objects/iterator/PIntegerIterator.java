@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,11 +26,12 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PIntegerIterator extends PBuiltinIterator {
 
-    public PIntegerIterator(LazyPythonClass clazz) {
-        super(clazz);
+    public PIntegerIterator(LazyPythonClass clazz, DynamicObject storage) {
+        super(clazz, storage);
     }
 
     /**

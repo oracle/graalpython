@@ -3,4 +3,3 @@
 *ConversionErrorTest.test_pack_int
 *ConversionErrorTest.test_pack_uint
 *ConversionErrorTest.test_uhyper
-*XDRTest.test_xdr

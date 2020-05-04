@@ -7,6 +7,11 @@
 *GeneralFloatCases.test_floatasratio
 *GeneralFloatCases.test_keyword_args
 *HexFloatTestCase.test_ends
+*HexFloatTestCase.test_from_hex
+*HexFloatTestCase.test_invalid_inputs
+*HexFloatTestCase.test_roundtrip
+*HexFloatTestCase.test_subclass
+*HexFloatTestCase.test_whitespace
 *InfNanTest.test_inf_as_str
 *InfNanTest.test_inf_from_str
 *InfNanTest.test_inf_signs

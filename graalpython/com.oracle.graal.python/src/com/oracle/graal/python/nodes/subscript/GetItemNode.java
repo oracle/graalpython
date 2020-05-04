@@ -68,6 +68,27 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
+    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForList() {
+        return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
+    }
+
+    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForTuple() {
+        return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
+    }
+
+    public static GetItemNode create() {
+        return GetItemNodeGen.create(null, null);
+    }
+
+    public static GetItemNode create(ExpressionNode primary, ExpressionNode slice) {
+        return GetItemNodeGen.create(primary, slice);
+    }
+
+    @Override
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
+        return SetItemNode.create(getPrimary(), getSlice(), rhs);
+    }
+
     @Specialization(guards = "isBuiltinList.profileIsAnyBuiltinObject(primary)")
     Object doBuiltinList(VirtualFrame frame, PList primary, Object index,
                     @Cached("createGetItemNodeForList()") SequenceStorageNodes.GetItemNode getItemNode,
@@ -80,14 +101,6 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                     @Cached("createGetItemNodeForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinTuple) {
         return getItemNode.execute(frame, primary.getSequenceStorage(), index);
-    }
-
-    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForList() {
-        return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
-    }
-
-    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForTuple() {
-        return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
     }
 
     @Specialization(replaces = {"doBuiltinList", "doBuiltinTuple"})
@@ -132,19 +145,6 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
             }));
         }
         return callGetitemNode.executeObject(frame, primary, index);
-    }
-
-    public static GetItemNode create() {
-        return GetItemNodeGen.create(null, null);
-    }
-
-    public static GetItemNode create(ExpressionNode primary, ExpressionNode slice) {
-        return GetItemNodeGen.create(primary, slice);
-    }
-
-    @Override
-    public StatementNode makeWriteNode(ExpressionNode rhs) {
-        return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 
 }

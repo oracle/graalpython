@@ -80,14 +80,3 @@ def load_tests(loader, tests, pattern):
     this_dir = os.path.dirname(__file__)
     return loader.discover(start_dir=this_dir, pattern=pattern)
 
-
-def skipIfGraalPython(reason="Functionality not yet supported"):
-    return skipIf(sys.implementation.name == 'graalpython', reason)
-
-
-def skipIfGraalPythonWitoutThreads(reason="Threading not yet enabled"):
-    try:
-        import _sysconfig as syscfg
-    except Exception:
-        import sysconfig as syscfg
-    return skipIf(sys.implementation.name == 'graalpython' and not syscfg.get_config_var('WITH_THREAD'), reason)

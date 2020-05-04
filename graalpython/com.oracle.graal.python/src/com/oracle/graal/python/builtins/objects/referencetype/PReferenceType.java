@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PReferenceType extends PythonBuiltinObject {
     public static class WeakRefStorage extends WeakReference<Object> {
@@ -72,8 +73,8 @@ public class PReferenceType extends PythonBuiltinObject {
     private long hash = -1;
 
     @TruffleBoundary
-    public PReferenceType(LazyPythonClass cls, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
-        super(cls);
+    public PReferenceType(LazyPythonClass cls, DynamicObject storage, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
+        super(cls, storage);
         this.store = new WeakRefStorage(this, pythonObject, callback, queue);
     }
 

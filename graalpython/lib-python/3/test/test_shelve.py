@@ -191,7 +191,6 @@ class TestShelveBase(mapping_tests.BasicTestMappingProtocol):
 class TestAsciiFileShelve(TestShelveBase):
     _args={'protocol':0}
     _in_mem = False
-@unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
 class TestBinaryFileShelve(TestShelveBase):
     _args={'protocol':1}
     _in_mem = False

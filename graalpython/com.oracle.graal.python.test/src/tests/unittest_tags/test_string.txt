@@ -1,9 +1,11 @@
 *ModuleTest.test_attrs
 *ModuleTest.test_auto_numbering
 *ModuleTest.test_basic_formatter
+*ModuleTest.test_capwords
 *ModuleTest.test_check_unused_args
 *ModuleTest.test_conversion_specifiers
 *ModuleTest.test_format_keyword_arguments
+*ModuleTest.test_index_lookup
 *ModuleTest.test_name_lookup
 *ModuleTest.test_override_convert_field
 *ModuleTest.test_override_format_field

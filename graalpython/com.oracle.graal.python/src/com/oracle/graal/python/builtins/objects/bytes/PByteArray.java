@@ -40,19 +40,20 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PByteArray extends PMutableSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
-    public PByteArray(LazyPythonClass cls, byte[] bytes) {
-        super(cls);
+    public PByteArray(LazyPythonClass cls, DynamicObject storage, byte[] bytes) {
+        super(cls, storage);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PByteArray(LazyPythonClass cls, SequenceStorage store) {
-        super(cls);
+    public PByteArray(LazyPythonClass cls, DynamicObject storage, SequenceStorage store) {
+        super(cls, storage);
         this.store = store;
     }
 

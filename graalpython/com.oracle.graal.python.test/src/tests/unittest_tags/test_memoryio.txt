@@ -1,5 +1,4 @@
 *PyBytesIOTest.test_issue5449
 *PyBytesIOTest.test_read1
-*PyBytesIOTest.test_readinto
 *PyBytesIOTest.test_relative_seek
 *PyBytesIOTest.test_unicode

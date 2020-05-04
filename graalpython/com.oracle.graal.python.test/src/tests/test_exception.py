@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -175,3 +175,11 @@ class ExceptionTests(unittest.TestCase):
             pass
         else:
             assert False, "named exception should be unbound after except block"
+    
+    def test_sys_exc_info(self):
+        self.assertEqual(sys.exc_info()[0], None)
+        try:
+            raise ValueError
+        except:
+            self.assertEqual(sys.exc_info()[0], ValueError)
+  

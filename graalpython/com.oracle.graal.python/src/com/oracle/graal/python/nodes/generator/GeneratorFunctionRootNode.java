@@ -90,6 +90,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
         if (callTargets == null) {
             callTargets = createYieldTargets(callTarget);
         }
+        CompilerAsserts.partialEvaluationConstant(cellSlots);
         return factory.createGenerator(getName(), callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode, null);
     }
