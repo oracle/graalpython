@@ -82,6 +82,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -226,7 +227,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (option.length() > 0) {
             String[] split = option.split(context.getEnv().getPathSeparator());
             path = new Object[split.length + defaultPathsLen];
-            System.arraycopy(split, 0, path, 0, split.length);
+            PythonUtils.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
             path = new Object[defaultPathsLen];

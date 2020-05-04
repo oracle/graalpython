@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.util.PythonUtils;
 
 public final class TupleSequenceStorage extends TypedSequenceStorage {
 
@@ -148,7 +149,7 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         PTuple[] newArray = new PTuple[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new TupleSequenceStorage(newArray);
         }
 

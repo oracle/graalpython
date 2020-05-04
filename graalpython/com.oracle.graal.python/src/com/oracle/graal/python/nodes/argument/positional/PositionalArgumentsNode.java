@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes.argument.positional;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -59,14 +60,14 @@ public final class PositionalArgumentsNode extends Node {
         for (int i = 0; i < arguments.length; i++) {
             values[i] = arguments[i].execute(frame);
         }
-        System.arraycopy(starArgsArray, 0, values, arguments.length, starArgsLength);
+        PythonUtils.arraycopy(starArgsArray, 0, values, arguments.length, starArgsLength);
         return values;
     }
 
     public static Object[] prependArgument(Object primary, Object[] arguments) {
         Object[] result = new Object[arguments.length + 1];
         result[0] = primary;
-        System.arraycopy(arguments, 0, result, 1, arguments.length);
+        PythonUtils.arraycopy(arguments, 0, result, 1, arguments.length);
         return result;
     }
 

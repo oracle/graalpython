@@ -94,6 +94,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -1082,7 +1083,7 @@ public class BytesBuiltins extends PythonBuiltins {
             if (i != 0) {
                 int len = bs.length - i;
                 out = new byte[len];
-                System.arraycopy(bs, i, out, 0, len);
+                PythonUtils.arraycopy(bs, i, out, 0, len);
             } else {
                 out = bs;
             }
@@ -1124,7 +1125,7 @@ public class BytesBuiltins extends PythonBuiltins {
             int len = i + 1;
             if (len != bs.length) {
                 out = new byte[len];
-                System.arraycopy(bs, 0, out, 0, len);
+                PythonUtils.arraycopy(bs, 0, out, 0, len);
             } else {
                 out = bs;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,11 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
@@ -50,9 +55,7 @@ import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
-import java.util.ArrayList;
-import java.util.List;
+import com.oracle.graal.python.util.PythonUtils;
 
 public class StringUtils {
 
@@ -98,7 +101,7 @@ public class StringUtils {
             byte[] output = new byte[len];
             int offset = 0;
             for (byte[] bs : bytes) {
-                System.arraycopy(bs, 0, output, offset, bs.length);
+                PythonUtils.arraycopy(bs, 0, output, offset, bs.length);
                 offset += bs.length;
             }
             return output;

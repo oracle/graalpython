@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,6 +43,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -219,7 +220,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     // we don't declare the "self" as a parameter id unless it's explicit
                     assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
                     parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
-                    System.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
+                    PythonUtils.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
                     parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
                 }
             }
@@ -294,7 +295,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
                 if (!declaresExplicitSelf) {
                     ReadArgumentNode[] argumentsListWithoutSelf = new ReadArgumentNode[argumentsList.length - 1];
-                    System.arraycopy(argumentsList, 1, argumentsListWithoutSelf, 0, argumentsListWithoutSelf.length);
+                    PythonUtils.arraycopy(argumentsList, 1, argumentsListWithoutSelf, 0, argumentsListWithoutSelf.length);
                     body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsListWithoutSelf)));
                 } else {
                     body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList)));

@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class LongSequenceStorage extends TypedSequenceStorage {
@@ -158,7 +159,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         long[] newArray = new long[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new LongSequenceStorage(newArray);
         }
 

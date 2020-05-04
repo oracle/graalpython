@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -1948,7 +1949,7 @@ public class IntBuiltins extends PythonBuiltins {
                     // size
                     byte[] tmp = bytes;
                     bytes = new byte[len];
-                    System.arraycopy(tmp, startIndex, bytes, 0, len);
+                    PythonUtils.arraycopy(tmp, startIndex, bytes, 0, len);
                 }
             }
 
@@ -1956,7 +1957,7 @@ public class IntBuiltins extends PythonBuiltins {
                 if (byteCount > bytes.length) {
                     // requested array is bigger then we obtained from BigInteger
                     byte[] resultBytes = new byte[byteCount];
-                    System.arraycopy(bytes, 0, resultBytes, resultBytes.length - bytes.length, bytes.length);
+                    PythonUtils.arraycopy(bytes, 0, resultBytes, resultBytes.length - bytes.length, bytes.length);
                     if (signByte == -1) {
                         // add sign bytes
                         for (int i = 0; i < resultBytes.length - bytes.length; i++) {
