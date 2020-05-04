@@ -798,7 +798,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PCode createCode(RootCallTarget ct, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, ct, codestring, flags, firstlineno, lnotab));
+        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.newInstance(), ct, codestring, flags, firstlineno, lnotab));
     }
 
     public PCode createCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,

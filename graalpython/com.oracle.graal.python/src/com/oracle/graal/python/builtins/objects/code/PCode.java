@@ -129,7 +129,7 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
+    public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
         this(cls, storage, callTarget);
         this.codestring = codestring;
         this.flags = flags;
@@ -143,7 +143,7 @@ public final class PCode extends PythonBuiltinObject {
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
-        super(cls, storage, storage);
+        super(cls, storage);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.flags = flags;
