@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -120,7 +120,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         });
     }
 
-    private static class SignalTriggerAction implements AsyncHandler.AsyncAction {
+    private static class SignalTriggerAction extends AsyncHandler.AsyncPythonAction {
         private final Object callableObject;
         private final int signum;
 
@@ -129,14 +129,17 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             this.signum = signum;
         }
 
+        @Override
         public Object callable() {
             return callableObject;
         }
 
+        @Override
         public Object[] arguments() {
             return new Object[]{signum, null};
         }
 
+        @Override
         public int frameIndex() {
             return 1;
         }
@@ -260,10 +263,10 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
+        @SuppressWarnings("unchecked")
         private static ConcurrentLinkedDeque<SignalTriggerAction> getQueue(PythonModule self, ReadAttributeFromObjectNode readNode) {
             Object queueObject = readNode.execute(self, signalQueueKey);
             if (queueObject instanceof ConcurrentLinkedDeque) {
-                @SuppressWarnings("unchecked")
                 ConcurrentLinkedDeque<SignalTriggerAction> queue = (ConcurrentLinkedDeque<SignalTriggerAction>) queueObject;
                 return queue;
             } else {

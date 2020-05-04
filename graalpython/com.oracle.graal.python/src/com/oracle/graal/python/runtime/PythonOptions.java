@@ -33,19 +33,19 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Option;
-import com.oracle.truffle.api.TruffleLanguage.Env;
-
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionStability;
 import org.graalvm.options.OptionValues;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Option;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
 /**
  * The options for Python. Note that some options have an effect on the AST structure, and thus must
@@ -182,11 +182,23 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
     public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
 
+    @Option(category = OptionCategory.EXPERT, help = "Disable weakref callback processing, signal handling, and other periodic async actions.") //
+    public static final OptionKey<Boolean> NoAsyncActions = new OptionKey<>(false);
+
     @Option(category = OptionCategory.EXPERT, help = "Propagate append operations to lists created as literals back to where they were created, to inform overallocation to avoid having to grow them later.") //
     public static final OptionKey<Boolean> OverallocateLiteralLists = new OptionKey<>(true);
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
+    public static final OptionKey<Boolean> TraceNativeMemory = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "If native memory tracing is enabled, also capture stack.") //
+    public static final OptionKey<Boolean> TraceNativeMemoryCalls = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Max native memory heap size (default: 2 GB).") //
+    public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 31);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 

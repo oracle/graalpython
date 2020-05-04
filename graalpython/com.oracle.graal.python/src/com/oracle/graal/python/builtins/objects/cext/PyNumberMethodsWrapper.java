@@ -40,39 +40,39 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ABSOLUTE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_AND;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_BOOL;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_DIVMOD;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_FLOAT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_FLOOR_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_AND;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_FLOOR_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_LSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_OR;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_POWER;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_REMAINDER;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_RSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_SUBTRACT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_TRUE_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_XOR;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INVERT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_LSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_NEGATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_OR;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POSITIVE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POWER;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_REMAINDER;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_RSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_SUBTRACT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_XOR;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_ABSOLUTE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_AND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_BOOL;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_DIVMOD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_FLOAT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_FLOOR_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INDEX;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_AND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_FLOOR_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_LSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_OR;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_POWER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_REMAINDER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_RSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_SUBTRACT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_TRUE_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INPLACE_XOR;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_INVERT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_LSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_NEGATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_OR;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_POSITIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_POWER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_REMAINDER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_RSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_SUBTRACT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_TRUE_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.NB_XOR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
@@ -135,7 +135,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
-    @CompilationFinal(dimensions = 1) private static final String[] NUMBER_METHODS = new String[]{
+    @CompilationFinal(dimensions = 1) private static final NativeMember[] NUMBER_METHODS = new NativeMember[]{
                     NB_ABSOLUTE,
                     NB_ADD,
                     NB_AND,
@@ -284,7 +284,7 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     private static String translate(String key) {
         for (int i = 0; i < NUMBER_METHODS.length; i++) {
-            if (NUMBER_METHODS[i].equals(key)) {
+            if (NUMBER_METHODS[i].getMemberName().equals(key)) {
                 return NUMBER_METHODS_MAPPING[i];
             }
         }

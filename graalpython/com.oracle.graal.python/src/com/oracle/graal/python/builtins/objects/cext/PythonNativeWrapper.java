@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,8 @@ import java.lang.ref.WeakReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -57,6 +59,22 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     private Object delegate;
     private Object nativePointer;
 
+    /**
+     * Equivalent to {@code ob_refcnt}. We also need to maintain the reference count for native
+     * wrappers because otherwise we can never free the handles. The initial value is set to
+     * {@code 1} because each object has just one wrapper and when the wrapper is created, the
+     * object already exists which means in CPython the {@code PyObject_Init} would already have
+     * been called. The object init function sets the reference count to one.
+     */
+    private long refCount = 1;
+
+    /**
+     * An assumption that can be used by caches to assume that the associated {@link #nativePointer}
+     * is still valid. This assumption will be invalidated when {@link #refCount} becomes zero and
+     * the object is deallocated on the native side.
+     */
+    private Assumption handleValidAssumption;
+
     public PythonNativeWrapper() {
     }
 
@@ -64,11 +82,39 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         this.delegate = delegate;
     }
 
+    public final void increaseRefCount() {
+        refCount++;
+    }
+
+    public final long decreaseRefCount() {
+        return --refCount;
+    }
+
+    public final long getRefCount() {
+        return refCount;
+    }
+
+    public final void setRefCount(long refCount) {
+        this.refCount = refCount;
+    }
+
+    public final Assumption getHandleValidAssumption() {
+        return handleValidAssumption;
+    }
+
+    public final Assumption ensureHandleValidAssumption() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (handleValidAssumption == null) {
+            handleValidAssumption = Truffle.getRuntime().createAssumption();
+        }
+        return handleValidAssumption;
+    }
+
     protected static Assumption singleContextAssumption() {
         return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
-    protected static final boolean isEq(Object obj, Object obj2) {
+    protected static boolean isEq(Object obj, Object obj2) {
         return obj == obj2;
     }
 
@@ -122,10 +168,9 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     public void setNativePointer(Object nativePointer) {
         // we should set the pointer just once
         assert this.nativePointer == null || this.nativePointer.equals(nativePointer) || nativePointer == null;
-
-        // we must not set the pointer for one of the context-insensitive singletons
-        assert PythonLanguage.getSingletonNativePtrIdx(delegate) == -1;
-
+        if (nativePointer == null) {
+            this.handleValidAssumption = null;
+        }
         this.nativePointer = nativePointer;
     }
 

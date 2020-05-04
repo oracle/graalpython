@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
 import static com.oracle.graal.python.nodes.BuiltinNames.INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.LIST;
+import static com.oracle.graal.python.nodes.BuiltinNames.MAP;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMORYVIEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
@@ -123,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescri
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -207,7 +209,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -865,6 +866,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // float([x])
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class FloatNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
         @Child private CoerceToDoubleNode coerceToDoubleNode;
@@ -1613,7 +1615,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private PCallCapiFunction callCapiFunction;
         @Children private CExtNodes.ToSulongNode[] toSulongNodes;
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
-        @Child private TypeNodes.GetInstanceShape getInstanceShapeNode;
         @Child private SplitArgsNode splitArgsNode;
 
         @Override
@@ -1625,40 +1626,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"}, assumptions = "singleContextAssumption()")
-        Object doObjectDirect(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
-                        @Cached("self") PythonManagedClass cachedSelf) {
-            return doObjectIndirect(cachedSelf, varargs, kwargs);
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        Object doObjectDirectType(@SuppressWarnings("unused") PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs,
-                        @Cached("self") PythonBuiltinClassType cachedSelf) {
-            return doObjectIndirectType(cachedSelf, varargs, kwargs);
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", //
-                        guards = {"getInstanceShape(self) == cachedInstanceShape", "!self.needsNativeAllocation()"}, //
-                        replaces = "doObjectDirect")
-        Object doObjectCachedInstanceShape(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
-                        @Cached("getInstanceShape(self)") Shape cachedInstanceShape) {
+        @Specialization(guards = {"!self.needsNativeAllocation()"})
+        Object doManagedObject(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return factory().createPythonObject(self, cachedInstanceShape);
+            return factory().createPythonObject(self);
         }
 
-        @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectCachedInstanceShape")
-        Object doObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
-            return doObjectCachedInstanceShape(self, varargs, kwargs, getInstanceShape(self));
-        }
-
-        @Specialization(replaces = "doObjectDirectType")
-        Object doObjectIndirectType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs) {
+        @Specialization
+        Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return factory().createPythonObject(self, self.getInstanceShape());
+            return factory().createPythonObject(self);
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
@@ -1711,18 +1692,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return asPythonObjectNode.execute(
                             callCapiFunction.call(FUN_PY_OBJECT_GENERIC_NEW, toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs),
                                             toSulongNodes[3].execute(dkwargs)));
-        }
-
-        protected Shape getInstanceShape(LazyPythonClass clazz) {
-            if (getInstanceShapeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getInstanceShapeNode = insert(TypeNodes.GetInstanceShape.create());
-            }
-            return getInstanceShapeNode.execute(clazz);
-        }
-
-        protected static Class<? extends LazyPythonClass> getJavaClass(Object arg) {
-            return ((LazyPythonClass) arg).getClass();
         }
     }
 
@@ -2937,9 +2906,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, isPublic = true, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
-        Object call(LazyPythonClass cls, Object[] varargs, PKeyword[] kwargs) {
+        Object callGeneric(LazyPythonClass cls, Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createBaseException(cls, factory().createTuple(varargs));
         }
     }
@@ -2948,8 +2916,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Specialization
-        Object doMapping(LazyPythonClass klass, PHashingCollection obj) {
-            return factory().createMappingproxy(klass, obj.getDictStorage());
+        Object doMapping(LazyPythonClass klass, PHashingCollection obj,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage) {
+            return factory().createMappingproxy(klass, getStorage.execute(obj));
         }
 
         @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
@@ -3144,6 +3113,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doObjectIndirect(LazyPythonClass self, @SuppressWarnings("unused") Object callable) {
             return factory().createStaticmethod(self);
+        }
+    }
+
+    @Builtin(name = MAP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PMap)
+    @GenerateNodeFactory
+    public abstract static class MapNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        PMap doit(LazyPythonClass self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
+            return factory().createMap(self);
         }
     }
 }

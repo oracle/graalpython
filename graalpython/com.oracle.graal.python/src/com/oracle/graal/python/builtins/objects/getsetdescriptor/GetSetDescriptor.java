@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,8 +52,8 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
     private final String name;
     private final LazyPythonClass type;
 
-    public GetSetDescriptor(LazyPythonClass cls, Object get, Object set, String name, LazyPythonClass type) {
-        super(cls);
+    public GetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {
+        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
         this.get = get;
         this.set = set;
         this.name = name;

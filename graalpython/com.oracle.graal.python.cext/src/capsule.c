@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,9 +42,11 @@
 
 PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
 
+typedef PyObject* (*capsule_new_fun_t)(void* name, void* pointer, PyCapsule_Destructor destructor);
+
 UPCALL_ID(PyCapsule);
 PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return (PyObject *)UPCALL_CEXT_O(_jls_PyCapsule, name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None), pointer, destructor);
+    return to_sulong(((capsule_new_fun_t)_jls_PyCapsule)(name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None), pointer, destructor));
 }
 
 UPCALL_ID(PyCapsule_GetContext);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -301,9 +301,9 @@ Py_ssize_t PySequence_Length(PyObject *s) {
 }
 #define PySequence_Length PySequence_Size
 
-UPCALL_ID(PySequence_GetItem);
+UPCALL_TYPED_ID(PySequence_GetItem, ssizeargfunc);
 PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i) {
-    return UPCALL_CEXT_O(_jls_PySequence_GetItem, native_to_java(s), i);
+    return _jls_PySequence_GetItem(native_to_java(s), i);
 }
 
 UPCALL_ID(PySequence_SetItem);
@@ -327,6 +327,7 @@ PyObject* PySequence_List(PyObject *v) {
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
+    PyObject *res;
     if (v == NULL) {
         return null_error();
     }
@@ -336,12 +337,13 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
         return v;
     }
 
-	return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
+    return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
 }
 
-UPCALL_ID(PyObject_GetItem);
+typedef PyObject* (*getitem_fun_t)(PyObject*, PyObject*);
+UPCALL_TYPED_ID(PyObject_GetItem, getitem_fun_t);
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-    return UPCALL_CEXT_O(_jls_PyObject_GetItem, native_to_java(o), polyglot_from_string(key, SRC_CS));
+    return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
 UPCALL_ID(PyMapping_Keys);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,31 +40,56 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.GP_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_BASE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_TYPE;
+
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ReadNativeMemberDispatchNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.WriteNativeMemberNode;
 import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
+    // every 'PyObject *' provides 'ob_base', 'ob_type', and 'ob_refcnt'
+    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {GP_OBJECT, OB_BASE.getMemberName(), OB_TYPE.getMemberName(), OB_REFCNT.getMemberName()};
+
     public TruffleObjectNativeWrapper(TruffleObject foreignObject) {
         super(foreignObject);
     }
 
     public static TruffleObjectNativeWrapper wrap(TruffleObject foreignObject) {
-        assert !(foreignObject instanceof PythonNativeWrapper) : "attempting to wrap a native wrapper";
+        assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
         return new TruffleObjectNativeWrapper(foreignObject);
+    }
+
+    @ExplodeLoop
+    private static int indexOf(String member) {
+        for (int i = 0; i < MEMBERS.length; i++) {
+            if (MEMBERS[i].equals(member)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @ExportMessage
@@ -73,14 +98,25 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberReadable(@SuppressWarnings("unused") String member) {
-        // TODO(fa) should that be refined?
-        return true;
+    @ExplodeLoop
+    boolean isMemberReadable(String member) {
+        return indexOf(member) != -1;
     }
 
     @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new InteropArray(new String[]{DynamicObjectNativeWrapper.GP_OBJECT});
+    boolean isMemberModifiable(String member) {
+        // we only allow to write to 'ob_refcnt'
+        return OB_REFCNT.getMemberName().equals(member);
+    }
+
+    @ExportMessage
+    boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+        return false;
+    }
+
+    @ExportMessage
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        return new InteropArray(MEMBERS);
     }
 
     @ExportMessage(name = "readMember")
@@ -94,47 +130,63 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization
         static Object execute(TruffleObjectNativeWrapper object, String key,
-                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                        @Cached CExtNodes.AsPythonObjectNode getDelegate) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object delegate = getDelegate.execute(object);
+                        @CachedLibrary("object") PythonNativeWrapperLibrary lib,
+                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode) throws UnsupportedMessageException, UnknownIdentifierException {
+            Object delegate = lib.getDelegate(object);
 
             // special key for the debugger
-            if (key.equals(DynamicObjectNativeWrapper.GP_OBJECT)) {
+            if (GP_OBJECT.equals(key)) {
                 return delegate;
             }
-            return readNativeMemberNode.execute(delegate, key);
+            return readNativeMemberNode.execute(delegate, object, key);
         }
 
         protected static boolean isObBase(String key) {
-            return NativeMemberNames.OB_BASE.equals(key);
+            return OB_BASE.getMemberName().equals(key);
         }
     }
 
     @ExportMessage
-    protected boolean isPointer(
-                    @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+    void writeMember(String member, Object value,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @Cached WriteNativeMemberNode writeNativeMemberNode) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
+        if (OB_REFCNT.getMemberName().equals(member)) {
+            Object delegate = lib.getDelegate(this);
+            writeNativeMemberNode.execute(delegate, this, member, value);
+        } else {
+            CompilerDirectives.transferToInterpreter();
+            if (indexOf(member) == -1) {
+                throw UnknownIdentifierException.create(member);
+            }
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    boolean isPointer(
+                    @Cached IsPointerNode pIsPointerNode) {
         return pIsPointerNode.execute(this);
     }
 
     @ExportMessage
-    protected long asPointer(
+    long asPointer(
                     @Cached PAsPointerNode pAsPointerNode) {
         return pAsPointerNode.execute(this);
     }
 
     @ExportMessage
-    protected void toNative(
-                    @Cached.Exclusive @Cached ToNativeNode toNativeNode) {
+    void toNative(
+                    @Cached ToNativeNode toNativeNode) {
         toNativeNode.execute(this);
     }
 
     @ExportMessage
-    protected boolean hasNativeType() {
+    boolean hasNativeType() {
         return true;
     }
 
     @ExportMessage
-    protected Object getNativeType(
+    Object getNativeType(
                     @Cached PGetDynamicTypeNode getDynamicTypeNode) {
         return getDynamicTypeNode.execute(this);
     }

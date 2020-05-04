@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -72,7 +73,8 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@ImportStatic({PGuards.class, PythonOptions.class, NativeMemberNames.class})
+@ImportStatic({PGuards.class, PythonOptions.class})
+@ReportPolymorphism
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNotTypeNodeGen.create();
@@ -95,9 +97,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // read from the DynamicObject store
     @Specialization(guards = {
                     "!lib.hasDict(object) || isHiddenKey(key)"
-    }, limit = "1")
+    })
     protected Object readFromDynamicStorage(PythonObject object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
@@ -160,19 +162,21 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    protected HashingStorage getDictStorage(PythonObject object, PythonObjectLibrary lib) {
-        return lib.getDict(object) != null ? lib.getDict(object).getDictStorage() : null;
+    protected HashingStorage getDictStorage(PythonObject object, PythonObjectLibrary lib, HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
+        PHashingCollection dict = lib.getDict(object);
+        return dict != null ? getDictStorageNode.execute(dict) : null;
     }
 
     // read from a builtin dict
-    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib, isBuiltinDict, isBuiltinMappingproxy)"}, limit = "1")
+    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib, isBuiltinDict, isBuiltinMappingproxy)"})
     protected Object readFromBuiltinDict(PythonObject object, String key,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
-                    @CachedLibrary("getDictStorage(object, lib)") HashingStorageLibrary hlib) {
-        Object value = hlib.getItem(getDictStorage.execute(lib.getDict(object)), key);
+                    @CachedLibrary(limit = "2") HashingStorageLibrary hlib) { // limit 2: string
+                                                                              // only or mixed dict
+        Object value = hlib.getItem(getDictStorageNode.execute(lib.getDict(object)), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -184,9 +188,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
-    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"}, limit = "1")
+    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"})
     protected Object readFromDict(PythonObject object, Object key,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         Object value = hlib.getItem(getDictStorage.execute(lib.getDict(object)), key);
@@ -246,7 +250,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached GetTypeMemberNode getNativeDict,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-            return readNative(key, getNativeDict.execute(object, NativeMemberNames.TP_DICT), hlib, getDictStorage);
+            return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), hlib, getDictStorage);
         }
 
         @Fallback
@@ -281,9 +285,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                 }
             }
         } else if (object instanceof PythonAbstractNativeObject) {
-            Object d = null;
+            Object d;
             if (forceType) {
-                d = GetTypeMemberNode.getUncached().execute(object, NativeMemberNames.TP_DICT);
+                d = GetTypeMemberNode.getUncached().execute(object, NativeMember.TP_DICT);
             } else {
                 d = PythonObjectLibrary.getUncached().getDict(object);
             }

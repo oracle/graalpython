@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltin
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.lzma.LZMADecompressorBuiltins;
+import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
@@ -258,6 +259,16 @@ public final class Python3Core implements PythonCore {
                         "_lsprof",
                         "marshal",
                         "_lzma"));
+        // add service loader defined python file extensions
+        if (!ImageInfo.inImageRuntimeCode()) {
+            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
+            for (PythonBuiltins builtin : providers) {
+                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                if (!annotation.pythonFile().isEmpty()) {
+                    coreFiles.add(annotation.pythonFile());
+                }
+            }
+        }
         // must be last
         coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -318,6 +329,7 @@ public final class Python3Core implements PythonCore {
                         new ReversedBuiltins(),
                         new PZipBuiltins(),
                         new EnumerateBuiltins(),
+                        new MapBuiltins(),
                         new SentinelIteratorBuiltins(),
                         new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),
@@ -405,7 +417,7 @@ public final class Python3Core implements PythonCore {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
-        if (!TruffleOptions.AOT) {
+        if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
@@ -540,7 +552,7 @@ public final class Python3Core implements PythonCore {
     private PythonBuiltinClass initializeBuiltinClass(PythonBuiltinClassType type) {
         int index = type.ordinal();
         if (builtinTypes[index] == null) {
-            if (type.getBase() == type) {
+            if (type.getBase() == null) {
                 // object case
                 builtinTypes[index] = new PythonBuiltinClass(type, null);
             } else {
@@ -575,9 +587,9 @@ public final class Python3Core implements PythonCore {
             }
         }
         // now initialize well-known objects
-        pyTrue = new PInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
-        pyFalse = new PInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
-        pyNaN = new PFloat(PythonBuiltinClassType.PFloat, Double.NaN);
+        pyTrue = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = PythonObjectFactory.getUncached().createFloat(Double.NaN);
     }
 
     private void populateBuiltins() {

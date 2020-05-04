@@ -173,7 +173,7 @@ int PyArg_VaParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *fo
     if(kwdnames != NULL) {
     	for (; kwdnames[__kwdnames_cnt] != NULL ; __kwdnames_cnt++);
     }
-    res =PyTruffle_Arg_ParseTupleAndKeywords_VaList(native_to_java_slim(argv), native_to_java_slim(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_CharPtr_array(kwdnames, __kwdnames_cnt), &lva);
+    res =PyTruffle_Arg_ParseTupleAndKeywords_VaList(native_to_java(argv), native_to_java(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_CharPtr_array(kwdnames, __kwdnames_cnt), &lva);
     va_end(lva);
     return res;
 }
@@ -186,20 +186,20 @@ int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const c
     if(kwdnames != NULL) {
     	for (; kwdnames[__kwdnames_cnt] != NULL ; __kwdnames_cnt++);
     }
-    res =PyTruffle_Arg_ParseTupleAndKeywords_VaList(native_to_java_slim(argv), native_to_java_slim(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_CharPtr_array(kwdnames, __kwdnames_cnt), &lva);
+    res = PyTruffle_Arg_ParseTupleAndKeywords_VaList(native_to_java(argv), native_to_java(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_CharPtr_array(kwdnames, __kwdnames_cnt), &lva);
     va_end(lva);
     return res;
 }
 
 NO_INLINE
 int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 4, native_to_java_slim(argv), native_to_java_slim(kwds), format, kwdnames);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 4, native_to_java(argv), native_to_java(kwds), format, kwdnames);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 4, native_to_java_slim(argv), native_to_java_slim(kwds), format, kwdnames);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 4, native_to_java(argv), native_to_java(kwds), format, kwdnames);
     return result;
 }
 
@@ -225,26 +225,26 @@ int _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, s
 
 NO_INLINE
 int _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 3, native_to_java_slim(args), native_to_java_slim(kwargs), parser->format, parser->keywords);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 3, native_to_java(args), native_to_java(kwargs), parser->format, parser->keywords);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 3, native_to_java_slim(args), native_to_java_slim(kwargs), parser->format, parser->keywords);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 3, native_to_java(args), native_to_java(kwargs), parser->format, parser->keywords);
     return result;
 }
 
 
 NO_INLINE
 int PyArg_ParseTuple(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(args), format);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java(args), format);
 	return result;
 }
 
 NO_INLINE
 int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(args), format);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java(args), format);
 	return result;
 }
 
@@ -258,13 +258,13 @@ int _PyArg_VaParse_SizeT(PyObject *args, const char *format, va_list va) {
 
 NO_INLINE
 int PyArg_Parse(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(PyTuple_Pack(1, args)), format);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java(PyTuple_Pack(1, args)), format);
 	return result;
 }
 
 NO_INLINE
 int _PyArg_Parse_SizeT(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(PyTuple_Pack(1, args)), format);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java(PyTuple_Pack(1, args)), format);
     return result;
 }
 
@@ -395,6 +395,9 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
                 converter = NULL;
                 format_idx++;
             } else {
+                if (c != 'N') {
+                    Py_INCREF((PyObject*)void_arg);
+                }
                 PyList_Append(list, (PyObject*)void_arg);
             }
             break;
@@ -935,4 +938,51 @@ void _PyArg_BadArgument(const char *fname, const char *displayname,
                  "%.200s() %.200s must be %.50s, not %.50s",
                  fname, displayname, expected,
                  arg == Py_None ? "None" : arg->ob_type->tp_name);
+}
+
+#undef _PyArg_CheckPositional
+
+// Taken from CPython 3.8 getargs.c
+int
+_PyArg_CheckPositional(const char *name, Py_ssize_t nargs,
+                       Py_ssize_t min, Py_ssize_t max)
+{
+    assert(min >= 0);
+    assert(min <= max);
+
+    if (nargs < min) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%.200s expected %s%zd argument%s, got %zd",
+                name, (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd element%s,"
+                " but has %zd",
+                (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
+        return 0;
+    }
+
+    if (nargs == 0) {
+        return 1;
+    }
+
+    if (nargs > max) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%.200s expected %s%zd argument%s, got %zd",
+                name, (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd element%s,"
+                " but has %zd",
+                (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
+        return 0;
+    }
+
+    return 1;
 }

@@ -51,6 +51,10 @@
 
 #define SRC_CS "utf-8"
 
+/* Flags definitions representing global (debug) options. */
+#define PY_TRUFFLE_TRACE_MEM 0x1
+
+
 /* Private types are defined here because we need to declare the type cast. */
 typedef struct {
     PyObject_HEAD
@@ -86,6 +90,7 @@ extern void *PY_BUILTIN;
 extern void *Py_NoValue;
 extern init_upcall upcalls[];
 extern unsigned init_upcall_n;
+extern uint32_t Py_Truffle_Options;
 
 /* upcall helpers */
 MUST_INLINE
@@ -108,19 +113,29 @@ double polyglot_ensure_double(void *obj) {
 	return polyglot_fits_in_double(obj) ? polyglot_as_double(obj) : (double) ((int64_t)obj);
 }
 
+MUST_INLINE
+int PyTruffle_Trace_Memory() {
+	return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
+}
+
 /* upcall functions for calling into Python */
 void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
-extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
+extern PyObject*(*PY_TRUFFLE_LANDING_BORROWED)(void *rcv, void* name, ...);
+extern PyObject*(*PY_TRUFFLE_LANDING_NEWREF)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
+extern PyObject*(*PY_TRUFFLE_CEXT_LANDING_BORROWED)(void* name, ...);
+extern PyObject*(*PY_TRUFFLE_CEXT_LANDING_NEWREF)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
 /* Call function with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_O(__recv__, __name__, ...) PY_TRUFFLE_LANDING((__recv__), __name__, ##__VA_ARGS__)
+#define UPCALL_O(__recv__, __name__, ...) PY_TRUFFLE_LANDING_NEWREF((__recv__), __name__, ##__VA_ARGS__)
+
+/* Call function with return type 'PyObject *'; does polyglot cast and error handling */
+#define UPCALL_BORROWED(__recv__, __name__, ...) PY_TRUFFLE_LANDING_BORROWED((__recv__), __name__, ##__VA_ARGS__)
 
 /* Call function with a primitive return; no polyglot cast but error handling */
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), __name__, ##__VA_ARGS__))
@@ -138,13 +153,16 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_PTR(__recv__, __name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_LANDING_PTR((__recv__), __name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING_NEWREF(__name__, ##__VA_ARGS__)
+
+/* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
+#define UPCALL_CEXT_BORROWED(__name__, ...) PY_TRUFFLE_CEXT_LANDING_BORROWED(__name__, ##__VA_ARGS__)
 
 /* Call void function of 'python_cext' module; no polyglot cast and no error handling */
-#define UPCALL_CEXT_VOID(__name__, ...) ((void)PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_VOID(__name__, ...) ((void)PY_TRUFFLE_CEXT_LANDING_BORROWED(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'PyObject*'; no polyglot cast but error handling */
-#define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING_BORROWED(__name__, ##__VA_ARGS__)
 
 /* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
 #define UPCALL_CEXT_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__)))
@@ -168,10 +186,17 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
        _jls_ ## name = polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string(#name, SRC_CS)); \
     }
 
+#define UPCALL_TYPED_ID(name, fun_t)                                                                     \
+    static fun_t _jls_ ## name;                                                                          \
+    __attribute__((constructor))                                                                         \
+    static void init_upcall_ ## name(void) {                                                             \
+       _jls_ ## name = (fun_t)polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string(#name, SRC_CS)); \
+    }
+
 #define as_char_pointer(obj) ((const char*)UPCALL_CEXT_PTR(polyglot_from_string("to_char_pointer", "ascii"), native_to_java(obj)))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
-#define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long))))
-#define as_unsigned_long_long(obj) ((unsigned long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 0, sizeof(unsigned long long))))
+#define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", obj, 1, sizeof(long long))))
+#define as_unsigned_long_long(obj) ((unsigned long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", obj, 0, sizeof(unsigned long long))))
 #define as_int(obj) ((int)as_long(obj))
 #define as_short(obj) ((short)as_long(obj))
 #define as_uchar(obj) ((unsigned char)as_long(obj))
@@ -181,6 +206,18 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
 typedef void* (*cache_t)(uint64_t);
 extern cache_t cache;
+
+typedef PyObject* (*ptr_cache_t)(PyObject *);
+typedef PyTypeObject* (*type_ptr_cache_t)(PyTypeObject *, int64_t);
+extern ptr_cache_t ptr_cache;
+extern ptr_cache_t ptr_cache_stealing;
+extern type_ptr_cache_t type_ptr_cache;
+
+typedef int (*alloc_upcall_fun_t)(void *, Py_ssize_t);
+extern alloc_upcall_fun_t alloc_upcall;
+
+typedef int (*free_upcall_fun_t)(void *);
+extern free_upcall_fun_t free_upcall;
 
 // Heuristic to test if some value is a pointer object
 // TODO we need a reliable solution for that
@@ -192,38 +229,43 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
 Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
 
 
-__attribute__((always_inline))
-inline void* native_to_java(void* obj) {
-    if (obj == NULL) {
-        return Py_NoValue;
-    } else if (obj == Py_None) {
-        return Py_None;
-    } else if (polyglot_is_string(obj)) {
-        return obj;
-    } else if (!truffle_cannot_be_handle(obj)) {
+MUST_INLINE
+PyObject* native_to_java(PyObject* obj) {
+    if (!truffle_cannot_be_handle(obj)) {
+        return truffle_managed_from_handle(obj);
+    }
+    return ptr_cache(obj);
+}
+
+MUST_INLINE
+PyObject* native_to_java_stealing(PyObject* obj) {
+    if (!truffle_cannot_be_handle(obj)) {
+        return resolve_handle(cache, (uint64_t)obj);
+    }
+    return ptr_cache_stealing(obj);
+}
+
+
+extern void* native_to_java_exported(PyObject* obj);
+extern void* native_to_java_stealing_exported(PyObject* obj);
+
+MUST_INLINE
+PyTypeObject* native_type_to_java(PyTypeObject* type) {
+	if (!truffle_cannot_be_handle(type)) {
+        return (PyTypeObject *)truffle_managed_from_handle(type);
+    }
+    return type_ptr_cache(type, Py_REFCNT(type));
+}
+
+MUST_INLINE
+void* native_pointer_to_java(void* obj) {
+    if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     }
     return obj;
 }
 
-
-extern void* native_to_java_exported(PyObject* obj);
-
-__attribute__((always_inline))
-inline void* native_to_java_slim(PyObject* obj) {
-    if (!truffle_cannot_be_handle(obj)) {
-        return truffle_managed_from_handle(obj);
-    }
-    return obj;
-}
-
-__attribute__((always_inline))
-inline PyTypeObject* native_type_to_java(PyTypeObject* type) {
-	if (!truffle_cannot_be_handle(type)) {
-        return (PyTypeObject *)truffle_managed_from_handle(type);
-    }
-    return type;
-}
+extern void* native_pointer_to_java_exported(void* ptr);
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
@@ -276,12 +318,12 @@ void initialize_hashes();
           JWRAPPER_O :                                                                   \
           JWRAPPER_UNSUPPORTED)))))))
 
-#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__) {\
+#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
     0,                                          /* tp_itemsize */\
-    0,                                          /* tp_dealloc */\
+    (__DEALLOC__),                              /* tp_dealloc */\
     0,                                          /* tp_vectorcall_offset */\
     0,                                          /* tp_getattr */\
     0,                                          /* tp_setattr */\
@@ -315,11 +357,11 @@ void initialize_hashes();
     0,                                          /* tp_init */\
     (__ALLOC__),                                /* tp_alloc */\
     0,                                          /* tp_new */\
-    0,                                          /* tp_free */\
+    (__FREE__),                                 /* tp_free */\
     0,                                          /* tp_is_gc */\
 }
 
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0)
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, 0, 0)
 
 /** to be used from Java code only; returns a type's basic size */
 #define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \
@@ -328,7 +370,6 @@ void initialize_hashes();
 
 
 int PyTruffle_Debug(void *arg);
-void* PyObjectHandle_ForJavaType(void* jobj);
 
 extern PyObject marker_struct;
 extern PyObject* wrapped_null;
@@ -388,5 +429,7 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
 
 typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
+
+typedef int (*setitem_fun_t)(PyObject*, Py_ssize_t, PyObject*);
 
 #endif

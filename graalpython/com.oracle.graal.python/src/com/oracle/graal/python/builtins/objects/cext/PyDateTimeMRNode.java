@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@ImportStatic({NativeMemberNames.class, PythonOptions.class})
+@ImportStatic({NativeMember.class, PythonOptions.class})
 public abstract class PyDateTimeMRNode extends Node {
 
     public abstract Object execute(PythonObject object, String key);
@@ -117,8 +117,8 @@ public abstract class PyDateTimeMRNode extends Node {
         return GetAttributeNode.create(expected, null);
     }
 
-    protected static boolean eq(String expected, String actual) {
-        return expected.equals(actual);
+    protected static boolean eq(NativeMember expected, String actual) {
+        return expected.getMemberName().equals(actual);
     }
 
     public static PyDateTimeMRNode create() {

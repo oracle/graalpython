@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,19 +87,30 @@ public abstract class ExecutionContext {
         }
 
         /**
+         * Prepare an indirect call from a Python frame to a Python function.
+         */
+        public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments, Node callNode) {
+            prepareCall(frame, callArguments, callNode, true, true);
+        }
+
+        /**
          * Prepare a call from a Python frame to a Python function.
          */
         public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
+            // n.b.: The class cast should always be correct, since this context
+            // must only be used when calling from Python to Python
+            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
+            prepareCall(frame, callArguments, callNode, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
+        }
+
+        private void prepareCall(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame, boolean needsExceptionState) {
             // equivalent to PyPy's ExecutionContext.enter `frame.f_backref =
             // self.topframeref` we here pass the current top frame reference to
             // the next frame. An optimization we do is to only pass the frame
             // info if the caller requested it, otherwise they'll have to deopt
             // and walk the stack up once.
 
-            // n.b.: The class cast should always be correct, since this context
-            // must only be used when calling from Python to Python
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            if (calleeRootNode.needsCallerFrame()) {
+            if (needsCallerFrame) {
                 if (!neededCallerFrame) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     neededCallerFrame = true;
@@ -123,7 +134,7 @@ public abstract class ExecutionContext {
                 thisInfo.setCallNode(callNode);
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
-            if (calleeRootNode.needsExceptionState()) {
+            if (needsExceptionState) {
                 if (!neededExceptionState) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     neededExceptionState = true;
@@ -323,7 +334,7 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
-            if (frame == null || context == null) {
+            if (frame == null || context == null || callNode == null) {
                 return null;
             }
             PFrame.Reference info = null;
@@ -423,14 +434,25 @@ public abstract class ExecutionContext {
 
     public abstract static class IndirectCalleeContext {
         /**
+         * Prepare an indirect call from a foreign frame to a Python function.
+         */
+        public static PFrame.Reference enterIndirect(PythonContext context, Object[] pArguments) {
+            return enter(context, pArguments, true);
+        }
+
+        /**
          * Prepare a call from a foreign frame to a Python function.
          */
         public static PFrame.Reference enter(PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
+            return enter(context, pArguments, calleeRootNode.needsExceptionState());
+        }
+
+        private static PFrame.Reference enter(PythonContext context, Object[] pArguments, boolean needsExceptionState) {
             Reference popTopFrameInfo = context.popTopFrameInfo();
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            if (calleeRootNode.needsExceptionState()) {
+            if (needsExceptionState) {
                 PException curExc = context.getCaughtException();
                 if (curExc == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

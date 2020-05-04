@@ -350,16 +350,6 @@ def PyList_GetItem(listObj, pos):
 
 
 @may_raise(-1)
-def PyList_SetItem(listObj, pos, newitem):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    if pos < 0:
-        raise IndexError("list assignment index out of range")
-    listObj[pos] = newitem
-    return 0
-
-
-@may_raise(-1)
 def PyList_Append(listObj, newitem):
     if not isinstance(listObj, list):
         __bad_internal_call(None, None, listObj)
@@ -412,11 +402,6 @@ def PyList_Insert(listObj, i, item):
 
 
 ##################### LONG
-
-@may_raise(-1)
-def PyLong_AsPrimitive(obj, signed, size):
-    return TrufflePInt_AsPrimitive(obj, signed, size)
-
 
 def _PyLong_Sign(n):
     if n==0:
@@ -647,15 +632,6 @@ def PySequence_List(obj):
     return list(obj)
 
 
-@may_raise
-def PySequence_GetItem(obj, key):
-    if not hasattr(obj, '__getitem__'):
-        raise TypeError("'%s' object does not support indexing)" % repr(obj))
-    if len(obj) < 0:
-        return native_null
-    return obj[key]
-
-
 @may_raise(-1)
 def PySequence_SetItem(obj, key, value):
     if not hasattr(obj, '__setitem__'):
@@ -820,7 +796,7 @@ class PyCapsule:
 
     def __init__(self, name, pointer, destructor):
         self.name = name
-        self.pointer = to_sulong(pointer)
+        self.pointer = pointer
 
     def __repr__(self):
         name = "NULL" if self.name is None else self.name
@@ -939,7 +915,7 @@ def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, issta
     owner = to_java_type(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
-        func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc)
+        func = _PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, to_java(doc))
         object.__setattr__(owner, name, func)
     else:
         func = CreateFunction(name, cfunc, wrapper, owner)
@@ -948,7 +924,7 @@ def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, issta
         elif isstatic:
             func = cstaticmethod(func)
         PyTruffle_SetAttr(func, "__name__", name)
-        PyTruffle_SetAttr(func, "__doc__", doc)
+        PyTruffle_SetAttr(func, "__doc__", to_java(doc))
         type_dict = to_java(tpDict)
         if name == "__init__":
             def __init__(self, *args, **kwargs):
@@ -960,11 +936,15 @@ def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, issta
 
 
 def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
+    return _PyCFunction_NewEx(name, cfunc, wrapper, to_java(self), to_java(module), to_java(doc))
+
+
+def _PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
     func = CreateFunction(name, cfunc, wrapper)
     PyTruffle_SetAttr(func, "__name__", name)
     PyTruffle_SetAttr(func, "__doc__", doc)
     method = PyTruffle_BuiltinMethod(self, func)
-    PyTruffle_SetAttr(method, "__module__", to_java(module))
+    PyTruffle_SetAttr(method, "__module__", module)
     return method
 
 
@@ -981,14 +961,15 @@ def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
     pclass = to_java_type(primary)
     getter = ReadMemberFunctions[memberType]
+    offset_converted = to_long(int(offset))
     def member_getter(self):
-        return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8)))
+        return to_java(getter(to_sulong(self), offset_converted))
     member_fget = member_getter
     member_fset = None
     if canSet:
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
-            setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
+            setter(to_sulong(self), offset_converted, to_sulong(value))
         member_fset = member_setter
     # nb: do not use member.setter/getter because they create copies of the property
     member = property(fget=member_fget, fset=member_fset, doc=doc)
@@ -1000,13 +981,17 @@ getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, setter, doc, closure):
     pclass = to_java_type(primary)
     fset = fget = None
+
+    # We need to use 'voidptr_to_java' because the 'closure' is of type 'void *' and will be
+    # passed to the C getter function.
+    closure_converted = voidptr_to_java(closure)
     if getter:
         getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):
             # NOTE: The 'to_java' is intended and correct because this call will do a downcall an
             # all args will go through 'to_sulong' then. So, if we don't convert the pointer
             # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
-            return capi_to_java(getter_w(self, to_java(closure)))
+            return capi_to_java(getter_w(self, closure_converted))
 
         fget = member_getter
     if setter:
@@ -1022,7 +1007,7 @@ def AddGetSet(primary, name, getter, setter, doc, closure):
         fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
 
     getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
-    PyTruffle_SetAttr(getset, "__doc__", doc)
+    PyTruffle_SetAttr(getset, "__doc__", to_java(doc))
     PyTruffle_SetAttr(pclass, name, getset)
 
 
@@ -1070,11 +1055,6 @@ def PyObject_CallMethod(rcvr, method, args):
     elif args is not None:
         return getattr(rcvr, method)(args)
     return getattr(rcvr, method)()
-
-
-@may_raise
-def PyObject_GetItem(obj, key):
-    return obj[key]
 
 
 @may_raise(-1)
@@ -1475,7 +1455,7 @@ def initialize_datetime_capi():
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
     import_c_func("set_PyDateTime_typeids")(PyDateTime_CAPI, PyDateTime_CAPI.DateType, PyDateTime_CAPI.DateTimeType, PyDateTime_CAPI.TimeType, PyDateTime_CAPI.DeltaType, PyDateTime_CAPI.TZInfoType)
-    datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
+    datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", wrap_PyDateTime_CAPI(PyDateTime_CAPI()), None)
     datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize")()
     datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
     datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()
@@ -1565,3 +1545,7 @@ def PyEval_GetBuiltins():
         import builtins
         __builtins_module_dict = builtins.__dict__
     return __builtins_module_dict
+
+
+def sequence_clear():
+    return 0

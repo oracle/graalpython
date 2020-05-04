@@ -183,15 +183,15 @@ PyUnicodeObject* unicode_subtype_new(PyTypeObject *type, PyObject *unicode) {
     /* Ensure we won't overflow the length. */
     if (length > (PY_SSIZE_T_MAX / char_size - 1)) {
         PyErr_NoMemory();
-//        Py_DECREF(unicode);
-//        Py_DECREF(self);
+        Py_DECREF(unicode);
+        Py_DECREF(self);
         return NULL;
     }
-    data = malloc((length + 1) * char_size);
+    data = PyObject_MALLOC((length + 1) * char_size);
     if (data == NULL) {
         PyErr_NoMemory();
-//        Py_DECREF(unicode);
-//        Py_DECREF(self);
+        Py_DECREF(unicode);
+        Py_DECREF(self);
         return NULL;
     }
 
@@ -365,7 +365,11 @@ PyObject * PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, cons
 
 UPCALL_ID(PyUnicode_InternInPlace);
 void PyUnicode_InternInPlace(PyObject **s) {
-    *s = UPCALL_CEXT_O(_jls_PyUnicode_InternInPlace, native_to_java(*s));
+	PyObject *t = UPCALL_CEXT_O(_jls_PyUnicode_InternInPlace, native_to_java(*s));
+	if (t != *s) {
+		Py_INCREF(t);
+		Py_SETREF(*s, t);
+	}
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -505,14 +509,14 @@ int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 }
 
 typedef PyObject* (*unicode_fromwchar_fun_t)(void* data, long elementSize, void* errorMarker);
-UPCALL_ID(PyTruffle_Unicode_FromWchar);
+UPCALL_TYPED_ID(PyTruffle_Unicode_FromWchar, unicode_fromwchar_fun_t);
 PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
 #if SIZEOF_WCHAR_T == 1
-	return ((unicode_fromwchar_fun_t)_jls_PyTruffle_Unicode_FromWchar)(polyglot_from_i8_array((int8_t*)u, size), 1, NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_i8_array((int8_t*)u, size), 1, NULL);
 #elif SIZEOF_WCHAR_T == 2
-	return ((unicode_fromwchar_fun_t)_jls_PyTruffle_Unicode_FromWchar)(polyglot_from_i8_array((int8_t*)u, size*2), 2, NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_i8_array((int8_t*)u, size*2), 2, NULL);
 #elif SIZEOF_WCHAR_T == 4
-	return ((unicode_fromwchar_fun_t)_jls_PyTruffle_Unicode_FromWchar)(polyglot_from_i8_array((int8_t*)u, size*4), 4, NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_i8_array((int8_t*)u, size*4), 4, NULL);
 #endif
 }
 
@@ -683,10 +687,10 @@ void* native_unicode_as_string(PyObject *string) {
             return NULL;
         }
         _PyUnicode_CONVERT_BYTES(Py_UCS2, Py_UCS4, start, start + len, target);
-        result = polyglot_from_string_n((const char *)target, sizeof(Py_UCS4) * len, "UTF-32");
+        result = polyglot_from_string_n((const char *)target, sizeof(Py_UCS4) * len, "UTF-32LE");
         free(target);
         return result;
     }
     assert(kind == PyUnicode_4BYTE_KIND);
-    return polyglot_from_string_n((const char *)data, sizeof(Py_UCS4) * len, "UTF-32");
+    return polyglot_from_string_n((const char *)data, sizeof(Py_UCS4) * len, "UTF-32LE");
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNod
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -98,11 +97,11 @@ public final class PFrame extends PythonBuiltinObject {
             if (location.getFrameEscapedWithoutAllocationProfile().profile(this.pyFrame == null || this.pyFrame.virtualFrameInfo == null)) {
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
-                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, curFrameInfo, location, inClassScope);
+                    this.pyFrame = new PFrame(curFrameInfo, location, inClassScope);
                 } else {
                     assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
                     // this is the case when we had custom locals
-                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
+                    this.pyFrame = new PFrame(curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
                 }
             }
             // TODO: frames: update location
@@ -112,7 +111,7 @@ public final class PFrame extends PythonBuiltinObject {
             assert customLocals != null : "cannot set null custom locals";
             assert pyFrame == null : "cannot set customLocals when there's already a PFrame";
             // TODO: frames: this doesn't go through the factory
-            this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, customLocals);
+            this.pyFrame = new PFrame(customLocals);
         }
 
         public void setBackref(PFrame.Reference backref) {
@@ -150,28 +149,28 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(LazyPythonClass cls, Reference virtualFrameInfo, Node location, boolean inClassScope) {
-        this(cls, virtualFrameInfo, location, null, inClassScope);
+    public PFrame(Reference virtualFrameInfo, Node location, boolean inClassScope) {
+        this(virtualFrameInfo, location, null, inClassScope);
     }
 
-    public PFrame(LazyPythonClass cls, Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
-        super(cls);
+    public PFrame(Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.newInstance());
         this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
         this.inClassScope = inClassScope;
     }
 
-    private PFrame(LazyPythonClass cls, Object locals) {
-        super(cls);
+    private PFrame(Object locals) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.newInstance());
         this.virtualFrameInfo = null;
         this.location = null;
         this.inClassScope = false;
         this.localsDict = locals;
     }
 
-    public PFrame(LazyPythonClass cls, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
-        super(cls);
+    public PFrame(@SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.newInstance());
         // TODO: frames: extract the information from the threadState object
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);
@@ -212,6 +211,10 @@ public final class PFrame extends PythonBuiltinObject {
     public void setBackref(PFrame.Reference backref) {
         assert this.backref == null || this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
         this.backref = backref;
+    }
+
+    public void setLine(int line) {
+        this.line = line;
     }
 
     @TruffleBoundary

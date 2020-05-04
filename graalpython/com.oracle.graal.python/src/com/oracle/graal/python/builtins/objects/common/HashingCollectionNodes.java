@@ -56,19 +56,20 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HashingCollectionNodes {
 
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class LenNode extends PNodeWithContext {
         public abstract int execute(PHashingCollection c);
 
         @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        int getLenCached(PHashingCollection c,
+        static int getLenCached(PHashingCollection c,
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
             return lib.length(cachedClass.cast(c).getDictStorage());
         }
 
         @Specialization(replaces = "getLenCached", limit = "1")
-        int getLenGeneric(PHashingCollection c,
+        static int getLenGeneric(PHashingCollection c,
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
             return lib.length(c.getDictStorage());
         }

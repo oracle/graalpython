@@ -46,17 +46,27 @@ void *Py_NoValue;
 
 void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
 
-PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
+PyObject*(*PY_TRUFFLE_LANDING_BORROWED)(void *rcv, void* name, ...);
+PyObject*(*PY_TRUFFLE_LANDING_NEWREF)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
-PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
+PyObject*(*PY_TRUFFLE_CEXT_LANDING_BORROWED)(void* name, ...);
+PyObject*(*PY_TRUFFLE_CEXT_LANDING_NEWREF)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
+uint32_t Py_Truffle_Options;
+
 
 cache_t cache;
+ptr_cache_t ptr_cache;
+ptr_cache_t ptr_cache_stealing;
+type_ptr_cache_t type_ptr_cache;
+
+alloc_upcall_fun_t alloc_upcall;
+free_upcall_fun_t free_upcall;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
@@ -65,21 +75,31 @@ static void initialize_upcall_functions() {
 
     pytruffle_decorate_function = ((void*(*)(void *fun0, void* fun1))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Decorate_Function", SRC_CS)));
 
-    PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
+    PY_TRUFFLE_LANDING_BORROWED = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_Borrowed", SRC_CS)));
+    PY_TRUFFLE_LANDING_NEWREF = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_NewRef", SRC_CS)));
     PY_TRUFFLE_LANDING_L = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
     PY_TRUFFLE_LANDING_D = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)));
     PY_TRUFFLE_LANDING_PTR = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_ptr", SRC_CS)));
-    PY_TRUFFLE_CEXT_LANDING = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING_BORROWED = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_Borrowed", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING_NEWREF = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_NewRef", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_L = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_D = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_PTR = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));
 
+    Py_Truffle_Options = (uint32_t) polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Native_Options"));
+
     Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
+
+    alloc_upcall = (alloc_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Lightweight_Upcall", polyglot_from_string("PyTruffle_Object_Alloc", SRC_CS));
+    free_upcall = (free_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Lightweight_Upcall", polyglot_from_string("PyTruffle_Object_Free", SRC_CS));
 }
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_handle_cache() {
-    cache = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
+    cache = (cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
+    ptr_cache = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
+    ptr_cache_stealing = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 1);
+    type_ptr_cache = (type_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
 }
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
@@ -88,13 +108,21 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
-    allocfunc alloc = structure->tp_alloc;
+    allocfunc alloc_fun = structure->tp_alloc;
+    destructor dealloc_fun = structure->tp_dealloc;
+    freefunc free_fun = structure->tp_free;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
-    if (alloc) {
-    	type_handle->tp_alloc = alloc;
+    if (alloc_fun) {
+    	type_handle->tp_alloc = alloc_fun;
+    }
+    if (dealloc_fun) {
+    	type_handle->tp_dealloc = dealloc_fun;
+    }
+    if (free_fun) {
+    	type_handle->tp_free = free_fun;
     }
 }
 
@@ -223,17 +251,13 @@ void* native_to_java_exported(PyObject* obj) {
     return native_to_java(obj);
 }
 
+void* native_to_java_stealing_exported(PyObject* obj) {
+    return native_to_java_stealing(obj);
+}
+
 // This function does not guarantee that a pointer object is returned.
-void* native_pointer_to_java(PyObject* val) {
-	PyObject* obj = (PyObject*) val;
-    if (obj == NULL) {
-        return Py_NoValue;
-    } else if (obj == Py_None) {
-        return Py_None;
-    } else if (!truffle_cannot_be_handle(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
-    }
-    return obj;
+void* native_pointer_to_java_exported(void* val) {
+	return native_pointer_to_java(val);
 }
 
 // Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such
@@ -250,8 +274,8 @@ void* native_long_to_java(uint64_t val) {
     return obj;
 }
 
-__attribute__((always_inline))
-inline void* to_java(PyObject* obj) {
+MUST_INLINE
+void* to_java(PyObject* obj) {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "to_java", native_to_java(obj));
 }
 
@@ -266,6 +290,11 @@ PyObject* to_sulong(void *o) {
 /** to be used from Java code only; reads native 'ob_type' field */
 PyTypeObject* get_ob_type(PyObject* obj) {
     return native_type_to_java(obj->ob_type);
+}
+
+/** to be used from Java code only; reads native 'ob_refcnt' field */
+Py_ssize_t get_ob_refcnt(PyObject* obj) {
+    return obj->ob_refcnt;
 }
 
 /** to be used from Java code only; reads native 'tp_dict' field */
@@ -285,7 +314,7 @@ PyObject* get_tp_name(PyTypeObject* obj) {
 
 /** to be used from Java code only; reads native 'tp_mro' field */
 PyObject* get_tp_mro(PyTypeObject* obj) {
-	return native_to_java_slim(obj->tp_mro);
+	return native_to_java(obj->tp_mro);
 }
 
 /** to be used from Java code only; reads native 'tp_subclasses' field */
@@ -311,6 +340,16 @@ Py_ssize_t get_tp_basicsize(PyTypeObject* obj) {
 /** to be used from Java code only; reads native 'tp_alloc' field */
 allocfunc get_tp_alloc(PyTypeObject* obj) {
 	return obj->tp_alloc;
+}
+
+/** to be used from Java code only; reads native 'tp_dealloc' field */
+destructor get_tp_dealloc(PyTypeObject* obj) {
+	return obj->tp_dealloc;
+}
+
+/** to be used from Java code only; reads native 'tp_free' field */
+freefunc get_tp_free(PyTypeObject* obj) {
+	return obj->tp_free;
 }
 
 /** to be used from Java code only; reads native 'tp_flags' field */
@@ -343,6 +382,35 @@ polyglot_typeid get_newfunc_typeid() {
     return polyglot_newfunc_typeid();
 }
 
+/** to be used from Java code only; calls INCREF */
+void PyTruffle_INCREF(PyObject* obj) {
+	Py_INCREF(obj);
+}
+
+/** to be used from Java code only; calls DECREF */
+void PyTruffle_DECREF(PyObject* obj) {
+	Py_DECREF(obj);
+}
+
+/** to be used from Java code only; calls DECREF */
+Py_ssize_t PyTruffle_ADDREF(PyObject* obj, Py_ssize_t value) {
+	return (obj->ob_refcnt += value);
+}
+
+/** to be used from Java code only; calls DECREF */
+Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
+    Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
+    if (new_value == 0) {
+        _Py_Dealloc(obj);
+    }
+#ifdef Py_REF_DEBUG
+    else if (new_value < 0) {
+        _Py_NegativeRefcount(filename, lineno, op);
+    }
+#endif
+    return new_value;
+}
+
 typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;
@@ -351,19 +419,13 @@ uint64_t PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
 }
 
-void* PyObjectHandle_ForJavaObject(void* cobj) {
-    if (truffle_cannot_be_handle(cobj)) {
-        return truffle_deref_handle_for_managed(cobj);
-    }
-    return cobj;
-}
-
-/** to be used from Java code only; only creates the deref handle */
-void* PyObjectHandle_ForJavaType(void* ptype) {
-    if (truffle_cannot_be_handle(ptype)) {
-        return truffle_deref_handle_for_managed(ptype);
-    }
-    return ptype;
+/** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
+void PyTruffle_Free(void* obj) {
+	if(!truffle_cannot_be_handle(obj) && truffle_is_handle_to_managed(obj)) {
+		truffle_release_handle(obj);
+	} else {
+		free(obj);
+	}
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
@@ -651,4 +713,9 @@ int truffle_ptr_compare(void* x, void* y, int op) {
 
 double truffle_read_ob_fval(PyFloatObject* fobj) {
 	return fobj->ob_fval;
+}
+
+/* called from Java to get number of bits per long digit */
+int32_t get_long_bits_in_digit() {
+	return PYLONG_BITS_IN_DIGIT;
 }

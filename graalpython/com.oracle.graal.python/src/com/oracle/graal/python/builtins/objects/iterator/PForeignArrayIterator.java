@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PForeignArrayIterator extends PythonBuiltinObject {
 
@@ -51,8 +52,8 @@ public class PForeignArrayIterator extends PythonBuiltinObject {
     private final InteropLibrary lib;
     private int cursor;
 
-    public PForeignArrayIterator(LazyPythonClass cls, Object foreignArray, InteropLibrary lib) {
-        super(cls);
+    public PForeignArrayIterator(LazyPythonClass cls, DynamicObject storage, Object foreignArray, InteropLibrary lib) {
+        super(cls, storage);
         this.foreignArray = foreignArray;
         this.lib = lib;
     }

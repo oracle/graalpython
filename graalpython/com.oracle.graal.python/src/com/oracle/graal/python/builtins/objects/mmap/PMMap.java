@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.mmap;
 import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
 
-import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins.InternalLenNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -55,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PMMap extends PythonObject {
@@ -63,8 +63,8 @@ public final class PMMap extends PythonObject {
     private final long length;
     private final long offset;
 
-    public PMMap(LazyPythonClass pythonClass, SeekableByteChannel mappedByteBuffer, long length, long offset) {
-        super(pythonClass);
+    public PMMap(LazyPythonClass pythonClass, DynamicObject storage, SeekableByteChannel mappedByteBuffer, long length, long offset) {
+        super(pythonClass, storage);
         this.mappedByteBuffer = mappedByteBuffer;
         this.length = length;
         this.offset = offset;
@@ -90,19 +90,17 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     int getBufferLength(
-                    @Shared("lenNode") @Cached InternalLenNode lenNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode) {
-        return castToIntNode.execute(lenNode.execute(this));
+        return castToIntNode.execute(length);
     }
 
     @ExportMessage
     byte[] getBufferBytes(
-                    @Shared("lenNode") @Cached InternalLenNode lenNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
                     @Cached ReadFromChannelNode readNode) {
 
         try {
-            int len = getBufferLength(lenNode, castToIntNode);
+            int len = castToIntNode.execute(length);
 
             // save current position
             // TODO: restore in case of failure
@@ -129,7 +127,7 @@ public final class PMMap extends PythonObject {
     }
 
     @TruffleBoundary
-    static long size(SeekableByteChannel ch) throws IOException {
+    public static long size(SeekableByteChannel ch) throws IOException {
         return ch.size();
     }
 

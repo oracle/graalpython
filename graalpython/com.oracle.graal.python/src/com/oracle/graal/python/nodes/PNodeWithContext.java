@@ -46,7 +46,8 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PNodeWithContext extends Node {
-    protected Assumption singleContextAssumption() {
+
+    protected static Assumption singleContextAssumption() {
         CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
         PythonLanguage language = PythonLanguage.getCurrent();
         return language.singleContextAssumption;

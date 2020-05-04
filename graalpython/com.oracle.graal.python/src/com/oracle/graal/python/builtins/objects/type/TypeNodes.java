@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -57,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -66,14 +67,12 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
@@ -94,9 +93,11 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -127,7 +128,7 @@ public abstract class TypeNodes {
             @Specialization
             long doNative(PythonNativeClass clazz,
                             @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
-                return (long) getTpFlagsNode.execute(clazz, NativeMemberNames.TP_FLAGS);
+                return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
             }
         }
 
@@ -166,7 +167,7 @@ public abstract class TypeNodes {
                     return getValue(mclazz, mclazz.getFlagsContainer());
                 }
             } else if (PGuards.isNativeClass(clazz)) {
-                return (long) CExtNodes.GetTypeMemberNode.getUncached().execute(clazz, NativeMemberNames.TP_FLAGS);
+                return (long) CExtNodes.GetTypeMemberNode.getUncached().execute(clazz, NativeMember.TP_FLAGS);
             }
             throw new IllegalStateException("unknown type");
 
@@ -205,31 +206,31 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
     @GenerateUncached
     public abstract static class GetMroStorageNode extends PNodeWithContext {
 
         public abstract MroSequenceStorage execute(Object obj);
 
         @Specialization
-        MroSequenceStorage doPythonClass(PythonManagedClass obj) {
+        static MroSequenceStorage doPythonClass(PythonManagedClass obj) {
             return obj.getMethodResolutionOrder();
         }
 
         @Specialization
-        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj,
+        static MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(obj).getMethodResolutionOrder();
         }
 
         @Specialization
-        MroSequenceStorage doNativeClass(PythonNativeClass obj,
+        static MroSequenceStorage doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpMroNode,
                         @Cached PRaiseNode raise,
+                        @Cached("createBinaryProfile()") ConditionProfile lazyTypeInitProfile,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
-                        @Cached("createClassProfile()") ValueProfile storageProfile) {
-            Object tupleObj = getTpMroNode.execute(obj, NativeMemberNames.TP_MRO);
-            if (tupleObj == PNone.NO_VALUE) {
+                        @Cached("createIdentityProfile()") ValueProfile storageProfile) {
+            Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
+            if (lazyTypeInitProfile.profile(tupleObj == PNone.NO_VALUE)) {
                 // Special case: lazy type initialization (should happen at most only once per type)
                 CompilerDirectives.transferToInterpreter();
 
@@ -239,12 +240,12 @@ public abstract class TypeNodes {
                     throw raise.raise(PythonBuiltinClassType.SystemError, "lazy initialization of type %s failed", GetNameNode.getUncached().execute(obj));
                 }
 
-                tupleObj = getTpMroNode.execute(obj, NativeMemberNames.TP_MRO);
+                tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
                 assert tupleObj != PNone.NO_VALUE : "MRO object is still NULL even after lazy type initialization";
             }
             Object profiled = tpMroProfile.profile(tupleObj);
             if (profiled instanceof PTuple) {
-                SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) tupleObj).getSequenceStorage());
+                SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) profiled).getSequenceStorage());
                 if (sequenceStorage instanceof MroSequenceStorage) {
                     return (MroSequenceStorage) sequenceStorage;
                 }
@@ -260,7 +261,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
-                Object tupleObj = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_MRO);
+                Object tupleObj = GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_MRO);
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
                     if (sequenceStorage instanceof MroSequenceStorage) {
@@ -281,7 +282,6 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
     @GenerateUncached
     public abstract static class GetNameNode extends Node {
 
@@ -300,7 +300,7 @@ public abstract class TypeNodes {
         @Specialization
         String doNativeClass(PythonNativeClass obj,
                         @Cached CExtNodes.GetTypeMemberNode getTpNameNode) {
-            return (String) getTpNameNode.execute(obj, NativeMemberNames.TP_NAME);
+            return (String) getTpNameNode.execute(obj, NativeMember.TP_NAME);
         }
 
         @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
@@ -311,7 +311,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
-                return (String) CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_NAME);
+                return (String) CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_NAME);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -327,45 +327,37 @@ public abstract class TypeNodes {
 
     @GenerateUncached
     @TypeSystemReference(PythonTypes.class)
-    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetSuperClassNode extends Node {
 
         public abstract LazyPythonClass execute(Object obj);
 
         @Specialization
-        LazyPythonClass doManaged(PythonManagedClass obj) {
+        static LazyPythonClass doManaged(PythonManagedClass obj) {
             return obj.getSuperClass();
         }
 
         @Specialization
-        LazyPythonClass doBuiltin(PythonBuiltinClassType obj) {
+        static LazyPythonClass doBuiltin(PythonBuiltinClassType obj) {
             return obj.getBase();
         }
 
         @Specialization
-        LazyPythonClass doNative(PythonNativeClass obj,
+        static LazyPythonClass doNative(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached PRaiseNode raise,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            Object tpBaseObj = getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE);
-            if (profile.profile(PGuards.isClass(tpBaseObj))) {
-                return (PythonAbstractClass) tpBaseObj;
+                        @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
+            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
+            if (PGuards.isPNone(result)) {
+                return null;
+            } else if (result instanceof PythonAbstractClass) {
+                return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
-        }
-
-        public static GetSuperClassNode create() {
-            return GetSuperClassNodeGen.create();
-        }
-
-        public static GetSuperClassNode getUncached() {
-            return GetSuperClassNodeGen.getUncached();
+            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), result);
         }
     }
 
     @TypeSystemReference(PythonTypes.class)
-    @ImportStatic(NativeMemberNames.class)
     @GenerateUncached
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
@@ -386,7 +378,7 @@ public abstract class TypeNodes {
         Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpSubclassesNode,
                         @Cached("createClassProfile()") ValueProfile profile) {
-            Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMemberNames.TP_SUBCLASSES);
+            Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMember.TP_SUBCLASSES);
 
             Object profiled = profile.profile(tpSubclasses);
             if (profiled instanceof PDict) {
@@ -491,7 +483,6 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetBaseClassesNode extends PNodeWithContext {
 
         // TODO(fa): this should not return a Java array; maybe a SequenceStorage would fit
@@ -514,7 +505,7 @@ public abstract class TypeNodes {
                         @Cached GetTypeMemberNode getTpBasesNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                         @Cached GetInternalObjectArrayNode toArrayNode) {
-            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj, NativeMemberNames.TP_BASES));
+            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj, NativeMember.TP_BASES));
             if (result instanceof PTuple) {
                 Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
                 try {
@@ -536,15 +527,18 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
+    @GenerateUncached
     public abstract static class GetBaseClassNode extends PNodeWithContext {
 
         public abstract PythonAbstractClass execute(Object obj);
 
         @Specialization
-        PythonAbstractClass doPythonClass(PythonManagedClass obj,
+        static PythonAbstractClass doPythonClass(PythonManagedClass obj,
                         @Cached PRaiseNode raise) {
             PythonAbstractClass[] baseClasses = obj.getBaseClasses();
+            if (baseClasses.length == 0) {
+                return null;
+            }
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
@@ -552,10 +546,13 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        PythonAbstractClass doPythonClass(PythonBuiltinClassType obj,
+        static PythonAbstractClass doPythonClass(PythonBuiltinClassType obj,
                         @Cached PRaiseNode raise,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             PythonAbstractClass[] baseClasses = context.getCore().lookupType(obj).getBaseClasses();
+            if (baseClasses.length == 0) {
+                return null;
+            }
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
@@ -563,19 +560,18 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        PythonAbstractClass doNative(PythonNativeClass obj,
+        static PythonAbstractClass doNative(PythonNativeClass obj,
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
-            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE));
-            if (result instanceof PythonAbstractClass) {
+            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
+            if (PGuards.isPNone(result)) {
+                return null;
+            } else if (PGuards.isClass(result)) {
                 return (PythonAbstractClass) result;
             }
-            throw raise.raise(PythonBuiltinClassType.SystemError, "type does not provide __base__");
-        }
-
-        public static GetBaseClassNode create() {
-            return GetBaseClassNodeGen.create();
+            CompilerDirectives.transferToInterpreter();
+            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), result);
         }
     }
 
@@ -614,6 +610,53 @@ public abstract class TypeNodes {
         @Fallback
         boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class ProfileClassNode extends PNodeWithContext {
+
+        public abstract Object execute(Object object);
+
+        public final PythonAbstractClass profile(PythonAbstractClass object) {
+            return (PythonAbstractClass) execute(object);
+        }
+
+        public final PythonBuiltinClassType profile(PythonBuiltinClassType object) {
+            return (PythonBuiltinClassType) execute(object);
+        }
+
+        @Specialization(guards = {"classType == cachedClassType"}, limit = "1")
+        static PythonBuiltinClassType doPythonBuiltinClassType(@SuppressWarnings("unused") PythonBuiltinClassType classType,
+                        @Cached("classType") PythonBuiltinClassType cachedClassType) {
+            return cachedClassType;
+        }
+
+        @Specialization(limit = "1", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
+        static PythonAbstractClass doPythonAbstractClass(PythonAbstractClass object,
+                        @Cached("weak(object)") WeakReference<PythonAbstractClass> cachedObjectRef,
+                        @CachedLibrary("object") ReferenceLibrary referenceLibrary) throws NotSameTypeException {
+            PythonAbstractClass cachedObject = cachedObjectRef.get();
+            if (referenceLibrary.isSame(object, cachedObject)) {
+                return cachedObject;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw NotSameTypeException.INSTANCE;
+        }
+
+        @Specialization(replaces = {"doPythonBuiltinClassType", "doPythonAbstractClass"})
+        static Object doDisabled(Object object) {
+            return object;
+        }
+
+        static WeakReference<PythonAbstractClass> weak(PythonAbstractClass object) {
+            return new WeakReference<>(object);
+        }
+
+        static final class NotSameTypeException extends ControlFlowException {
+            private static final long serialVersionUID = 1L;
+            static final NotSameTypeException INSTANCE = new NotSameTypeException();
         }
     }
 
@@ -775,16 +818,36 @@ public abstract class TypeNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
+    @ReportPolymorphism
     public abstract static class GetInstanceShape extends PNodeWithContext {
 
         public abstract Shape execute(LazyPythonClass clazz);
 
-        @Specialization
+        @Specialization(guards = "clazz == cachedClazz", limit = "1")
+        Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+                        @Cached("clazz") PythonBuiltinClassType cachedClazz) {
+            return cachedClazz.getInstanceShape();
+        }
+
+        @Specialization(replaces = "doBuiltinClassTypeCached")
         Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
             return clazz.getInstanceShape();
         }
 
-        @Specialization
+        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        Shape doBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass clazz,
+                        @Cached("clazz") PythonBuiltinClass cachedClazz) {
+            return cachedClazz.getInstanceShape();
+        }
+
+        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        Shape doClassCached(@SuppressWarnings("unused") PythonClass clazz,
+                        @Cached("clazz") PythonClass cachedClazz) {
+            return cachedClazz.getInstanceShape();
+        }
+
+        @Specialization(replaces = {"doClassCached", "doBuiltinClassCached"})
         Shape doManagedClass(PythonManagedClass clazz) {
             return clazz.getInstanceShape();
         }
@@ -793,15 +856,6 @@ public abstract class TypeNodes {
         Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
-        }
-
-        public static Shape doSlowPath(LazyPythonClass clazz) {
-            if (clazz instanceof PythonBuiltinClassType) {
-                return ((PythonBuiltinClassType) clazz).getInstanceShape();
-            } else if (clazz instanceof PythonManagedClass) {
-                return ((PythonManagedClass) clazz).getInstanceShape();
-            }
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
         }
 
         public static GetInstanceShape create() {

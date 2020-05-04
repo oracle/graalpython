@@ -83,31 +83,6 @@ def __build_class__(func, name, *bases, metaclass=None, **kwargs):
     return type(name, bases, ns)
 
 
-class map(object):
-    def __init__(self, func, iterable, *args):
-        self.__func = func
-        iterators = [iter(iterable)]
-        for i in args:
-            iterators.append(iter(i))
-        self.__iterators = iterators
-
-    def __next__(self):
-        args = []
-        for it in self.__iterators:
-            args.append(next(it))
-        return self.__func(*args)
-
-    def __iter__(self):
-        return self
-
-    def __contains__(self, x):
-        for i in map(self.__func, *self.__iterators):
-            if x == i:
-                return True
-        return False
-
-
-
 from sys import _getframe as __getframe__
 
 

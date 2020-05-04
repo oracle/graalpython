@@ -441,8 +441,10 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNotSpecialCase(list, value)")
-        PNone insert(PList list, int index, Object value) {
-            list.insert(normalizeIndex(index, getLength(list.getSequenceStorage())), value);
+        PNone insert(PList list, int index, Object value,
+                        @Cached SequenceStorageNodes.InsertItemNode insertItem) {
+            SequenceStorage store = list.getSequenceStorage();
+            list.setSequenceStorage(insertItem.execute(store, normalizeIndex(index, getLength(store)), value));
             return PNone.NONE;
         }
 

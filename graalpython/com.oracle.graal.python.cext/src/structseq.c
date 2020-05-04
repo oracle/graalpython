@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,21 @@
  */
 #include "capi.h"
 
+#define REAL_SIZE_TP(tp) PyLong_AsSsize_t(PyDict_GetItem((tp)->tp_dict, polyglot_from_string("n_fields", SRC_CS)))
+#define REAL_SIZE(op) REAL_SIZE_TP(Py_TYPE(op))
+
+static void
+structseq_dealloc(PyStructSequence *obj)
+{
+    Py_ssize_t i, size;
+
+    size = REAL_SIZE(obj);
+    for (i = 0; i < size; ++i) {
+        Py_XDECREF(obj->ob_item[i]);
+    }
+    PyObject_GC_Del(obj);
+}
+
 /* StructSequences a.k.a. 'namedtuple' */
 UPCALL_ID(PyStructSequence_New);
 PyObject* PyStructSequence_New(PyTypeObject* o) {
@@ -78,11 +93,14 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     type->tp_new = newType->tp_new;
     type->tp_base = &PyTuple_Type;
     type->tp_alloc = newType->tp_alloc;
+    type->tp_dealloc = (destructor)structseq_dealloc;
 
     // now copy specific fields
     type->tp_name = newType->tp_name;
     type->tp_doc = newType->tp_doc;
     type->tp_dict = newType->tp_dict;
+
+    Py_DECREF(newType);
 
     // now initialize the type
     if (PyType_Ready(type) < 0)

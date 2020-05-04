@@ -43,14 +43,15 @@ package com.oracle.graal.python.builtins.objects.posix;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PDirEntry extends PythonBuiltinObject {
     private final TruffleFile file;
     private final String name;
     private Object cachedStatResult;
 
-    public PDirEntry(LazyPythonClass cls, String name, TruffleFile file) {
-        super(cls);
+    public PDirEntry(LazyPythonClass cls, DynamicObject storage, String name, TruffleFile file) {
+        super(cls, storage);
         this.name = name;
         this.file = file;
     }

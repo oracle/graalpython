@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -66,3 +66,6 @@ def test_list_comprehension():
 
     ll = make_list(100000)
     assert ll[-1] == 99999
+
+    ll = [i for i in range(0, 1, 2)]
+    assert ll == [0], "expected '[0]' but was '%r'" % ll

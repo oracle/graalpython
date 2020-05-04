@@ -283,7 +283,6 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.acos, -1 - eps)
         self.assertTrue(math.isnan(math.acos(NAN)))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def testAcosh(self):
         self.assertRaises(TypeError, math.acosh)
         self.ftest('acosh(1)', math.acosh(1), 0)
@@ -305,7 +304,6 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.asin, -1 - eps)
         self.assertTrue(math.isnan(math.asin(NAN)))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def testAsinh(self):
         self.assertRaises(TypeError, math.asinh)
         self.ftest('asinh(0)', math.asinh(0), 0)
@@ -456,7 +454,6 @@ class MathTests(unittest.TestCase):
         # similarly, copysign(2., NAN) could be 2. or -2.
         self.assertEqual(abs(math.copysign(2., NAN)), 2.)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def testCos(self):
         self.assertRaises(TypeError, math.cos)
         self.ftest('cos(-pi/2)', math.cos(-math.pi/2), 0, abs_tol=ulp(1))
@@ -471,7 +468,6 @@ class MathTests(unittest.TestCase):
             self.assertRaises(ValueError, math.cos, NINF)
         self.assertTrue(math.isnan(math.cos(NAN)))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def testCosh(self):
         self.assertRaises(TypeError, math.cosh)
         self.ftest('cosh(0)', math.cosh(0), 1)
@@ -1391,7 +1387,6 @@ class MathTests(unittest.TestCase):
             self.assertRaises(ValueError, math.sin, NINF)
         self.assertTrue(math.isnan(math.sin(NAN)))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def testSinh(self):
         self.assertRaises(TypeError, math.sinh)
         self.ftest('sinh(0)', math.sinh(0), 0)
@@ -1411,7 +1406,6 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.sqrt, NINF)
         self.assertTrue(math.isnan(math.sqrt(NAN)))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def testTan(self):
         self.assertRaises(TypeError, math.tan)
         self.ftest('tan(0)', math.tan(0), 0)
@@ -1425,7 +1419,6 @@ class MathTests(unittest.TestCase):
             self.assertRaises(ValueError, math.tan, NINF)
         self.assertTrue(math.isnan(math.tan(NAN)))
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def testTanh(self):
         self.assertRaises(TypeError, math.tanh)
         self.ftest('tanh(0)', math.tanh(0), 0)
