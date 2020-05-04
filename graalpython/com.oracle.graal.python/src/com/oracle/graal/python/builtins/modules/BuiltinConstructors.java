@@ -232,7 +232,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         protected Object create(LazyPythonClass cls, byte[] barr) {
-            throw new AssertionError("should not reach");
+            throw new IllegalStateException("should not reach");
         }
 
         @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
@@ -312,7 +312,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BytesNode extends CreateByteOrByteArrayNode {
         @Override
-        protected Object create(LazyPythonClass cls, byte[] barr) {
+        protected final Object create(LazyPythonClass cls, byte[] barr) {
             return factory().createBytes(cls, barr);
         }
     }
@@ -323,7 +323,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ByteArrayNode extends CreateByteOrByteArrayNode {
         @Override
-        protected Object create(LazyPythonClass cls, byte[] barr) {
+        protected final Object create(LazyPythonClass cls, byte[] barr) {
             return factory().createByteArray(cls, barr);
         }
     }

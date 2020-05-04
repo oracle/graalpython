@@ -112,7 +112,7 @@ public final class PList extends PMutableSequence {
             return (PList) value;
         }
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PList required.");
+        throw new IllegalStateException("PList required.");
     }
 
     public static PList expect(Object value) throws UnexpectedResultException {

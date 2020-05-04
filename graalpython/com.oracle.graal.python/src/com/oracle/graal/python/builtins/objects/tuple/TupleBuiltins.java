@@ -306,7 +306,7 @@ public class TupleBuiltins extends PythonBuiltins {
                     return ((PString) value).getValue();
                 }
                 CompilerDirectives.transferToInterpreter();
-                throw new AssertionError("should not reach");
+                throw new IllegalStateException("should not reach");
             }
             return "(null)";
         }

@@ -63,7 +63,7 @@ public class PMappingproxy extends PHashingCollection {
     @Override
     public void setDictStorage(HashingStorage newStorage) {
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError();
+        throw new IllegalStateException();
     }
 
     @Override

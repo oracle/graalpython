@@ -118,6 +118,6 @@ public final class PRangeIterator extends PIntegerIterator {
             return (PRangeIterator) value;
         }
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PRangeIterator required.");
+        throw new IllegalStateException("PRangeIterator required.");
     }
 }

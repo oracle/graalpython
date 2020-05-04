@@ -107,7 +107,7 @@ public final class PTuple extends PImmutableSequence {
             return (PTuple) value;
         }
         CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PTuple required.");
+        throw new IllegalStateException("PTuple required.");
     }
 
     public static PTuple expect(Object value) throws UnexpectedResultException {

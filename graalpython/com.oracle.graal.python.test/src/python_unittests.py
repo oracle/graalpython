@@ -80,6 +80,30 @@ PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
 PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
 PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
 
+TEST_TYPES = ('array','buffer','code','frame','long','memoryview','unicode','exceptions',
+            'baseexception','range','builtin','bytes','thread','property','class','dictviews',
+            'sys','imp','rlcompleter','types','coroutines','dictcomps','int_literal','mmap',
+            'module','numeric_tower','syntax','traceback','typechecks','int','keyword','raise',
+            'descr','generators','list','complex','tuple','enumerate','super','float',
+            'bool','fstring','dict','iter','string','scope','with','set')
+
+TEST_APP_SCRIPTING = ('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
+            'pickle','pickletester','pickle','picklebuffer','pickletools','codecs','functools',
+            'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport',
+            'zipapp','gzip','bz2','builtin')
+
+TEST_SERVER_SCRIPTING_DS = ('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
+                            'fork','forkserver','main_handling','spawn','socket','socket','socketserver',
+                            'signal','mmap','resource','thread','dummy_thread','threading','threading_local',
+                            'threadsignals','dummy_threading','threadedtempfile','thread','hashlib','re',
+                            'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING
+
+
+USE_CASE_GROUPS = {
+        'Python Language and Built-in Types': TEST_TYPES,
+        'Application Scripting': TEST_APP_SCRIPTING,
+        'Server-Side Scripting and Data Science': TEST_SERVER_SCRIPTING_DS
+         }
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -651,8 +675,6 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         '''.format('\n'.join([_fmt(cmp) for cmp in components]))
 
     def progress_bar(value, color='success'):
-        if 0.0 <= value <= 1.0:
-            value = 100 * value
         return '''
         <div class="progress">
           <div class="progress-bar progress-bar-{color}" role="progressbar" aria-valuenow="{value}"
@@ -777,6 +799,21 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         '<b>{}</b>'.format(r[Col.UNITTEST])
         for r in rows if r[Col.NUM_ERRORS] == -1
     ])
+    
+    usecase_scores = dict()
+    for usecase_name, usecase_modules in USE_CASE_GROUPS.items():
+        score_sum = 0
+        for m in usecase_modules:
+            for r in rows:
+                if ("test_" + m + ".py") == r[Col.UNITTEST]:
+                    if r[Col.NUM_PASSES] > 0 and r[Col.NUM_TESTS] > 0:
+                        score_sum += r[Col.NUM_PASSES] / r[Col.NUM_TESTS]
+        usecase_scores[usecase_name] = score_sum / len(usecase_modules)
+            
+    
+    use_case_stats_info = ul("<b>Summary per Use Case</b>", 
+                                [ grid((progress_bar(avg_score * 100, color="info"), 3), '<b>{}</b>'.format(usecase_name)) +
+                                  grid(", ".join(USE_CASE_GROUPS[usecase_name])) for usecase_name, avg_score in usecase_scores.items()])
 
     total_stats_info = ul("<b>Summary</b>", [
         grid('<b># total</b> unittests: {}'.format(totals[Stat.UT_TOTAL])),
@@ -791,7 +828,9 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
 
     table_stats = table('stats', CSV_HEADER, rows)
 
-    content = ' <br> '.join([total_stats_info, table_stats,
+    content = ' <br> '.join([use_case_stats_info,
+                             total_stats_info,
+                             table_stats,
                              missing_modules_info,
                              cannot_import_modules_info,
                              java_issues_info,

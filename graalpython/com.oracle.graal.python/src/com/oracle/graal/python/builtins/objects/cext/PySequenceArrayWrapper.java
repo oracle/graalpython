@@ -412,7 +412,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence));
             if (nativeStorage == null) {
                 CompilerDirectives.transferToInterpreter();
-                throw new AssertionError("could not allocate native storage");
+                throw new IllegalStateException("could not allocate native storage");
             }
             // switch to native storage
             sequence.setSequenceStorage(nativeStorage);
