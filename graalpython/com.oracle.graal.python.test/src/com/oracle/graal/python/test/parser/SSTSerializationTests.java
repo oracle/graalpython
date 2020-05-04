@@ -47,7 +47,6 @@ import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import java.io.ByteArrayInputStream;
