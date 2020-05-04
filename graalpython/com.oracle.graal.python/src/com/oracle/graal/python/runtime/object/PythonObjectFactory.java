@@ -145,7 +145,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -782,7 +781,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PZip(cls, makeStorage(cls), iterables));
     }
 
-    public PForeignArrayIterator createForeignArrayIterator(Object iterable, InteropLibrary lib) {
+    public PForeignArrayIterator createForeignArrayIterator(Object iterable) {
         return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, PythonBuiltinClassType.PForeignArrayIterator.newInstance(), iterable));
     }
 
