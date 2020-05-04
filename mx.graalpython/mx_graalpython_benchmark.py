@@ -51,6 +51,7 @@ ENV_PYPY_HOME = "PYPY_HOME"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
+VM_NAME_JYTHON = "jython"
 VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
@@ -243,6 +244,27 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
     def name(self):
         return VM_NAME_PYPY
+
+
+class JythonVm(AbstractPythonIterationsControlVm):
+    JYTHON_INTERPRETER = "jython"
+
+    def __init__(self, config_name, options=None, env=None, iterations=None):
+        super(JythonVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
+
+    def override_iterations(self, requested_iterations):
+        return 2
+
+    @property
+    def interpreter(self):
+        try:
+            return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
+        except OSError:
+            mx.abort("{} is not set!".format(ENV_JYTHON_HOME))
+        return join(home, 'bin', JythonVm.JYTHON_INTERPRETER)
+
+    def name(self):
+        return VM_NAME_JYTHON
 
 
 class GraalPythonVm(GuestVm):
