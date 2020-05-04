@@ -145,6 +145,7 @@ public class InteropLibraryTest extends PythonTests {
 
     @Test
     public void testForItemInLazyArray() {
+        // @formatter:off
         Value collect = context.eval("python", ""
                 + "def iter (arr):\n"
                 + "\tcollect = []\n"
@@ -155,6 +156,7 @@ public class InteropLibraryTest extends PythonTests {
                 + "\treturn collect\n"
                 + "iter\n"
         );
+        // @formatter:on
 
         final List<Integer> list = Arrays.asList(5, 7, 11, 13, 17, 23);
 
