@@ -40,14 +40,17 @@
 import csv
 import gzip
 import os
+import signal
 import re
 import html
+import time
 import subprocess
 from collections import defaultdict
 from json import dumps
 from multiprocessing import Pool, TimeoutError
 from pprint import pformat
 
+   
 import argparse
 import sys
 from time import gmtime, strftime
@@ -126,28 +129,38 @@ def file_name(name, current_date_time):
     return '{}-{}'.format(name, current_date_time)
 
 
+TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # exec utils
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def _run_cmd(cmd, capture_on_failure=True):
+def _run_cmd(cmd, timeout=TIMEOUT, capture_on_failure=True):
     if isinstance(cmd, str):
         cmd = cmd.split(" ")
     assert isinstance(cmd, (list, tuple))
 
-    log("[EXEC] cmd: {} ...".format(' '.join(cmd)))
-    success = True
-    output = None
+    cmd_string = ' '.join(cmd)
+    log("[EXEC] starting '{}' ...".format(cmd_string))
 
+    start_time = time.monotonic()
+    # os.setsid is used to create a process group, to be able to call os.killpg upon timeout
+    proc = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     try:
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        log("[ERR] Could not execute CMD. Reason: {}".format(e))
-        if capture_on_failure:
-            output = e.output
-
-    return success, output.decode("utf-8", "ignore")
+        output = proc.communicate(timeout=timeout)[0]
+    except subprocess.TimeoutExpired as e:
+        delta = time.monotonic() - start_time
+        log("[ERR] timeout '{}' after {:.3f}s, killing process group {}", cmd_string, delta, proc.pid)
+        os.killpg(proc.pid, signal.SIGKILL)
+        output = proc.communicate()[0]
+        msg = "TimeoutExpired: {:.3f}s".format(delta)
+    else:
+        delta = time.monotonic() - start_time
+        log("[EXEC] finished '{}' with exit code {} in {:.3f}s", cmd_string, proc.returncode, delta)
+        msg = "Finished: {:.3f}s".format(delta)
+    
+    return proc.returncode == 0, output.decode("utf-8", "ignore") + "\n" + msg
 
 
 def scp(results_file_path, destination_path, destination_name=None):
@@ -157,20 +170,18 @@ def scp(results_file_path, destination_path, destination_name=None):
     return _run_cmd(cmd)[0]
 
 
-def _run_unittest(test_path, with_cpython=False):
+def _run_unittest(test_path, timeout, with_cpython=False):
     if with_cpython:
         cmd = ["python3", test_path, "-v"]
     else:
         cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
-    success, output = _run_cmd(cmd)
+    output = _run_cmd(cmd, timeout)[1]
     output = '''
 ##############################################################
 #### running: {} 
     '''.format(test_path) + output
-    return success, output
+    return output
 
-
-TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
 
 
 def run_unittests(unittests, timeout, with_cpython=False):
@@ -178,33 +189,23 @@ def run_unittests(unittests, timeout, with_cpython=False):
     num_unittests = len(unittests)
     log("[EXEC] running {} unittests ... ", num_unittests)
     log("[EXEC] timeout per unittest: {} seconds", timeout)
-    results = []
 
-    pool = Pool()
-    for ut in unittests:
-        results.append(pool.apply_async(_run_unittest, args=(ut, with_cpython)))
-    pool.close()
-
-    log("[INFO] collect results ... ")
+    start_time = time.monotonic()
+    pool = Pool(processes=(os.cpu_count() // 4) or 1) # to account for hyperthreading and some additional overhead
+    
     out = []
-    timed_out = []
-    for i, res in enumerate(results):
-        try:
-            _, output = res.get(timeout)
-            out.append(output)
-        except TimeoutError:
-            log("[ERR] timeout while getting results for {}, skipping!", unittests[i])
-            timed_out.append(unittests[i])
-        log("[PROGRESS] {} / {}: \t {}%", i+1, num_unittests, int(((i+1) * 100.0) / num_unittests))
-
-    if timed_out:
-        log(HR)
-        for t in timed_out:
-            log("[TIMEOUT] skipped: {}", t)
-        log(HR)
-    log("[STATS] processed {} out of {} unittests", num_unittests - len(timed_out), num_unittests)
-    pool.terminate()
+    def callback(result):
+        out.append(result)
+        log("[PROGRESS] {} / {}: \t {:.1f}%", len(out), num_unittests, len(out) * 100 / num_unittests)
+        
+    # schedule all unittest runs
+    for ut in unittests:
+        pool.apply_async(_run_unittest, args=(ut, timeout, with_cpython), callback=callback)
+        
+    pool.close()
     pool.join()
+    pool.terminate()
+    log("[STATS] processed {} unittests in {:.3f}s", num_unittests, time.monotonic() - start_time)
     return out
 
 
@@ -346,11 +347,12 @@ def process_output(output_lines):
         match = re.match(PTRN_ERROR, line)
         if match:
             error_message = (match.group('error'), match.group('message'))
-            error_message_dict = error_messages[unittests[-1]]
-            d = error_message_dict.get(error_message)
-            if not d:
-                d = 0
-            error_message_dict[error_message] = d + 1
+            if not error_message[0] == 'Directory' and not error_message[0] == 'Components':
+                error_message_dict = error_messages[unittests[-1]]
+                d = error_message_dict.get(error_message)
+                if not d:
+                    d = 0
+                error_message_dict[error_message] = d + 1
             continue
 
         # extract java exceptions
@@ -521,6 +523,8 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
             unittest_errmsg = error_messages[unittest]
             if not unittest_errmsg:
                 unittest_errmsg = java_exceptions[unittest]
+            if not unittest_errmsg:
+                unittest_errmsg = {}
 
             rows.append({
                 Col.UNITTEST: unittest,
@@ -867,7 +871,7 @@ def main(prog, args):
                         action="store_true")
     parser.add_argument("-l", "--limit", help="Limit the number of unittests to run.", default=None, type=int)
     parser.add_argument("-t", "--tests_path", help="Unittests path.", default=PATH_UNITTESTS)
-    parser.add_argument("-T", "--timeout", help="Timeout per unittest run.", default=TIMEOUT, type=int)
+    parser.add_argument("-T", "--timeout", help="Timeout per unittest run (seconds).", default=TIMEOUT, type=int)
     parser.add_argument("-o", "--only_tests", help="Run only these unittests (comma sep values).", default=None)
     parser.add_argument("-s", "--skip_tests", help="Run all unittests except (comma sep values)."
                                                    "the only_tets option takes precedence", default=None)
