@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.tools.profiler.CPUSampler;
 import com.oracle.truffle.tools.profiler.CPUSampler.Payload;
@@ -93,7 +94,7 @@ public class LsprofModuleBuiltins extends PythonBuiltins {
             if (instrumentInfo != null) {
                 CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
                 if (sampler != null) {
-                    return factory().trace(new Profiler(cls, sampler));
+                    return factory().trace(new Profiler(cls, factory().makeStorage(cls), sampler));
                 }
             }
             throw raise(PythonBuiltinClassType.NotImplementedError, "coverage tracker not available");
@@ -109,8 +110,8 @@ class Profiler extends PythonBuiltinObject {
     double time;
     final CPUSampler sampler;
 
-    public Profiler(LazyPythonClass cls, CPUSampler sampler) {
-        super(cls);
+    public Profiler(LazyPythonClass cls, DynamicObject storage, CPUSampler sampler) {
+        super(cls, storage);
         this.sampler = sampler;
         this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());
         this.sampler.setMode(CPUSampler.Mode.ROOTS);

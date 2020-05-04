@@ -1199,7 +1199,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // iter(object[, sentinel])
     @Builtin(name = ITER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class IterNode extends PythonBuiltinNode {
+    public abstract static class IterNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(sentinel)")
         public Object iter(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone sentinel,
                         @Cached("create()") GetIteratorNode getIterNode) {

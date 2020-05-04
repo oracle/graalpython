@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.getsetdescriptor;
+package com.oracle.graal.python.builtins.objects.map;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.object.DynamicObject;
 
-public final class HiddenKeyDescriptor extends PythonBuiltinObject {
-    private final HiddenKey key;
-    private final LazyPythonClass type;
+public final class PMap extends PythonBuiltinObject {
+    @CompilationFinal private Object function;
+    @CompilationFinal(dimensions = 1) private Object[] iterators;
 
-    public HiddenKeyDescriptor(HiddenKey key, LazyPythonClass type) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
-        this.key = key;
-        this.type = type;
+    public PMap(LazyPythonClass clazz, DynamicObject storage) {
+        super(clazz, storage);
     }
 
-    public HiddenKey getKey() {
-        return key;
+    public Object getFunction() {
+        return function;
     }
 
-    public LazyPythonClass getType() {
-        return type;
+    public void setFunction(Object function) {
+        this.function = function;
+    }
+
+    public Object[] getIterators() {
+        return iterators;
+    }
+
+    public void setIterators(Object[] iterators) {
+        this.iterators = iterators;
     }
 }

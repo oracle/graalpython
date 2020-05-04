@@ -41,13 +41,15 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PHashingCollection extends PythonBuiltinObject {
 
-    public PHashingCollection(LazyPythonClass cls) {
-        super(cls);
+    public PHashingCollection(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
     }
 
     public abstract HashingStorage getDictStorage();
@@ -56,15 +58,15 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
 
     public abstract int size();
 
-    public Iterable<Object> items() {
+    public HashingStorageIterable<Object> items() {
         return HashingStorageLibrary.getUncached().values(getDictStorage());
     }
 
-    public Iterable<Object> keys() {
+    public HashingStorageIterable<Object> keys() {
         return HashingStorageLibrary.getUncached().keys(getDictStorage());
     }
 
-    public Iterable<DictEntry> entries() {
+    public HashingStorageIterable<DictEntry> entries() {
         return HashingStorageLibrary.getUncached().entries(getDictStorage());
     }
 }

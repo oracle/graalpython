@@ -122,7 +122,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             PTuple args = self.getArgs();
             if (nullArgsProfile.profile(args == null)) {
                 if (hasMessageFormat.profile(!self.hasMessageFormat())) {
-                    args = factory().createTuple(new Object[0]);
+                    args = factory().createEmptyTuple();
                 } else {
                     // lazily format the exception message:
                     args = factory().createTuple(new Object[]{getFormattedMessage(self.getMessageFormat(), self.getMessageArgs())});

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,11 @@
 package com.oracle.graal.python.builtins.objects.superobject;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class SuperObject extends PythonBuiltinObject {
     private final Assumption neverReinitialized = Truffle.getRuntime().createAssumption("super object was never reinitialized");
@@ -52,8 +53,8 @@ public class SuperObject extends PythonBuiltinObject {
     private PythonAbstractClass objecttype;
     private Object object;
 
-    public SuperObject(LazyPythonClass cls) {
-        super(cls);
+    public SuperObject(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
     }
 
     public void init(Object newType, PythonAbstractClass newObjecttype, Object newObject) {

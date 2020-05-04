@@ -57,6 +57,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PBaseException extends PythonObject {
     private static final Object[] EMPTY_ARGS = new Object[0];
@@ -101,16 +102,24 @@ public final class PBaseException extends PythonObject {
         this.suppressContext = suppressContext;
     }
 
-    public PBaseException(LazyPythonClass cls, PTuple args) {
-        super(cls);
+    public PBaseException(LazyPythonClass cls, DynamicObject storage, PTuple args) {
+        super(cls, storage);
         this.args = args;
         this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(LazyPythonClass cls, String format, Object[] args) {
-        super(cls);
+    public PBaseException(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
+        this.args = null;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(LazyPythonClass cls, DynamicObject storage, String format, Object[] args) {
+        super(cls, storage);
         this.args = null;
         this.hasMessageFormat = true;
         this.messageFormat = format;
@@ -179,8 +188,11 @@ public final class PBaseException extends PythonObject {
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
                 return typeName + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
+            } else if (hasMessageFormat) {
+                return typeName + ": " + messageFormat;
+            } else {
+                return typeName;
             }
-            return typeName + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
             return typeName;
         } else if (args.getSequenceStorage().length() == 1) {

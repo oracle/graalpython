@@ -48,8 +48,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import com.oracle.graal.python.util.Supplier;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -57,13 +57,16 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -75,7 +78,7 @@ public class AsyncHandler {
      * An action to be run triggered by an asynchronous event.
      */
     public interface AsyncAction {
-        void execute(VirtualFrame frame, Node location, PythonContext context);
+        void execute(PythonContext context);
     }
 
     public abstract static class AsyncPythonAction implements AsyncAction {
@@ -100,19 +103,17 @@ public class AsyncHandler {
         }
 
         @Override
-        public final void execute(VirtualFrame frame, Node location, PythonContext context) {
+        public final void execute(PythonContext context) {
             Object callable = callable();
             if (callable != null) {
                 Object[] arguments = arguments();
-                Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARGS);
-                System.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARGS, arguments.length);
-                PArguments.setArgument(args, 0, callable);
-                PArguments.setArgument(args, 1, frameIndex());
-                PArguments.setArgument(args, 2, location);
-                PArguments.setArgument(args, 3, frame);
+                Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARG_COUNT);
+                System.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARG_COUNT, arguments.length);
+                PArguments.setArgument(args, CallRootNode.ASYNC_CALLABLE_INDEX, callable);
+                PArguments.setArgument(args, CallRootNode.ASYNC_FRAME_INDEX_INDEX, frameIndex());
 
                 try {
-                    GenericInvokeNode.getUncached().execute(frame, context.getAsyncHandler().callTarget, args);
+                    GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
                 } catch (RuntimeException e) {
                     // we cannot raise the exception here (well, we could, but CPython
                     // doesn't), so we do what they do and just print it
@@ -163,7 +164,9 @@ public class AsyncHandler {
     }
 
     private static class CallRootNode extends PRootNode {
-        static final int ASYNC_ARGS = 4;
+        static final int ASYNC_CALLABLE_INDEX = 0;
+        static final int ASYNC_FRAME_INDEX_INDEX = 1;
+        static final int ASYNC_ARG_COUNT = 2;
 
         @Child private CallNode callNode = CallNode.create();
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
@@ -179,9 +182,9 @@ public class AsyncHandler {
         public Object execute(VirtualFrame frame) {
             CalleeContext.enter(frame, profile);
             Object[] frameArguments = frame.getArguments();
-            Object callable = PArguments.getArgument(frameArguments, 0);
-            int frameIndex = (int) PArguments.getArgument(frameArguments, 1);
-            Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARGS, frameArguments.length);
+            Object callable = PArguments.getArgument(frameArguments, ASYNC_CALLABLE_INDEX);
+            int frameIndex = (int) PArguments.getArgument(frameArguments, ASYNC_FRAME_INDEX_INDEX);
+            Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARG_COUNT, frameArguments.length);
 
             if (frameIndex >= 0) {
                 arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0);
@@ -217,15 +220,23 @@ public class AsyncHandler {
     }
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (PythonLanguage.getContext().getOption(PythonOptions.NoAsyncActions)) {
+            return;
+        }
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(VirtualFrame frame, Node location) {
-        // Uses weakCompareAndSet because we just want to do it in a timely manner, but we don't
-        // need the ordering guarantees.
-        if (hasScheduledAction) {
-            CompilerDirectives.transferToInterpreter();
-            processAsyncActions(frame, location);
+    void triggerAsyncActions(VirtualFrame frame, BranchProfile actionProfile) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, hasScheduledAction)) {
+            actionProfile.enter();
+            IndirectCallContext.enter(frame, context, null);
+            try {
+                CompilerDirectives.transferToInterpreter();
+                processAsyncActions();
+            } finally {
+                IndirectCallContext.exit(frame, context, null);
+            }
         }
     }
 
@@ -261,14 +272,14 @@ public class AsyncHandler {
      * async actions on the main thread, because there's only one per "type" of async thing (e.g. 1
      * for weakref finalizers, 1 for signals, 1 for destructors).
      */
-    private void processAsyncActions(VirtualFrame frame, Node location) {
+    private void processAsyncActions() {
         if (executingScheduledActions.tryLock()) {
             hasScheduledAction = false;
             try {
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 AsyncAction action;
                 while ((action = actions.poll()) != null) {
-                    action.execute(frame, location, context);
+                    action.execute(context);
                 }
             } finally {
                 executingScheduledActions.unlock();

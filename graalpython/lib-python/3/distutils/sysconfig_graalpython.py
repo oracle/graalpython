@@ -75,7 +75,7 @@ def _init_posix():
     g = {}
     g['CC'] = __graalpython__.get_toolchain_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
-    g['OPT'] = "-DNDEBUG -O1"
+    g['OPT'] = "-stdlib=libc++ -DNDEBUG -O1"
     g['CONFINCLUDEPY'] = get_python_inc()
     g['CPPFLAGS'] = '-I. -I' + get_python_inc()
     g['CFLAGS'] = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -O1"

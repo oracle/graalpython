@@ -317,9 +317,7 @@ def known_packages():
         numpy(**kwargs)
 
         # download pandas-0.25.0
-        # workaround until Sulong toolchain fixes this
-        cflags = "-stdlib=libc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
-        install_from_pypi("pandas==0.25.0", add_cflags=cflags, **kwargs)
+        install_from_pypi("pandas==0.25.0", **kwargs)
 
     @pip_package()
     def scipy(**kwargs):
@@ -381,7 +379,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
 
     # honor env var 'CFLAGS' and 'CPPFLAGS'
     cppflags = os_env.get("CPPFLAGS", "")
-    cflags = "-v " + os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
+    cflags = os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
 
     env_str = ('CFLAGS="%s" ' % cflags if cflags else "") + ('CPPFLAGS="%s" ' % cppflags if cppflags else "")
     for key in env.keys():

@@ -45,6 +45,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
     @Child private CoerceToBooleanNode condition;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
+    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
@@ -73,18 +74,18 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
         }
         boolean nextFlag = false;
         int count = 0;
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        PythonContext context = contextRef.get();
         try {
             do {
                 body.executeVoid(frame);
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
-                context.triggerAsyncActions(frame, this);
+                if (contextRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    asyncProfile = BranchProfile.create();
+                    contextRef = lookupContextReference(PythonLanguage.class);
+                }
+                contextRef.get().triggerAsyncActions(frame, asyncProfile);
             } while (condition.executeBoolean(frame));
             return;
         } catch (YieldException e) {

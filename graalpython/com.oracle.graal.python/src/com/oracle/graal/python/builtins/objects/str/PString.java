@@ -52,6 +52,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -59,8 +60,8 @@ public final class PString extends PImmutableSequence {
 
     private CharSequence value;
 
-    public PString(LazyPythonClass clazz, CharSequence value) {
-        super(clazz);
+    public PString(LazyPythonClass clazz, DynamicObject storage, CharSequence value) {
+        super(clazz, storage);
         this.value = value;
     }
 

@@ -389,7 +389,6 @@ class MemoryTestMixin:
             memio = self.ioclass()
             memio.foo = 1
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_pickling(self):
         buf = self.buftype("1234567890")
         memio = self.ioclass(buf)
@@ -469,7 +468,6 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         self.assertEqual(self.ioclass(buf).read1(), buf)
         self.assertEqual(self.ioclass(buf).read1(-1), buf)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_readinto(self):
         buf = self.buftype("1234567890")
         memio = self.ioclass(buf)
@@ -697,7 +695,8 @@ class PyStringIOTest(MemoryTestMixin, MemorySeekTestMixin,
     ioclass = pyio.StringIO
     UnsupportedOperation = pyio.UnsupportedOperation
     EOF = ""
-
+    
+    @support.impl_detail(msg="failure causes unittest output to crash", graalvm=False)
     def test_lone_surrogates(self):
         # Issue #20424
         memio = self.ioclass('\ud800')

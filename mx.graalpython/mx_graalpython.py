@@ -256,9 +256,9 @@ def _write_tags(tags, path='.'):
     tagfiles = glob.glob(os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/*.txt'))
     for file in tagfiles:
         os.unlink(file)
-    for file, tags in itertools.groupby(sorted(tags), key=lambda x: x[0]):
+    for file, stags in itertools.groupby(sorted(tags), key=lambda x: x[0]):
         with open(os.path.join(tagdir, file), 'w') as f:
-            for tag in tags:
+            for tag in stags:
                 f.write(tag[1] + '\n')
 
 
@@ -965,7 +965,7 @@ def update_import_cmd(args):
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
         json.dump(d, fp, indent=2)
-        
+
     repos_updated = []
 
     # now allow dependent repos to hook into update
@@ -1266,8 +1266,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
             # build_args=['-H:+RemoveSaturatedTypeFlows'],
-            # build_args=['-H:+TruffleCheckBlackListedMethods'],
-            build_args=[],
+            build_args=['-H:+TruffleCheckBlackListedMethods'],
             language='python',
         )
     ],
@@ -1568,7 +1567,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             args.append("-v")
         else:
             # always add "-q" if not verbose to suppress hello message
-            args.append("-q") 
+            args.append("-q")
 
         args += ["--python.WithThread", "-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)

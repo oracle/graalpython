@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.getsetdescriptor;
+package com.oracle.graal.python.builtins.objects.dict;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
-public final class HiddenKeyDescriptor extends PythonBuiltinObject {
-    private final HiddenKey key;
-    private final LazyPythonClass type;
+public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
 
-    public HiddenKeyDescriptor(HiddenKey key, LazyPythonClass type) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
-        this.key = key;
-        this.type = type;
+    private final HashingStorageIterator<T> iterator;
+    private int index;
+
+    public PHashingStorageIterator(LazyPythonClass clazz, DynamicObject storage, HashingStorageIterator<T> iterator) {
+        super(clazz, storage);
+        this.iterator = iterator;
     }
 
-    public HiddenKey getKey() {
-        return key;
+    public HashingStorageIterator<T> getIterator() {
+        return iterator;
     }
 
-    public LazyPythonClass getType() {
-        return type;
+    @TruffleBoundary
+    public final Object next() {
+        assert hasNext();
+        index++;
+        return iterator.next();
+    }
+
+    @TruffleBoundary
+    public final boolean hasNext() {
+        return iterator.hasNext();
+    }
+
+    public int getIndex() {
+        return index;
     }
 }

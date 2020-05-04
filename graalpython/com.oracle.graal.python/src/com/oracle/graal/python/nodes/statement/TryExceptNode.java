@@ -123,7 +123,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             return;
         } catch (ControlFlowException e) {
             throw e;
-        } catch (Exception e) {
+        } catch (Exception | StackOverflowError | AssertionError e) {
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
@@ -158,8 +158,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @TruffleBoundary
-    private PBaseException getBaseException(Exception t) {
-        return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{t});
+    private PBaseException getBaseException(Throwable e) {
+        return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{e});
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)

@@ -341,6 +341,9 @@ public abstract class HashingStorageLibrary extends Library {
         return diffWithState(self, other, null);
     }
 
+    /**
+     * An iterable that does not need to be guarded separately with TruffleBoundary.
+     */
     public static final class HashingStorageIterable<T> implements Iterable<T> {
         private final Iterator<T> iterator;
 
@@ -348,26 +351,29 @@ public abstract class HashingStorageLibrary extends Library {
             this.iterator = iterator;
         }
 
-        public BoundaryIterator<T> iterator() {
-            return new BoundaryIterator<T>(iterator);
+        public HashingStorageIterator<T> iterator() {
+            return new HashingStorageIterator<T>(iterator);
+        }
+    }
+
+    /**
+     * An iterator that does not need to be guarded separately with TruffleBoundary.
+     */
+    public static final class HashingStorageIterator<T> implements Iterator<T> {
+        private final Iterator<T> iterator;
+
+        public HashingStorageIterator(Iterator<T> iterator) {
+            this.iterator = iterator;
         }
 
-        static final class BoundaryIterator<T> implements Iterator<T> {
-            private final Iterator<T> iterator;
+        @TruffleBoundary
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
 
-            public BoundaryIterator(Iterator<T> iterator) {
-                this.iterator = iterator;
-            }
-
-            @TruffleBoundary
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @TruffleBoundary
-            public T next() {
-                return iterator.next();
-            }
+        @TruffleBoundary
+        public T next() {
+            return iterator.next();
         }
     }
 

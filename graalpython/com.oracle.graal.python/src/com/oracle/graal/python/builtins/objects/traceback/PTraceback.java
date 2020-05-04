@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class PTraceback extends PythonBuiltinObject {
@@ -53,15 +53,15 @@ public final class PTraceback extends PythonBuiltinObject {
     private PTraceback next;
     private LazyTraceback lazyTraceback;
 
-    public PTraceback(LazyPythonClass cls, PFrame frame, int lineno, PTraceback next) {
-        super(cls);
+    public PTraceback(PFrame frame, int lineno, PTraceback next) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
         this.frame = frame;
         this.lineno = lineno;
         this.next = next;
     }
 
-    public PTraceback(LazyPythonClass cls, LazyTraceback lazyTraceback) {
-        super(cls);
+    public PTraceback(LazyTraceback lazyTraceback) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
         this.lazyTraceback = lazyTraceback;
         this.frameInfo = lazyTraceback.getFrameInfo();
         this.frame = lazyTraceback.getFrame();

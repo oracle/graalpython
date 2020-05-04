@@ -104,6 +104,16 @@ def make_float_info_class():
 float_info = make_float_info_class()(float_info)
 del make_float_info_class
 
+def make_int_info_class():
+    from _descriptor import make_named_tuple_class
+    return make_named_tuple_class(
+        "int_info",
+        ["bits_per_digit",
+         "sizeof_digit"]
+    )
+int_info = make_int_info_class()((32, 4))
+del make_int_info_class
+
 
 def make_hash_info_class():
     from _descriptor import make_named_tuple_class

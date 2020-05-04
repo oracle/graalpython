@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -36,14 +37,15 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
     protected final double value;
 
-    public PFloat(LazyPythonClass clazz, double value) {
-        super(clazz);
+    public PFloat(LazyPythonClass clazz, DynamicObject storage, double value) {
+        super(clazz, storage);
         this.value = value;
     }
 
@@ -73,11 +75,11 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     public static PFloat create(double value) {
-        return create(null, value);
+        return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.newInstance(), value);
     }
 
-    public static PFloat create(LazyPythonClass cls, double value) {
-        return new PFloat(cls, value);
+    public static PFloat create(LazyPythonClass cls, DynamicObject storage, double value) {
+        return new PFloat(cls, storage, value);
     }
 
     @TruffleBoundary

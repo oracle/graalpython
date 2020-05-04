@@ -39,7 +39,6 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
@@ -53,10 +52,11 @@ import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
-
+    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal FrameSlot iteratorSlot;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child ForNextElementNode nextElement;
@@ -74,18 +74,16 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
                 return false;
             }
         } catch (FrameSlotTypeException e) {
-            if (raise == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raise = insert(PRaiseNode.create());
-            }
-            throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
         }
         body.executeVoid(frame);
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             contextRef = lookupContextReference(PythonLanguage.class);
+            asyncProfile = BranchProfile.create();
         }
-        contextRef.get().triggerAsyncActions(frame, this);
+        contextRef.get().triggerAsyncActions(frame, asyncProfile);
         return true;
     }
 }

@@ -323,7 +323,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 }
                 Object[] unpackForeignArray = unpackForeignArray(left, lib, convert);
                 if (unpackForeignArray != null) {
-                    Object[] repeatedData = new Object[Math.max(0, Math.multiplyExact(unpackForeignArray.length, rightInt))];
+                    Object[] repeatedData = new Object[Math.max(0, Math.multiplyExact(unpackForeignArray.length, rightInt > 0 ? rightInt : 0))];
 
                     // repeat data
                     for (int i = 0; i < repeatedData.length; i++) {
