@@ -1,5 +1,3 @@
-*CPythonGeneralMappingTests.test_popitem
-*CPythonSubclassMappingTests.test_popitem
 *OrderedDictTests.test_468
 *OrderedDictTests.test_abc
 *OrderedDictTests.test_clear
@@ -38,4 +36,3 @@
 *OrderedDictTests.test_views
 *OrderedDictTests.test_yaml_linkage
 *PurePythonGeneralMappingTests.test_popitem
-*PurePythonSubclassMappingTests.test_popitem

@@ -1,0 +1,7 @@
+*TimeTestCase.test_asctime_bounding_check
+*TimeTestCase.test_clock_getres
+*TimeTestCase.test_clock_monotonic
+*TimeTestCase.test_clock_realtime
+*TimeTestCase.test_clock_settime
+*TimeTestCase.test_default_values_for_zero
+*TimeTestCase.test_gmtime_without_arg

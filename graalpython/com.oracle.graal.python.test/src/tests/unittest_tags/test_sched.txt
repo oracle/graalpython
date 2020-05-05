@@ -1,2 +1,9 @@
 *TestCase.test_args_kwargs
 *TestCase.test_cancel
+*TestCase.test_empty
+*TestCase.test_enter
+*TestCase.test_enterabs
+*TestCase.test_priority
+*TestCase.test_queue
+*TestCase.test_run_non_blocking
+*_id
