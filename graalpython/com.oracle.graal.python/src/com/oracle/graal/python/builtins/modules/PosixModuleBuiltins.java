@@ -122,7 +122,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
@@ -311,16 +310,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return doExecute(frame, thisModule, path, list instanceof PList ? (PList) list : args);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PTuple args,
-                        @Cached @Shared("castToPath") CastToPathNode castToPathNode) {
-            return execute(frame, thisModule, castToPathNode.execute(frame, path), args);
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return execute(frame, thisModule, lib.asPath(path), args);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PList args,
-                        @Cached @Shared("castToPath") CastToPathNode castToPathNode) {
-            return doExecute(frame, thisModule, castToPathNode.execute(frame, path), args);
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return doExecute(frame, thisModule, lib.asPath(path), args);
         }
 
         Object doExecute(VirtualFrame frame, PythonModule thisModule, String path, PSequence args) {
@@ -405,10 +404,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PNone chdirPath(VirtualFrame frame, Object path,
-                        @Cached CastToPathNode castToPathNode) {
-            return chdir(frame, castToPathNode.execute(frame, path));
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return chdir(frame, lib.asPath(path));
         }
     }
 
@@ -548,16 +547,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         protected abstract Object executeWith(VirtualFrame frame, Object path, Object followSymlinks);
 
-        @Specialization
+        @Specialization(limit = "1")
         Object doStatPath(VirtualFrame frame, Object path, boolean followSymlinks,
-                        @Cached CastToPathNode cast) {
-            return stat(frame, cast.execute(frame, path), followSymlinks);
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return stat(frame, lib.asPath(path), followSymlinks);
         }
 
-        @Specialization(guards = "isNoValue(followSymlinks)")
+        @Specialization(guards = "isNoValue(followSymlinks)", limit = "1")
         Object doStatDefault(VirtualFrame frame, Object path, @SuppressWarnings("unused") PNone followSymlinks,
-                        @Cached CastToPathNode cast) {
-            return stat(frame, cast.execute(frame, path), true);
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return stat(frame, lib.asPath(path), true);
         }
 
         @TruffleBoundary
@@ -793,10 +792,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         Object listdir(VirtualFrame frame, Object pathArg,
-                        @Cached CastToPathNode cast) {
-            String path = cast.execute(frame, pathArg);
+                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
+            String path = lib.asPath(pathArg);
             try {
                 TruffleFile file = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
                 Collection<TruffleFile> listFiles = file.list();
@@ -824,10 +823,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ScandirIterNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         Object doit(VirtualFrame frame, LazyPythonClass cls, Object pathArg,
-                        @Cached CastToPathNode cast) {
-            String path = cast.execute(frame, pathArg);
+                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
+            String path = lib.asPath(pathArg);
             try {
                 TruffleFile file = getContext().getEnv().getPublicTruffleFile(path);
                 return factory().createScandirIterator(cls, path, file.newDirectoryStream());
@@ -842,10 +841,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class DirEntryNode extends PythonTernaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         Object doit(VirtualFrame frame, LazyPythonClass cls, String name, Object pathArg,
-                        @Cached CastToPathNode cast) {
-            String path = cast.execute(frame, pathArg);
+                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
+            String path = lib.asPath(pathArg);
             try {
                 TruffleFile dir = getContext().getEnv().getPublicTruffleFile(path);
                 TruffleFile file = dir.resolve(name);
@@ -908,16 +907,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
 
-        @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
+        @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"}, limit = "1")
         Object open(VirtualFrame frame, Object pathname, long flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd,
-                        @Cached CastToPathNode cast) {
-            return openMode(frame, pathname, flags, 0777, dir_fd, cast);
+                        @CachedLibrary("pathname") PythonObjectLibrary lib) {
+            return openMode(frame, pathname, flags, 0777, dir_fd, lib);
         }
 
-        @Specialization(guards = {"isNoValue(dir_fd)"})
+        @Specialization(guards = {"isNoValue(dir_fd)"}, limit = "1")
         Object openMode(VirtualFrame frame, Object pathArg, long flags, long fileMode, @SuppressWarnings("unused") PNone dir_fd,
-                        @Cached CastToPathNode cast) {
-            String pathname = cast.execute(frame, pathArg);
+                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
+            String pathname = lib.asPath(pathArg);
             Set<StandardOpenOption> options = flagsToOptions((int) flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes((int) fileMode);
             try {
@@ -1075,10 +1074,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UnlinkNode extends PythonFileNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         Object unlink(VirtualFrame frame, Object pathArg,
-                        @Cached CastToPathNode cast) {
-            String path = cast.execute(frame, pathArg);
+                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
+            String path = lib.asPath(pathArg);
             try {
                 getContext().getEnv().getPublicTruffleFile(path).delete();
             } catch (Exception e) {
@@ -1103,16 +1102,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MkdirNode extends PythonFileNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         Object mkdir(VirtualFrame frame, Object path, @SuppressWarnings("unused") PNone mode, PNone dirFd,
-                        @Cached CastToPathNode cast) {
-            return mkdirMode(frame, path, 511, dirFd, cast);
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return mkdirMode(frame, path, 511, dirFd, lib);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object mkdirMode(VirtualFrame frame, Object pathArg, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd,
-                        @Cached CastToPathNode cast) {
-            String path = cast.execute(frame, pathArg);
+                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
+            String path = lib.asPath(pathArg);
             try {
                 getContext().getEnv().getPublicTruffleFile(path).createDirectory();
             } catch (Exception e) {
@@ -1274,16 +1273,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class ChmodNode extends PythonBuiltinNode {
         private final BranchProfile gotException = BranchProfile.create();
 
-        @Specialization
+        @Specialization(limit = "1")
         Object chmod(VirtualFrame frame, Object path, long mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks,
-                        @Cached CastToPathNode cast) {
-            return chmodFollow(frame, path, mode, dir_fd, true, cast);
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return chmodFollow(frame, path, mode, dir_fd, true, lib);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object chmodFollow(VirtualFrame frame, Object pathArg, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks,
-                        @Cached CastToPathNode cast) {
-            String path = cast.execute(frame, pathArg);
+                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
+            String path = lib.asPath(pathArg);
             Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
                 TruffleFile truffleFile = getContext().getEnv().getPublicTruffleFile(path);
@@ -1315,44 +1314,51 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class UtimeNode extends PythonBuiltinNode {
         @Child private GetItemNode getItemNode;
         @Child private LenNode lenNode;
-        @Child private CastToPathNode castNode = CastToPathNode.create();
 
         @SuppressWarnings("unused")
-        @Specialization
-        Object utime(VirtualFrame frame, Object path, PNone times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
+        @Specialization(limit = "1")
+        Object utime(VirtualFrame frame, Object path, PNone times, PNone ns, PNone dir_fd, PNone follow_symlinks,
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
             long time = ((Double) TimeModuleBuiltins.timeSeconds()).longValue();
-            setMtime(frame, getFile(frame, castNode.execute(frame, path), true), time);
-            setAtime(frame, getFile(frame, castNode.execute(frame, path), true), time);
+            TruffleFile file = getFile(frame, lib.asPath(path), true);
+            setMtime(frame, file, time);
+            setAtime(frame, file, time);
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        Object utime(VirtualFrame frame, Object path, PTuple times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
+        @Specialization(limit = "1")
+        Object utime(VirtualFrame frame, Object path, PTuple times, PNone ns, PNone dir_fd, PNone follow_symlinks,
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
             long atime = getTime(frame, times, 0, "times");
             long mtime = getTime(frame, times, 1, "times");
-            setMtime(frame, getFile(frame, castNode.execute(frame, path), true), mtime);
-            setAtime(frame, getFile(frame, castNode.execute(frame, path), true), atime);
+            TruffleFile file = getFile(frame, lib.asPath(path), true);
+            setMtime(frame, file, mtime);
+            setAtime(frame, file, atime);
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, PNone follow_symlinks) {
+        @Specialization(limit = "1")
+        Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, PNone follow_symlinks,
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
             long atime = getTime(frame, ns, 0, "ns") / 1000;
             long mtime = getTime(frame, ns, 1, "ns") / 1000;
-            setMtime(frame, getFile(frame, castNode.execute(frame, path), true), mtime);
-            setAtime(frame, getFile(frame, castNode.execute(frame, path), true), atime);
+            TruffleFile file = getFile(frame, lib.asPath(path), true);
+            setMtime(frame, file, mtime);
+            setAtime(frame, file, atime);
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, boolean follow_symlinks) {
+        @Specialization(limit = "1")
+        Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, boolean follow_symlinks,
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
             long atime = getTime(frame, ns, 0, "ns") / 1000;
             long mtime = getTime(frame, ns, 1, "ns") / 1000;
-            setMtime(frame, getFile(frame, castNode.execute(frame, path), true), mtime);
-            setAtime(frame, getFile(frame, castNode.execute(frame, path), true), atime);
+            TruffleFile file = getFile(frame, lib.asPath(path), true);
+            setMtime(frame, file, mtime);
+            setAtime(frame, file, atime);
             return PNone.NONE;
         }
 
@@ -1607,17 +1613,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "rename", minNumOfPositionalArgs = 2, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class RenameNode extends PythonFileNode {
-        @Specialization
+        @Specialization(limit = "1")
         Object rename(VirtualFrame frame, Object src, Object dst, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs,
-                        @Cached CastToPathNode convertSrcNode,
-                        @Cached CastToPathNode convertDstNode) {
-            return rename(frame, convertSrcNode.execute(frame, src), convertDstNode.execute(frame, dst));
+                        @CachedLibrary("src") PythonObjectLibrary libSrc,
+                        @CachedLibrary("dst") PythonObjectLibrary libDst) {
+            return rename(frame, libSrc.asPath(src), libDst.asPath(dst));
         }
 
         @Specialization
         Object rename(VirtualFrame frame, Object src, Object dst, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
-                        @Cached CastToPathNode convertSrcNode,
-                        @Cached CastToPathNode convertDstNode) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libSrc,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libDst) {
 
             Object effectiveSrc = src;
             Object effectiveDst = dst;
@@ -1636,7 +1642,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     effectiveDst = resources.getFilePath((int) value);
                 }
             }
-            return rename(frame, convertSrcNode.execute(frame, effectiveSrc), convertDstNode.execute(frame, effectiveDst));
+            return rename(frame, libSrc.asPath(effectiveSrc), libDst.asPath(effectiveDst));
         }
 
         private Object rename(VirtualFrame frame, String src, String dst) {
@@ -1700,23 +1706,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AccessNode extends PythonBuiltinNode {
 
-        @Child private CastToPathNode castToPathNode;
-
         private final BranchProfile notImplementedBranch = BranchProfile.create();
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         boolean doGeneric(VirtualFrame frame, Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids,
                         @SuppressWarnings("unused") PNone follow_symlinks,
-                        @CachedLibrary("mode") PythonObjectLibrary lib) {
-            return access(castToPath(frame, path), lib.asSizeWithState(mode, PArguments.getThreadState(frame)), PNone.NONE, false, true);
-        }
-
-        private String castToPath(VirtualFrame frame, Object path) {
-            if (castToPathNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToPathNode = insert(CastToPathNode.create());
-            }
-            return castToPathNode.execute(frame, path);
+                        @CachedLibrary("mode") PythonObjectLibrary libMode,
+                        @CachedLibrary("path") PythonObjectLibrary libPath) {
+            return access(libPath.asPath(path), libMode.asSizeWithState(mode, PArguments.getThreadState(frame)), PNone.NONE, false, true);
         }
 
         @Specialization
@@ -1877,10 +1874,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     "\nReturn a string representing the path to which the symbolic link points.\n")
     @GenerateNodeFactory
     abstract static class ReadlinkNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         String readlink(VirtualFrame frame, Object str, @SuppressWarnings("unused") PNone none,
-                        @Cached CastToPathNode cast) {
-            String path = cast.execute(frame, str);
+                        @CachedLibrary("str") PythonObjectLibrary lib) {
+            String path = lib.asPath(str);
             try {
                 return getContext().getEnv().getPublicTruffleFile(path).getCanonicalFile().getPath();
             } catch (Exception e) {
@@ -1924,12 +1921,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SymlinkNode extends PythonBuiltinNode {
 
-        @Specialization(guards = {"isNoValue(targetIsDir)", "isNoValue(dirFd)"})
+        @Specialization(guards = {"isNoValue(targetIsDir)", "isNoValue(dirFd)"}, limit = "1")
         PNone doSimple(VirtualFrame frame, Object srcObj, Object dstObj, @SuppressWarnings("unused") PNone targetIsDir, @SuppressWarnings("unused") PNone dirFd,
-                        @Cached CastToPathNode castSrcToPath,
-                        @Cached CastToPathNode castDstToPath) {
-            String src = castSrcToPath.execute(frame, srcObj);
-            String dst = castDstToPath.execute(frame, dstObj);
+                        @CachedLibrary("srcObj") PythonObjectLibrary libSrc,
+                        @CachedLibrary("dstObj") PythonObjectLibrary libDst) {
+            String src = libSrc.asPath(srcObj);
+            String dst = libDst.asPath(dstObj);
 
             Env env = getContext().getEnv();
             TruffleFile dstFile = env.getPublicTruffleFile(dst);

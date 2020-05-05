@@ -39,6 +39,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -172,6 +173,11 @@ public final class PString extends PImmutableSequence {
             // call the generic implementation in the superclass
             return self.lengthWithState(state, gotState, hasLen, ltZero, getLenNode, callNode, raiseNode, lib);
         }
+    }
+
+    @ExportMessage
+    public String asPath(@Cached CastToJavaStringNode castToJavaStringNode) {
+        return castToJavaStringNode.execute(this);
     }
 
     @Override

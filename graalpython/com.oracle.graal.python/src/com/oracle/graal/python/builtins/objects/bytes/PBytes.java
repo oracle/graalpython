@@ -25,11 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -37,11 +39,14 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.DynamicObject;
+import java.io.UnsupportedEncodingException;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
@@ -126,7 +131,22 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @ExportMessage
     byte[] getBufferBytes(
-                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+                    @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
         return toByteArrayNode.execute(store);
+    }
+
+    @ExportMessage
+    public String asPath(@Cached PRaiseNode raise,
+                    @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
+        return newString(raise, toBytes.execute(getSequenceStorage()));
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public static String newString(PRaiseNode raise, byte[] ary) {
+        try {
+            return new String(ary, "ascii");
+        } catch (UnsupportedEncodingException e) {
+            throw raise.raise(PythonBuiltinClassType.UnicodeDecodeError, e);
+        }
     }
 }
