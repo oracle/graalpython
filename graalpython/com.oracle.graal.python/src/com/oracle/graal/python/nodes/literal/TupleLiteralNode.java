@@ -47,7 +47,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class TupleLiteralNode extends SequenceLiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-    @Child private SequenceStorageNodes.ConcatNode concatStoragesNode;
     @Child private SequenceStorageNodes.AppendNode appendNode;
     private final boolean hasStarredExpressions;
 
@@ -111,11 +110,10 @@ public final class TupleLiteralNode extends SequenceLiteralNode {
                 break;
         }
         for (ExpressionNode n : values) {
+            Object element = n.execute(frame);
             if (n instanceof StarredExpressionNode) {
-                SequenceStorage addElements = ((StarredExpressionNode) n).getStorage(frame);
-                storage = ensureConcatStoragesNode().execute(storage, addElements);
+                storage = ((StarredExpressionNode) n).appendToStorage(frame, storage, element);
             } else {
-                Object element = n.execute(frame);
                 storage = ensureAppendNode().execute(storage, element, ListGeneralizationNode.SUPPLIER);
             }
         }
@@ -130,14 +128,6 @@ public final class TupleLiteralNode extends SequenceLiteralNode {
     private PTuple directTuple(VirtualFrame frame) {
         SequenceStorage storage = createSequenceStorageForDirect(frame);
         return factory.createTuple(storage);
-    }
-
-    private SequenceStorageNodes.ConcatNode ensureConcatStoragesNode() {
-        if (concatStoragesNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            concatStoragesNode = insert(SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create));
-        }
-        return concatStoragesNode;
     }
 
     private SequenceStorageNodes.AppendNode ensureAppendNode() {
