@@ -103,8 +103,8 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached CoerceToDoubleNode coerceToDoubleNode,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
-                        @Cached CoerceToFileDescriptorNode coerceToFDNode) {
-            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, rlistLibrary, wlistLibrary, xlistLibrary, coerceToDoubleNode, callGetItemNode, constructListNode, coerceToFDNode);
+                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
+            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, rlistLibrary, wlistLibrary, xlistLibrary, coerceToDoubleNode, callGetItemNode, constructListNode, itemLib);
         }
 
         @Specialization(replaces = "doWithoutTimeout", limit = "3")
@@ -115,15 +115,15 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached CoerceToDoubleNode coerceToDoubleNode,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
-                        @Cached CoerceToFileDescriptorNode coerceToFDNode) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
 
             ChannelFD[] readFDs;
             ChannelFD[] writeFDs;
             ChannelFD[] xFDs;
             try {
-                readFDs = seq2set(frame, rlist, rlistLibrary, coerceToFDNode, callGetItemNode, constructListNode);
-                writeFDs = seq2set(frame, wlist, wlistLibrary, coerceToFDNode, callGetItemNode, constructListNode);
-                xFDs = seq2set(frame, xlist, xlistLibrary, coerceToFDNode, callGetItemNode, constructListNode);
+                readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode);
+                writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode);
+                xFDs = seq2set(frame, xlist, xlistLibrary, itemLib, callGetItemNode, constructListNode);
             } catch (NonSelectableChannel e) {
                 // If one of the channels is not selectable, we do what we did before: just return
                 // everything.
@@ -218,15 +218,16 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             assert selected == (readFDs.length + writeFDs.length + xFDs.length) - deleted;
         }
 
-        private ChannelFD[] seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary lib, CoerceToFileDescriptorNode coerceToFDNode, LookupAndCallBinaryNode callGetItemNode,
+        private ChannelFD[] seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
                         FastConstructListNode constructListNode) {
-            int len = lib.lengthWithState(sequence, PArguments.getThreadState(frame));
+            PArguments.ThreadState threadState = PArguments.getThreadState(frame);
+            int len = sequenceLib.lengthWithState(sequence, threadState);
             ChannelFD[] result = new ChannelFD[len];
 
             PSequence pSequence = constructListNode.execute(sequence);
 
             for (int i = 0; i < len; i++) {
-                int fd = coerceToFDNode.execute(frame, callGetItemNode.executeObject(frame, pSequence, i));
+                int fd = itemLib.asFileDescriptorWithState(callGetItemNode.executeObject(frame, pSequence, i), threadState);
                 Channel fileChannel = getContext().getResources().getFileChannel(fd);
                 if (!(fileChannel instanceof SelectableChannel)) {
                     throw NonSelectableChannel.INSTANCE;

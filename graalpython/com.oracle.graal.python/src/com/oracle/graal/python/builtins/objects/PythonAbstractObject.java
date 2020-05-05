@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -61,6 +60,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -101,6 +101,8 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -151,6 +153,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@ImportStatic(SpecialMethodNames.class)
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
@@ -927,6 +930,67 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             throw raise.raise(TypeError, "__str__ returned non-string (type %p)", result);
         }
         return result;
+    }
+
+    @ExportMessage
+    public int asFileDescriptorWithState(ThreadState state,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached CallNode callFileNoNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached BranchProfile noFilenoMethodProfile,
+                    @Exclusive @Cached GetLazyClassNode getClassNode,
+                    @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode,
+                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
+
+        Object filenoFunc = lib.lookupAttribute(this, FILENO);
+        if (filenoFunc == PNone.NO_VALUE) {
+            noFilenoMethodProfile.enter();
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, "argument must be an int, or have a fileno() method.");
+        }
+
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callFileNoNode.execute(filenoFunc);
+        } else {
+            result = callFileNoNode.execute(PArguments.frameForCall(state), filenoFunc);
+        }
+
+        if (isIntProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
+            try {
+                return castToJavaIntNode.execute(result);
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.TypeError, isAttrError);
+                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+            }
+        } else {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, "fileno() returned a non-integer");
+        }
+    }
+
+    @ExportMessage
+    public Object lookupAttribute(String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached ConditionProfile isInheritedOnly,
+                    @Exclusive @Cached ConditionProfile noValue,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
+        if (isInheritedOnly.profile(inheritedOnly)) {
+            return lookup.execute(this, name);
+        } else {
+            Object getAttrFunc = lookup.execute(this, __GETATTRIBUTE__);
+            try {
+                return callNode.execute(getAttrFunc, this, name);
+            } catch (PException pe) {
+                pe.expect(AttributeError, isAttrError);
+                getAttrFunc = lookup.execute(this, __GETATTR__);
+                if (noValue.profile(getAttrFunc == PNone.NO_VALUE)) {
+                    return PNone.NO_VALUE;
+                }
+                return callNode.execute(getAttrFunc, this, name);
+            }
+        }
     }
 
     @ExportMessage

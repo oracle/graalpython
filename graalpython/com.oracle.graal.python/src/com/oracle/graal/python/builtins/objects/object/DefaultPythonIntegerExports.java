@@ -239,4 +239,9 @@ final class DefaultPythonIntegerExports {
     static String asPString(Integer receiver) {
         return Integer.toString(receiver);
     }
+
+    @ExportMessage
+    static int asFileDescriptor(Integer x) {
+        return x;
+    }
 }

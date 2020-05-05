@@ -521,6 +521,25 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
+     * 
+     * @param receiver
+     * @param name attribute name
+     * @param inheritedOnly determines whether the lookup should start on the class or on the object
+     */
+    public Object lookupAttribute(Object receiver, String name, boolean inheritedOnly) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
+
+    /**
+     * @see #lookupAttribute
+     */
+    public final Object lookupAttribute(Object receiver, String name) {
+        return lookupAttribute(receiver, name, false);
+    }
+
+    /**
      * Coerces the receiver into an index-sized integer, using the same mechanism as
      * {@code PyNumber_AsSsize_t}:
      * <ol>

@@ -242,4 +242,9 @@ final class DefaultPythonBooleanExports {
     static String asPString(Boolean receiver) {
         return receiver ? "True" : "False";
     }
+
+    @ExportMessage
+    static int asFileDescriptor(Boolean x) {
+        return x ? 1 : 0;
+    }
 }
