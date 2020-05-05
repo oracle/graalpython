@@ -41,27 +41,33 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public class PForeignArrayIterator extends PythonBuiltinObject {
 
     private final Object foreignArray;
-    private int size;
     private int cursor;
 
-    public PForeignArrayIterator(LazyPythonClass cls, DynamicObject storage, Object foreignArray, int size) {
+    public PForeignArrayIterator(LazyPythonClass cls, DynamicObject storage, Object foreignArray) {
         super(cls, storage);
         this.foreignArray = foreignArray;
-        this.size = size;
     }
 
     public Object getForeignArray() {
         return foreignArray;
     }
 
-    public int getSize() {
-        return size;
+    public int getSize(InteropLibrary lib, PythonObjectLibrary pyObjLib) {
+        try {
+            final long size = lib.getArraySize(foreignArray);
+            return pyObjLib.asSize(size);
+        } catch (UnsupportedMessageException ex) {
+            return 0;
+        }
     }
 
     public int getCursor() {

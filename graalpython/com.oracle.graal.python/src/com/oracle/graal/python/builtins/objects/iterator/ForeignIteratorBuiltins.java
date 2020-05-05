@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -62,8 +63,9 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         @Specialization
         public Object next(PForeignArrayIterator foreignIter,
                         @Cached PForeignToPTypeNode fromForeignNode,
-                        @CachedLibrary(limit = "3") InteropLibrary interop) {
-            if (foreignIter.getCursor() >= foreignIter.getSize()) {
+                        @CachedLibrary(limit = "3") InteropLibrary interop,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary pyObjLib) {
+            if (foreignIter.getCursor() >= foreignIter.getSize(interop, pyObjLib)) {
                 throw raise(StopIteration);
             }
 
