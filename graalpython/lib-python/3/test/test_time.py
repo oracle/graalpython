@@ -406,6 +406,7 @@ class TimeTestCase(unittest.TestCase):
         time.ctime()
         time.ctime(None)
 
+    @support.impl_detail("racy test", graalvm=False)
     def test_gmtime_without_arg(self):
         gt0 = time.gmtime()
         gt1 = time.gmtime(None)
