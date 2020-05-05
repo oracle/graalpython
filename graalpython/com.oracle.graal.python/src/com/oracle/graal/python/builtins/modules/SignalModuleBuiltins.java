@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static java.lang.StrictMath.toIntExact;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -49,7 +47,6 @@ import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -63,7 +60,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -208,44 +204,25 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
-        private int getSignum(long signum) {
-            try {
-                return toIntExact(signum);
-            } catch (ArithmeticException ae) {
-                throw raiseIntTooLarge();
-            }
-        }
 
-        private int getSignum(PInt signum) {
-            try {
-                return signum.intValueExact();
-            } catch (ArithmeticException ae) {
-                throw raiseIntTooLarge();
-            }
-        }
-
-        private PException raiseIntTooLarge() {
-            throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
+        @Specialization(guards = "!idNumLib.isCallable(idNum)", limit = "1")
+        Object signalId(@SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
+                        @SuppressWarnings("unused") @CachedLibrary("idNum") PythonObjectLibrary idNumLib,
+                        @CachedLibrary("signal") PythonObjectLibrary signalLib) {
+            // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants, which
+            // are instances of Handlers enum
+            // The -1 fallback will be correctly reported as an error later on
+            int id = idNum instanceof Integer ? (int) idNum : -1;
+            return signal(signalLib.asSize(signal), id);
         }
 
         @TruffleBoundary
-        @Specialization
-        Object signalPiI(@SuppressWarnings("unused") PythonModule self, PInt signalNumber, int id) {
-            return signal(getSignum(signalNumber), id);
-        }
-
-        @TruffleBoundary
-        @Specialization
-        Object signalLI(@SuppressWarnings("unused") PythonModule self, long signalNumber, int id) {
-            return signal(getSignum(signalNumber), id);
-        }
-
         private Object signal(int signum, int id) {
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, id);
             } catch (IllegalArgumentException e) {
-                throw raiseHandlerTypeError();
+                throw raise(PythonErrorType.TypeError, "TypeError: signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object");
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {
@@ -258,28 +235,17 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
-        @TruffleBoundary
-        @Specialization(guards = "isNotID(handler)", limit = "1")
-        Object signalPiFun(PythonModule self, PInt signalNumber, Object handler,
-                        @CachedLibrary("handler") PythonObjectLibrary handlerLib,
+        @Specialization(guards = "handlerLib.isCallable(handler)", limit = "1")
+        Object signalHandler(PythonModule self, Object signal, Object handler,
+                        @SuppressWarnings("unused") @CachedLibrary("handler") PythonObjectLibrary handlerLib,
+                        @CachedLibrary("signal") PythonObjectLibrary signalLib,
                         @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
                         @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
-            return signal(self, getSignum(signalNumber), handlerLib, handler, readQueueNode, readSemaNode);
+            return signal(self, signalLib.asSize(signal), handler, readQueueNode, readSemaNode);
         }
 
         @TruffleBoundary
-        @Specialization(guards = "isNotID(handler)", limit = "1")
-        Object signalLFun(PythonModule self, long signalNumber, Object handler,
-                        @CachedLibrary("handler") PythonObjectLibrary handlerLib,
-                        @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
-            return signal(self, getSignum(signalNumber), handlerLib, handler, readQueueNode, readSemaNode);
-        }
-
-        private Object signal(PythonModule self, int signum, PythonObjectLibrary handlerLib, Object handler, ReadAttributeFromObjectNode readQueueNode, ReadAttributeFromObjectNode readSemaNode) {
-            if (!handlerLib.isCallable(handler)) {
-                raiseHandlerTypeError();
-            }
+        private Object signal(PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readQueueNode, ReadAttributeFromObjectNode readSemaNode) {
             ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
             Semaphore semaphore = getSemaphore(self, readSemaNode);
             Object retval;
@@ -321,14 +287,6 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } else {
                 throw new IllegalStateException("the signal trigger semaphore was modified!");
             }
-        }
-
-        private PException raiseHandlerTypeError() {
-            throw raise(PythonErrorType.TypeError, "TypeError: signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object");
-        }
-
-        static boolean isNotID(Object val) {
-            return !(val instanceof Integer);
         }
     }
 }
