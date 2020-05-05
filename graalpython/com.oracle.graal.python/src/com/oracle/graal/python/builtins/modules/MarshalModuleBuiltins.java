@@ -452,46 +452,45 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePCode(VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
+        void handlePCode(@SuppressWarnings("unused") VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
             writeString(getSourceCode(c), version, buffer);
             writeInt(c.getFlags(), version, buffer);
             byte[] code = c.getCodestring();
             writeBytes(code == null ? new byte[0] : code, version, buffer);
             writeString(c.getFilename(), version, buffer);
-            writeString(c.getName(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
         }
 
         @TruffleBoundary
-        private String getSourceCode(PCode c) {
+        private static String getSourceCode(PCode c) {
             SourceSection sourceSection = c.getRootNode().getSourceSection();
             return sourceSection.getCharacters().toString();
         }
 
-        private PTuple internStrings(Object[] values) {
-            Object[] interned;
-            if (values == null) {
-                interned = new Object[0];
-            } else {
-                interned = new Object[values.length];
-                for (int i = 0; i < interned.length; i++) {
-                    if (castStrNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        castStrNode = insert(CastToJavaStringNode.create());
-                    }
-                    Object value = values[i];
-                    String strValue = castStrNode.execute(value);
-                    if (strValue != null) {
-                        interned[i] = new InternedString(strValue);
-                    } else {
-                        interned[i] = value;
-                    }
-                }
-            }
-            return factory().createTuple(interned);
-        }
+//        private PTuple internStrings(Object[] values) {
+//            Object[] interned;
+//            if (values == null) {
+//                interned = new Object[0];
+//            } else {
+//                interned = new Object[values.length];
+//                for (int i = 0; i < interned.length; i++) {
+//                    if (castStrNode == null) {
+//                        CompilerDirectives.transferToInterpreterAndInvalidate();
+//                        castStrNode = insert(CastToJavaStringNode.create());
+//                    }
+//                    Object value = values[i];
+//                    String strValue = castStrNode.execute(value);
+//                    if (strValue != null) {
+//                        interned[i] = new InternedString(strValue);
+//                    } else {
+//                        interned[i] = value;
+//                    }
+//                }
+//            }
+//            return factory().createTuple(interned);
+//        }
 
         @Specialization(limit = "1")
         void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
@@ -642,15 +641,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(bytes);
         }
 
-        private PCode readCode(int depth) {
+        private PCode readCode() {
             String codetext = readString();
             int flags = readInt();
             byte[] serializationData = readBytes();
             String filename = readString();
-            String name = readString();
             int firstlineno = readInt();
             byte[] lnotab = readBytes();
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, codetext, flags, serializationData, filename, name, firstlineno, lnotab);
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, codetext, flags, serializationData, filename, firstlineno, lnotab);
         }
 
         private PDict readDict(int depth, HashingStorageLibrary lib) {
@@ -719,12 +717,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(newStorage);
         }
 
-        private static Object[] getArray(PTuple tuple) {
-            CompilerAsserts.neverPartOfCompilation();
-            return GetObjectArrayNodeGen.getUncached().execute(tuple);
-
-        }
-
         @TruffleBoundary
         private Object readObject(int depth, HashingStorageLibrary lib) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
@@ -782,7 +774,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_FROZENSET:
                     return readFrozenSet(depth, lib);
                 case TYPE_CODE:
-                    return readCode(depth);
+                    return readCode();
                 default:
                     throw raise(ValueError, "bad marshal data");
             }

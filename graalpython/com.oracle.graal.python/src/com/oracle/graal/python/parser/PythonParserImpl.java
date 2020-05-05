@@ -154,7 +154,6 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 // Just to be sure that the serialization version is ok.
                 byte version = dis.readByte();
                 if (version != SerializationUtils.VERSION) {
-                    assert true : "It looks like that there is used old version of data serialization in .pyc files. It can happen, if you use developement vertsion of GraalPython. Remove them.";
                     throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
                 }
                 globalScope = ScopeInfo.read(dis, null);
@@ -162,8 +161,12 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 sstNode = new SSTDeserializer(dis, globalScope, source, offset).readNode();
                 if (cellvars != null || freevars != null) {
                     ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
-                    rootScope.setCellVars(cellvars);
-                    rootScope.setFreeVars(freevars);
+                    if (cellvars != null) {
+                        rootScope.setCellVars(cellvars);
+                    }
+                    if (freevars != null) {
+                        rootScope.setFreeVars(freevars);
+                    }
                 }
             } catch (IOException e) {
                 throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + source.getPath());
@@ -198,7 +201,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
     }
 
-    byte[] serializeScope(ScopeInfo scope) {
+    private static byte[] serializeScope(ScopeInfo scope) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
         try {
@@ -214,7 +217,6 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         Source source;
         SSTNode antlrResult;
         ScopeInfo globalScope;
-        byte[] serializedGlobalScope;
     }
 
     private final CacheItem lastParsing = new CacheItem();

@@ -94,7 +94,8 @@ public abstract class CodeNodes {
             Object state = IndirectCallContext.enter(frame, context, this);
 
             try {
-                return createCode(context, cls, nlocals, stacksize, flags, codedata,
+                return createCode(context, cls,  argcount,
+                        posonlyargcount, kwonlyargcount,nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
@@ -102,7 +103,8 @@ public abstract class CodeNodes {
         }
 
         @CompilerDirectives.TruffleBoundary
-        private PCode createCode(PythonContext context, LazyPythonClass cls,
+        private PCode createCode(PythonContext context, LazyPythonClass cls, @SuppressWarnings("unused") int argcount,
+                        @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
@@ -120,19 +122,19 @@ public abstract class CodeNodes {
                             firstlineno, lnotab);
         }
 
-        public PCode execute(VirtualFrame frame, LazyPythonClass cls, String sourceCode, int flags, byte[] codedata, String filenamePath, String name,
+        public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, String sourceCode, int flags, byte[] codedata, String filenamePath,
                         int firstlineno, byte[] lnotab) {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return createCode(context, cls, sourceCode, flags, codedata, filenamePath, name, firstlineno, lnotab);
+                return createCode(context, sourceCode, flags, codedata, filenamePath, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
         @CompilerDirectives.TruffleBoundary
-        private PCode createCode(PythonContext context, LazyPythonClass cls, String sourceCode, int flags, byte[] codedata, String filenamePath, String name,
+        private static PCode createCode(PythonContext context, String sourceCode, int flags, byte[] codedata, String filenamePath,
                         int firstlineno, byte[] lnotab) {
             Source source = (flags & PCode.FLAG_MODULE) == 0 ? PythonLanguage.newSource(context, sourceCode, filenamePath, false) : PythonLanguage.newSource(context, sourceCode, filenamePath, true);
             Supplier<CallTarget> createCode = () -> {
