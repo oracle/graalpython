@@ -79,7 +79,7 @@ public abstract class CodeNodes {
         }
 
         @CompilationFinal private ContextReference<PythonContext> contextRef;
-        private static Source emptySource;
+        @CompilationFinal private static Source emptySource;
 
         @SuppressWarnings("try")
         public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount,
@@ -94,42 +94,60 @@ public abstract class CodeNodes {
             Object state = IndirectCallContext.enter(frame, context, this);
 
             try {
-                Supplier<CallTarget> createCode = () -> {
-                    RootNode rootNode = context.getCore().getSerializer().deserialize(getEmptySource(), codedata, toStringArray(cellvars), toStringArray(freevars));
-                    return Truffle.getRuntime().createCallTarget(rootNode);
-                };
-
-                RootCallTarget ct = (RootCallTarget) createCode.get();
-                PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
-                                firstlineno, lnotab);
+                return createCode(context, cls, nlocals, stacksize, flags, codedata,
+                                constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private PCode createCode(PythonContext context, LazyPythonClass cls,
+                        int nlocals, int stacksize, int flags,
+                        byte[] codedata, Object[] constants, Object[] names,
+                        Object[] varnames, Object[] freevars, Object[] cellvars,
+                        String filename, String name, int firstlineno,
+                        byte[] lnotab) {
+
+            Supplier<CallTarget> createCode = () -> {
+                RootNode rootNode = context.getCore().getSerializer().deserialize(getEmptySource(), codedata, toStringArray(cellvars), toStringArray(freevars));
+                return Truffle.getRuntime().createCallTarget(rootNode);
+            };
+
+            RootCallTarget ct = (RootCallTarget) createCode.get();
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
+                            firstlineno, lnotab);
         }
 
         public PCode execute(VirtualFrame frame, LazyPythonClass cls, String sourceCode, int flags, byte[] codedata, String filenamePath, String name,
                         int firstlineno, byte[] lnotab) {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
-            Source source = (flags & PCode.FLAG_MODULE) == 0 ? PythonLanguage.newSource(context, sourceCode, filenamePath, false) : PythonLanguage.newSource(context, sourceCode, filenamePath, true);
             try {
-                Supplier<CallTarget> createCode = () -> {
-                    RootNode rootNode = context.getCore().getSerializer().deserialize(source, codedata);
-                    return Truffle.getRuntime().createCallTarget(rootNode);
-                };
-
-                RootCallTarget ct;
-                if (context.getCore().isInitialized()) {
-                    ct = (RootCallTarget) createCode.get();
-                } else {
-                    ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filenamePath, createCode);
-                }
-                PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                return factory.createCode(ct, codedata, flags, firstlineno, lnotab);
+                return createCode(context, cls, sourceCode, flags, codedata, filenamePath, name, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private PCode createCode(PythonContext context, LazyPythonClass cls, String sourceCode, int flags, byte[] codedata, String filenamePath, String name,
+                        int firstlineno, byte[] lnotab) {
+            Source source = (flags & PCode.FLAG_MODULE) == 0 ? PythonLanguage.newSource(context, sourceCode, filenamePath, false) : PythonLanguage.newSource(context, sourceCode, filenamePath, true);
+            Supplier<CallTarget> createCode = () -> {
+                RootNode rootNode = context.getCore().getSerializer().deserialize(source, codedata);
+                return Truffle.getRuntime().createCallTarget(rootNode);
+            };
+
+            RootCallTarget ct;
+            if (context.getCore().isInitialized()) {
+                ct = (RootCallTarget) createCode.get();
+            } else {
+                ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filenamePath, createCode);
+            }
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return factory.createCode(ct, codedata, flags, firstlineno, lnotab);
         }
 
         private ContextReference<PythonContext> getContextRef() {
@@ -142,9 +160,14 @@ public abstract class CodeNodes {
 
         private Source getEmptySource() {
             if (emptySource == null) {
-                emptySource = PythonLanguage.newSource(getContextRef().get(), "", "unavailable", false);
+                emptySource = createEmptySource();
             }
             return emptySource;
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private Source createEmptySource() {
+            return PythonLanguage.newSource(getContextRef().get(), "", "unavailable", false);
         }
 
         @CompilerDirectives.TruffleBoundary

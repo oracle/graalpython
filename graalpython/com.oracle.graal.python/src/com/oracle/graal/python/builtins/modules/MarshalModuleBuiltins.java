@@ -454,8 +454,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         void handlePCode(VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
-            SourceSection sourceSection = c.getRootNode().getSourceSection();
-            writeString(sourceSection.getCharacters().toString(), version, buffer);
+            writeString(getSourceCode(c), version, buffer);
             writeInt(c.getFlags(), version, buffer);
             byte[] code = c.getCodestring();
             writeBytes(code == null ? new byte[0] : code, version, buffer);
@@ -463,6 +462,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeString(c.getName(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
+        }
+
+        @TruffleBoundary
+        private String getSourceCode(PCode c) {
+            SourceSection sourceSection = c.getRootNode().getSourceSection();
+            return sourceSection.getCharacters().toString();
         }
 
         private PTuple internStrings(Object[] values) {
