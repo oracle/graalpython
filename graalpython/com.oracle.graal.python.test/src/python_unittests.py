@@ -128,6 +128,10 @@ def file_name(name, current_date_time):
         return '{}-{}{}'.format(name[:idx], current_date_time, name[idx:])
     return '{}-{}'.format(name, current_date_time)
 
+def get_tail(output, count=15):
+    lines = output.split("\n")
+    start = max(0, len(lines) - count)
+    return '\n'.join(lines[start:])
 
 TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
 
@@ -151,10 +155,11 @@ def _run_cmd(cmd, timeout=TIMEOUT, capture_on_failure=True):
         output = proc.communicate(timeout=timeout)[0]
     except subprocess.TimeoutExpired as e:
         delta = time.monotonic() - start_time
-        log("[ERR] timeout '{}' after {:.3f}s, killing process group {}", cmd_string, delta, proc.pid)
         os.killpg(proc.pid, signal.SIGKILL)
         output = proc.communicate()[0]
         msg = "TimeoutExpired: {:.3f}s".format(delta)
+        tail = get_tail(output.decode('utf-8', 'ignore'))
+        log("[ERR] timeout '{}' after {:.3f}s, killing process group {}, last lines of output:\n{}\n{}", cmd_string, delta, proc.pid, tail, HR)
     else:
         delta = time.monotonic() - start_time
         log("[EXEC] finished '{}' with exit code {} in {:.3f}s", cmd_string, proc.returncode, delta)
