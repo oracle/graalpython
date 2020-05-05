@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -60,30 +60,30 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     }
 
     @Specialization(guards = "isBooleanKind(frame)")
-    public boolean write(VirtualFrame frame, boolean value) {
+    public boolean writeBool(VirtualFrame frame, boolean value) {
         getCargoFrame(frame).setBoolean(frameSlot, value);
         return value;
     }
 
     @Specialization(guards = "isIntegerKind(frame)")
-    public int doInteger(VirtualFrame frame, int value) {
+    public int writeInt(VirtualFrame frame, int value) {
         getCargoFrame(frame).setInt(frameSlot, value);
         return value;
     }
 
     @Specialization(guards = "isLongKind(frame)")
-    public long doLong(VirtualFrame frame, long value) {
+    public long writeLong(VirtualFrame frame, long value) {
         getCargoFrame(frame).setLong(frameSlot, value);
         return value;
     }
 
     @Specialization(guards = "isDoubleKind(frame)")
-    public double doDouble(VirtualFrame frame, double value) {
+    public double writeDouble(VirtualFrame frame, double value) {
         getCargoFrame(frame).setDouble(frameSlot, value);
         return value;
     }
 
-    @Specialization
+    @Specialization(replaces = {"writeBool", "writeInt", "writeLong", "writeDouble"})
     public Object write(VirtualFrame frame, Object value) {
         ensureObjectKind(frame);
         setObject(getCargoFrame(frame), value);
