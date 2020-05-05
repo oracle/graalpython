@@ -58,6 +58,9 @@ typedef struct {
 /* Get the object given the GC head */
 #define FROM_MEM_HEAD(g) ((void *)(((mem_head_t *)g)+1))
 
+typedef void (*trace_free_fun_t)(void *, size_t);
+UPCALL_TYPED_ID(PyTruffle_Trace_Free, trace_free_fun_t);
+
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
 MUST_INLINE static
 void _PyObject_Free(void* ptr) {
@@ -71,7 +74,7 @@ void _PyObject_Free(void* ptr) {
 		}
 	}
     mem_head_t* ptr_with_head = AS_MEM_HEAD(ptr);
-    (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Trace_Free", ptr, ptr_with_head->size);
+    _jls_PyTruffle_Trace_Free(ptr, ptr_with_head->size);
     free(ptr_with_head);
 }
 

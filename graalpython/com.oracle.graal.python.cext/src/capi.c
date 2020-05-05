@@ -411,6 +411,26 @@ Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
     return new_value;
 }
 
+/** to be used from Java code only; calls DECREF */
+Py_ssize_t PyTruffle_bulk_SUBREF(PyObject* ptrArray[], Py_ssize_t values[], int64_t len) {
+	int64_t i;
+	PyObject* obj;
+
+	for (i=0; i < len; i++) {
+		obj = ptrArray[i];
+		Py_ssize_t new_value = ((obj->ob_refcnt) -= values[i]);
+		if (new_value == 0) {
+			_Py_Dealloc(obj);
+		}
+#ifdef Py_REF_DEBUG
+		else if (new_value < 0) {
+			_Py_NegativeRefcount(filename, lineno, op);
+		}
+#endif
+	}
+    return 0;
+}
+
 typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;

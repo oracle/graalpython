@@ -3566,24 +3566,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceFree.class);
 
         @Specialization(limit = "2")
-        static int doNativeWrapper(Object ptr, Object sizeObject,
-                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
+        static int doNativeWrapperLong(Object ptr, long size,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
 
-            long size;
-            try {
-                size = castToJavaLongNode.execute(sizeObject);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
-            }
-
             CApiContext cApiContext = context.getCApiContext();
             cApiContext.reduceMemoryPressure(size);
 
-            boolean isLoggable = LOGGER.isLoggable(Level.FINE);
+            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
             boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
             if ((isLoggable || traceNativeMemory) && !lib.isNull(ptr)) {
                 boolean traceNativeMemoryCalls = context.getOption(PythonOptions.TraceNativeMemoryCalls);
@@ -3594,7 +3585,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     }
                     AllocInfo allocLocation = cApiContext.traceFree(CApiContext.asPointer(ptr, lib), ref, null);
                     if (allocLocation != null) {
-                        LOGGER.fine(() -> String.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
+                        LOGGER.finer(() -> String.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
 
                         if (traceNativeMemoryCalls) {
                             Reference left = allocLocation.allocationSite;
@@ -3605,17 +3596,34 @@ public class PythonCextBuiltins extends PythonBuiltins {
                             }
                             if (pyFrame != null) {
                                 final PFrame f = pyFrame;
-                                LOGGER.fine(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
+                                LOGGER.finer(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
                             }
                         }
                     }
                 } else {
                     assert isLoggable;
-                    LOGGER.fine(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
+                    LOGGER.finer(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
                 }
             }
             return 0;
         }
+
+        @Specialization(limit = "2", replaces = "doNativeWrapperLong")
+        static int doNativeWrapper(Object ptr, Object sizeObject,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
+                        @CachedLibrary("ptr") InteropLibrary lib,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            long size;
+            try {
+                size = castToJavaLongNode.execute(sizeObject);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
+            }
+            return doNativeWrapperLong(ptr, size, lib, getCurrentFrameRef, context);
+        }
+
     }
 
     @Builtin(name = "PyTruffle_Trace_Type", minNumOfPositionalArgs = 2)

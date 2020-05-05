@@ -101,12 +101,12 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         CApiContext cApiContext = context.getCApiContext();
         cApiContext.increaseMemoryPressure(invokeNode, objectSize);
 
-        boolean isLoggable = LOGGER.isLoggable(Level.FINE);
+        boolean isLoggable = LOGGER.isLoggable(Level.FINER);
         boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
         boolean reportAllocation = reporter.isActive();
         if (isLoggable || traceNativeMemory || reportAllocation) {
             if (isLoggable) {
-                LOGGER.fine(() -> String.format("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
+                LOGGER.finer(() -> String.format("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
             }
             if (traceNativeMemory) {
                 PFrame.Reference ref = null;
