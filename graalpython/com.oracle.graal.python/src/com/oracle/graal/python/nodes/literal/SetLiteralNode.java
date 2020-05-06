@@ -61,8 +61,8 @@ public abstract class SetLiteralNode extends LiteralNode {
         ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
         for (ExpressionNode n : values) {
             Object element = n.execute(frame);
-            if (n instanceof StarredExpressionNode) {
-                storage = ((StarredExpressionNode) n).appendToSet(frame, storage, lib, state, element);
+            if (StarredExpressionNode.isStarredExpression(n)) {
+                storage = ((StarredExpressionNode) n.unwrap()).appendToSet(frame, storage, lib, state, element);
             } else {
                 storage = lib.setItemWithState(storage, element, PNone.NONE, state);
             }

@@ -84,6 +84,10 @@ public final class StarredExpressionNode extends LiteralNode {
         return childNode;
     }
 
+    public static boolean isStarredExpression(ExpressionNode node) {
+        return node.unwrap() instanceof StarredExpressionNode;
+    }
+
     @Override
     public Object execute(VirtualFrame frame) {
         return childNode.execute(frame);

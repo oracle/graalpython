@@ -96,8 +96,8 @@ public final class ListLiteralNode extends SequenceLiteralNode {
         SequenceStorage storage = new ObjectSequenceStorage(values.length);
         for (ExpressionNode n : values) {
             Object element = n.execute(frame);
-            if (n instanceof StarredExpressionNode) {
-                storage = ((StarredExpressionNode) n).appendToStorage(frame, storage, element);
+            if (StarredExpressionNode.isStarredExpression(n)) {
+                storage = ((StarredExpressionNode) n.unwrap()).appendToStorage(frame, storage, element);
             } else {
                 storage = ensureAppendNode().execute(storage, element, ListGeneralizationNode.SUPPLIER);
             }

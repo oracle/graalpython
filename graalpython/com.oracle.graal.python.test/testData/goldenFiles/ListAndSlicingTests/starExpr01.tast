@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'starExpr01'> SourceSection: [0,10]`[*[1,2,3]]`
   Documentation: None
   InnerRootNode SourceSection: [0,10]`[*[1,2,3]]`
     ListLiteralNode SourceSection: [0,10]`[*[1,2,3]]`
-      StarredExpressionNode SourceSection: None
+      StarredExpressionNode SourceSection: [1,9]`*[1,2,3]`
         ListLiteralNode SourceSection: [2,9]`[1,2,3]`
           IntegerLiteralNode SourceSection: [3,4]`1`
             Value: 1
