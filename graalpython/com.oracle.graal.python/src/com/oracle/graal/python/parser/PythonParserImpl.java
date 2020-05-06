@@ -303,7 +303,6 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         lastParsing.globalScope = sstFactory.getScopeEnvironment().getGlobalScope();
         lastParsing.antlrResult = parserSSTResult;
         lastParsing.source = source;
-        lastParsing.serializedGlobalScope = serializeScope(lastParsing.globalScope);
         return lastParsing;
     }
 
