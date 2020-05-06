@@ -1483,7 +1483,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.NotImplementedError, "Only 0 or WNOHANG are supported for waitpid");
                 }
             } catch (IndexOutOfBoundsException e) {
-                throw raiseOSError(frame, OSErrorEnum.ESRCH);
+                if (pid <= 0) {
+                    throw raiseOSError(frame, OSErrorEnum.ECHILD);
+                } else {
+                    throw raiseOSError(frame, OSErrorEnum.ESRCH);
+                }
             } catch (InterruptedException e) {
                 throw raiseOSError(frame, OSErrorEnum.EINTR);
             }
