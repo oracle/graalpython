@@ -101,12 +101,34 @@ for idx, working_test in enumerate(WORKING_TESTS):
     del test_f
 
 
+# This function has a unittest in test_tagger
+def parse_unittest_output(output):
+    # The whole reason for this function's complexity is that we want to consume arbitrary
+    # warnings after the '...' part without accidentally consuming the next test result
+    import re
+    re_test_result = re.compile(r"""\b(test\S+) \(([^\s]+)\)(?:\n.*?)?? \.\.\. """, re.MULTILINE | re.DOTALL)
+    re_test_status = re.compile(r"""\b(ok|skipped (?:'[^']*'|"[^"]*")|FAIL|ERROR)$""", re.MULTILINE | re.DOTALL)
+    pos = 0
+    current_result = None
+    while True:
+        result_match = re_test_result.search(output, pos)
+        status_match = re_test_status.search(output, pos)
+        if current_result and status_match and (not result_match or status_match.start() < result_match.start()):
+            yield current_result.group(1), current_result.group(2), status_match.group(1)
+            current_result = None
+            pos = status_match.end()
+        elif result_match:
+            current_result = result_match
+            pos = result_match.end()
+        else:
+            return
+
+
 if __name__ == "__main__":
     # find working tests
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_test_result = re.compile(r"""\b(test\S+) \(([^\s]+)\)(?:\n.*?)?? \.\.\. (ok|skipped|ERROR|FAIL|)\b$""", re.MULTILINE | re.DOTALL)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
@@ -189,7 +211,7 @@ if __name__ == "__main__":
 
             # n.b.: we add a '*' in the front, so that unittests doesn't add
             # its own asterisks, because now this is already a pattern
-            for funcname, classname, result in re_test_result.findall(stderr):
+            for funcname, classname, result in parse_unittest_output(stderr):
                 # We consider skipped tests as passing in order to avoid a situation where a Linux run
                 # untags a Darwin-only test and vice versa
                 if result == 'ok' or result.startswith('skipped'):
