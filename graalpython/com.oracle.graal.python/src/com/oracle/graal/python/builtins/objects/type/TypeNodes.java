@@ -804,7 +804,7 @@ public abstract class TypeNodes {
             return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
         }
 
-        @Specialization(guards = "!isClass(obj)")
+        @Fallback
         boolean doOther(@SuppressWarnings("unused") Object obj) {
             return false;
         }

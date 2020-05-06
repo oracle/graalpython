@@ -173,7 +173,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})
+        @Specialization(guards = {"!isForeignObject(object)", "isForeignTruffleObject(klass)"})
         boolean check(Object object, TruffleObject klass) {
             Env env = getContext().getEnv();
             try {
@@ -187,7 +187,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "isForeignObject(klass)"})
+        @Specialization(guards = {"isForeignObject(object)", "isForeignTruffleObject(klass)"})
         boolean checkForeign(Object object, TruffleObject klass) {
             Env env = getContext().getEnv();
             try {

@@ -218,13 +218,14 @@ public abstract class PythonCallNode extends ExpressionNode {
             this.key = key;
         }
 
-        @Specialization(guards = "isForeignObject(object)")
+        @Specialization(guards = "isForeignTruffleObject(object)")
         Object getForeignInvoke(TruffleObject object) {
             return new ForeignInvoke(object, key);
         }
 
-        @Specialization(guards = "!isForeignObject(object)")
+        @Specialization(guards = "!isForeignObject(object, lib)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object getCallAttribute(VirtualFrame frame, Object object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, object);
         }

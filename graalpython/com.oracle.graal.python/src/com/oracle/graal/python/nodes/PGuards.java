@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -72,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -88,8 +89,11 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.util.WeakASTReference;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -155,7 +159,7 @@ public abstract class PGuards {
     }
 
     public static boolean isClass(Object value) {
-        return value instanceof PythonAbstractClass;
+        return value instanceof PythonBuiltinClassType || value instanceof PythonManagedClass || value instanceof PythonAbstractNativeObject;
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {
@@ -352,6 +356,21 @@ public abstract class PGuards {
 
     public static boolean isForeignObject(Object obj) {
         return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
+    }
+
+    public static boolean isForeignTruffleObject(TruffleObject obj) {
+        return !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
+    }
+
+    public static boolean isForeignObject(Object obj, InteropLibrary lib) {
+        try {
+            return !(obj instanceof String || obj instanceof Integer || obj instanceof Long || obj instanceof Double || obj instanceof Boolean ||
+                            (lib.hasLanguage(obj) && lib.getLanguage(obj) == PythonLanguage.class));
+        } catch (UnsupportedMessageException e) {
+            // cannot happen due to check
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
+        }
     }
 
     public static boolean isPInt(Object obj) {

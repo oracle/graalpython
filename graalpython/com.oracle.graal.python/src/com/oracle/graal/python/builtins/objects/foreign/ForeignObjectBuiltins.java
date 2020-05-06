@@ -549,7 +549,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.a
          */
-        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
+        @Specialization(guards = {"isForeignObject(callee, lib)", "!isNoValue(callee)", "keywords.length == 0"})
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
@@ -586,7 +586,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
-        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "3")
+        @Specialization(guards = {"isForeignObject(callee, lib)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "4")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedLibrary("callee") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,

@@ -219,7 +219,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         /* self is in the arguments */
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)", "isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)",
+                        "isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
         protected Object doItUnboxedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
                         @Cached("first(arguments)") Object cachedSelf) {
             PythonBuiltinClassType type = ((PythonBuiltinClass) cachedSelf).getType();
@@ -227,7 +228,8 @@ public class TypeBuiltins extends PythonBuiltins {
             return op(frame, type, arguments, keywords, false);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)", "!isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)",
+                        "!isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
         protected Object doItUnboxedUser(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
                         @Cached("first(arguments)") Object cachedSelf) {
             return op(frame, (PythonAbstractClass) cachedSelf, arguments, keywords, false);
@@ -241,7 +243,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doItUnboxedUser", "doItUnboxedBuiltin", "doItUnboxedBuiltinType"})
-        protected Object doItUnboxedIndirect(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
+        protected Object doItUnboxedIndirect(VirtualFrame frame, PNone noSelf, Object[] arguments, PKeyword[] keywords) {
             Object self = arguments[0];
             if (self instanceof PythonBuiltinClassType) {
                 return doItUnboxedBuiltinType(frame, noSelf, arguments, keywords, self);

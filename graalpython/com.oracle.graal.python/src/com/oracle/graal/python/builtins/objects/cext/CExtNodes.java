@@ -461,13 +461,14 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        @Specialization(guards = {"isForeignTruffleObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
         static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
 
-        @Specialization(guards = "isFallback(object)")
-        static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object object) {
+        @Specialization(guards = "isFallback(object, lib)", limit = "1")
+        static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             assert object != null : "Java 'null' cannot be a Sulong value";
             assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
             return object;
@@ -477,9 +478,10 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object) {
+        static boolean isFallback(Object object, InteropLibrary lib) {
             return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
-                            object instanceof PythonNativeNull || object instanceof PythonAbstractObject || (PGuards.isForeignObject(object) && !CApiGuards.isNativeWrapper(object)));
+                            object instanceof PythonNativeNull || object instanceof PythonAbstractObject) &&
+                            !(PGuards.isForeignObject(object, lib) && !CApiGuards.isNativeWrapper(object));
         }
 
         protected static boolean isNaN(double d) {
@@ -694,23 +696,24 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        @Specialization(guards = {"isForeignTruffleObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
         static Object doForeignObject(CExtContext cextContext, TruffleObject object) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
             return ToSulongNode.doForeignObject(cextContext, object);
         }
 
-        @Specialization(guards = "isFallback(object)")
-        static Object run(CExtContext cextContext, Object object) {
-            return ToSulongNode.run(cextContext, object);
+        @Specialization(guards = "isFallback(object, lib)", limit = "1")
+        static Object run(CExtContext cextContext, Object object,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            return ToSulongNode.run(cextContext, object, lib);
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object) {
-            return ToSulongNode.isFallback(object);
+        static boolean isFallback(Object object, InteropLibrary lib) {
+            return ToSulongNode.isFallback(object, lib);
         }
 
         protected static boolean isNaN(double d) {
@@ -725,7 +728,7 @@ public abstract class CExtNodes {
      * ref count of all {@link PythonNativeWrapper} (and subclasses) (but not if they are newly
      * created since the ref count is already one in this case). But it does not increase the ref
      * count on {@link PythonAbstractNativeObject}.
-     * 
+     *
      * The reason for this behavior is that after the native function returns, one can decrease the
      * ref count by one and therefore release any allocated handles that would cause a memory leak.
      * This is not necessary for {@link PythonAbstractNativeObject} since they are managed by a weak
@@ -849,23 +852,24 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        @Specialization(guards = {"isForeignTruffleObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
         static Object doForeignObject(CExtContext cextContext, TruffleObject object) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
             return ToSulongNode.doForeignObject(cextContext, object);
         }
 
-        @Specialization(guards = "isFallback(object)")
-        static Object run(CExtContext cextContext, Object object) {
-            return ToSulongNode.run(cextContext, object);
+        @Specialization(guards = "isFallback(object, lib)", limit = "1")
+        static Object run(CExtContext cextContext, Object object,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            return ToSulongNode.run(cextContext, object, lib);
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object) {
-            return ToSulongNode.isFallback(object);
+        static boolean isFallback(Object object, InteropLibrary lib) {
+            return ToSulongNode.isFallback(object, lib);
         }
 
         protected static boolean isNaN(double d) {
