@@ -565,6 +565,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         Object stat(VirtualFrame frame, String path, boolean followSymlinks) {
+            if (path.isEmpty()) {
+                throw raiseOSError(frame, OSErrorEnum.ENOENT);
+            }
             try {
                 return statInternal(path, followSymlinks);
             } catch (Exception e) {
