@@ -250,6 +250,17 @@ final class DefaultPythonBooleanExports {
         return x ? 1 : 0;
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Boolean receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Boolean receiver) {
+        return receiver ? 1.0 : 0.0;
+    }
+
     @ExportMessage
     public static Object lookupAttribute(Boolean x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {

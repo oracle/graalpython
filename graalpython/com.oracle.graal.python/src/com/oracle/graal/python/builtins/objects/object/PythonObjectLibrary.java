@@ -540,6 +540,42 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Checks whether the receiver can be coerced to a Java double.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__index__</b>
+     * and <b>__float__</b> special methods. This is analogous to the checks made in
+     * {@code PyFloat_AsDouble} in {@code floatobject.c}
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a java double
+     */
+    @Abstract(ifExported = {"asJavaDoubleWithState", "asJavaDouble"})
+    public boolean canBeJavaDouble(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Java {@code double}. This method follows the
+     * semantics of CPython's function {@code PyFloat_AsDouble}.
+     */
+    public double asJavaDoubleWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asJavaDouble(receiver);
+    }
+
+    /**
+     * @see #asJavaDoubleWithState
+     * @see #asJavaDoubleWithStateAndErrHandler
+     */
+    public double asJavaDouble(Object receiver) {
+        return asJavaDoubleWithState(receiver, null);
+    }
+
+    /**
      * Coerces the receiver into an index-sized integer, using the same mechanism as
      * {@code PyNumber_AsSsize_t}:
      * <ol>

@@ -42,10 +42,12 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -153,6 +155,18 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static String asPString(String receiver) {
         return receiver;
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") String receiver) {
+        return false;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(String receiver,
+                    @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "must be real number, not %p", receiver);
     }
 
     @ExportMessage

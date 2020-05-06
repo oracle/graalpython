@@ -171,6 +171,17 @@ final class DefaultPythonDoubleExports {
         return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Double receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Double receiver) {
+        return receiver;
+    }
+
     @ExportMessage
     public static Object lookupAttribute(Double x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {

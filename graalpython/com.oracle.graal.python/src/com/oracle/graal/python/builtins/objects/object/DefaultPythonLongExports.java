@@ -276,6 +276,17 @@ final class DefaultPythonLongExports {
         }
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Long receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Long receiver) {
+        return receiver.doubleValue();
+    }
+
     @ExportMessage
     public static Object lookupAttribute(Long x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {

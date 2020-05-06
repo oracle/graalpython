@@ -247,6 +247,17 @@ final class DefaultPythonIntegerExports {
         return x;
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Integer receiver) {
+        return receiver.doubleValue();
+    }
+
     @ExportMessage
     public static Object lookupAttribute(Integer x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {

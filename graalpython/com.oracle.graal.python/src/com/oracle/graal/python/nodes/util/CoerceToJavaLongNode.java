@@ -50,12 +50,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongExactNodeGen;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongLossyNodeGen;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -66,25 +61,12 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
 
     public abstract long execute(Object x);
 
-    protected long toLongInternal(@SuppressWarnings("unused") PInt x) {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new IllegalStateException("should not be reached");
-    }
-
     public static CoerceToJavaLongNode create() {
-        return CoerceToJavaLongExactNodeGen.create();
-    }
-
-    public static CoerceToJavaLongNode createLossy() {
-        return CoerceToJavaLongLossyNodeGen.create();
+        return CoerceToJavaLongNodeGen.create();
     }
 
     public static CoerceToJavaLongNode getUncached() {
-        return CoerceToJavaLongExactNodeGen.getUncached();
-    }
-
-    public static CoerceToJavaLongNode createLossyUncached() {
-        return CoerceToJavaLongLossyNodeGen.getUncached();
+        return CoerceToJavaLongNodeGen.getUncached();
     }
 
     @Specialization
@@ -95,6 +77,10 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
     @Specialization
     public long toLong(PInt x) {
         return toLongInternal(x);
+    }
+
+    private static long toLongInternal(@SuppressWarnings("unused") PInt x) {
+        return x.longValueExact();
     }
 
     @Specialization(guards = "!isNumber(x)")
@@ -117,24 +103,4 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
         throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
     }
 
-    @GenerateUncached
-    abstract static class CoerceToJavaLongLossyNode extends CoerceToJavaLongNode {
-        @Override
-        protected long toLongInternal(PInt x) {
-            return x.longValue();
-        }
-    }
-
-    @GenerateUncached
-    abstract static class CoerceToJavaLongExactNode extends CoerceToJavaLongNode {
-        @Override
-        protected long toLongInternal(PInt x) {
-            try {
-                return x.longValueExact();
-            } catch (ArithmeticException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as long (type %p)", x);
-            }
-        }
-    }
 }

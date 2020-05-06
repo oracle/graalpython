@@ -182,7 +182,6 @@ import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
-import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -340,8 +339,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private GetLazyClassNode getClassNode;
         @Child private LookupAndCallUnaryNode callComplexFunc;
-        @Child private CoerceToDoubleNode firstArgCoerceToDouble;
-        @Child private CoerceToDoubleNode secondArgCoerceToDouble;
 
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         @CompilationFinal private IsBuiltinClassProfile isComplexTypeProfile;
@@ -407,10 +404,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
-        PComplex complexFromObject(VirtualFrame frame, LazyPythonClass cls, Object number, @SuppressWarnings("unused") PNone imag) {
+        PComplex complexFromObject(VirtualFrame frame, LazyPythonClass cls, Object number, @SuppressWarnings("unused") PNone imag,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PComplex value = getComplexNumberFromObject(frame, number);
             if (value == null) {
-                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, number), 0.0);
+                if (lib.canBeJavaDouble(number)) {
+                    return createComplex(cls, lib.asJavaDouble(number), 0.0);
+                } else {
+                    throw raiseFirstArgError(number);
+                }
             }
             return createComplex(cls, value);
         }
@@ -431,49 +433,79 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexLong(VirtualFrame frame, LazyPythonClass cls, Object one, long two) {
+        PComplex complexFromComplexLong(VirtualFrame frame, LazyPythonClass cls, Object one, long two,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
-                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), two);
+                if (lib.canBeJavaDouble(one)) {
+                    return createComplex(cls, lib.asJavaDouble(one), two);
+                } else {
+                    throw raiseFirstArgError(one);
+                }
             }
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexDouble(VirtualFrame frame, LazyPythonClass cls, Object one, double two) {
+        PComplex complexFromComplexDouble(VirtualFrame frame, LazyPythonClass cls, Object one, double two,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
-                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), two);
+                if (lib.canBeJavaDouble(one)) {
+                    return createComplex(cls, lib.asJavaDouble(one), two);
+                } else {
+                    throw raiseFirstArgError(one);
+                }
             }
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexPInt(VirtualFrame frame, LazyPythonClass cls, Object one, PInt two) {
+        PComplex complexFromComplexPInt(VirtualFrame frame, LazyPythonClass cls, Object one, PInt two,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
-                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), two.doubleValue());
+                if (lib.canBeJavaDouble(one)) {
+                    return createComplex(cls, lib.asJavaDouble(one), two.doubleValue());
+                } else {
+                    throw raiseFirstArgError(one);
+                }
             }
             return createComplex(cls, value.getReal(), value.getImag() + two.doubleValue());
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexComplex(VirtualFrame frame, LazyPythonClass cls, Object one, PComplex two) {
+        PComplex complexFromComplexComplex(VirtualFrame frame, LazyPythonClass cls, Object one, PComplex two,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
-                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one) - two.getImag(), two.getReal());
+                if (lib.canBeJavaDouble(one)) {
+                    return createComplex(cls, lib.asJavaDouble(one) - two.getImag(), two.getReal());
+                } else {
+                    throw raiseFirstArgError(one);
+                }
             }
             return createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal());
         }
 
         @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
-        PComplex complexFromComplexObject(VirtualFrame frame, LazyPythonClass cls, Object one, Object two) {
+        PComplex complexFromComplexObject(VirtualFrame frame, LazyPythonClass cls, Object one, Object two,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary firstArgLib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary secondArgLib) {
             PComplex oneValue = getComplexNumberFromObject(frame, one);
-            double twoValue = getSecondArgCoerceToDouble().execute(frame, two);
-            if (oneValue == null) {
-                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), twoValue);
+            if (secondArgLib.canBeJavaDouble(two)) {
+                double twoValue = secondArgLib.asJavaDouble(two);
+                if (oneValue == null) {
+                    if (firstArgLib.canBeJavaDouble(one)) {
+                        return createComplex(cls, firstArgLib.asJavaDouble(one), twoValue);
+                    } else {
+                        throw raiseFirstArgError(one);
+                    }
+                }
+                return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue);
+            } else {
+                throw raiseSecondArgError(two);
             }
-            return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue);
         }
 
         @Specialization
@@ -508,24 +540,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callComplexFunc;
         }
 
-        private CoerceToDoubleNode getFirstArgCoerceToDouble() {
-            if (firstArgCoerceToDouble == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                firstArgCoerceToDouble = insert(CoerceToDoubleNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "complex() first argument must be a string or a number, not '%p'", val);
-                }));
-            }
-            return firstArgCoerceToDouble;
+        private PException raiseFirstArgError(Object x) {
+            throw raise(PythonBuiltinClassType.TypeError, "complex() first argument must be a string or a number, not '%p'", x);
         }
 
-        private CoerceToDoubleNode getSecondArgCoerceToDouble() {
-            if (secondArgCoerceToDouble == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                secondArgCoerceToDouble = insert(CoerceToDoubleNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "complex() second argument must be a number, not '%p'", val);
-                }));
-            }
-            return secondArgCoerceToDouble;
+        private PException raiseSecondArgError(Object x) {
+            throw raise(PythonBuiltinClassType.TypeError, "complex() second argument must be a string or a number, not '%p'", x);
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
@@ -870,7 +890,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @ReportPolymorphism
     public abstract static class FloatNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
-        @Child private CoerceToDoubleNode coerceToDoubleNode;
 
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         @CompilationFinal private ConditionProfile isNanProfile;
@@ -1002,7 +1021,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPrimitiveFloat(cls)")
-        double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object obj) {
+        double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object obj,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             if (obj instanceof String) {
                 return convertStringToDouble((String) obj);
             } else if (obj instanceof PString) {
@@ -1012,12 +1032,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else if (obj instanceof PIBytesLike) {
                 return convertBytesToDouble(frame, (PIBytesLike) obj);
             }
-            return coerceToDouble(frame, obj);
+            if (lib.canBeJavaDouble(obj)) {
+                return lib.asJavaDouble(obj);
+            } else {
+                throw raise(PythonBuiltinClassType.TypeError, "float() argument must be a string or a number, not '%p'", obj);
+            }
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object doPythonObject(VirtualFrame frame, LazyPythonClass cls, Object obj) {
-            return floatFromDouble(cls, doubleFromObject(frame, cls, obj));
+        Object doPythonObject(VirtualFrame frame, LazyPythonClass cls, Object obj,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            return floatFromDouble(cls, doubleFromObject(frame, cls, obj, lib));
         }
 
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
@@ -1026,8 +1051,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isSubtypeOfFloat(frame, isSubtype, cls)", limit = "1")
         Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
-                        @Cached CExtNodes.FloatSubtypeNew subtypeNew) {
-            double realFloat = doubleFromObject(frame, PythonBuiltinClassType.PFloat, obj);
+                        @Cached CExtNodes.FloatSubtypeNew subtypeNew,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            double realFloat = doubleFromObject(frame, PythonBuiltinClassType.PFloat, obj, lib);
             return subtypeNew.call(cls, realFloat);
         }
 
@@ -1047,16 +1073,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
             return toByteArrayNode.execute(frame, pByteArray);
-        }
-
-        private double coerceToDouble(VirtualFrame frame, Object obj) {
-            if (coerceToDoubleNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                coerceToDoubleNode = insert(CoerceToDoubleNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "float() argument must be a string or a number, not '%p'", val);
-                }));
-            }
-            return coerceToDoubleNode.execute(frame, obj);
         }
 
         private PFloat factoryCreateFloat(LazyPythonClass cls, double arg) {

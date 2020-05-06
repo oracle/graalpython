@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
@@ -121,6 +123,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -1035,6 +1038,49 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 }
             }
         }
+    }
+
+    @ExportMessage
+    public boolean canBeJavaDouble(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex) {
+        return hasIndex.execute(this, __FLOAT__) || canBeIndex(hasIndex);
+    }
+
+    @ExportMessage
+    public double asJavaDoubleWithState(ThreadState state,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex,
+                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @Exclusive @Cached CastToJavaDoubleNode castToDouble,
+                    @Exclusive @Cached() ConditionProfile hasFloatFunc,
+                    @Exclusive @Cached PRaiseNode raise) {
+
+        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
+
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            return castToDouble.execute(lib.asIndex(this));
+        }
+
+        Object func = lookup.execute(this, __FLOAT__);
+        if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
+            Object result;
+            if (gotState.profile(state == null)) {
+                result = callNode.executeObject(func, this);
+            } else {
+                result = callNode.executeObject(PArguments.frameForCall(state), func, this);
+            }
+            if (result != PNone.NO_VALUE) {
+                try {
+                    return castToDouble.execute(result);
+                } catch (CannotCastException e) {
+                    throw raise.raise(TypeError, "%p.__float__ returned non-float (type %p)", this, result);
+                }
+            }
+        }
+
+        throw raise.raise(TypeError, "must be real number, not %p", this);
     }
 
     @ExportMessage

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.object;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -253,6 +254,29 @@ final class DefaultPythonObjectExports {
             }
         }
         throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
+    }
+
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Object receiver,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        return interopLib.fitsInDouble(receiver);
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Object receiver,
+                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        if (canBeJavaDouble(receiver, interopLib)) {
+            try {
+                return interopLib.asDouble(receiver);
+            } catch (UnsupportedMessageException ex) {
+                // cannot happen due to check
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(ex);
+            }
+        }
+        throw raise.raise(TypeError, "must be real number, not %p", receiver);
+
     }
 
     @ExportMessage
