@@ -258,7 +258,7 @@ public class ParserTestBase {
         return visitor.getTree();
     }
 
-    protected void assertDescriptionMatches(String actual, File goldenFile) throws IOException {
+    protected void assertDescriptionMatches(String actual, File goldenFile) throws Exception {
         if (!goldenFile.exists()) {
             if (!goldenFile.createNewFile()) {
                 assertTrue("Cannot create file " + goldenFile.getAbsolutePath(), false);
@@ -273,7 +273,7 @@ public class ParserTestBase {
         assertDescriptionMatches(actual, expected, goldenFile.getName());
     }
 
-    protected void assertDescriptionMatches(String actual, String expected, String someName) throws IOException {
+    protected void assertDescriptionMatches(String actual, String expected, String someName) throws Exception {
         final String expectedTrimmed = expected.trim();
         final String actualTrimmed = actual.trim();
 
