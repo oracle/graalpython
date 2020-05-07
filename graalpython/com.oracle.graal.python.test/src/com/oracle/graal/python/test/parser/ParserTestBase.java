@@ -273,7 +273,7 @@ public class ParserTestBase {
         assertDescriptionMatches(actual, expected, goldenFile.getName());
     }
 
-    protected void assertDescriptionMatches(String actual, String expected, String name) throws IOException {
+    protected void assertDescriptionMatches(String actual, String expected, String someName) throws IOException {
         final String expectedTrimmed = expected.trim();
         final String actualTrimmed = actual.trim();
 
@@ -292,7 +292,7 @@ public class ParserTestBase {
 
             // There are some diffrerences between expected and actual content --> Test failed
 
-            assertTrue("Not matching results: " + (name == null ? "" : name) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified), false);
+            assertTrue("Not matching results: " + (someName == null ? "" : someName) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified), false);
         }
     }
 

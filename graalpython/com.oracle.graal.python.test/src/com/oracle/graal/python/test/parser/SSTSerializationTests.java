@@ -1265,7 +1265,6 @@ public class SSTSerializationTests extends ParserTestBase {
         byte[] serializeResult = serializer.serialize(parserResult);
         Assert.assertNotNull("Serialized data are null", serializeResult);
         // and get the tree from serialized data
-        TruffleFile tFile = context.getEnv().getInternalTruffleFile(moduleName);
         RootNode deserialize = serializer.deserialize(source, serializeResult);
 
         Assert.assertNotNull("Deserialized result is null", parserResult);
