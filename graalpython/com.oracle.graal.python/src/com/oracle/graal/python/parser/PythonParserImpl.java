@@ -158,7 +158,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 }
                 globalScope = ScopeInfo.read(dis, null);
                 int offset = dis.readInt();
-                sstNode = new SSTDeserializer(dis, globalScope, source, offset).readNode();
+                sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
                 if (cellvars != null || freevars != null) {
                     ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
                     if (cellvars != null) {
@@ -199,18 +199,6 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         } catch (Exception e) {
             throw handleParserError(core, source, e, true);
         }
-    }
-
-    private static byte[] serializeScope(ScopeInfo scope) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-        try {
-            ScopeInfo.write(dos, scope);
-            dos.close();
-        } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save data during serialization.");
-        }
-        return baos.toByteArray();
     }
 
     private static class CacheItem {

@@ -184,7 +184,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         }
     }
 
-    private void handleIOExceptin(IOException e) {
+    private static void handleIOExceptin(IOException e) {
         throw new RuntimeException("Problem during SST serialization.", e);
     }
 

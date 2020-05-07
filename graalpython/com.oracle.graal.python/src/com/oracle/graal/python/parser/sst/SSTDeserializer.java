@@ -45,22 +45,19 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.sst.SerializationUtils.SSTId;
-import com.oracle.truffle.api.source.Source;
 import java.io.DataInputStream;
 import java.io.IOException;
 
 public class SSTDeserializer {
 
     private final DataInputStream stream;
-    private final Source source;
     private final int offsetDelta;
     private int startIndex;
     private int endIndex;
     private ScopeInfo currentScope;
 
-    public SSTDeserializer(DataInputStream read, ScopeInfo globalScope, Source source, int offsetDelta) {
+    public SSTDeserializer(DataInputStream read, ScopeInfo globalScope, int offsetDelta) {
         this.stream = read;
-        this.source = source;
         currentScope = globalScope;
         this.offsetDelta = offsetDelta;
     }

@@ -396,10 +396,10 @@ public final class ScopeInfo {
         }
     }
 
-    public ScopeInfo getChildScope(String scopeId) {
+    public ScopeInfo getChildScope(String id) {
         ScopeInfo scope = firstChildScope;
         while (scope != null) {
-            if (scope.getScopeId().equals(scopeId)) {
+            if (scope.getScopeId().equals(id)) {
                 return scope;
             }
             scope = scope.nextChildScope;
@@ -407,10 +407,10 @@ public final class ScopeInfo {
         return null;
     }
 
-    public ScopeInfo getChildScope(int serializationId) {
+    public ScopeInfo getChildScope(int serId) {
         ScopeInfo scope = firstChildScope;
         while (scope != null) {
-            if (scope.getSerializetionId() == serializationId) {
+            if (scope.getSerializetionId() == serId) {
                 return scope;
             }
             scope = scope.nextChildScope;

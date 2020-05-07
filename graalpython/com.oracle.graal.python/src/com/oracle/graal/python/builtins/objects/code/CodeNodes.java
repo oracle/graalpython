@@ -94,8 +94,8 @@ public abstract class CodeNodes {
             Object state = IndirectCallContext.enter(frame, context, this);
 
             try {
-                return createCode(context, cls,  argcount,
-                        posonlyargcount, kwonlyargcount,nlocals, stacksize, flags, codedata,
+                return createCode(context, cls, argcount,
+                                posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
@@ -173,7 +173,7 @@ public abstract class CodeNodes {
         }
 
         @CompilerDirectives.TruffleBoundary
-        private String[] toStringArray(Object[] array) {
+        private static String[] toStringArray(Object[] array) {
             List<String> list = new ArrayList<>(array.length);
             for (Object item : array) {
                 if (item instanceof String) {

@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -79,7 +78,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -469,28 +467,28 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return sourceSection.getCharacters().toString();
         }
 
-//        private PTuple internStrings(Object[] values) {
-//            Object[] interned;
-//            if (values == null) {
-//                interned = new Object[0];
-//            } else {
-//                interned = new Object[values.length];
-//                for (int i = 0; i < interned.length; i++) {
-//                    if (castStrNode == null) {
-//                        CompilerDirectives.transferToInterpreterAndInvalidate();
-//                        castStrNode = insert(CastToJavaStringNode.create());
-//                    }
-//                    Object value = values[i];
-//                    String strValue = castStrNode.execute(value);
-//                    if (strValue != null) {
-//                        interned[i] = new InternedString(strValue);
-//                    } else {
-//                        interned[i] = value;
-//                    }
-//                }
-//            }
-//            return factory().createTuple(interned);
-//        }
+        // private PTuple internStrings(Object[] values) {
+        // Object[] interned;
+        // if (values == null) {
+        // interned = new Object[0];
+        // } else {
+        // interned = new Object[values.length];
+        // for (int i = 0; i < interned.length; i++) {
+        // if (castStrNode == null) {
+        // CompilerDirectives.transferToInterpreterAndInvalidate();
+        // castStrNode = insert(CastToJavaStringNode.create());
+        // }
+        // Object value = values[i];
+        // String strValue = castStrNode.execute(value);
+        // if (strValue != null) {
+        // interned[i] = new InternedString(strValue);
+        // } else {
+        // interned[i] = value;
+        // }
+        // }
+        // }
+        // return factory().createTuple(interned);
+        // }
 
         @Specialization(limit = "1")
         void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
