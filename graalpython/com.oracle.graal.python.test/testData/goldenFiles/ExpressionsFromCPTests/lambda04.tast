@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'lambda04'> SourceSection: [0,17]`lambda *y, **z: 0
         CellVarsSlots: None
       FunctionRootNode SourceSection: [0,17]`lambda *y, **z: 0`
         Name: <lambda>
-        Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+        Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
           Keyword Names: None
         CelVars: None
         FreeVars: None

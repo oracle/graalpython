@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CellVarsSlots: None
           FunctionRootNode SourceSection: [3526,3696]`def makepath(*paths)...`
             Name: makepath
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
@@ -1597,7 +1597,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [8700,8781]`def joinuser(*args):...`
                           Name: joinuser
-                          Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                          Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False

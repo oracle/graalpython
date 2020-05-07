@@ -743,6 +743,10 @@ public class SSTDeserializer {
                 }
             }
         }
+        if (i == posOnlyIndex) {
+            // handle case like def fn(p1, p2, /, **kw)
+            builder.markPositionalOnlyIndex();
+        }
 
         len = i + readInt(stream.readByte());
         for (; i < len; i++) {

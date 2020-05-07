@@ -443,6 +443,12 @@ public class ParserTreePrinter implements NodeVisitor {
         add(signature.takesPositionalOnly());
         sb.append(", requiresKeywordArgs=");
         add(signature.takesRequiredKeywordArgs());
+        if (signature.getVarargsIdx() > -1) {
+            sb.append(", varArgsIdx=").append(signature.getVarargsIdx());
+        }
+        if (signature.getPositionalOnlyArgIndex() > -1) {
+            sb.append(", positionalOnlyIdx=").append(signature.getPositionalOnlyArgIndex());
+        }
         newLine();
         level++;
         if (signature.getParameterIds() != null && signature.getParameterIds().length > 0) {

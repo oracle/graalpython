@@ -6908,7 +6908,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [21131,21446]`def print_(*args, to...`
                                         Name: print_
-                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True, varArgsIdx=0
                                           Keyword Names: to
                                         CelVars: None
                                         FreeVars: end, labels, level, offset_width, start
@@ -7074,7 +7074,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [21446,21575]`def print_2(*args):↵...`
                                         Name: print_2
-                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                         CelVars: None
                                         FreeVars: end, level, offset_width
                                         NeedsCellFrame: False

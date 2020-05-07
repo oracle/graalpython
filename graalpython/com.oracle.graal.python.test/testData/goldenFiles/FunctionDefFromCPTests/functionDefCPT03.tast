@@ -21,7 +21,7 @@ ModuleRootNode Name: <module 'functionDefCPT03'> SourceSection: [0,24]`def f(*ar
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,24]`def f(*args, **kw): ...`
               Name: f
-              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                 Keyword Names: None
               CelVars: None
               FreeVars: None

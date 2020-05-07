@@ -4406,7 +4406,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   CellVarsSlots: None
                                 FunctionRootNode SourceSection: [19630,19814]`def from_exception(c...`
                                   Name: from_exception
-                                  Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                  Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                     Param Names: cls, exc
                                     Keyword Names: None
                                   CelVars: None

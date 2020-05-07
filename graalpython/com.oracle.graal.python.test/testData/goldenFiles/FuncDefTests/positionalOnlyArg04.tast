@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'positionalOnlyArg04'> SourceSection: [0,30]`def na
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,30]`def name(p1, p2=None...`
               Name: name
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False, positionalOnlyIdx=2
                 Param Names: p1, p2
               CelVars: None
               FreeVars: None

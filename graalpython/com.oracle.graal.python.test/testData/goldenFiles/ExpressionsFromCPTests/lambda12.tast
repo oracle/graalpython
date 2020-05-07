@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,20]`lambda x, *y, **z
         CellVarsSlots: None
       FunctionRootNode SourceSection: [0,20]`lambda x, *y, **z: 0...`
         Name: <lambda>
-        Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+        Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
           Param Names: x
           Keyword Names: None
         CelVars: None

@@ -2469,7 +2469,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [9227,10003]`def __new__(*args, *...`
                             Name: __new__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -2759,7 +2759,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [10003,10310]`def __call__(*args, ...`
                             Name: __call__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -3669,7 +3669,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [12125,13009]`def __init__(self, f...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, func
                               Keyword Names: None
                             CelVars: None
@@ -4127,7 +4127,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [13603,13896]`def _method(*args, *...`
                                           Name: _method
-                                          Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                          Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                             Keyword Names: None
                                           CelVars: None
                                           FreeVars: self
@@ -5633,7 +5633,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [19149,19387]`def wrapper(*args, *...`
                             Name: wrapper
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: misses, user_function
@@ -5732,7 +5732,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19418,19864]`def wrapper(*args, *...`
                               Name: wrapper
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
                               FreeVars: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
@@ -5909,7 +5909,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19879,22710]`def wrapper(*args, *...`
                               Name: wrapper
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
                               FreeVars: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
@@ -9120,7 +9120,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [31866,31953]`def wrapper(*args, *...`
                               Name: wrapper
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
                               FreeVars: dispatch

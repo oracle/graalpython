@@ -27,7 +27,7 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,65]`def fn(a, b=0, *arg,...`
               Name: fn
-              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True, varArgsIdx=2
                 Param Names: a, b
                 Keyword Names: k1, k2
               CelVars: None

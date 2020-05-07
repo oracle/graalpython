@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [666,931]`def __init__(self, *...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                               Param Names: self
                             CelVars: None
                             FreeVars: __class__
@@ -788,7 +788,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [2018,2184]`def fromkeys(cls, it...`
                               Name: fromkeys
-                              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                 Param Names: cls, iterable
                               CelVars: None
                               FreeVars: __class__
@@ -1357,7 +1357,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3378,3677]`def pop(self, key, *...`
                             Name: pop
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, key
                             CelVars: None
                             FreeVars: __class__
@@ -1567,7 +1567,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [4053,4820]`def __init__(*args, ...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -4628,7 +4628,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [8762,8832]`def index(self, item...`
                             Name: index
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, item
                             CelVars: None
                             FreeVars: __class__
@@ -4755,7 +4755,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [8875,8940]`def sort(self, *args...`
                             Name: sort
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                               Param Names: self
                               Keyword Names: None
                             CelVars: None
@@ -6839,7 +6839,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [11808,11906]`def center(self, wid...`
                                 Name: center
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                   Param Names: self, width
                                 CelVars: None
                                 FreeVars: __class__
@@ -7493,7 +7493,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [12751,12835]`def format(self, *ar...`
                                 Name: format
-                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                                   Param Names: self
                                   Keyword Names: None
                                 CelVars: None
@@ -8453,7 +8453,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [13694,13790]`def ljust(self, widt...`
                                 Name: ljust
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                   Param Names: self, width
                                 CelVars: None
                                 FreeVars: __class__
@@ -9125,7 +9125,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [14553,14649]`def rjust(self, widt...`
                                 Name: rjust
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                   Param Names: self, width
                                 CelVars: None
                                 FreeVars: __class__
@@ -9860,7 +9860,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [15398,15488]`def translate(self, ...`
                                 Name: translate
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                                   Param Names: self
                                 CelVars: None
                                 FreeVars: __class__

@@ -2377,7 +2377,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [6881,6960]`def throw(self, tp, ...`
                             Name: throw
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, tp
                             CelVars: None
                             FreeVars: __class__
@@ -3308,7 +3308,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [9060,9852]`def wrapped(*args, *...`
                             Name: wrapped
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: _collections_abc, func

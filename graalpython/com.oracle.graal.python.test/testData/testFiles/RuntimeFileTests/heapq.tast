@@ -1507,7 +1507,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CellVarsSlots: None
           FunctionRootNode SourceSection: [13287,18959]`def merge(*iterables...`
             Name: merge
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True, varArgsIdx=0
               Keyword Names: key, reverse
             CelVars: None
             FreeVars: None

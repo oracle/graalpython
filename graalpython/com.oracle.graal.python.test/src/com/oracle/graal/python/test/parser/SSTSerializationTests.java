@@ -524,6 +524,7 @@ public class SSTSerializationTests extends ParserTestBase {
                         "  return locals()\n" +
                         "\n" +
                         "print(test())");
+        checkSerialization("def substitute(self, mapping=_sentinel_dict, /, **kws): pass");
     }
 
     @Test
@@ -1253,7 +1254,6 @@ public class SSTSerializationTests extends ParserTestBase {
     }
 
     public void checkSerialization(Source source) throws Exception {
-        String moduleName = source.getName();
         PythonCodeSerializer serializer = context.getCore().getSerializer();
 
         // at first parse the source and obtain the parse result

@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,39]`lambda foo=bar, b
         CellVarsSlots: None
       FunctionRootNode SourceSection: [0,39]`lambda foo=bar, blaz...`
         Name: <lambda>
-        Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+        Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
           Param Names: foo, blaz
           Keyword Names: None
         CelVars: None

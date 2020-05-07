@@ -45,7 +45,7 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,24]`def fn():↵  lam
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [12,24]`lambda *y: 0`
                             Name: <lambda>
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False

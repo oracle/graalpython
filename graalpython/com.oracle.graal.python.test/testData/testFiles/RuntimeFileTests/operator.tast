@@ -2462,7 +2462,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CellVarsSlots: getters, , names, 
                           FunctionRootNode SourceSection: [5349,5988]`def __init__(self, a...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, attr
                             CelVars: getters, names
                             FreeVars: __class__
@@ -3089,7 +3089,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CellVarsSlots: item, , items, 
                           FunctionRootNode SourceSection: [6607,6965]`def __init__(self, i...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, item
                             CelVars: item, items
                             FreeVars: __class__
@@ -3657,7 +3657,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [7622,8011]`def __init__(*args, ...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__

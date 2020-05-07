@@ -791,7 +791,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3841,4579]`def __init__(*args, ...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -5013,7 +5013,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [20140,21061]`def __init__(*args, ...`
                                 Name: __init__
-                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                   Keyword Names: None
                                 CelVars: None
                                 FreeVars: __class__
@@ -5473,7 +5473,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [22923,24706]`def update(*args, **...`
                                 Name: update
-                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                   Keyword Names: None
                                 CelVars: None
                                 FreeVars: __class__
@@ -5759,7 +5759,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [24706,26171]`def subtract(*args, ...`
                                 Name: subtract
-                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                   Keyword Names: None
                                 CelVars: None
                                 FreeVars: __class__

@@ -1169,7 +1169,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CellVarsSlots: None
           FunctionRootNode SourceSection: [5290,6192]`def _format(percent,...`
             Name: _format
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=4
               Param Names: percent, value, grouping, monetary
             CelVars: None
             FreeVars: None
@@ -1876,7 +1876,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CellVarsSlots: None
           FunctionRootNode SourceSection: [7537,8175]`def format(percent, ...`
             Name: format
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=4
               Param Names: percent, value, grouping, monetary
             CelVars: None
             FreeVars: None
