@@ -40,18 +40,115 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.channels.Channel;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.PosixResources;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "fcntl")
 public class FcntlModuleBuiltins extends PythonBuiltins {
+    private static final int LOCK_SH = 1;
+    private static final int LOCK_EX = 2;
+    private static final int LOCK_NB = 4;
+    private static final int LOCK_UN = 8;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return FcntlModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        builtinConstants.put("LOCK_SH", LOCK_SH);
+        builtinConstants.put("LOCK_EX", LOCK_EX);
+        builtinConstants.put("LOCK_NB", LOCK_NB);
+        builtinConstants.put("LOCK_UN", LOCK_UN);
+        super.initialize(core);
+    }
+
+    @Builtin(name = "flock", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class FlockNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        synchronized PNone flock(VirtualFrame frame, int fd, int operation,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            PosixResources rs = getContext().getResources();
+            Channel channel;
+            try {
+                channel = rs.getFileChannel(fd, profile);
+            } catch (IndexOutOfBoundsException e) {
+                throw raiseOSError(frame, OSErrorEnum.EBADFD);
+            }
+            if (channel instanceof FileChannel) {
+                FileChannel fc = (FileChannel) channel;
+                FileLock lock = rs.getFileLock(fd);
+                try {
+                     lock = doLockOperation(operation, fc, lock);
+                } catch (IOException e) {
+                    throw raiseOSError(frame, e);
+                }
+                rs.setFileLock(fd, lock);
+            }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static FileLock doLockOperation(int operation, FileChannel fc, FileLock oldLock) throws IOException {
+            FileLock lock = oldLock;
+            if (lock == null) {
+                if ((operation & LOCK_SH) != 0) {
+                    if ((operation & LOCK_NB) != 0) {
+                        lock = fc.tryLock(0, Long.MAX_VALUE, true);
+                    } else {
+                        lock = fc.lock(0, Long.MAX_VALUE, true);
+                    }
+                } else if ((operation & LOCK_EX) != 0) {
+                    if ((operation & LOCK_NB) != 0) {
+                        lock = fc.tryLock();
+                    } else {
+                        lock = fc.lock();
+                    }
+                } else {
+                    // not locked, that's ok
+                }
+            } else {
+                if ((operation & LOCK_UN) != 0) {
+                    lock.release();
+                    lock = null;
+                } else if ((operation & LOCK_EX) != 0) {
+                    if (lock.isShared()) {
+                        if ((operation & LOCK_NB) != 0) {
+                            FileLock newLock = fc.tryLock();
+                            if (newLock != null) {
+                                lock = newLock;
+                            }
+                        } else {
+                            lock = fc.lock();
+                        }
+                    }
+                } else {
+                    // we already have a suitable lock
+                }
+            }
+            return lock;
+        }
     }
 }

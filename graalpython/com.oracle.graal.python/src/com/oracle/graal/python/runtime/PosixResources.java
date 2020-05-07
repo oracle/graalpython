@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
+import java.nio.channels.FileLock;
 import java.nio.channels.Pipe;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
@@ -151,6 +152,7 @@ public class PosixResources {
     private static class ChannelWrapper {
         Channel channel;
         int cnt;
+        FileLock lock;
 
         ChannelWrapper() {
             this(null, 0);
@@ -257,6 +259,23 @@ public class PosixResources {
             return classProfile.profile(channelWrapper.channel);
         }
         return null;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public FileLock getFileLock(int fd) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            return channelWrapper.lock;
+        }
+        return null;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void setFileLock(int fd, FileLock lock) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            channelWrapper.lock = lock;
+        }
     }
 
     @TruffleBoundary(allowInlining = true)
