@@ -1,1 +1,2 @@
+*PlatformTest.test__comparable_version
 *PlatformTest.test_uname_win32_ARCHITEW6432

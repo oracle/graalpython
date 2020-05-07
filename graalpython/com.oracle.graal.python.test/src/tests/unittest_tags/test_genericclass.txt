@@ -1,3 +1,4 @@
+*CAPITest.test_c_class
 *TestClassGetitem.test_class_getitem
 *TestClassGetitem.test_class_getitem_classmethod
 *TestClassGetitem.test_class_getitem_errors

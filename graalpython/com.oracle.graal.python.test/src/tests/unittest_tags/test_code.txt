@@ -1,0 +1,9 @@
+*CodeConstsTest.test_interned_string
+*CodeConstsTest.test_interned_string_default
+*CodeConstsTest.test_interned_string_in_frozenset
+*CodeConstsTest.test_interned_string_in_tuple
+*CodeConstsTest.test_interned_string_with_null
+*CodeTest.test_closure_injection
+*CodeTest.test_constructor
+*CodeTest.test_newempty
+*CodeTest.test_replace

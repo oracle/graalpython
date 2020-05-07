@@ -26,6 +26,7 @@
 *OperatorTestCase.test_lshift
 *OperatorTestCase.test_lt
 *OperatorTestCase.test_matmul
+*OperatorTestCase.test_methodcaller
 *OperatorTestCase.test_mod
 *OperatorTestCase.test_mul
 *OperatorTestCase.test_ne

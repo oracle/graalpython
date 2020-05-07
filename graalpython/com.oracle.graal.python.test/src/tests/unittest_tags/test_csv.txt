@@ -71,4 +71,5 @@
 *Test_Csv.test_writer_dialect_attrs
 *Test_Csv.test_writer_kw_attrs
 *Test_Csv.test_writerows
+*Test_Csv.test_writerows_legacy_strings
 *Test_Csv.test_writerows_with_none

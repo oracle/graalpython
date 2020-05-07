@@ -53,6 +53,7 @@
 *IpaddrUnitTest.testIntRepresentation
 *IpaddrUnitTest.testInterfaceComparison
 *IpaddrUnitTest.testInternals
+*IpaddrUnitTest.testInvalidIntToBytes
 *IpaddrUnitTest.testIpFromInt
 *IpaddrUnitTest.testIpFromPacked
 *IpaddrUnitTest.testIpType

@@ -1,0 +1,3 @@
+*LegacyFinalizationTest.test_legacy
+*LegacyFinalizationTest.test_legacy_resurrect
+*LegacyFinalizationTest.test_legacy_self_cycle

@@ -4,6 +4,7 @@
 *FileTests.test_copy_file_range_offset
 *FileTests.test_fdopen
 *FileTests.test_read
+*FileTests.test_rename
 *FileTests.test_replace
 *MiscTests.test_getcwd
 *MiscTests.test_getcwd_long_path

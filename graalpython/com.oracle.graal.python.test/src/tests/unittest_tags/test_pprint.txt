@@ -12,6 +12,7 @@
 *QueryTestCase.test_knotted
 *QueryTestCase.test_nested_indentations
 *QueryTestCase.test_ordered_dict
+*QueryTestCase.test_set_of_sets_reprs
 *QueryTestCase.test_sort_dict
 *QueryTestCase.test_sort_orderable_and_unorderable_values
 *QueryTestCase.test_sort_unorderable_values

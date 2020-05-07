@@ -1,3 +1,5 @@
+*ArgsTestCase.test_crashed
+*ArgsTestCase.test_findleaks
 *ArgsTestCase.test_huntrleaks
 *ArgsTestCase.test_huntrleaks_fd_leak
 *ParseArgsTestCase.test_arg

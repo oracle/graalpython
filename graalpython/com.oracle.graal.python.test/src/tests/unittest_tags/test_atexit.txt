@@ -1,0 +1,3 @@
+*SubinterpreterTest.test_callback_on_subinterpreter_teardown
+*SubinterpreterTest.test_callbacks_leak
+*SubinterpreterTest.test_callbacks_leak_refcycle
