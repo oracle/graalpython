@@ -224,6 +224,7 @@ public final class Python3Core implements PythonCore {
                         "_io",
                         "_frozen_importlib",
                         "classes",
+                        "__graalpython__",
                         "_weakref",
                         "set",
                         "itertools",

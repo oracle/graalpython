@@ -37,57 +37,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# __all__ = ['Struct', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack', 'pack_into', 'unpack', 'unpack_from']
 
+@builtin
+def import_this_as_module(module_name):
+    """
+    load a builtin anonymous module which does not have a Truffle land builtin module counter part
 
-@__graalpython__.builtin
-def _clearcache(*args):
-    import _cpython__struct
-    return _cpython__struct.clearcache(*args)
-
-
-@__graalpython__.builtin
-def calcsize(fmt):
-    import _cpython__struct
-    return _cpython__struct.calcsize(fmt)
-
-
-@__graalpython__.builtin
-def iter_unpack(fmt, buffer):
-    import _cpython__struct
-    return _cpython__struct.calcsize(fmt, buffer)
-
-
-@__graalpython__.builtin
-def pack(fmt, *vals):
-    import _cpython__struct
-    return _cpython__struct.pack(fmt, *vals)
-
-
-@__graalpython__.builtin
-def pack_into(fmt, buffer, offset, *vals):
-    import _cpython__struct
-    return _cpython__struct.pack_into(fmt, buffer, offset, *vals)
-
-
-@__graalpython__.builtin
-def unpack(fmt, *vals):
-    import _cpython__struct
-    return _cpython__struct.unpack(fmt, *vals)
-
-
-@__graalpython__.builtin
-def unpack_from(fmt, buffer, offset=0):
-    import _cpython__struct
-    return _cpython__struct.unpack_from(fmt, buffer, offset=offset)
-
-
-# error and Struct
-def __getattr__(name):
-    if name in ['error', 'Struct']:
-        import _cpython__struct
-        return __getattr__(_cpython__struct, name)
-    raise AttributeError("module {} has no attribute {}".format(__name__, name))
-
-
-__graalpython__.import_this_as_module("_struct")
+    :param module_name: the module name to load as
+    :return: None
+    """
+    import sys
+    module = sys.modules.get(module_name, None)
+    if not module:
+        module = type(sys)(module_name)
+        sys.modules[module_name] = module
+    new_globals = dict(**globals())
+    new_globals.update(**module.__dict__)
+    module.__dict__.update(**new_globals)
