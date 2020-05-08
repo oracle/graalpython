@@ -42,52 +42,52 @@
 
 @__graalpython__.builtin
 def _clearcache(*args):
-    import _cpython__struct
-    return _cpython__struct.clearcache(*args)
+    import _cpython_struct
+    return _cpython_struct.clearcache(*args)
 
 
 @__graalpython__.builtin
 def calcsize(fmt):
-    import _cpython__struct
-    return _cpython__struct.calcsize(fmt)
+    import _cpython_struct
+    return _cpython_struct.calcsize(fmt)
 
 
 @__graalpython__.builtin
 def iter_unpack(fmt, buffer):
-    import _cpython__struct
-    return _cpython__struct.calcsize(fmt, buffer)
+    import _cpython_struct
+    return _cpython_struct.calcsize(fmt, buffer)
 
 
 @__graalpython__.builtin
 def pack(fmt, *vals):
-    import _cpython__struct
-    return _cpython__struct.pack(fmt, *vals)
+    import _cpython_struct
+    return _cpython_struct.pack(fmt, *vals)
 
 
 @__graalpython__.builtin
 def pack_into(fmt, buffer, offset, *vals):
-    import _cpython__struct
-    return _cpython__struct.pack_into(fmt, buffer, offset, *vals)
+    import _cpython_struct
+    return _cpython_struct.pack_into(fmt, buffer, offset, *vals)
 
 
 @__graalpython__.builtin
 def unpack(fmt, *vals):
-    import _cpython__struct
-    return _cpython__struct.unpack(fmt, *vals)
+    import _cpython_struct
+    return _cpython_struct.unpack(fmt, *vals)
 
 
 @__graalpython__.builtin
 def unpack_from(fmt, buffer, offset=0):
-    import _cpython__struct
-    return _cpython__struct.unpack_from(fmt, buffer, offset=offset)
+    import _cpython_struct
+    return _cpython_struct.unpack_from(fmt, buffer, offset=offset)
 
 
 # error and Struct
 def __getattr__(name):
     if name in ['error', 'Struct']:
-        import _cpython__struct
-        return __getattr__(_cpython__struct, name)
+        import _cpython_struct
+        return __getattr__(_cpython_struct, name)
     raise AttributeError("module {} has no attribute {}".format(__name__, name))
 
 
-__graalpython__.import_this_as_module("_struct")
+__graalpython__.import_current_as_named_module("_struct")

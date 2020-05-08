@@ -39,7 +39,7 @@
 
 
 @builtin
-def import_this_as_module(module_name):
+def import_current_as_named_module(module_name):
     """
     load a builtin anonymous module which does not have a Truffle land builtin module counter part
 
