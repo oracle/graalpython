@@ -869,6 +869,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached(value = "createTJ(stateIn)", uncached = "getUncachedTJ(stateIn)") CExtToJavaNode typeToJavaNode,
                         @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode toNativeNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
@@ -880,7 +881,7 @@ public abstract class CExtParseArgumentsNode {
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     Object typeObject = typeToJavaNode.execute(getVaArgNode.execute(varargs, state.outIndex));
                     state = state.incrementOutIndex();
-                    assert PGuards.isClass(typeObject);
+                    assert PGuards.isClass(typeObject, lib);
                     if (!isSubtypeNode.execute(getClassNode.execute(arg), (LazyPythonClass) typeObject)) {
                         raiseNode.raiseIntWithoutFrame(0, TypeError, "expected object of type %s, got %p", typeObject, arg);
                         throw ParseArgumentsException.raise();

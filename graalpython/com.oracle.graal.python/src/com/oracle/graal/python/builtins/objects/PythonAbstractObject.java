@@ -714,7 +714,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public final boolean isCallable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
-        assert !PGuards.isCallable(this) || PGuards.isClass(this);
         Object call = callAttrGetterNode.execute(this, __CALL__);
         return PGuards.isCallable(call);
     }

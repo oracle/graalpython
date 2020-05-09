@@ -63,6 +63,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.Shape;
@@ -202,8 +203,9 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         return lib.getLazyPythonClass(object);
     }
 
-    @Specialization(guards = "isForeignTruffleObject(object)")
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
+    @Specialization(guards = "isForeignObject(object, lib)", limit = "3")
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object,
+                    @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
         return PythonBuiltinClassType.ForeignObject;
     }
 }

@@ -446,23 +446,26 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
-                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
+                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
-        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
+        @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached", limit = "3")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignTruffleObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object) {
+        @Specialization(guards = {"isForeignObject(object, lib)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
+        static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
 
@@ -681,25 +684,28 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
-                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
+                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
-        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
+        @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached", limit = "3")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignTruffleObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(CExtContext cextContext, TruffleObject object) {
+        @Specialization(guards = {"isForeignObject(object, lib)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
+        static Object doForeignObject(CExtContext cextContext, TruffleObject object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
-            return ToSulongNode.doForeignObject(cextContext, object);
+            return ToSulongNode.doForeignObject(cextContext, object, lib);
         }
 
         @Specialization(guards = "isFallback(object, lib)", limit = "1")
@@ -837,25 +843,28 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
-                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
+                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
-        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
+        @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached", limit = "3")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignTruffleObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(CExtContext cextContext, TruffleObject object) {
+        @Specialization(guards = {"isForeignObject(object, lib)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
+        static Object doForeignObject(CExtContext cextContext, TruffleObject object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
-            return ToSulongNode.doForeignObject(cextContext, object);
+            return ToSulongNode.doForeignObject(cextContext, object, lib);
         }
 
         @Specialization(guards = "isFallback(object, lib)", limit = "1")

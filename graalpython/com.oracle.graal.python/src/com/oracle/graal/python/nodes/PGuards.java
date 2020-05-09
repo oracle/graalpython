@@ -162,6 +162,10 @@ public abstract class PGuards {
         return value instanceof PythonBuiltinClassType || value instanceof PythonManagedClass || value instanceof PythonAbstractNativeObject;
     }
 
+    public static boolean isClass(Object value, InteropLibrary lib) {
+        return lib.isMetaObject(value) && isAnyPythonObject(value, lib);
+    }
+
     public static boolean isEmptyStorage(PSequence sequence) {
         return sequence.getSequenceStorage() instanceof EmptySequenceStorage;
     }
@@ -243,6 +247,17 @@ public abstract class PGuards {
 
     public static boolean isPythonObject(Object obj) {
         return obj instanceof PythonObject;
+    }
+
+    private static boolean isPythonObject(Object obj, InteropLibrary lib) {
+        // assert lib.hasLanguage(obj);
+        try {
+            return lib.getLanguage(obj) == PythonLanguage.class;
+        } catch (UnsupportedMessageException e) {
+            // cannot happen due to check
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -354,23 +369,17 @@ public abstract class PGuards {
         return obj instanceof PythonAbstractObject;
     }
 
-    public static boolean isForeignObject(Object obj) {
-        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
-    }
-
-    public static boolean isForeignTruffleObject(TruffleObject obj) {
-        return !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
+    public static boolean isAnyPythonObject(Object obj, InteropLibrary lib) {
+        return lib.hasLanguage(obj) && isPythonObject(obj, lib);
     }
 
     public static boolean isForeignObject(Object obj, InteropLibrary lib) {
-        try {
-            return !(obj instanceof String || obj instanceof Integer || obj instanceof Long || obj instanceof Double || obj instanceof Boolean ||
-                            (lib.hasLanguage(obj) && lib.getLanguage(obj) == PythonLanguage.class));
-        } catch (UnsupportedMessageException e) {
-            // cannot happen due to check
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException(e);
-        }
+        return !(obj instanceof String || obj instanceof Integer || obj instanceof Long || obj instanceof Double || obj instanceof Boolean ||
+                        isAnyPythonObject(obj, lib));
+    }
+
+    public static boolean isForeignObject(Object obj) {
+        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
     }
 
     public static boolean isPInt(Object obj) {

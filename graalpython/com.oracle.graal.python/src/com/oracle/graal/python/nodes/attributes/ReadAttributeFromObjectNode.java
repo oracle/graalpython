@@ -202,7 +202,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // foreign Object
-    @Specialization(guards = "isForeignTruffleObject(object)")
+    @Specialization(guards = "isForeignObject(object, read)")
     protected Object readForeign(TruffleObject object, Object key,
                     @Cached PForeignToPTypeNode fromForeign,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
