@@ -71,8 +71,11 @@ public final class PString extends PImmutableSequence {
     }
 
     public static String getValue(CharSequence charSequence) {
-        if (charSequence instanceof PCharSequence) {
-            PCharSequence s = (PCharSequence) charSequence;
+        if (charSequence instanceof LazyString) {
+            LazyString s = (LazyString) charSequence;
+            return s.materialize();
+        } else if (charSequence instanceof NativeCharSequence) {
+            NativeCharSequence s = (NativeCharSequence) charSequence;
             return s.materialize();
         } else {
             return (String) charSequence;

@@ -76,7 +76,7 @@ public final class NativeCharSequence implements PCharSequence {
     }
 
     @Override
-    public String materialize() {
+    public final String materialize() {
         if (!isMaterialized()) {
             materialized = (String) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
         }

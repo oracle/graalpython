@@ -83,7 +83,7 @@ public class LazyString implements PCharSequence {
     /**
      * Variant of {@link #createChecked} that tries to concatenate a very short string to an already
      * short root leaf up-front, e.g. when appending single characters.
-     * 
+     *
      * @param minLazyStringLength
      */
     @TruffleBoundary
@@ -138,7 +138,7 @@ public class LazyString implements PCharSequence {
 
     @Override
     @TruffleBoundary
-    public String materialize() {
+    public final String materialize() {
         char[] dst = new char[len];
         LazyString.flatten(this, 0, len, dst, 0);
         String flattened = new String(dst);
