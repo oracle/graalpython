@@ -1,3 +1,5 @@
+*TestCommandLine.test_compress_stdin_outfile
+*TestCommandLine.test_decompress_stdin_stdout
 *TestGzip.test_1647484
 *TestGzip.test_append
 *TestGzip.test_bad_gzip_file

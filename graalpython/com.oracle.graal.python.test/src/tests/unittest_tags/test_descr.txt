@@ -1,5 +1,6 @@
 *ClassPropertiesAndMethods.test_abstractmethods
 *ClassPropertiesAndMethods.test_assign_slice
+*ClassPropertiesAndMethods.test_binary_operator_override
 *ClassPropertiesAndMethods.test_bpo25750
 *OperatorsTest.test_complexes
 *OperatorsTest.test_dicts
@@ -7,4 +8,6 @@
 *OperatorsTest.test_floats
 *OperatorsTest.test_ints
 *OperatorsTest.test_lists
+*OperatorsTest.test_spam_dicts
+*OperatorsTest.test_spam_lists
 *OperatorsTest.test_wrap_lenfunc_bad_cast

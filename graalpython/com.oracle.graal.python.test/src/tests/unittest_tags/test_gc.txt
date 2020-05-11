@@ -1,3 +1,10 @@
+*GCCallbackTests.test_collect_garbage
 *GCCallbackTests.test_refcount_errors
 *GCTests.test_bug21435
+*GCTests.test_collect_generations
+*GCTests.test_frame
+*GCTests.test_garbage_at_shutdown
+*GCTests.test_get_count
+*GCTests.test_legacy_finalizer
+*GCTests.test_legacy_finalizer_newclass
 *GCTests.test_trashcan

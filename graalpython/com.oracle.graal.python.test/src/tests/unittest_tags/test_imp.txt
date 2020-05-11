@@ -1,5 +1,11 @@
 *ImportTests.test_bug7732
 *ImportTests.test_find_module_encoding
+*ImportTests.test_issue15828_load_extensions
+*ImportTests.test_issue16421_multiple_modules_in_one_dll
+*ImportTests.test_issue24748_load_module_skips_sys_modules_check
+*ImportTests.test_issue31315
 *ImportTests.test_issue3594
 *ImportTests.test_issue9319
+*ImportTests.test_load_dynamic_ImportError_path
+*ImportTests.test_load_module_extension_file_is_None
 *ImportTests.test_multiple_calls_to_get_data

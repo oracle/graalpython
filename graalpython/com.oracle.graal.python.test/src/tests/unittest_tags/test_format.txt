@@ -1,1 +1,3 @@
 *FormatTest.test_format_class
+*FormatTest.test_optimisations
+*FormatTest.test_precision_c_limits

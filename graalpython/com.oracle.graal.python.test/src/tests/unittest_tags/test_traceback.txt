@@ -4,3 +4,4 @@
 *TracebackCases.test_print_exception
 *TracebackFormatTests.test_format_stack
 *TracebackFormatTests.test_print_stack
+*TracebackFormatTests.test_recursive_traceback_cpython_internal

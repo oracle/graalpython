@@ -2,3 +2,6 @@
 *ClassTests.testGetSetAndDel
 *ClassTests.testInit
 *ClassTests.testMisc
+*ClassTests.testSFBug532646
+*ClassTests.testSetattrWrapperNameIntern
+*ClassTests.testUnaryOps
