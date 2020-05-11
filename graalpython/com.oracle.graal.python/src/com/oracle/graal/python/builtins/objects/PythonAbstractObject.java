@@ -98,6 +98,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -866,6 +867,30 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
         }
         return result;
+    }
+
+    @ExportMessage
+    public String asPathWithState(ThreadState state,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Exclusive @Cached ConditionProfile gotState) {
+        Object func = lookup.execute(this, __FSPATH__);
+        if (func == PNone.NO_VALUE) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", this);
+        }
+        Object pathObject;
+        if (gotState.profile(state == null)) {
+            pathObject = callNode.executeObject(func, this);
+        } else {
+            pathObject = callNode.executeObject(PArguments.frameForCall(state), func, this);
+        }
+        String path = castToJavaStringNode.execute(pathObject);
+        if (path == null) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "expected %p.__fspath__() to return str or bytes, not %p", this, pathObject);
+        }
+        return path;
     }
 
     @ExportMessage

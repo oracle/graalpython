@@ -54,19 +54,16 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleCodeData;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleInfo;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -79,6 +76,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZipImporter)
@@ -192,9 +190,6 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
-        @Child private GetLazyClassNode getClassNode;
-        @Child private LookupAttributeInMRONode findFspathNode;
-        @Child private CastToPathNode convertPathNode;
 
         @CompilerDirectives.TruffleBoundary
         private void initZipImporter(PZipImporter self, String path) {
@@ -355,29 +350,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PNone init(VirtualFrame frame, PZipImporter self, PythonObject path) {
-            // at first we need to find out, whether path object has __fspath__ method
-            if (findFspathNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-                findFspathNode = insert(LookupAttributeInMRONode.create(SpecialMethodNames.__FSPATH__));
-            }
-            Object result = findFspathNode.execute(getClassNode.execute(path));
-            if (result == PNone.NO_VALUE) {
-                // there is no __fspath__ method -> raise the exception
-                notPossilbeInit(self, path);
-            }
-            // use the value of __fspath__ method
-            if (convertPathNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                convertPathNode = insert(CastToPathNode.create());
-            }
-            initZipImporter(self, convertPathNode.execute(frame, path));
+        public PNone init(PZipImporter self, PythonObject path,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            initZipImporter(self, lib.asPath(path));
             return PNone.NONE;
         }
 
         @Fallback
-        public PNone notPossilbeInit(@SuppressWarnings("unused") Object self, Object path) {
+        public PNone notPossibleInit(@SuppressWarnings("unused") Object self, Object path) {
             throw raise(PythonErrorType.TypeError, "expected str, bytes or os.PathLike object, not %p", path);
         }
 

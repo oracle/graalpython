@@ -1044,7 +1044,7 @@ def _sys_version(sys_version=None):
         version, buildno, builddate, buildtime = match.groups()
         compiler = ""
 
-    elif "GraalVM" in sys_version:
+    elif "Graal" in sys_version:
         # GraalVM
         name = "GraalVM"
         match = _sys_version_parser.match(sys_version)

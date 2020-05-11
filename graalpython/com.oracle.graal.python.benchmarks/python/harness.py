@@ -40,6 +40,7 @@
 import _io
 import os
 import sys
+import types
 from time import time
 
 
@@ -229,7 +230,7 @@ class BenchRunner(object):
             return bench_module
 
         else:
-            bench_module = type(sys)(name, bench_file)
+            bench_module = types.ModuleType(name, bench_file)
             with _io.FileIO(bench_file, "r") as f:
                 bench_module.__file__ = bench_file
                 bench_module.ccompile = ccompile
@@ -256,7 +257,10 @@ class BenchRunner(object):
         args = self._call_attr(ATTR_PROCESS_ARGS, *self.bench_args)
         if args is None:
             # default args processor considers all args as ints
-            args = list(map(int, self.bench_args))
+            if sys.version_info.major < 3:
+                args = list(map(lambda x: int(x.replace("_", "")), self.bench_args))
+            else:
+                args = list(map(int, self.bench_args))
 
         print("### args = ", args)
         print(_HRULE)

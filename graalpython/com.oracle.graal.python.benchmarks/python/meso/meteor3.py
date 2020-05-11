@@ -41,6 +41,7 @@
 #
 # contributed by Daniel Nanz, 2008-08-21
 # 2to3
+from __future__ import print_function
 from bisect import bisect
 import time
 
@@ -181,7 +182,7 @@ def main(n):
 
 def measure(num):
     main(num)
-    
+
 
 def __benchmark__(num=2098):
     measure(num)

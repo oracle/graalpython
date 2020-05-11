@@ -151,6 +151,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -2126,7 +2127,7 @@ public abstract class SequenceStorageNodes {
             SequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr2 = rightProfiled.getInternalArrayObject();
             int len2 = rightProfiled.length();
-            System.arraycopy(arr2, 0, destProfiled.getInternalArrayObject(), 0, len2);
+            PythonUtils.arraycopy(arr2, 0, destProfiled.getInternalArrayObject(), 0, len2);
             getSetLenNode().execute(destProfiled, len2);
             return destProfiled;
         }
@@ -2138,7 +2139,7 @@ public abstract class SequenceStorageNodes {
             SequenceStorage leftProfiled = cachedClass.cast(left);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
-            System.arraycopy(arr1, 0, destProfiled.getInternalArrayObject(), 0, len1);
+            PythonUtils.arraycopy(arr1, 0, destProfiled.getInternalArrayObject(), 0, len1);
             getSetLenNode().execute(destProfiled, len1);
             return destProfiled;
         }
@@ -2191,8 +2192,8 @@ public abstract class SequenceStorageNodes {
         }
 
         private static void concat(Object dest, Object arr1, int len1, Object arr2, int len2) {
-            System.arraycopy(arr1, 0, dest, 0, len1);
-            System.arraycopy(arr2, 0, dest, len1, len2);
+            PythonUtils.arraycopy(arr1, 0, dest, 0, len1);
+            PythonUtils.arraycopy(arr2, 0, dest, len1, len2);
         }
 
         public static ConcatBaseNode create() {
@@ -2559,7 +2560,7 @@ public abstract class SequenceStorageNodes {
 
         private static void repeat(Object dest, Object src, int len, int times) {
             for (int i = 0; i < times; i++) {
-                System.arraycopy(src, 0, dest, i * len, len);
+                PythonUtils.arraycopy(src, 0, dest, i * len, len);
             }
         }
 

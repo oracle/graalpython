@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -156,7 +157,7 @@ public final class MapBuiltins extends PythonBuiltins {
             if (iterators.length > 1) {
                 moreThanOne.enter();
                 args = new Object[iterators.length - 1];
-                System.arraycopy(iterators, 1, args, 0, args.length);
+                PythonUtils.arraycopy(iterators, 1, args, 0, args.length);
             } else {
                 args = PArguments.EMPTY_VARARGS;
             }

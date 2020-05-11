@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -388,11 +389,11 @@ public abstract class ExternalFunctionNodes {
             Object[] arguments = new Object[argumentsLength];
 
             // first, copy positional arguments
-            System.arraycopy(frame.getArguments(), PArguments.USER_ARGUMENTS_OFFSET, arguments, 0, userArgumentLength);
+            PythonUtils.arraycopy(frame.getArguments(), PArguments.USER_ARGUMENTS_OFFSET, arguments, 0, userArgumentLength);
 
             // now, copy variable arguments
             if (variableArguments != null) {
-                System.arraycopy(variableArguments, 0, arguments, userArgumentLength, variableArgumentsLength);
+                PythonUtils.arraycopy(variableArguments, 0, arguments, userArgumentLength, variableArgumentsLength);
             }
             return arguments;
         }
@@ -568,7 +569,7 @@ public abstract class ExternalFunctionNodes {
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             Object[] fastcallArgs = new Object[args.length + kwargs.length];
             Object[] fastcallKwnames = new Object[kwargs.length];
-            System.arraycopy(args, 0, fastcallArgs, 0, args.length);
+            PythonUtils.arraycopy(args, 0, fastcallArgs, 0, args.length);
             for (int i = 0; i < kwargs.length; i++) {
                 fastcallKwnames[i] = kwargs[i].getName();
                 fastcallArgs[args.length + i] = kwargs[i].getValue();

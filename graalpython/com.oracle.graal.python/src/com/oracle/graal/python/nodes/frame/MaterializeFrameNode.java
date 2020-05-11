@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -241,7 +242,7 @@ public abstract class MaterializeFrameNode extends Node {
         PArguments.setClosure(copiedArgs, PArguments.getClosure(arguments));
 
         // copy all user arguments
-        System.arraycopy(arguments, PArguments.USER_ARGUMENTS_OFFSET, copiedArgs, PArguments.USER_ARGUMENTS_OFFSET, PArguments.getUserArgumentLength(arguments));
+        PythonUtils.arraycopy(arguments, PArguments.USER_ARGUMENTS_OFFSET, copiedArgs, PArguments.USER_ARGUMENTS_OFFSET, PArguments.getUserArgumentLength(arguments));
 
         escapedFrame.setArguments(copiedArgs);
     }

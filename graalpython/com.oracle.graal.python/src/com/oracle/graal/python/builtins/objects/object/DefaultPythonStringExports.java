@@ -126,4 +126,9 @@ final class DefaultPythonStringExports {
             return -1;
         }
     }
+
+    @ExportMessage
+    static String asPath(String value) {
+        return value;
+    }
 }

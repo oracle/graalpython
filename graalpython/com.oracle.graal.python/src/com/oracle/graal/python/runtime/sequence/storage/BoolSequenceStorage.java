@@ -27,6 +27,8 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.util.PythonUtils;
+
 public final class BoolSequenceStorage extends TypedSequenceStorage {
 
     private boolean[] values;
@@ -144,7 +146,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         boolean[] newArray = new boolean[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new BoolSequenceStorage(newArray);
         }
 

@@ -51,6 +51,7 @@ ENV_PYPY_HOME = "PYPY_HOME"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
+VM_NAME_JYTHON = "jython"
 VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
@@ -245,6 +246,27 @@ class PyPyVm(AbstractPythonIterationsControlVm):
         return VM_NAME_PYPY
 
 
+class JythonVm(AbstractPythonIterationsControlVm):
+    JYTHON_INTERPRETER = "jython"
+
+    def __init__(self, config_name, options=None, env=None, iterations=None):
+        super(JythonVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
+
+    def override_iterations(self, requested_iterations):
+        return 2
+
+    @property
+    def interpreter(self):
+        try:
+            return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
+        except OSError:
+            mx.abort("{} is not set!".format(ENV_JYTHON_HOME))
+        return join(home, 'bin', JythonVm.JYTHON_INTERPRETER)
+
+    def name(self):
+        return VM_NAME_JYTHON
+
+
 class GraalPythonVm(GuestVm):
     def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
                  host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
@@ -262,7 +284,7 @@ class GraalPythonVm(GuestVm):
 
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        extra_polyglot_args = ["--experimental-options"] + self._extra_polyglot_args
+        extra_polyglot_args = ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
 
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
@@ -295,7 +317,7 @@ class GraalPythonVm(GuestVm):
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
-        extra_polyglot_args += ["--experimental-options", "--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
+        extra_polyglot_args += ["--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):

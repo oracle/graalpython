@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,44 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.iterator;
+package com.oracle.graal.python.util;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.CompilerDirectives;
 
-public class PForeignArrayIterator extends PythonBuiltinObject {
+public final class PythonUtils {
 
-    private final Object foreignArray;
-    private int cursor;
-
-    public PForeignArrayIterator(LazyPythonClass cls, DynamicObject storage, Object foreignArray) {
-        super(cls, storage);
-        this.foreignArray = foreignArray;
+    private PythonUtils() {
+        // no instances
     }
 
-    public Object getForeignArray() {
-        return foreignArray;
-    }
-
-    public int getSize(InteropLibrary lib, PythonObjectLibrary pyObjLib) {
+    /**
+     * Executes System.arraycopy and puts all exceptions on the slow path.
+     */
+    public static void arraycopy(Object src, int srcPos, Object dest, int destPos, int length) {
         try {
-            final long size = lib.getArraySize(foreignArray);
-            return pyObjLib.asSize(size);
-        } catch (UnsupportedMessageException ex) {
-            return 0;
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
         }
     }
-
-    public int getCursor() {
-        return cursor;
-    }
-
-    public int advance() {
-        return cursor++;
-    }
-
 }
