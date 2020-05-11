@@ -1265,6 +1265,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        static long doLong(@SuppressWarnings("unused") CExtContext nativeContext, long l) {
+            return l;
+        }
+
+        @Specialization
         static byte doByte(@SuppressWarnings("unused") CExtContext nativeContext, byte b) {
             return b;
         }
@@ -1281,16 +1286,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     public abstract static class ToJavaNode extends ToJavaBaseNode {
-
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode) {
-            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
-            // must try resolving it. At least we know that it's not a native type.
-            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), false));
-        }
 
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
@@ -1314,16 +1309,6 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class ToJavaStealingNode extends ToJavaBaseNode {
 
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode) {
-            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
-            // must try resolving it. At least we know that it's not a native type.
-            return toJavaNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), true));
-        }
-
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
                         @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
@@ -1344,16 +1329,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     public abstract static class VoidPtrToJavaNode extends ToJavaBaseNode {
-
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode) {
-            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
-            // must try resolving it. At least we know that it's not a native type.
-            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), false));
-        }
 
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,

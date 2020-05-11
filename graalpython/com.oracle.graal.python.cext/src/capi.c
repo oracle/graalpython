@@ -247,19 +247,6 @@ static void initialize_capi() {
     initialize_bufferprocs();
 }
 
-void* native_to_java_exported(PyObject* obj) {
-    return native_to_java(obj);
-}
-
-void* native_to_java_stealing_exported(PyObject* obj) {
-    return native_to_java_stealing(obj);
-}
-
-// This function does not guarantee that a pointer object is returned.
-void* native_pointer_to_java_exported(void* val) {
-	return native_pointer_to_java(val);
-}
-
 // Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such
 // that it is guaranteed to return a pointer object.
 void* native_long_to_java(uint64_t val) {
