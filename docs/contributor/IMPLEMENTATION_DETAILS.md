@@ -1,17 +1,38 @@
 # Implementation Details
 
-### Abstract Operations on Python Objects
+## Abstract Operations on Python Objects
 
 Many generic operations on Python objects in CPython are defined in the header
 files `abstract.c` and `abstract.h`. These operations are widely used and their
 interplay and intricacies are the cause for the conversion, error message, and
 control flow bugs when not mimicked correctly. Our current approach is to
 provide many of these abstract operations as part of the
-`PythonObjectLibrary`. Usually, this means there are at least two messages for
-each operation - one that takes a `ThreadState` argument, and one that
-doesn't. The intent is to allow passing of exception state and caller
-information similar to how we do it with the `PFrame` argument even across
-library messages, which cannot take a VirtualFrame.
+`PythonObjectLibrary`.
+
+### Common operations in the PythonObjectLibrary
+
+The code has evolved over time, so not all built-in nodes are prime examples of
+messages that should be used from the PythonObjectLibrary. We are refactoring
+this as we go, but here are a few examples for things you can (or should soon be
+able to) use the PythonObjectLibrary for:
+
+ - casting and coercion to `java.lang.String`, array-sized Java `int`, Python
+   index, fileno, `double`, filesystem path, iterator, and more
+ - reading the class of an object
+ - accessing the `__dict__` attribute of an object
+ - hashing objects and testing for equality
+ - testing for truthy-ness
+ - getting the length
+ - testing for abstract types such as `mapping`, `sequence`, `callable`
+ - invoking methods or executing callables
+ - access objects through the buffer protocol
+
+### PythonObjectLibrary functions with and without state
+
+Usually, there are at least two messages for each operation - one that takes a
+`ThreadState` argument, and one that doesn't. The intent is to allow passing of
+exception state and caller information similar to how we do it with the `PFrame`
+argument even across library messages, which cannot take a VirtualFrame.
 
 All nodes that are used in message implementations must allow uncached
 usage. Often (e.g. in the case of the generic `CallNode`) they offer execute
@@ -38,7 +59,14 @@ long messageWithState(ThreadState state,
 avoids materialization of the frame state in more cases, as described on the
 section on Python's global thread state above.
 
-### Python Global Thread State
+### Other libraries in the codebase
+
+Accessing hashing storages (the storage for `dict`, `set`, and `frozenset`)
+should be done via the `HashingStorageLibrary`. We are in the process of
+creating a `SequenceStorageLibrary` for sequence types (`tuple`, `list`) to
+replace the `SequenceStorageNodes` collection of classes.
+
+## Python Global Thread State
 
 In CPython, each stack frame is allocated on the heap, and there's a global
 thread state holding on to the chain of currently handled exceptions (e.g. if
@@ -59,7 +87,7 @@ be forced to the heap.
 In Graal Python, the implementation is thus a bit more involved. Here's how it
 works.
 
-#### The PFrame.Reference
+### The PFrame.Reference
 
 A `PFrame.Reference` is created when entering a Python function. By default it
 only holds on to another reference, that of the Python caller. If there are
@@ -67,7 +95,7 @@ non-Python frames between the newly entered frame and the last Python frame,
 those are ignored - our linked list only connects Python frames. The entry point
 into the interpreter has a `PFrame.Reference` with no caller.
 
-###### ExecutionContext.CallContext and ExecutionContext.CalleeContext
+#### ExecutionContext.CallContext and ExecutionContext.CalleeContext
 
 If we're only calling between Python, we pass our `PFrame.Reference` as implicit
 argument to any callees. On entry, they will create their own `PFrame.Reference`
@@ -98,7 +126,7 @@ ExecutionContext.CalleeContext classes. These also use profiling information to
 eagerly fill in frame information if the callees actually access the stack, for
 example, so that no further stack walks need to take place.
 
-###### ExecutionContext.IndirectCallContext and ExecutionContext.IndirectCalleeContext
+#### ExecutionContext.IndirectCallContext and ExecutionContext.IndirectCalleeContext
 
 If we're mixing Python frames with non-Python frames, or if we are making calls
 to methods and cannot pass the Truffle frame, we need to store the last
@@ -110,7 +138,7 @@ caller, it initially walks the stack to find it. But it will also tell the last
 Python node that made a call to a "foreign" callee that it will have to store
 its `PFrame.Reference` globally in the future for it to be available later.
 
-#### The current PException
+### The current PException
 
 Now that we have a mechanism to lazily make available only as much frame state
 as needed, we use the same mechanism to also pass the currently handled
