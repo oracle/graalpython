@@ -65,7 +65,7 @@ def _init_posix():
     darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
 
     # note: this must be kept in sync with _imp.extension_suffixes
-    so_abi = sys.implementation.name + "-" + __graalpython__.platform_id + "-" + sys.implementation._multiarch
+    so_abi = sys.implementation.cache_tag + "-" + __graalpython__.platform_id + "-" + sys.implementation._multiarch
     so_ext = ".so" if not darwin_native else ".dylib"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 

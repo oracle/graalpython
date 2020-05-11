@@ -462,8 +462,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         static String getSoAbi(PythonContext ctxt) {
             PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
-            // sys.implementation.name
-            String implName = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "name");
+            // sys.implementation.cache_tag
+            String cacheTag = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "cache_tag");
             // sys.implementation._multiarch
             String multiArch = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "_multiarch");
 
@@ -480,7 +480,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 soExt = ".so";
             }
 
-            return "." + implName + "-" + toolchainId + "-" + multiArch + soExt;
+            return "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
         }
     }
 
