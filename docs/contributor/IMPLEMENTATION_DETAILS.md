@@ -1,5 +1,43 @@
 # Implementation Details
 
+### Abstract Operations on Python Objects
+
+Many generic operations on Python objects in CPython are defined in the header
+files `abstract.c` and `abstract.h`. These operations are widely used and their
+interplay and intricacies are the cause for the conversion, error message, and
+control flow bugs when not mimicked correctly. Our current approach is to
+provide many of these abstract operations as part of the
+`PythonObjectLibrary`. Usually, this means there are at least two messages for
+each operation - one that takes a `ThreadState` argument, and one that
+doesn't. The intent is to allow passing of exception state and caller
+information similar to how we do it with the `PFrame` argument even across
+library messages, which cannot take a VirtualFrame.
+
+All nodes that are used in message implementations must allow uncached
+usage. Often (e.g. in the case of the generic `CallNode`) they offer execute
+methods with and without frames. If a `ThreadState` was passed to the message, a
+frame to pass to the node can be reconstructed using
+`PArguments.frameForCall(threadState)`. Here's an example:
+
+```java
+@ExportMessage
+long messageWithState(ThreadState state,
+        @Cached CallNode callNode) {
+    Object callable = ...
+
+    if (state != null) {
+        return callNode.execute(PArguments.frameForCall(state), callable, arguments);
+    } else {
+        return callNode.execute(callable, arguments);
+    }
+}
+```
+
+*Note*: It is **always** preferable to call an `execute` method with a
+`VirtualFrame` when both one with and without exist! The reason is that this
+avoids materialization of the frame state in more cases, as described on the
+section on Python's global thread state above.
+
 ### Python Global Thread State
 
 In CPython, each stack frame is allocated on the heap, and there's a global
@@ -79,41 +117,3 @@ as needed, we use the same mechanism to also pass the currently handled
 exception. Unlike CPython we do not use a stack of currently handled exceptions,
 instead we utilize the call stack of Java by always passing the current exception
 and holding on to the last (if any) in a local variable.
-
-### Abstract Operations on Python Objects
-
-Many generic operations on Python objects in CPython are defined in the header
-files `abstract.c` and `abstract.h`. These operations are widely used and their
-interplay and intricacies are the cause for the conversion, error message, and
-control flow bugs when not mimicked correctly. Our current approach is to
-provide many of these abstract operations as part of the
-`PythonObjectLibrary`. Usually, this means there are at least two messages for
-each operation - one that takes a `ThreadState` argument, and one that
-doesn't. The intent is to allow passing of exception state and caller
-information similar to how we do it with the `PFrame` argument even across
-library messages, which cannot take a VirtualFrame.
-
-All nodes that are used in message implementations must allow uncached
-usage. Often (e.g. in the case of the generic `CallNode`) they offer execute
-methods with and without frames. If a `ThreadState` was passed to the message, a
-frame to pass to the node can be reconstructed using
-`PArguments.frameForCall(threadState)`. Here's an example:
-
-```java
-@ExportMessage
-long messageWithState(ThreadState state,
-        @Cached CallNode callNode) {
-    Object callable = ...
-
-    if (state != null) {
-        return callNode.execute(PArguments.frameForCall(state), callable, arguments);
-    } else {
-        return callNode.execute(callable, arguments);
-    }
-}
-```
-
-*Note*: It is **always** preferable to call an `execute` method with a
-`VirtualFrame` when both one with and without exist! The reason is that this
-avoids materialization of the frame state in more cases, as described on the
-section on Python's global thread state above.
