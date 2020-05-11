@@ -67,6 +67,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import org.antlr.v4.runtime.Token;
+import org.graalvm.nativeimage.ImageInfo;
 
 public final class PythonParserImpl implements PythonParser, PythonCodeSerializer {
 
@@ -74,6 +75,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     private final int timeStatistics;
     private long timeInParser = 0;
     private long numberOfFiles = 0;
+    private static final boolean IN_IMAGE_BUILD_TIME = ImageInfo.inImageBuildtimeCode();
 
     public static final DescriptiveBailErrorListener ERROR_LISTENER = new DescriptiveBailErrorListener();
 
@@ -109,21 +111,23 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         assert source != null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream(source.getLength() * 2);
         DataOutputStream dos = new DataOutputStream(baos);
-        if (!source.equals(lastParsing.source)) {
+        CacheItem lastParserResult = cachedLastAntlrResult;
+        if (!source.equals(lastParserResult.source)) {
             // we need to parse the source again
-            parseN(ParserMode.File, PythonLanguage.getCore(), source, null);
+            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source);
+            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null);
         }
         try {
             dos.writeByte(SerializationUtils.VERSION);
             if (rootNode instanceof ModuleRootNode) {
                 // serialize whole module
-                ScopeInfo.write(dos, lastParsing.globalScope);
+                ScopeInfo.write(dos, lastParserResult.globalScope);
                 dos.writeInt(0);
-                lastParsing.antlrResult.accept(new SSTSerializerVisitor(dos));
+                lastParserResult.antlrResult.accept(new SSTSerializerVisitor(dos));
             } else {
                 // serialize just the part
                 SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
-                SSTNodeWithScope rootSST = lastParsing.antlrResult.accept(finder);
+                SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
                 // store with parent scope
                 ScopeInfo.write(dos, rootSST.getScope().getParent());
                 dos.writeInt(rootSST.getStartOffset());
@@ -205,12 +209,18 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         Source source;
         SSTNode antlrResult;
         ScopeInfo globalScope;
+
+        public CacheItem(Source source, SSTNode antlrResult, ScopeInfo globalScope) {
+            this.source = source;
+            this.antlrResult = antlrResult;
+            this.globalScope = globalScope;
+        }
     }
 
-    private final CacheItem lastParsing = new CacheItem();
+    private final CacheItem cachedLastAntlrResult = new CacheItem(null, null, null);
 
     public ScopeInfo getLastGlobaScope() {
-        return lastParsing.globalScope;
+        return cachedLastAntlrResult.globalScope;
     }
 
     @Override
@@ -288,10 +298,14 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             }
         }
 
-        lastParsing.globalScope = sstFactory.getScopeEnvironment().getGlobalScope();
-        lastParsing.antlrResult = parserSSTResult;
-        lastParsing.source = source;
-        return lastParsing;
+        if (!IN_IMAGE_BUILD_TIME) {
+            cachedLastAntlrResult.globalScope = sstFactory.getScopeEnvironment().getGlobalScope();
+            cachedLastAntlrResult.antlrResult = parserSSTResult;
+            cachedLastAntlrResult.source = source;
+            return cachedLastAntlrResult;
+        } else {
+            return new CacheItem(source, parserSSTResult, sstFactory.getScopeEnvironment().getGlobalScope());
+        }
     }
 
     @TruffleBoundary
