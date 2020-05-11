@@ -858,7 +858,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public Object asIndexWithState(ThreadState state,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "5") PythonObjectLibrary lib,
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached IsSubtypeNode isSubtype,

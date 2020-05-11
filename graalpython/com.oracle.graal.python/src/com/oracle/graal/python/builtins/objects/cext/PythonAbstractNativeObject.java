@@ -180,7 +180,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Exclusive @Cached GetLazyClassNode getClass,
                     @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                     // arguments for super-implementation call
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "5") PythonObjectLibrary lib,
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached IsSubtypeNode isSubtype,
