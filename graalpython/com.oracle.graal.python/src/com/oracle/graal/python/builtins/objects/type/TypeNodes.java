@@ -97,6 +97,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -564,11 +565,12 @@ public abstract class TypeNodes {
         static PythonAbstractClass doNative(PythonNativeClass obj,
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBaseNode,
-                        @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
+                        @Cached("createClassProfile()") ValueProfile resultTypeProfile,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
             if (PGuards.isPNone(result)) {
                 return null;
-            } else if (PGuards.isClass(result)) {
+            } else if (PGuards.isClass(result, lib)) {
                 return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();
@@ -804,7 +806,7 @@ public abstract class TypeNodes {
             return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
         }
 
-        @Specialization(guards = "!isClass(obj)")
+        @Fallback
         boolean doOther(@SuppressWarnings("unused") Object obj) {
             return false;
         }

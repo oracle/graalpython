@@ -64,7 +64,9 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "java")
 public class JavaModuleBuiltins extends PythonBuiltins {
@@ -173,8 +175,10 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})
-        boolean check(Object object, TruffleObject klass) {
+        @Specialization(guards = {"!isForeignObject(object, iLibObject)", "isForeignObject(klass, iLibKlass)"}, limit = "3")
+        boolean check(Object object, TruffleObject klass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary iLibObject,
+                        @SuppressWarnings("unused") @CachedLibrary("klass") InteropLibrary iLibKlass) {
             Env env = getContext().getEnv();
             try {
                 Object hostKlass = env.asHostObject(klass);
@@ -187,8 +191,10 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "isForeignObject(klass)"})
-        boolean checkForeign(Object object, TruffleObject klass) {
+        @Specialization(guards = {"isForeignObject(object, iLibObject)", "isForeignObject(klass, iLibKlass)"}, limit = "3")
+        boolean checkForeign(Object object, TruffleObject klass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary iLibObject,
+                        @SuppressWarnings("unused") @CachedLibrary("klass") InteropLibrary iLibKlass) {
             Env env = getContext().getEnv();
             try {
                 Object hostObject = env.asHostObject(object);

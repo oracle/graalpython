@@ -56,7 +56,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -73,11 +72,11 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     // every 'PyObject *' provides 'ob_base', 'ob_type', and 'ob_refcnt'
     @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {GP_OBJECT, OB_BASE.getMemberName(), OB_TYPE.getMemberName(), OB_REFCNT.getMemberName()};
 
-    public TruffleObjectNativeWrapper(TruffleObject foreignObject) {
+    public TruffleObjectNativeWrapper(Object foreignObject) {
         super(foreignObject);
     }
 
-    public static TruffleObjectNativeWrapper wrap(TruffleObject foreignObject) {
+    public static TruffleObjectNativeWrapper wrap(Object foreignObject) {
         assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
         return new TruffleObjectNativeWrapper(foreignObject);
     }

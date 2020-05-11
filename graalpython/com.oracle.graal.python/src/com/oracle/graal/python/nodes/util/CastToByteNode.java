@@ -155,7 +155,7 @@ public abstract class CastToByteNode extends Node {
         return doIntOvf(getItemNode.executeInt(frame, getStorageNode.execute(value), 0));
     }
 
-    @Specialization(guards = "isForeignObject(value)", limit = "1")
+    @Specialization(guards = "isForeignObject(value, lib)", limit = "1")
     protected byte doForeign(Object value,
                     @CachedLibrary("value") InteropLibrary lib) {
         if (lib.fitsInByte(value)) {

@@ -66,6 +66,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonTypes.class)
@@ -109,11 +111,12 @@ public abstract class CallNode extends PNodeWithContext {
         return executeInternal(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    @Specialization(guards = "!isCallable(callableObject) || isClass(callableObject)")
+    @Specialization(guards = "!isCallable(callableObject) || isClass(callableObject, iLib)", limit = "3")
     protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Cached PRaiseNode raise,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode) {
+                    @Cached("create()") CallVarargsMethodNode callCallNode,
+                    @SuppressWarnings("unused") @CachedLibrary("callableObject") InteropLibrary iLib) {
         Object call = callAttrGetterNode.execute(callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
@@ -164,20 +167,22 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(guards = "!isFunction(callable.getFunction())")
+    @Specialization(guards = "!isFunction(callable.getFunction())", limit = "3")
     protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached PRaiseNode raise,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
+                    @Cached("create()") CallVarargsMethodNode callCallNode,
+                    @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
+        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
     }
 
-    @Specialization(guards = "!isFunction(callable.getFunction())")
+    @Specialization(guards = "!isFunction(callable.getFunction())", limit = "3")
     protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached PRaiseNode raise,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
+                    @Cached("create()") CallVarargsMethodNode callCallNode,
+                    @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
+        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
     }
 
     @Specialization
