@@ -65,6 +65,7 @@ _BASE_NAME = "unittests"
 TXT_RESULTS_NAME = "{}.txt.gz".format(_BASE_NAME)
 CSV_RESULTS_NAME = "{}.csv".format(_BASE_NAME)
 HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
+LATEST_HTML_NAME = "latest.html"
 
 HR = "".join(['-' for _ in range(120)])
 
@@ -83,23 +84,23 @@ PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
 PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
 PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
 
-TEST_TYPES = ('array','buffer','code','frame','long','memoryview','unicode','exceptions',
+TEST_TYPES = tuple(sorted(('array','buffer','code','frame','long','memoryview','unicode','exceptions',
             'baseexception','range','builtin','bytes','thread','property','class','dictviews',
             'sys','imp','rlcompleter','types','coroutines','dictcomps','int_literal','mmap',
             'module','numeric_tower','syntax','traceback','typechecks','int','keyword','raise',
             'descr','generators','list','complex','tuple','enumerate','super','float',
-            'bool','fstring','dict','iter','string','scope','with','set')
+            'bool','fstring','dict','iter','string','scope','with','set')))
 
-TEST_APP_SCRIPTING = ('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
+TEST_APP_SCRIPTING = tuple(sorted(('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
             'pickle','pickletester','pickle','picklebuffer','pickletools','codecs','functools',
             'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport','re',
-            'zipapp','gzip','bz2','builtin')
+            'zipapp','gzip','bz2','builtin')))
 
-TEST_SERVER_SCRIPTING_DS = ('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
+TEST_SERVER_SCRIPTING_DS = tuple(sorted(('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
                             'fork','forkserver','main_handling','spawn','socket','socket','socketserver',
                             'signal','mmap','resource','thread','dummy_thread','threading','threading_local',
                             'threadsignals','dummy_threading','threadedtempfile','thread','hashlib',
-                            'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING
+                            'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING))
 
 
 USE_CASE_GROUPS = {
@@ -862,6 +863,15 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
     with open(report_name, 'w') as HTML:
         HTML.write(report)
 
+def generate_latest(output_name, html_report_path):
+    contents = '''
+<html>
+<head><style type="text/css"> body { margin:0; overflow:hidden; } #fr { height:100%; left:0px; position:absolute; top:0px; width:100%; }</style></head>
+<body><iframe id="fr" src="''' + html_report_path + '''" frameborder="0"></iframe></body>
+</html>
+'''
+    with open(output_name, 'w') as HTML:
+        HTML.write(contents)
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -882,6 +892,7 @@ def main(prog, args):
                                                    "the only_tets option takes precedence", default=None)
     parser.add_argument("-r", "--regression_running_tests", help="Regression threshold for running tests.", type=float,
                         default=None)
+    parser.add_argument("--no_latest", help="Don't generate latest.html file.", action="store_true")
     parser.add_argument("-g", "--gate", help="Run in gate mode (Skip cpython runs; Do not upload results; "
                                              "Detect regressions).", action="store_true")
     parser.add_argument("path", help="Path to store the csv output and logs to.", nargs='?', default=None)
@@ -960,6 +971,9 @@ def main(prog, args):
         scp(txt_report_path, flags.path)
         scp(csv_report_path, flags.path)
         scp(html_report_path, flags.path)
+        if not flags.no_latest:
+            generate_latest(LATEST_HTML_NAME, html_report_path)
+            scp(LATEST_HTML_NAME, flags.path)
 
     gate_failed = False
     if flags.gate and flags.regression_running_tests:
