@@ -92,13 +92,13 @@ TEST_TYPES = ('array','buffer','code','frame','long','memoryview','unicode','exc
 
 TEST_APP_SCRIPTING = ('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
             'pickle','pickletester','pickle','picklebuffer','pickletools','codecs','functools',
-            'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport',
+            'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport','re',
             'zipapp','gzip','bz2','builtin')
 
 TEST_SERVER_SCRIPTING_DS = ('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
                             'fork','forkserver','main_handling','spawn','socket','socket','socketserver',
                             'signal','mmap','resource','thread','dummy_thread','threading','threading_local',
-                            'threadsignals','dummy_threading','threadedtempfile','thread','hashlib','re',
+                            'threadsignals','dummy_threading','threadedtempfile','thread','hashlib',
                             'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING
 
 
