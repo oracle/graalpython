@@ -774,8 +774,8 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
                         var data = tr.data('errors');
                         if (data) {{
                             function formatEntry(entry) {{
-                                var description = entry[0][0];
-                                var text = ('' + entry[0][1]).replace(/(.{{195}} )/g, '$1<br/>&nbsp;&nbsp;&nbsp;&nbsp;'); // break long lines
+                                var description = ('' + entry[0][0]).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                                var text = ('' + entry[0][1]).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/(.{{195}} )/g, '$1<br/>&nbsp;&nbsp;&nbsp;&nbsp;'); // break long lines
                                 var count = (entry[1] > 1 ? ('<font color="red"> (x ' + entry[1] + ')</font>') : '');
                                 return description + ': ' + text + count + '<br/>';
                             }}
