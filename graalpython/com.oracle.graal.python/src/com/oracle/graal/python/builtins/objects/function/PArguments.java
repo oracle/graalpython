@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,6 +38,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 //@formatter:off
 /**
@@ -354,6 +355,10 @@ public final class PArguments {
     public static ThreadState getThreadState(VirtualFrame frame) {
         assert frame != null : "cannot get thread state without a frame";
         return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getException(frame));
+    }
+
+    public static ThreadState getThreadStateOrNull(VirtualFrame frame, ConditionProfile hasFrameProfile) {
+        return hasFrameProfile.profile(frame != null) ? getThreadState(frame) : null;
     }
 
     public static VirtualFrame frameForCall(ThreadState frame) {

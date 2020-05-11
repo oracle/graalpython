@@ -1117,9 +1117,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(StarSSTNode node) {
         PNode result = StarredExpressionNode.create((ExpressionNode) node.value.accept(this));
-        // TODO: find out, whether we really don't need the source section for this.
-        // The old parser doesn't generater it.
-        // result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
 
