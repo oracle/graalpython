@@ -151,7 +151,7 @@ public abstract class HashingStorageLibrary extends Library {
     /**
      * @see #setItemWithState(HashingStorage, Object, Object, ThreadState)
      */
-    public HashingStorage setItem(HashingStorage self, Object key, Object value) {
+    public final HashingStorage setItem(HashingStorage self, Object key, Object value) {
         return setItemWithState(self, key, value, null);
     }
 
@@ -351,6 +351,7 @@ public abstract class HashingStorageLibrary extends Library {
             this.iterator = iterator;
         }
 
+        @Override
         public HashingStorageIterator<T> iterator() {
             return new HashingStorageIterator<T>(iterator);
         }
@@ -366,11 +367,13 @@ public abstract class HashingStorageLibrary extends Library {
             this.iterator = iterator;
         }
 
+        @Override
         @TruffleBoundary
         public boolean hasNext() {
             return iterator.hasNext();
         }
 
+        @Override
         @TruffleBoundary
         public T next() {
             return iterator.next();
