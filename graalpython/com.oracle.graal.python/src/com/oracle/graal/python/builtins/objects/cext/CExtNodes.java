@@ -356,7 +356,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doIntegerSmall")
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallInteger(i)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallInteger(i)) {
                 return doIntegerSmall(cextContext, i, contextRef);
             }
             return PrimitiveNativeWrapper.createInt(i);
@@ -375,7 +375,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doLongSmall")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallLong(l)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallLong(l)) {
                 return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
@@ -604,7 +604,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doIntegerSmall")
         static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallInteger(i)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallInteger(i)) {
                 return doIntegerSmall(cextContext, i, contextRef);
             }
             return PrimitiveNativeWrapper.createInt(i);
@@ -613,7 +613,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doLongSmall")
         static PrimitiveNativeWrapper doLong(CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallLong(l)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallLong(l)) {
                 return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
