@@ -122,7 +122,7 @@ public class PosixResources {
         @Override
         public int exitValue() {
             for (Process child : children) {
-                if (child != this && !child.isAlive()) {
+                if (child != null && child != this && !child.isAlive()) {
                     return child.exitValue();
                 }
             }
