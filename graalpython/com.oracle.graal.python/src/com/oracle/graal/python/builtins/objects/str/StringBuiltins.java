@@ -634,129 +634,41 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FindBaseNode extends PythonBuiltinNode {
-
-        @Child private PythonObjectLibrary lib;
-
-        private PythonObjectLibrary getLibrary() {
-            if (lib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
-            }
-            return lib;
-        }
-
-        private SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
-            PSlice tmpSlice = factory().createSlice(getLibrary().asSize(start), getLibrary().asSize(end), 1);
-            return tmpSlice.computeIndices(length);
-        }
-
-        private SliceInfo computeSlice(VirtualFrame frame, int length, Object startO, Object endO) {
-            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(startO, PArguments.getThreadState(frame));
-            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(endO, PArguments.getThreadState(frame));
-            return PSlice.computeIndices(start, end, 1, length);
-        }
-
-        @Specialization
-        Object findString(String self, String str, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(self, str);
-        }
-
-        @Specialization
-        Object findStringStart(VirtualFrame frame, String self, String str, long start, @SuppressWarnings("unused") PNone end) {
-            int len = self.length();
-            SliceInfo info = computeSlice(frame, len, start, len);
-            if (info.length == 0) {
-                return -1;
-            }
-            return findWithBounds(self, str, info.start, info.stop);
-        }
-
-        @Specialization
-        Object findStringEnd(VirtualFrame frame, String self, String str, @SuppressWarnings("unused") PNone start, long end) {
-            SliceInfo info = computeSlice(frame, self.length(), 0, end);
-            if (info.length == 0) {
-                return -1;
-            }
-            return findWithBounds(self, str, info.start, info.stop);
-        }
-
-        @Specialization
-        Object findStringStartEnd(VirtualFrame frame, String self, String str, long start, long end) {
-            SliceInfo info = computeSlice(frame, self.length(), start, end);
-            if (info.length == 0) {
-                return -1;
-            }
-            return findWithBounds(self, str, info.start, info.stop);
-        }
-
-        @Specialization
-        Object findStringGeneric(VirtualFrame frame, String self, String str, Object start, Object end) {
-            SliceInfo info = computeSlice(frame, self.length(), start, end);
-            if (info.length == 0) {
-                return -1;
-            }
-            return findWithBounds(self, str, info.start, info.stop);
-        }
-
-        @Specialization
-        Object findGeneric(VirtualFrame frame, Object self, Object sub, Object start, Object end,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castSubNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "find", self);
-            String subStr = castSubNode.cast(sub, MUST_BE_STR, sub);
-            return findStringGeneric(frame, selfStr, subStr, start, end);
-        }
-
-        @SuppressWarnings("unused")
-        protected int find(String self, String findStr) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
-        }
-
-        @SuppressWarnings("unused")
-        protected int findWithBounds(String self, String str, int start, int end) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
-        }
-    }
-
     // str.rfind(str[, start[, end]])
     @Builtin(name = "rfind", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public abstract static class RFindNode extends FindBaseNode {
+    public abstract static class RFindNode extends PythonQuaternaryBuiltinNode {
 
-        @Override
-        @TruffleBoundary
-        protected int find(String self, String findStr) {
-            return self.lastIndexOf(findStr);
+        @Specialization
+        public int rfind(VirtualFrame frame, String self, Object substr, Object start, Object end,
+                        @Cached StringNodes.RFindNode rFindNode) {
+            return rFindNode.execute(frame, self, substr, start, end);
         }
 
-        @Override
-        @TruffleBoundary
-        protected int findWithBounds(String self, String str, int start, int end) {
-            int idx = self.lastIndexOf(str, end - str.length());
-            return idx >= start ? idx : -1;
+        @Specialization
+        public int rfind(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+                        @Cached CastToJavaStringCheckedNode castNode,
+                        @Cached StringNodes.RFindNode rFindNode) {
+            return rFindNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "rfind", self), substr, start, end);
         }
     }
 
     // str.find(str[, start[, end]])
     @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public abstract static class FindNode extends FindBaseNode {
+    public abstract static class FindNode extends PythonQuaternaryBuiltinNode {
 
-        @Override
-        @TruffleBoundary
-        protected int find(String self, String findStr) {
-            return self.indexOf(findStr);
+        @Specialization
+        public int find(VirtualFrame frame, String self, Object substr, Object start, Object end,
+                        @Cached StringNodes.FindNode findNode) {
+            return findNode.execute(frame, self, substr, start, end);
         }
 
-        @Override
-        @TruffleBoundary
-        protected int findWithBounds(String self, String str, int start, int end) {
-            int idx = self.indexOf(str, start);
-            return idx + str.length() <= end ? idx : -1;
+        @Specialization
+        public int find(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+                        @Cached CastToJavaStringCheckedNode castNode,
+                        @Cached StringNodes.FindNode findNode) {
+            return findNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "find", self), substr, start, end);
         }
     }
 
