@@ -3014,21 +3014,22 @@ public abstract class CExtNodes {
         public abstract void execute(Object delegate, PythonNativeWrapper nativeWrapper);
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(nativeWrapper)")
-        static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper) {
+        static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile) {
             // For non-temporary wrappers (all wrappers that need to preserve identity):
             // If this assertion fails, it indicates that the native code still uses a free'd native
             // wrapper.
             // TODO(fa): explicitly mark native wrappers to be identity preserving
             assert !(nativeWrapper instanceof PythonObjectNativeWrapper) || delegate.getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
-            delegate.clearNativeWrapper();
+            delegate.clearNativeWrapper(hasHandleValidAssumptionProfile);
         }
 
         @Specialization(guards = "delegate == null")
         static void doPrimitiveNativeWrapper(@SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
-            if (profile.profile(nativeWrapper.getHandleValidAssumption() != null)) {
+            if (hasHandleValidAssumptionProfile.profile(nativeWrapper.getHandleValidAssumption() != null)) {
                 nativeWrapper.getHandleValidAssumption().invalidate("releasing handle for native wrapper");
             }
         }
@@ -3036,10 +3037,11 @@ public abstract class CExtNodes {
         @Specialization(guards = "delegate != null")
         static void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
                 assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
-                delegate.clearNativeWrapper();
+                delegate.clearNativeWrapper(hasHandleValidAssumptionProfile);
             }
         }
 
