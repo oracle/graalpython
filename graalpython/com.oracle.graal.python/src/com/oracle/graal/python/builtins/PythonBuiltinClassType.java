@@ -131,6 +131,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     GeneratorExit("GeneratorExit", BuiltinNames.BUILTINS),
     Exception("Exception", BuiltinNames.BUILTINS),
     StopIteration("StopIteration", BuiltinNames.BUILTINS),
+    StopAsyncIteration("StopAsyncIteration", BuiltinNames.BUILTINS),
     ArithmeticError("ArithmeticError", BuiltinNames.BUILTINS),
     FloatingPointError("FloatingPointError", BuiltinNames.BUILTINS),
     OverflowError("OverflowError", BuiltinNames.BUILTINS),
@@ -280,6 +281,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         GeneratorExit.base = PBaseException;
         Exception.base = PBaseException;
         StopIteration.base = Exception;
+        StopAsyncIteration.base = Exception;
         ArithmeticError.base = Exception;
         FloatingPointError.base = ArithmeticError;
         OverflowError.base = ArithmeticError;
@@ -300,10 +302,10 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         BlockingIOError.base = OSError;
         ChildProcessError.base = OSError;
         ConnectionError.base = OSError;
-        BrokenPipeError.base = OSError;
-        ConnectionAbortedError.base = OSError;
-        ConnectionRefusedError.base = OSError;
-        ConnectionResetError.base = OSError;
+        BrokenPipeError.base = ConnectionError;
+        ConnectionAbortedError.base = ConnectionError;
+        ConnectionRefusedError.base = ConnectionError;
+        ConnectionResetError.base = ConnectionError;
         FileExistsError.base = OSError;
         FileNotFoundError.base = OSError;
         InterruptedError.base = OSError;
@@ -318,7 +320,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;
-        NotImplementedError.base = Exception;
+        NotImplementedError.base = RuntimeError;
         SyntaxError.base = Exception;
         IndentationError.base = SyntaxError;
         TabError.base = IndentationError;
