@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -77,7 +78,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
         this.getStorage().define(__NAME__, name);
         if (enclosingType != null) {
-            this.getStorage().define(__QUALNAME__, GetNameNode.doSlowPath(enclosingType) + "." + name);
+            this.getStorage().define(__QUALNAME__, PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name));
         } else {
             this.getStorage().define(__QUALNAME__, name);
         }

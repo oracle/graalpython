@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
@@ -123,7 +124,7 @@ public abstract class AbstractImportNode extends StatementNode {
         }
         if (emulateJython()) {
             if (fromList.length > 0) {
-                getContext().pushCurrentImport(name + "." + fromList[0]);
+                getContext().pushCurrentImport(PString.cat(name, ".", fromList[0]));
             } else {
                 getContext().pushCurrentImport(name);
             }
