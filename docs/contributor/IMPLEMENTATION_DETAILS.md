@@ -3,11 +3,10 @@
 ## Abstract Operations on Python Objects
 
 Many generic operations on Python objects in CPython are defined in the header
-files `abstract.c` and `abstract.h`. These operations are widely used and their
+files `object.h` and `abstract.h`. These operations are widely used and their
 interplay and intricacies are the cause for the conversion, error message, and
 control flow bugs when not mimicked correctly. Our current approach is to
-provide many of these abstract operations as part of the
-`PythonObjectLibrary`.
+provide many of these abstract operations as part of the `PythonObjectLibrary`.
 
 ### Common operations in the PythonObjectLibrary
 
