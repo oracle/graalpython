@@ -360,7 +360,13 @@ public abstract class HashingStorage {
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
-            return new HashingStorage[]{self, lib.setItem(other, key, lib.getItem(self, key))};
+            HashingStorage newOther = lib.setItem(other, key, lib.getItem(self, key));
+            if (CompilerDirectives.inInterpreter() && other == newOther) {
+                // Avoid the allocation in interpreter if possible
+                return accumulator;
+            } else {
+                return new HashingStorage[]{self, newOther};
+            }
         }
     }
 
@@ -450,7 +456,7 @@ public abstract class HashingStorage {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, "dictionary changed during comparison operation");
             }
             if (hashLib.equals(selfValue, otherValue, hashLib)) {
-                return new HashingStorage[]{self, other};
+                return accumulator;
             } else {
                 throw AbortIteration.INSTANCE;
             }
@@ -499,7 +505,12 @@ public abstract class HashingStorage {
             if (value != null) {
                 output = lib.setItem(output, key, value);
             }
-            return new HashingStorage[]{other, output};
+            if (CompilerDirectives.inInterpreter() && output == accumulator[1]) {
+                // Avoid the allocation in interpreter if possible
+                return accumulator;
+            } else {
+                return new HashingStorage[]{other, output};
+            }
         }
     }
 
@@ -569,7 +580,12 @@ public abstract class HashingStorage {
             if (!lib.hasKey(other, key)) {
                 output = lib.setItem(output, key, lib.getItem(self, key));
             }
-            return new HashingStorage[]{self, other, output};
+            if (CompilerDirectives.inInterpreter() && output == accumulator[2]) {
+                // Avoid the allocation in interpreter if possible
+                return accumulator;
+            } else {
+                return new HashingStorage[]{self, other, output};
+            }
         }
     }
 
