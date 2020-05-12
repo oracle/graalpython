@@ -166,6 +166,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     ZipImportError("ZipImportError", "zipimport"),
     ZLibError("error", "zlib"),
     LZMAError("LZMAError", "_lzma"),
+    StructError("StructError", "_struct"),
 
     // todo: all OS errors
 

@@ -224,6 +224,7 @@ public final class Python3Core implements PythonCore {
                         "_io",
                         "_frozen_importlib",
                         "classes",
+                        "__graalpython__",
                         "_weakref",
                         "set",
                         "itertools",
@@ -258,6 +259,7 @@ public final class Python3Core implements PythonCore {
                         "pip_hook",
                         "_lsprof",
                         "marshal",
+                        "_struct",
                         "_lzma"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
