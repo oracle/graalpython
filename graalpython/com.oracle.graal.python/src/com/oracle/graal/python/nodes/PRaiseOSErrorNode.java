@@ -98,7 +98,8 @@ public abstract class PRaiseOSErrorNode extends Node {
 
     public final PException raiseOSError(Frame frame, Exception e, String filename, String filename2) {
         ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(e);
-        return execute(frame, new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message, (filename != null) ? filename : PNone.NONE, PNone.NONE, (filename2 != null) ? filename2 : PNone.NONE});
+        return execute(frame, new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message, (filename != null) ? filename : PNone.NONE, PNone.NONE,
+                        (filename2 != null) ? filename2 : PNone.NONE});
     }
 
     @Specialization
