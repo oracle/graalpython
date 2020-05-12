@@ -37,57 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# __all__ = ['Struct', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack', 'pack_into', 'unpack', 'unpack_from']
 
-
-@__graalpython__.builtin
-def _clearcache(*args):
-    import _cpython_struct
-    return _cpython_struct.clearcache(*args)
-
-
-@__graalpython__.builtin
-def calcsize(fmt):
-    import _cpython_struct
-    return _cpython_struct.calcsize(fmt)
-
-
-@__graalpython__.builtin
-def iter_unpack(fmt, buffer):
-    import _cpython_struct
-    return _cpython_struct.calcsize(fmt, buffer)
-
-
-@__graalpython__.builtin
-def pack(fmt, *vals):
-    import _cpython_struct
-    return _cpython_struct.pack(fmt, *vals)
-
-
-@__graalpython__.builtin
-def pack_into(fmt, buffer, offset, *vals):
-    import _cpython_struct
-    return _cpython_struct.pack_into(fmt, buffer, offset, *vals)
-
-
-@__graalpython__.builtin
-def unpack(fmt, *vals):
-    import _cpython_struct
-    return _cpython_struct.unpack(fmt, *vals)
-
-
-@__graalpython__.builtin
-def unpack_from(fmt, buffer, offset=0):
-    import _cpython_struct
-    return _cpython_struct.unpack_from(fmt, buffer, offset=offset)
-
-
-# error and Struct
-def __getattr__(name):
-    if name in ['error', 'Struct']:
-        import _cpython_struct
-        return __getattr__(_cpython_struct, name)
-    raise AttributeError("module {} has no attribute {}".format(__name__, name))
-
-
-__graalpython__.import_current_as_named_module("_struct")
+__graalpython__.lazy_attribute_loading_from_module(
+    ['Struct', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack', 'pack_into', 'unpack', 'unpack_from'],
+    '_cpython_struct', globals())
+__graalpython__.import_current_as_named_module("_struct", globals())

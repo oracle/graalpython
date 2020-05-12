@@ -39,11 +39,12 @@
 
 
 @builtin
-def import_current_as_named_module(module_name):
+def import_current_as_named_module(module_name, globals):
     """
     load a builtin anonymous module which does not have a Truffle land builtin module counter part
 
     :param module_name: the module name to load as
+    :param globals: the module globals (to update)
     :return: None
     """
     import sys
@@ -51,6 +52,31 @@ def import_current_as_named_module(module_name):
     if not module:
         module = type(sys)(module_name)
         sys.modules[module_name] = module
-    new_globals = dict(**globals())
+    new_globals = dict(**globals)
     new_globals.update(**module.__dict__)
     module.__dict__.update(**new_globals)
+
+
+@builtin
+def lazy_attribute_loading_from_module(attributes, module_name, globals):
+    """
+    used to lazily load attributes defined in another module via the __getattr__ mechanism.
+    This will only cache the attributes in the caller module.
+
+    :param attributes: a list of attributes names to be loaded lazily from the delagate module
+    :param module_name: the delegate module
+    :param globals: the module globals (to update)
+    :return:
+    """
+    def __getattr__(name):
+        if name in attributes:
+            delegate_module = __import__(module_name)
+            globals.update(delegate_module.__dict__)
+            globals['__all__'] = attributes
+            if '__getattr__' in globals:
+                del globals['__getattr__']
+            return getattr(delegate_module, name)
+        raise AttributeError("module '{}' does not have '{}' attribute".format(module_name, name))
+
+    globals['__getattr__'] = __getattr__
+    globals['__all__'] = ['__getattr__']
