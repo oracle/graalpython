@@ -41,7 +41,7 @@ import _imp
 import sys
 import _thread
 
-capi = capi_to_java = None
+capi = None
 _capi_hooks = []
 
 __builtins_module_dict = None
@@ -991,7 +991,7 @@ def AddGetSet(primary, name, getter, setter, doc, closure):
             # NOTE: The 'to_java' is intended and correct because this call will do a downcall an
             # all args will go through 'to_sulong' then. So, if we don't convert the pointer
             # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
-            return capi_to_java(getter_w(self, closure_converted))
+            return to_java(getter_w(self, closure_converted))
 
         fget = member_getter
     if setter:
@@ -1379,9 +1379,7 @@ def import_c_func(name):
 def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
-    global capi_to_java
     capi = capi_library
-    capi_to_java = import_c_func("to_java")
 
     initialize_member_accessors()
     initialize_datetime_capi()

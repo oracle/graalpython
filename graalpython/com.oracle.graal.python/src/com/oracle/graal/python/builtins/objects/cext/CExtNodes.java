@@ -1274,9 +1274,14 @@ public abstract class CExtNodes {
             return b;
         }
 
+        @Specialization
+        static double doDouble(@SuppressWarnings("unused") CExtContext nativeContext, double d) {
+            return d;
+        }
+
         protected static boolean isForeignObject(Object obj) {
             return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
-                            obj instanceof Long || obj instanceof Byte);
+                            obj instanceof Long || obj instanceof Byte || obj instanceof Double);
         }
     }
 
