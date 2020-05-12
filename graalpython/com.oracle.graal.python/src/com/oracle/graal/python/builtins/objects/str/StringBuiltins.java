@@ -1312,45 +1312,50 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, needsFrame = true)
     @GenerateNodeFactory
     public abstract static class IndexNode extends PythonQuaternaryBuiltinNode {
-
         @Specialization
-        int doStringString(String self, String substr, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            return indexOf(self, substr, 0, self.length(), errorProfile);
-        }
-
-        @Specialization
-        int doStringStringStart(String self, String substr, int start, @SuppressWarnings("unused") PNone end,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            return indexOf(self, substr, start, self.length(), errorProfile);
-        }
-
-        @Specialization
-        int doStringStringStartEnd(String self, String substr, int start, int end,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            return indexOf(self, substr, start, end, errorProfile);
-        }
-
-        @Specialization
-        int doGeneric(VirtualFrame frame, Object self, Object sub, Object start, Object end,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castSubNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
-            String subStr = castSubNode.cast(sub, MUST_BE_STR, sub);
-            int istart = PGuards.isPNone(start) ? 0 : lib.asSizeWithState(start, PArguments.getThreadState(frame));
-            int iend = PGuards.isPNone(end) ? selfStr.length() : lib.asSizeWithState(end, PArguments.getThreadState(frame));
-            return indexOf(selfStr, subStr, istart, iend, errorProfile);
-        }
-
-        private int indexOf(String self, String substr, int start, int end, ConditionProfile errorProfile) {
-            int idx = PString.indexOf(self, substr, start);
-            if (errorProfile.profile(idx > end || idx < 0)) {
+        public int index(VirtualFrame frame, String self, Object substr, Object start, Object end,
+                        @Cached StringNodes.FindNode findNode) {
+            int idx = findNode.execute(frame, self, substr, start, end);
+            if (idx < 0) {
                 throw raise(ValueError, "substring not found");
-            } else {
-                return idx;
             }
+            return idx;
+        }
+
+        @Specialization
+        public int index(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+                        @Cached CastToJavaStringCheckedNode castNode,
+                        @Cached StringNodes.FindNode findNode) {
+            int idx = findNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "index", self), substr, start, end);
+            if (idx < 0) {
+                throw raise(ValueError, "substring not found");
+            }
+            return idx;
+        }
+    }
+
+    @Builtin(name = "rindex", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, needsFrame = true)
+    @GenerateNodeFactory
+    public abstract static class RIndexNode extends PythonQuaternaryBuiltinNode {
+        @Specialization
+        public int rindex(VirtualFrame frame, String self, Object substr, Object start, Object end,
+                        @Cached StringNodes.RFindNode rFindNode) {
+            int idx = rFindNode.execute(frame, self, substr, start, end);
+            if (idx < 0) {
+                throw raise(ValueError, "substring not found");
+            }
+            return idx;
+        }
+
+        @Specialization
+        public int rindex(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+                        @Cached CastToJavaStringCheckedNode castNode,
+                        @Cached StringNodes.RFindNode rFindNode) {
+            int idx = rFindNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "rindex", self), substr, start, end);
+            if (idx < 0) {
+                throw raise(ValueError, "substring not found");
+            }
+            return idx;
         }
     }
 
