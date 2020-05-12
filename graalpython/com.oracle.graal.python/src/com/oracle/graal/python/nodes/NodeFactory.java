@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryIfNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
@@ -357,7 +356,7 @@ public class NodeFactory {
             case "%":
                 return BinaryArithmetic.Mod.create(left, right);
             case "**":
-                return TernaryArithmetic.Pow.create(left, right);
+                return BinaryArithmetic.Pow.create(left, right);
             case "<<":
                 return BinaryArithmetic.LShift.create(left, right);
             case ">>":
