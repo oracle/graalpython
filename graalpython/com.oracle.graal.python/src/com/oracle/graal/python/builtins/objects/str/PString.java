@@ -249,6 +249,11 @@ public final class PString extends PImmutableSequence {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, String sub, int fromIndex) {
+        return s.lastIndexOf(sub, fromIndex);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static String substring(String str, int start, int end) {
         return str.substring(start, end);
     }
