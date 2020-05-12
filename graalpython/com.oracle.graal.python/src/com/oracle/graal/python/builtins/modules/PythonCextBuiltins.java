@@ -281,7 +281,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -3276,10 +3275,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return execute(frame, self, arguments, PKeyword.EMPTY_KEYWORDS);
         }
 
-        public static int doConvert(CExtContext nativeContext, Object nativeNull, Object argv, Object nativeKwds, Object nativeFormat, Object nativeKwdnames, Object nativeVarargs,
-                        ReferenceLibrary kwdsRefLib,
-                        ReferenceLibrary kwdnamesRefLib,
-                        ValueProfile kwdsProfile,
+        public static int doConvert(CExtContext nativeContext, Object argv, Object nativeKwds, Object nativeFormat, Object nativeKwdnames, Object nativeVarargs,
+                        InteropLibrary kwdsRefLib,
+                        InteropLibrary kwdnamesRefLib,
+                        ConditionProfile kwdsProfile,
                         ConditionProfile kwdnamesProfile,
                         ConditionProfile functionNameProfile,
                         CExtAsPythonObjectNode kwdsToJavaNode,
@@ -3308,16 +3307,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             // sort out if kwds is native NULL
             Object kwds;
-            if (kwdsRefLib.isSame(nativeKwds, nativeNull)) {
+            if (kwdsProfile.profile(kwdsRefLib.isNull(nativeKwds))) {
                 kwds = null;
             } else {
                 kwds = kwdsToJavaNode.execute(nativeContext, nativeKwds);
             }
 
             // sort out if kwdnames is native NULL
-            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isSame(nativeKwdnames, nativeNull)) ? null : nativeKwdnames;
+            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
 
-            return parseTupleAndKeywordsNode.execute(functionName, argv, kwdsProfile.profile(kwds), format, kwdnames, nativeVarargs, nativeContext);
+            return parseTupleAndKeywordsNode.execute(functionName, argv, kwds, format, kwdnames, nativeVarargs, nativeContext);
         }
 
         static Object getKwds(Object[] arguments) {
@@ -3334,23 +3333,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class ParseTupleAndKeywordsNode extends ParseTupleAndKeywordsBaseNode {
 
         @Specialization(guards = "arguments.length == 5", limit = "2")
-        static int doConvert(Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static int doConvert(Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
-                        @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
-                        @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
+                        @CachedLibrary("getKwds(arguments)") InteropLibrary kwdsInteropLib,
+                        @CachedLibrary("getKwdnames(arguments)") InteropLibrary kwdnamesRefLib,
+                        @Cached("createBinaryProfile()") ConditionProfile kwdsProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
                         @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
                         @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
                         @Cached CastToJavaStringNode castToStringNode,
-                        @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             CExtContext nativeContext = context.getCApiContext();
             Object argv = argvToJavaNode.execute(arguments[0]);
-            Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
-            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, nativeNull, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsRefLib, kwdnamesRefLib, kwdsProfile,
+            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsInteropLib, kwdnamesRefLib, kwdsProfile,
                             kwdnamesProfile, functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
         }
 
@@ -3361,25 +3357,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class ParseTupleAndKeywordsVaListNode extends ParseTupleAndKeywordsBaseNode {
 
         @Specialization(guards = "arguments.length == 5", limit = "2")
-        static int doConvert(Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static int doConvert(Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
-                        @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
-                        @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
+                        @CachedLibrary("getKwds(arguments)") InteropLibrary kwdsRefLib,
+                        @CachedLibrary("getKwdnames(arguments)") InteropLibrary kwdnamesRefLib,
+                        @Cached("createBinaryProfile()") ConditionProfile kwdsProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
                         @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
                         @Cached PCallCExtFunction callMallocOutVarPtr,
                         @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
                         @Cached CastToJavaStringNode castToStringNode,
-                        @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             CExtContext nativeContext = context.getCApiContext();
-            Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
             Object argv = argvToJavaNode.execute(arguments[0]);
             VaListWrapper varargs = new VaListWrapper(nativeContext, arguments[4], callMallocOutVarPtr.call(nativeContext, NativeCAPISymbols.FUN_ALLOCATE_OUTVAR));
-            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, nativeNull, argv, arguments[1], arguments[2], arguments[3], varargs, kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
+            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], varargs, kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
                             functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
         }
     }
