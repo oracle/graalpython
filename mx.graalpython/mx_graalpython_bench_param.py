@@ -163,6 +163,9 @@ MESO_BENCHMARKS = {
     'threadring': ITER_10 + ['100_000_000'],
     'regexdna': ITER_25 + [],
     'knucleotide': ITER_25 + [],
+    'chaos': ITER_10 + ['10'],
+    'go': ITER_10 + [],
+    'raytrace-simple': ITER_10 + [],
     'lud': ITER_10 + ['512'],
     'mm': ITER_10 + ['10'],
     # Rodinia
