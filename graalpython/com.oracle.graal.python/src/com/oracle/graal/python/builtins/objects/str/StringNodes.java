@@ -463,7 +463,7 @@ public abstract class StringNodes {
         }
 
         private PSlice.SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
-            PSlice tmpSlice = factory().createSlice(getLibrary().asSize(start), getLibrary().asSize(end), 1);
+            PSlice tmpSlice = factory().createSlice(getLibrary().asSize(start, null), getLibrary().asSize(end, null), 1);
             // We need to distinguish between slice with length == 0 and a slice that's out of
             // bounds when matching empty strings
             if (start > length) {
@@ -473,8 +473,8 @@ public abstract class StringNodes {
         }
 
         private PSlice.SliceInfo computeSlice(VirtualFrame frame, int length, Object startO, Object endO) {
-            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(startO, PArguments.getThreadState(frame));
-            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(endO, PArguments.getThreadState(frame));
+            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(startO, null, PArguments.getThreadState(frame));
+            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(endO, null, PArguments.getThreadState(frame));
             // We need to distinguish between slice with length == 0 and a slice that's out of
             // bounds when matching empty strings
             if (start > length) {
