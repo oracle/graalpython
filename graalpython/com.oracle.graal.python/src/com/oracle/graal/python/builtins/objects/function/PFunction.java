@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -92,10 +93,10 @@ public class PFunction extends PythonObject {
     private static void addDefaultConstants(WriteAttributeToDynamicObjectNode writeAttrNode, DynamicObject storage, String name, String enclosingClassName) {
         if (writeAttrNode != null) {
             writeAttrNode.execute(storage, __NAME__, name);
-            writeAttrNode.execute(storage, __QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+            writeAttrNode.execute(storage, __QUALNAME__, enclosingClassName != null ? PString.cat(enclosingClassName, ".", name) : name);
         } else {
             storage.define(__NAME__, name);
-            storage.define(__QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+            storage.define(__QUALNAME__, enclosingClassName != null ? PString.cat(enclosingClassName, ".", name) : name);
         }
     }
 

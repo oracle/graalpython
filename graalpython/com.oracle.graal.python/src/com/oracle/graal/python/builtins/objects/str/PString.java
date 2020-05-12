@@ -273,4 +273,13 @@ public final class PString extends PImmutableSequence {
     public static boolean equals(String left, String other) {
         return left.equals(other);
     }
+
+    @TruffleBoundary
+    public static String cat(Object... args) {
+        StringBuilder sb = new StringBuilder();
+        for (Object arg : args) {
+            sb.append(arg);
+        }
+        return sb.toString();
+    }
 }

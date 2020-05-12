@@ -565,6 +565,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         Object stat(VirtualFrame frame, String path, boolean followSymlinks) {
+            if (path.isEmpty()) {
+                throw raiseOSError(frame, OSErrorEnum.ENOENT);
+            }
             try {
                 return statInternal(path, followSymlinks);
             } catch (Exception e) {
@@ -1483,7 +1486,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.NotImplementedError, "Only 0 or WNOHANG are supported for waitpid");
                 }
             } catch (IndexOutOfBoundsException e) {
-                throw raiseOSError(frame, OSErrorEnum.ESRCH);
+                if (pid <= 0) {
+                    throw raiseOSError(frame, OSErrorEnum.ECHILD);
+                } else {
+                    throw raiseOSError(frame, OSErrorEnum.ESRCH);
+                }
             } catch (InterruptedException e) {
                 throw raiseOSError(frame, OSErrorEnum.EINTR);
             }

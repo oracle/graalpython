@@ -108,7 +108,7 @@ public class ImportFromNode extends AbstractImportNode {
                     } else {
                         throw pe;
                     }
-                    String fullname = pkgname + "." + attr;
+                    String fullname = PString.cat(pkgname, ".", attr);
                     if (readModules == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         getItem = insert(GetItemNode.create());

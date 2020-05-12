@@ -29,15 +29,14 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
@@ -46,15 +45,13 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -214,7 +211,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return getContext().getEnv().asGuestValue(new String[]{StandardTags.TryBlockTag.CATCHES});
+        return new InteropArray(new String[]{StandardTags.TryBlockTag.CATCHES});
     }
 
     @ExportMessage
@@ -228,46 +225,30 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExportMessage
-    CatchesFunction readMember(String name,
-                    @Shared("getAttr") @Cached ReadAttributeFromObjectNode getattr) throws UnknownIdentifierException {
+    CatchesFunction readMember(String name) throws UnknownIdentifierException {
         if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
             if (catchesFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ArrayList<Object> literalCatches = new ArrayList<>();
-                PythonModule builtins = getContext().getBuiltins();
-                if (builtins == null) {
-                    return new CatchesFunction(null, null);
-                }
-
                 for (ExceptNode node : exceptNodes) {
                     PNode exceptType = node.getExceptType();
-                    if (exceptType instanceof ReadGlobalOrBuiltinNode) {
-                        try {
-                            literalCatches.add(getattr.execute(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
-                        } catch (PException e) {
-                        }
+                    if (exceptType instanceof ReadNameNode) {
+                        literalCatches.add(((ReadNameNode) exceptType).getAttributeId());
+                    } else if (exceptType instanceof ReadGlobalOrBuiltinNode) {
+                        literalCatches.add(((ReadGlobalOrBuiltinNode) exceptType).getAttributeId());
                     } else if (exceptType instanceof TupleLiteralNode) {
                         for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
-                            if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
-                                try {
-                                    literalCatches.add(getattr.execute(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
-                                } catch (PException e) {
-                                }
+                            if (tupleValue instanceof ReadNameNode) {
+                                literalCatches.add(((ReadNameNode) tupleValue).getAttributeId());
+                            } else if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
+                                literalCatches.add(((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId());
                             }
                         }
+                    } else {
+                        literalCatches.add("BaseException");
                     }
                 }
-
-                Object isinstanceFunc = getattr.execute(builtins, BuiltinNames.ISINSTANCE);
-                PTuple caughtClasses = factory().createTuple(literalCatches.toArray());
-
-                if (isinstanceFunc instanceof PBuiltinMethod) {
-                    RootCallTarget callTarget = ((PBuiltinMethod) isinstanceFunc).getFunction().getCallTarget();
-                    catchesFunction = new CatchesFunction(callTarget, caughtClasses);
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("isinstance was redefined, cannot check exceptions");
-                }
+                catchesFunction = new CatchesFunction(literalCatches.toArray(new String[0]));
             }
             return catchesFunction;
         } else {
@@ -276,32 +257,45 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExportMessage
-    Object invokeMember(String name, Object[] arguments,
-                    @Shared("getAttr") @Cached ReadAttributeFromObjectNode getattr) throws ArityException, UnknownIdentifierException {
+    Object invokeMember(String name, Object[] arguments) throws ArityException, UnknownIdentifierException {
         if (arguments.length != 1) {
             throw ArityException.create(1, arguments.length);
         }
-        return readMember(name, getattr).catches(arguments[0]);
+        return readMember(name).catches(arguments[0]);
     }
 
+    @ExportLibrary(InteropLibrary.class)
     static class CatchesFunction implements TruffleObject {
-        private final RootCallTarget isInstance;
-        private final Object[] args = PArguments.create(2);
+        private String[] caughtClasses;
 
-        CatchesFunction(RootCallTarget callTarget, PTuple caughtClasses) {
-            this.isInstance = callTarget;
-            PArguments.setArgument(args, 1, caughtClasses);
+        CatchesFunction(String[] caughtClasses) {
+            this.caughtClasses = caughtClasses;
         }
 
-        boolean catches(Object exception) {
-            if (isInstance == null) {
-                return false;
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage(name = "execute")
+        boolean catches(Object... arguments) throws ArityException {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
             }
+            Object exception = arguments[0];
             if (exception instanceof PBaseException) {
-                PArguments.setArgument(args, 0, exception);
-                try {
-                    return isInstance.call(args) == Boolean.TRUE;
-                } catch (PException e) {
+                PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                IsSubtypeNode isSubtype = IsSubtypeNode.getUncached();
+                ReadAttributeFromObjectNode readAttr = ReadAttributeFromObjectNode.getUncached();
+
+                for (String c : caughtClasses) {
+                    Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
+                    if (cls instanceof LazyPythonClass) {
+                        if (isSubtype.execute(lib.getLazyPythonClass(exception), (LazyPythonClass) cls)) {
+                            return true;
+                        }
+                    }
                 }
             }
             return false;

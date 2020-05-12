@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
+import java.nio.channels.FileLock;
 import java.nio.channels.Pipe;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
@@ -91,11 +92,16 @@ public class PosixResources {
         @Override
         public int waitFor() throws InterruptedException {
             for (Process child : children) {
-                if (child != null) {
-                    return child.waitFor();
+                if (child != null && child != this) {
+                    int exitCode = child.waitFor();
+                    int childIndex = children.indexOf(child);
+                    if (childIndex > 0) {
+                        children.set(childIndex, null);
+                    }
+                    return exitCode;
                 }
             }
-            return 0;
+            throw new IndexOutOfBoundsException();
         }
 
         @Override
@@ -116,7 +122,7 @@ public class PosixResources {
         @Override
         public int exitValue() {
             for (Process child : children) {
-                if (!child.isAlive()) {
+                if (child != null && child != this && !child.isAlive()) {
                     return child.exitValue();
                 }
             }
@@ -126,7 +132,7 @@ public class PosixResources {
         @Override
         public void destroy() {
             for (Process child : children) {
-                if (child != null) {
+                if (child != null && child != this) {
                     child.destroy();
                 }
             }
@@ -135,7 +141,7 @@ public class PosixResources {
         @Override
         public Process destroyForcibly() {
             for (Process child : children) {
-                if (child != null) {
+                if (child != null && child != this) {
                     child.destroyForcibly();
                 }
             }
@@ -146,6 +152,7 @@ public class PosixResources {
     private static class ChannelWrapper {
         Channel channel;
         int cnt;
+        FileLock lock;
 
         ChannelWrapper() {
             this(null, 0);
@@ -252,6 +259,23 @@ public class PosixResources {
             return classProfile.profile(channelWrapper.channel);
         }
         return null;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public FileLock getFileLock(int fd) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            return channelWrapper.lock;
+        }
+        return null;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void setFileLock(int fd, FileLock lock) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            channelWrapper.lock = lock;
+        }
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -395,8 +419,12 @@ public class PosixResources {
     }
 
     private Process getChild(int pid) throws IndexOutOfBoundsException {
-        if (pid < 0) {
+        if (pid < -1) {
             throw new IndexOutOfBoundsException("we do not support process groups");
+        } else if (pid == -1) {
+            // -1 - any child process.
+            // 0 - any child process with the same process group.
+            return children.get(0);
         } else {
             return children.get(pid);
         }
@@ -423,7 +451,9 @@ public class PosixResources {
     public int waitpid(int pid) throws IndexOutOfBoundsException, InterruptedException {
         Process process = getChild(pid);
         int exitStatus = process.waitFor();
-        children.set(pid, null);
+        if (pid > 0) { // cannot delete process groups
+            children.set(pid, null);
+        }
         return exitStatus;
     }
 

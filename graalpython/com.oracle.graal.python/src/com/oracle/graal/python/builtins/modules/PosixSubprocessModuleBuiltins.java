@@ -59,6 +59,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -219,8 +221,9 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     if (!(err instanceof WritableByteChannel)) {
                         throw raise(PythonBuiltinClassType.OSError, "there was an error writing the fork_exec error to the error pipe");
                     } else {
+                        ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
                         try {
-                            ((WritableByteChannel) err).write(ByteBuffer.wrap(("SubprocessError:0:" + e.getMessage()).getBytes()));
+                            ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
                         } catch (IOException e1) {
                         }
                     }

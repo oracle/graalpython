@@ -40,33 +40,17 @@
  */
 package com.oracle.graal.python.nodes;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.NonReadableChannelException;
-import java.nio.channels.NonWritableChannelException;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystemException;
-import java.nio.file.FileSystemLoopException;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.NotDirectoryException;
-import java.nio.file.NotLinkException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -81,8 +65,6 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(PGuards.class)
 public abstract class PRaiseOSErrorNode extends Node {
 
-    private static final Pattern ERRNO_PATTERN = Pattern.compile("error=(\\d+)");
-
     public abstract PException execute(Frame frame, Object[] arguments);
 
     public final PException raiseOSError(Frame frame, OSErrorEnum oserror) {
@@ -96,20 +78,6 @@ public abstract class PRaiseOSErrorNode extends Node {
     @TruffleBoundary
     private static String getMessage(Exception e) {
         return e.getMessage();
-    }
-
-    @TruffleBoundary
-    private static String getReason(FileSystemException e) {
-        return e.getReason();
-    }
-
-    @TruffleBoundary
-    private static OSErrorEnum tryFindErrnoFromMessage(Exception e) {
-        Matcher m = ERRNO_PATTERN.matcher(e.getMessage());
-        if (m.find()) {
-            return OSErrorEnum.fromNumber(Integer.parseInt(m.group(1)));
-        }
-        return null;
     }
 
     public final PException raiseOSError(Frame frame, OSErrorEnum oserror, String filename) {
@@ -129,57 +97,9 @@ public abstract class PRaiseOSErrorNode extends Node {
     }
 
     public final PException raiseOSError(Frame frame, Exception e, String filename, String filename2) {
-        OSErrorEnum oserror;
-        String message = null;
-        if (e instanceof IOException) {
-            if (e instanceof NoSuchFileException || e instanceof FileNotFoundException) {
-                oserror = OSErrorEnum.ENOENT;
-            } else if (e instanceof AccessDeniedException) {
-                oserror = OSErrorEnum.EACCES;
-            } else if (e instanceof FileAlreadyExistsException) {
-                oserror = OSErrorEnum.EEXIST;
-            } else if (e instanceof NotDirectoryException) {
-                oserror = OSErrorEnum.ENOTDIR;
-            } else if (e instanceof DirectoryNotEmptyException) {
-                oserror = OSErrorEnum.ENOTEMPTY;
-            } else if (e instanceof FileSystemLoopException) {
-                oserror = OSErrorEnum.ELOOP;
-            } else if (e instanceof NotLinkException) {
-                oserror = OSErrorEnum.EINVAL;
-            } else if (e instanceof ClosedChannelException) {
-                oserror = OSErrorEnum.EPIPE;
-            } else if (e instanceof FileSystemException) {
-                String reason = getReason((FileSystemException) e);
-                oserror = OSErrorEnum.fromMessage(reason);
-                if (oserror == null) {
-                    oserror = OSErrorEnum.EIO;
-                    message = reason;
-                }
-            } else { // Generic IOException
-                oserror = tryFindErrnoFromMessage(e);
-                if (oserror == null) {
-                    oserror = OSErrorEnum.EIO;
-                    message = getMessage(e);
-                }
-            }
-        } else if (e instanceof SecurityException) {
-            oserror = OSErrorEnum.EPERM;
-        } else if (e instanceof IllegalArgumentException) {
-            oserror = OSErrorEnum.EINVAL;
-        } else if (e instanceof UnsupportedOperationException) {
-            oserror = OSErrorEnum.EOPNOTSUPP;
-        } else if (e instanceof NonReadableChannelException || e instanceof NonWritableChannelException) {
-            oserror = OSErrorEnum.EBADF;
-        } else if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException(getMessage(e), e);
-        }
-        if (message == null) {
-            message = oserror.getMessage();
-        }
-        return execute(frame, new Object[]{oserror.getNumber(), message, (filename != null) ? filename : PNone.NONE, PNone.NONE, (filename2 != null) ? filename2 : PNone.NONE});
+        ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(e);
+        return execute(frame, new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message, (filename != null) ? filename : PNone.NONE, PNone.NONE,
+                        (filename2 != null) ? filename2 : PNone.NONE});
     }
 
     @Specialization

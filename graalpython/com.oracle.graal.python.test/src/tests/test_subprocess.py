@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -84,6 +84,7 @@ class TestSubprocess(unittest.TestCase):
         p = subprocess.Popen([sys.executable, "-c", "print('oh no')"])
         p.kill()
         assert True
+        p.wait()
 
     def test_waitpid(self):
         import os
@@ -92,3 +93,34 @@ class TestSubprocess(unittest.TestCase):
             assert os.waitpid(p.pid, os.WNOHANG) == (0, 0)
         finally:
             p.kill()
+            p.wait()
+
+    def test_waitpid_group_child(self):
+        import os
+        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
+        res = os.waitpid(0, 0)
+        assert res[1] == 0, res
+
+    def test_waitpid_any_child(self):
+        import os
+        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
+        res = os.waitpid(-1, 0)
+        assert res[1] == 0, res
+
+    def test_waitpid_no_child(self):
+        import os
+        try:
+            os.waitpid(-1, 0)
+        except ChildProcessError:
+            assert True
+        else:
+            assert False
+
+    def test_kill(self):
+        import os
+        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2); 42"])
+        try:
+            assert os.kill(p.pid, 9) is None
+        finally:
+            p.kill()
+            p.wait()
