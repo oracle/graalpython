@@ -93,7 +93,8 @@ def lazy_attributes_from_delegate(delegate_name, attributes, owner_module):
 
 
 @builtin
-def import_current_as_named_module_with_delegate(module_name, delegate_name, attributes=None, owner_globals=None):
+def import_current_as_named_module_with_delegate(module_name, delegate_name, delegate_attributes=None,
+                                                 owner_globals=None):
     owner_module = import_current_as_named_module(module_name, owner_globals=owner_globals)
-    if attributes:
-        lazy_attributes_from_delegate(delegate_name, attributes, owner_module)
+    if delegate_attributes:
+        lazy_attributes_from_delegate(delegate_name, delegate_attributes, owner_module)
