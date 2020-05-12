@@ -37,46 +37,63 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+
 
 @builtin
-def import_current_as_named_module(module_name, globals):
+def import_current_as_named_module(name, owner_globals=None):
     """
     load a builtin anonymous module which does not have a Truffle land builtin module counter part
 
-    :param module_name: the module name to load as
-    :param globals: the module globals (to update)
-    :return: None
+    :param name: the module name to load as
+    :param owner_globals: the module globals (to update)
+    :return: the loaded module
     """
-    import sys
-    module = sys.modules.get(module_name, None)
+    if owner_globals is None:
+        owner_globals = {}
+
+    module = sys.modules.get(name, None)
     if not module:
-        module = type(sys)(module_name)
-        sys.modules[module_name] = module
-    new_globals = dict(**globals)
+        module = type(sys)(name)
+        sys.modules[name] = module
+    new_globals = dict(**owner_globals)
     new_globals.update(**module.__dict__)
     module.__dict__.update(**new_globals)
+    return module
 
 
 @builtin
-def lazy_attribute_loading_from_module(attributes, module_name, globals):
+def lazy_attributes_from_delegate(delegate_name, attributes, owner_module):
     """
     used to lazily load attributes defined in another module via the __getattr__ mechanism.
     This will only cache the attributes in the caller module.
 
+    :param delegate_name: the delegate module
     :param attributes: a list of attributes names to be loaded lazily from the delagate module
-    :param module_name: the delegate module
-    :param globals: the module globals (to update)
+    :param owner_module: the owner module (where this is called from)
     :return:
     """
-    def __getattr__(name):
-        if name in attributes:
-            delegate_module = __import__(module_name)
-            globals.update(delegate_module.__dict__)
-            globals['__all__'] = attributes
-            if '__getattr__' in globals:
-                del globals['__getattr__']
-            return getattr(delegate_module, name)
-        raise AttributeError("module '{}' does not have '{}' attribute".format(module_name, name))
+    attributes.append('__all__')
 
-    globals['__getattr__'] = __getattr__
-    globals['__all__'] = ['__getattr__']
+    def __getattr__(attr):
+        if attr in attributes:
+            delegate_module = __import__(delegate_name)
+
+            new_globals = dict(**delegate_module.__dict__)
+            new_globals.update(**owner_module.__dict__)
+            owner_module.__dict__.update(**new_globals)
+
+            if '__getattr__' in owner_module.__dict__:
+                del owner_module.__dict__['__getattr__']
+
+            return getattr(delegate_module, attr)
+        raise AttributeError("module '{}' does not have '{}' attribute".format(delegate_name, attr))
+
+    owner_module.__dict__['__getattr__'] = __getattr__
+
+
+@builtin
+def import_current_as_named_module_with_delegate(module_name, delegate_name, attributes=None, owner_globals=None):
+    owner_module = import_current_as_named_module(module_name, owner_globals=owner_globals)
+    if attributes:
+        lazy_attributes_from_delegate(delegate_name, attributes, owner_module)

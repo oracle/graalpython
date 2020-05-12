@@ -38,7 +38,9 @@
 # SOFTWARE.
 
 
-__graalpython__.lazy_attribute_loading_from_module(
-    ['Struct', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack', 'pack_into', 'unpack', 'unpack_from'],
-    '_cpython_struct', globals())
-__graalpython__.import_current_as_named_module("_struct", globals())
+__graalpython__.import_current_as_named_module_with_delegate(
+    module_name="_struct",
+    delegate_name="_cpython_struct",
+    attributes=['Struct', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack', 'pack_into', 'unpack',
+                 'unpack_from'],
+    owner_globals=globals())
