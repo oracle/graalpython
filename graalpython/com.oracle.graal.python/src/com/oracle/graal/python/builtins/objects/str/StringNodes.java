@@ -464,12 +464,22 @@ public abstract class StringNodes {
 
         private PSlice.SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
             PSlice tmpSlice = factory().createSlice(getLibrary().asSize(start), getLibrary().asSize(end), 1);
+            // We need to distinguish between slice with length == 0 and a slice that's out of
+            // bounds when matching empty strings
+            if (start > length) {
+                return null;
+            }
             return tmpSlice.computeIndices(length);
         }
 
         private PSlice.SliceInfo computeSlice(VirtualFrame frame, int length, Object startO, Object endO) {
             int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(startO, PArguments.getThreadState(frame));
             int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(endO, PArguments.getThreadState(frame));
+            // We need to distinguish between slice with length == 0 and a slice that's out of
+            // bounds when matching empty strings
+            if (start > length) {
+                return null;
+            }
             return PSlice.computeIndices(start, end, 1, length);
         }
 
@@ -482,24 +492,36 @@ public abstract class StringNodes {
         int findStringStart(VirtualFrame frame, String self, String str, long start, @SuppressWarnings("unused") PNone end) {
             int len = self.length();
             PSlice.SliceInfo info = computeSlice(frame, len, start, len);
+            if (info == null) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         int findStringEnd(VirtualFrame frame, String self, String str, @SuppressWarnings("unused") PNone start, long end) {
             PSlice.SliceInfo info = computeSlice(frame, self.length(), 0, end);
+            if (info == null) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         int findStringStartEnd(VirtualFrame frame, String self, String str, long start, long end) {
             PSlice.SliceInfo info = computeSlice(frame, self.length(), start, end);
+            if (info == null) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         int findStringGeneric(VirtualFrame frame, String self, String str, Object start, Object end) {
             PSlice.SliceInfo info = computeSlice(frame, self.length(), start, end);
+            if (info == null) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
