@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵    class B...`
+ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False

@@ -47,9 +47,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import com.oracle.graal.python.util.Consumer;
-import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -76,7 +77,9 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.ShutdownHook;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -94,9 +97,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
-
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionKey;
 
 public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);

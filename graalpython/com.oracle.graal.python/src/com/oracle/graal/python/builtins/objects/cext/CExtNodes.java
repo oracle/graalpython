@@ -2870,10 +2870,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static void doWithFrame(Frame frame, PException e,
+        static void setCurrentException(Frame frame, PException e,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            e.getExceptionObject().reifyException(getCurrentFrameRef.execute(frame));
+            // TODO connect f_back
+            getCurrentFrameRef.execute(frame).markAsEscaped();
             context.setCurrentException(e);
         }
     }

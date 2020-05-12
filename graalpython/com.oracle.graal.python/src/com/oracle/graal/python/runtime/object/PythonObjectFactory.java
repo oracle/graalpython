@@ -32,6 +32,9 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.concurrent.Semaphore;
 
+import org.graalvm.collections.EconomicMap;
+import org.tukaani.xz.FinishableOutputStream;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -110,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -122,7 +126,6 @@ import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -151,9 +154,6 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import org.graalvm.collections.EconomicMap;
-import org.tukaani.xz.FinishableOutputStream;
 
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
@@ -564,9 +564,9 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PGenerator createGenerator(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, Object iterator) {
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, Object iterator) {
         return trace(PGenerator.create(name, callTargets, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode, this, iterator));
+                        numOfGeneratorForNode, numOfGeneratorTryNode, this, iterator));
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
@@ -614,12 +614,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFrame(threadState, code, globals, locals));
     }
 
-    public PTraceback createTraceback(PFrame frame, PException exception) {
-        return trace(new PTraceback(frame, exception));
+    public PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {
+        return trace(new PTraceback(frame, lineno, next));
     }
 
-    public PTraceback createTraceback(PFrame frame, PTraceback next) {
-        return trace(new PTraceback(frame, next));
+    public PTraceback createTraceback(LazyTraceback tb) {
+        return trace(new PTraceback(tb));
     }
 
     public PBaseException createBaseException(LazyPythonClass cls, PTuple args) {

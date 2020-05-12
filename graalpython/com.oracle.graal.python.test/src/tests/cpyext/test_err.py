@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,52 @@ def _reference_fetch(args):
         return sys.exc_info()[0]
 
 
+def compare_tracebacks(tb1, tb2):
+    while tb1 and tb2:
+        if tb1.tb_frame.f_code != tb2.tb_frame.f_code:
+            print(f"\ntb_next: {tb1.tb_frame.f_code} != {tb2.tb_frame.f_code}\n")
+            return False
+        tb1 = tb1.tb_next
+        tb2 = tb2.tb_next
+    return tb1 is None and tb2 is None
+
+
+def compare_frame_f_back_chain(f1, f2):
+    while f1 and f2:
+        if f1.f_code != f2.f_code:
+            print(f"\nframe: {f1.f_code} != {f2.f_code}\n")
+            return False
+        f1 = f1.f_back
+        f2 = f2.f_back
+    return f1 is None and f2 is None
+
+
+def _reference_fetch_tb_from_python(args):
+    try:
+        args[0]()
+    except:
+        tb = sys.exc_info()[2]
+        return tb.tb_next  # PyErr_Fetch doesn't contain the current frame
+
+
+def _reference_fetch_tb_f_back(args):
+    try:
+        args[0]()
+    except:
+        return sys.exc_info()[2].tb_frame.f_back
+
+
+def _raise_exception():
+    def inner():
+        raise OSError
+    def reraise(e):
+        raise e
+    try:
+        inner()
+    except Exception as e:
+        reraise(e)
+
+
 def _is_exception_class(exc):
     return isinstance(exc, type) and issubclass(exc, BaseException)
 
@@ -89,11 +135,11 @@ class Dummy:
     pass
 
 
-class TestPyNumber(CPyExtTestCase):
+class TestPyErr(CPyExtTestCase):
 
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyNumber, self).compile_module(name)
+        super(TestPyErr, self).compile_module(name)
 
     test_PyErr_SetString = CPyExtFunctionVoid(
         _reference_setstring,
@@ -312,7 +358,6 @@ class TestPyNumber(CPyExtTestCase):
             PyObject* typ = NULL;
             PyObject* val = NULL;
             PyObject* tb = NULL;
-            Py_ssize_t size = 3;
             PyErr_SetNone(exception_type);
             PyErr_Fetch(&typ, &val, &tb);
             return typ;
@@ -324,3 +369,65 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_Fetch",
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyErr_Fetch_tb_from_c = CPyExtFunctionVoid(
+        lambda args: None,
+        lambda: [(1,)],
+        code="""PyObject* wrap_PyErr_Fetch_tb_from_c() {
+            PyErr_SetString(PyExc_ArithmeticError, "test");
+            PyObject* typ = NULL;
+            PyObject* val = NULL;
+            PyObject* tb = NULL;
+            PyErr_Fetch(&typ, &val, &tb);
+            return tb == NULL? Py_None: tb;
+        }
+        """,
+        resultspec="O",
+        callfunction="wrap_PyErr_Fetch_tb_from_c",
+        cmpfunc=compare_tracebacks,
+    )
+
+    test_PyErr_Fetch_tb_from_python = CPyExtFunction(
+        _reference_fetch_tb_from_python,
+        lambda: (
+            (lambda: 1 / 0,),
+            (_raise_exception,),
+        ),
+        code="""PyObject* wrap_PyErr_Fetch_tb_from_python(PyObject* fn) {
+            PyObject_CallFunction(fn, NULL);
+            PyObject* typ = NULL;
+            PyObject* val = NULL;
+            PyObject* tb = NULL;
+            PyErr_Fetch(&typ, &val, &tb);
+            return tb;
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* fn"],
+        callfunction="wrap_PyErr_Fetch_tb_from_python",
+        cmpfunc=compare_tracebacks,
+    )
+
+    # GR-22089
+    # test_PyErr_Fetch_tb_f_back = CPyExtFunction(
+    #     _reference_fetch_tb_f_back,
+    #     lambda: (
+    #         (lambda: 1 / 0,),
+    #         (_raise_exception,),
+    #     ),
+    #     code="""PyObject* wrap_PyErr_Fetch_tb_f_back(PyObject* fn) {
+    #         PyObject_CallFunction(fn, NULL);
+    #         PyObject* typ = NULL;
+    #         PyObject* val = NULL;
+    #         PyObject* tb = NULL;
+    #         PyErr_Fetch(&typ, &val, &tb);
+    #         return PyObject_GetAttrString(PyObject_GetAttrString(tb, "tb_frame"), "f_back");
+    #     }
+    #     """,
+    #     resultspec="O",
+    #     argspec='O',
+    #     arguments=["PyObject* fn"],
+    #     callfunction="wrap_PyErr_Fetch_tb_f_back",
+    #     cmpfunc=compare_frame_f_back_chain,
+    # )

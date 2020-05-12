@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,7 +62,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -79,8 +78,6 @@ public abstract class ExceptionStateNodes {
      * the exception accessible.
      */
     public static final class SetCaughtExceptionNode extends ExceptionStateBaseNode {
-
-        @CompilationFinal private FrameSlot excSlot;
 
         public static void execute(VirtualFrame frame, PException e) {
             PArguments.setException(frame, e);
@@ -100,6 +97,7 @@ public abstract class ExceptionStateNodes {
     public static final class GetCaughtExceptionNode extends ExceptionStateBaseNode {
 
         private final ConditionProfile nullFrameProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile hasExceptionProfile = ConditionProfile.createBinaryProfile();
 
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
@@ -110,6 +108,11 @@ public abstract class ExceptionStateNodes {
             PException e = PArguments.getException(frame);
             if (e == null) {
                 e = fromStackWalk();
+                if (e == null) {
+                    e = PException.NO_EXCEPTION;
+                }
+                // Set into frame to avoid doing the stack walk again
+                PArguments.setException(frame, e);
             }
             return ensure(e);
         }
@@ -138,7 +141,7 @@ public abstract class ExceptionStateNodes {
             // having the exception state in the special slot. And we set the appropriate flag
             // on the root node such that the next time, we will find the exception state in the
             // context immediately.
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
 
             // TODO(fa) performance warning ?
             return fullStackWalk();
@@ -165,8 +168,12 @@ public abstract class ExceptionStateNodes {
 
         }
 
-        private static PException ensure(PException e) {
-            return e != PException.NO_EXCEPTION ? e : null;
+        private PException ensure(PException e) {
+            if (hasExceptionProfile.profile(e == PException.NO_EXCEPTION)) {
+                return null;
+            } else {
+                return e;
+            }
         }
 
         public static GetCaughtExceptionNode create() {

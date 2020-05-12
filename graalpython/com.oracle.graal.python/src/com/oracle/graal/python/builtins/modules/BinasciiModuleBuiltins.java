@@ -142,10 +142,6 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class A2bHexNode extends PythonBinaryBuiltinNode {
         private ReadAttributeFromObjectNode readAttrNode;
 
-        private PException raise(LazyPythonClass klass, String string) {
-            return raise(factory().createBaseException(klass, string, new Object[0]));
-        }
-
         @Specialization
         @TruffleBoundary
         PBytes a2b(PythonModule self, String data) {

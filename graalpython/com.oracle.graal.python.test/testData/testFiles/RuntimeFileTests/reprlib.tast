@@ -226,7 +226,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
                                                     BlockNode SourceSection: None
-                                                    SaveExceptionStateNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [660,685]`repr_running.discard...`
                                                     PythonCallNodeGen SourceSection: [660,685]`repr_running.discard...`
                                                       CallNodeGen SourceSection: None
@@ -2437,7 +2436,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Identifier: Exception
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     IfNode SourceSection: [4787,4954]`if len(s) > self.max...`
                                       YesNodeGen SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [4790,4812]`len(s) > self.maxoth...`
@@ -2652,7 +2650,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             Identifier: Exception
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None

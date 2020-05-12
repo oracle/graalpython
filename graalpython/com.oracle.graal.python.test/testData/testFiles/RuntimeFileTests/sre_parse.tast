@@ -640,7 +640,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2429,2434]`error`
                                             Identifier: error
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [2462,2752]`if name is not None:...`
                                       NotNodeGen SourceSection: [2465,2481]`name is not None`
@@ -697,7 +697,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [2588,2593]`error`
                                                 Identifier: error
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
                                         SetItemNodeGen SourceSection: [2717,2743]`self.groupdict[name]...`
                                           GetAttributeNodeGen SourceSection: None
@@ -961,7 +961,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [3103,3109]`source`
                                                   Frame: [2,source,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [3161,3335]`if gid >= self.lookb...`
                                           YesNodeGen SourceSection: None
@@ -987,7 +987,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [3216,3222]`source`
                                                   Frame: [2,source,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3213,7 +3213,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             Identifier: IndexError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     IfNode SourceSection: [7612,7891]`if char == "\\":↵   ...`
                                       YesNodeGen SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [7615,7627]`char == "\\"`
@@ -3295,7 +3294,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Identifier: IndexError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                            SaveExceptionStateNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     SetAttributeNodeGen SourceSection: [7891,7913]`self.index = index +...`
                                       Attribute: index
@@ -3693,7 +3691,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         ReadLocalVariableNode SourceSection: [8600,8604]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                    NoValueNode SourceSection: None
                                                   BlockNode SourceSection: None
                                                 RaiseNodeGen SourceSection: [8649,8757]`raise self.error("mi...`
                                                   PythonCallNodeGen SourceSection: [8655,8757]`self.error("missing ...`
@@ -3717,7 +3715,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadLocalVariableNode SourceSection: [8655,8659]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                  NoValueNode SourceSection: None
                                               BlockNode SourceSection: None
                                             IfNode SourceSection: [8770,8917]`if c == terminator:↵...`
                                               YesNodeGen SourceSection: None
@@ -3746,7 +3744,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         ReadLocalVariableNode SourceSection: [8847,8851]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                    NoValueNode SourceSection: None
                                                   BlockNode SourceSection: None
                                                 BreakNode SourceSection: [8899,8904]`break`
                                               BlockNode SourceSection: None
@@ -4275,7 +4273,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [9724,9730]`source`
                                         Frame: [0,source,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                               FrameReturnNode SourceSection: [9795,9830]`return LITERAL, int(...`
                                 WriteLocalVariableNodeGen SourceSection: None
@@ -4380,7 +4378,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadLocalVariableNode SourceSection: [10030,10036]`source`
                                           Frame: [0,source,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                    NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                                 FrameReturnNode SourceSection: [10101,10136]`return LITERAL, int(...`
                                   WriteLocalVariableNodeGen SourceSection: None
@@ -4485,7 +4483,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNode SourceSection: [10338,10344]`source`
                                             Frame: [0,source,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [10409,10432]`c = int(escape[2:], ...`
                                     Identifier: c
@@ -4615,7 +4613,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             ReadLocalVariableNode SourceSection: [10730,10736]`source`
                                               Frame: [0,source,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [10865,10882]`return LITERAL, c`
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -4646,7 +4644,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [10927,10937]`ValueError`
                                         Identifier: ValueError
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                           IfNode SourceSection: [10946,11122]`if len(escape) == 2:...`
                             YesNodeGen SourceSection: None
@@ -4698,7 +4696,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [11023,11029]`source`
                                         Frame: [0,source,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                               FrameReturnNode SourceSection: [11087,11117]`return LITERAL, ord(...`
                                 WriteLocalVariableNodeGen SourceSection: None
@@ -4729,7 +4727,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     RaiseNodeGen SourceSection: [11158,11215]`raise source.error("...`
                       PythonCallNodeGen SourceSection: [11164,11215]`source.error("bad es...`
                         CallNodeGen SourceSection: None
@@ -4752,7 +4749,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           ReadLocalVariableNode SourceSection: [11164,11170]`source`
                             Frame: [0,source,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                      EmptyNode SourceSection: None
+                      NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4941,7 +4938,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [11617,11623]`source`
                                         Frame: [0,source,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                               FrameReturnNode SourceSection: [11688,11723]`return LITERAL, int(...`
                                 WriteLocalVariableNodeGen SourceSection: None
@@ -5046,7 +5043,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadLocalVariableNode SourceSection: [11923,11929]`source`
                                           Frame: [0,source,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                    NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                                 FrameReturnNode SourceSection: [11994,12029]`return LITERAL, int(...`
                                   WriteLocalVariableNodeGen SourceSection: None
@@ -5151,7 +5148,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNode SourceSection: [12231,12237]`source`
                                             Frame: [0,source,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [12302,12325]`c = int(escape[2:], ...`
                                     Identifier: c
@@ -5412,7 +5409,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadLocalVariableNode SourceSection: [13067,13073]`source`
                                                         Frame: [0,source,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                  NoValueNode SourceSection: None
                                                 BlockNode SourceSection: None
                                               FrameReturnNode SourceSection: [13261,13278]`return LITERAL, c`
                                                 WriteLocalVariableNodeGen SourceSection: None
@@ -5492,7 +5489,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadLocalVariableNode SourceSection: [13490,13496]`source`
                                                     Frame: [0,source,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                              NoValueNode SourceSection: None
                                             BlockNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [13604,13645]`state.checklookbehin...`
                                             PythonCallNodeGen SourceSection: [13604,13645]`state.checklookbehin...`
@@ -5548,7 +5545,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             ReadLocalVariableNode SourceSection: [13703,13709]`source`
                                               Frame: [0,source,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                           IfNode SourceSection: [13779,13955]`if len(escape) == 2:...`
                             YesNodeGen SourceSection: None
@@ -5600,7 +5597,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [13856,13862]`source`
                                         Frame: [0,source,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                               FrameReturnNode SourceSection: [13920,13950]`return LITERAL, ord(...`
                                 WriteLocalVariableNodeGen SourceSection: None
@@ -5631,7 +5628,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     RaiseNodeGen SourceSection: [13991,14048]`raise source.error("...`
                       PythonCallNodeGen SourceSection: [13997,14048]`source.error("bad es...`
                         CallNodeGen SourceSection: None
@@ -5654,7 +5650,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           ReadLocalVariableNode SourceSection: [13997,14003]`source`
                             Frame: [0,source,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                      EmptyNode SourceSection: None
+                      NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6710,7 +6706,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadLocalVariableNode SourceSection: [17552,17558]`source`
                                                         Frame: [0,source,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                  NoValueNode SourceSection: None
                                                 BlockNode SourceSection: None
                                               IfNode SourceSection: [17672,18508]`if this == "]" and s...`
                                                 YesNodeGen SourceSection: None
@@ -6928,7 +6924,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           ReadLocalVariableNode SourceSection: [18673,18679]`source`
                                                             Frame: [0,source,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                      EmptyNode SourceSection: None
+                                                      NoValueNode SourceSection: None
                                                     BlockNode SourceSection: None
                                                   IfNode SourceSection: [18801,19055]`if that == "]":↵    ...`
                                                     YesNodeGen SourceSection: None
@@ -7174,7 +7170,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             ReadLocalVariableNode SourceSection: [19742,19748]`source`
                                                               Frame: [0,source,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                        EmptyNode SourceSection: None
+                                                        NoValueNode SourceSection: None
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [19807,19820]`lo = code1[1]`
                                                     Identifier: lo
@@ -7258,7 +7254,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             ReadLocalVariableNode SourceSection: [19990,19996]`source`
                                                               Frame: [0,source,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                        EmptyNode SourceSection: None
+                                                        NoValueNode SourceSection: None
                                                     BlockNode SourceSection: None
                                                   ExpressionStatementNode SourceSection: [20055,20083]`setappend((RANGE, (l...`
                                                     PythonCallNodeGen SourceSection: [20055,20083]`setappend((RANGE, (l...`
@@ -7823,7 +7819,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [21914,21927]`OverflowError`
                                                               Identifier: OverflowError
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                          EmptyNode SourceSection: None
+                                                          NoValueNode SourceSection: None
                                                         BlockNode SourceSection: None
                                                     BlockNode SourceSection: None
                                                   IfNode SourceSection: [21982,22338]`if hi:↵             ...`
@@ -7862,7 +7858,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [22094,22107]`OverflowError`
                                                               Identifier: OverflowError
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                          EmptyNode SourceSection: None
+                                                          NoValueNode SourceSection: None
                                                         BlockNode SourceSection: None
                                                       IfNode SourceSection: [22166,22338]`if max < min:↵      ...`
                                                         YesNodeGen SourceSection: None
@@ -7895,7 +7891,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               ReadLocalVariableNode SourceSection: [22210,22216]`source`
                                                                 Frame: [0,source,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                          EmptyNode SourceSection: None
+                                                          NoValueNode SourceSection: None
                                                         BlockNode SourceSection: None
                                                     BlockNode SourceSection: None
                                                 RaiseNodeGen SourceSection: [22360,22419]`raise AssertionError...`
@@ -7913,7 +7909,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [22366,22380]`AssertionError`
                                                       Identifier: AssertionError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                  NoValueNode SourceSection: None
                                         IfNode SourceSection: [22478,22590]`if subpattern:↵     ...`
                                           YesNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [22481,22491]`subpattern`
@@ -7990,7 +7986,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [22645,22651]`source`
                                                   Frame: [0,source,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [22760,22926]`if item[0][0] in _RE...`
                                           YesNodeGen SourceSection: None
@@ -8041,7 +8037,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [22813,22819]`source`
                                                   Frame: [0,source,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [22926,23126]`if item[0][0] is SUB...`
                                           YesNodeGen SourceSection: None
@@ -8294,7 +8290,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         ReadLocalVariableNode SourceSection: [23681,23687]`source`
                                                           Frame: [0,source,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                    NoValueNode SourceSection: None
                                                   BlockNode SourceSection: None
                                                 IfNode SourceSection: [23739,30390]`if char == "P":↵    ...`
                                                   YesNodeGen SourceSection: None
@@ -8368,7 +8364,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 ReadLocalVariableNode SourceSection: [24115,24121]`source`
                                                                   Frame: [0,source,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                            EmptyNode SourceSection: None
+                                                            NoValueNode SourceSection: None
                                                         BlockNode SourceSection: None
                                                     IfNode SourceSection: None
                                                       YesNodeGen SourceSection: None
@@ -8433,7 +8429,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   ReadLocalVariableNode SourceSection: [24449,24455]`source`
                                                                     Frame: [0,source,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                              EmptyNode SourceSection: None
+                                                              NoValueNode SourceSection: None
                                                           BlockNode SourceSection: None
                                                         WriteLocalVariableNodeGen SourceSection: [24506,24537]`gid = state.groupdic...`
                                                           Identifier: gid
@@ -8495,7 +8491,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   ReadLocalVariableNode SourceSection: [24677,24683]`source`
                                                                     Frame: [0,source,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                              EmptyNode SourceSection: None
+                                                              NoValueNode SourceSection: None
                                                           BlockNode SourceSection: None
                                                         IfNode SourceSection: [24734,24930]`if not state.checkgr...`
                                                           NotNodeGen SourceSection: [24737,24762]`not state.checkgroup...`
@@ -8529,7 +8525,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 ReadLocalVariableNode SourceSection: [24798,24804]`source`
                                                                   Frame: [0,source,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                            EmptyNode SourceSection: None
+                                                            NoValueNode SourceSection: None
                                                           BlockNode SourceSection: None
                                                         ExpressionStatementNode SourceSection: [24930,24969]`state.checklookbehin...`
                                                           PythonCallNodeGen SourceSection: [24930,24969]`state.checklookbehin...`
@@ -8584,7 +8580,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 ReadLocalVariableNode SourceSection: [25206,25212]`source`
                                                                   Frame: [0,source,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                            EmptyNode SourceSection: None
+                                                            NoValueNode SourceSection: None
                                                           BlockNode SourceSection: None
                                                         RaiseNodeGen SourceSection: [25272,25379]`raise source.error("...`
                                                           PythonCallNodeGen SourceSection: [25278,25379]`source.error("unknow...`
@@ -8613,7 +8609,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               ReadLocalVariableNode SourceSection: [25278,25284]`source`
                                                                 Frame: [0,source,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                          EmptyNode SourceSection: None
+                                                          NoValueNode SourceSection: None
                                                   IfNode SourceSection: None
                                                     YesNodeGen SourceSection: None
                                                       BinaryComparisonNodeGen SourceSection: [25401,25412]`char == ":"`
@@ -8676,7 +8672,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                         ReadLocalVariableNode SourceSection: [25667,25673]`source`
                                                                           Frame: [0,source,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                                    EmptyNode SourceSection: None
+                                                                    NoValueNode SourceSection: None
                                                                   BlockNode SourceSection: None
                                                                 IfNode SourceSection: [25809,25886]`if sourceget() == ")...`
                                                                   YesNodeGen SourceSection: None
@@ -8744,7 +8740,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       ReadLocalVariableNode SourceSection: [26157,26163]`source`
                                                                         Frame: [0,source,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                                  EmptyNode SourceSection: None
+                                                                  NoValueNode SourceSection: None
                                                                 BlockNode SourceSection: None
                                                               IfNode SourceSection: [26223,26408]`if char not in "=!":...`
                                                                 NotNodeGen SourceSection: [26226,26242]`char not in "=!"`
@@ -8783,7 +8779,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       ReadLocalVariableNode SourceSection: [26278,26284]`source`
                                                                         Frame: [0,source,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                                  EmptyNode SourceSection: None
+                                                                  NoValueNode SourceSection: None
                                                                 BlockNode SourceSection: None
                                                               WriteLocalVariableNodeGen SourceSection: [26408,26416]`dir = -1`
                                                                 Identifier: dir
@@ -8904,7 +8900,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   ReadLocalVariableNode SourceSection: [26904,26910]`source`
                                                                     Frame: [0,source,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                              EmptyNode SourceSection: None
+                                                              NoValueNode SourceSection: None
                                                             BlockNode SourceSection: None
                                                           IfNode SourceSection: [27041,27229]`if char == "=":↵    ...`
                                                             YesNodeGen SourceSection: None
@@ -9044,7 +9040,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           ReadLocalVariableNode SourceSection: [27642,27648]`source`
                                                                             Frame: [0,source,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      EmptyNode SourceSection: None
+                                                                      NoValueNode SourceSection: None
                                                                   BlockNode SourceSection: None
                                                               BlockNode SourceSection: None
                                                                 TryFinallyNode SourceSection: [27729,28109]`try:↵               ...`
@@ -9076,7 +9072,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [27872,27882]`ValueError`
                                                                             Identifier: ValueError
                                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                                          EmptyNode SourceSection: None
+                                                                          NoValueNode SourceSection: None
                                                                         BlockNode SourceSection: None
                                                                     ExceptNode SourceSection: None
                                                                       BlockNode SourceSection: None
@@ -9119,7 +9115,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                         Identifier: ValueError
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                     BlockNode SourceSection: None
-                                                                    SaveExceptionStateNodeGen SourceSection: None
                                                                 IfNode SourceSection: [28109,28284]`if not condgroup:↵  ...`
                                                                   NotNodeGen SourceSection: [28112,28125]`not condgroup`
                                                                     ReadLocalVariableNode SourceSection: [28116,28125]`condgroup`
@@ -9146,7 +9141,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                         ReadLocalVariableNode SourceSection: [28161,28167]`source`
                                                                           Frame: [0,source,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                                    EmptyNode SourceSection: None
+                                                                    NoValueNode SourceSection: None
                                                                   BlockNode SourceSection: None
                                                                 IfNode SourceSection: [28284,28477]`if condgroup >= MAXG...`
                                                                   YesNodeGen SourceSection: None
@@ -9194,7 +9189,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           ReadLocalVariableNode SourceSection: [28420,28426]`source`
                                                                             Frame: [0,source,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      EmptyNode SourceSection: None
+                                                                      NoValueNode SourceSection: None
                                                                   BlockNode SourceSection: None
                                                             ExpressionStatementNode SourceSection: [28477,28522]`state.checklookbehin...`
                                                               PythonCallNodeGen SourceSection: [28477,28522]`state.checklookbehin...`
@@ -9293,7 +9288,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                         ReadLocalVariableNode SourceSection: [28797,28803]`source`
                                                                           Frame: [0,source,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                                    EmptyNode SourceSection: None
+                                                                    NoValueNode SourceSection: None
                                                                   BlockNode SourceSection: None
                                                               WriteLocalVariableNodeGen SourceSection: [28911,28925]`item_no = None`
                                                                 Identifier: item_no
@@ -9329,7 +9324,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                     ReadLocalVariableNode SourceSection: [29002,29008]`source`
                                                                       Frame: [0,source,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                                EmptyNode SourceSection: None
+                                                                NoValueNode SourceSection: None
                                                               BlockNode SourceSection: None
                                                             ExpressionStatementNode SourceSection: [29139,29206]`subpatternappend((GR...`
                                                               PythonCallNodeGen SourceSection: [29139,29206]`subpatternappend((GR...`
@@ -9514,7 +9509,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [30073,30080]`Verbose`
                                                                         Identifier: Verbose
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                                      EmptyNode SourceSection: None
+                                                                      NoValueNode SourceSection: None
                                                                     BlockNode SourceSection: None
                                                                   ContinueNode SourceSection: [30105,30113]`continue`
                                                                 BlockNode SourceSection: None
@@ -9576,7 +9571,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   ReadLocalVariableNode SourceSection: [30245,30251]`source`
                                                                     Frame: [0,source,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                              EmptyNode SourceSection: None
+                                                              NoValueNode SourceSection: None
                                               BlockNode SourceSection: None
                                             IfNode SourceSection: [30390,30605]`if group is not None...`
                                               NotNodeGen SourceSection: [30393,30410]`group is not None`
@@ -9638,7 +9633,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       Identifier: error
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                                  SaveExceptionStateNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [30605,30730]`sub_verbose = ((verb...`
                                               Identifier: sub_verbose
@@ -9725,7 +9719,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     ReadLocalVariableNode SourceSection: [30858,30864]`source`
                                                       Frame: [0,source,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                EmptyNode SourceSection: None
+                                                NoValueNode SourceSection: None
                                               BlockNode SourceSection: None
                                             IfNode SourceSection: [30979,31056]`if group is not None...`
                                               NotNodeGen SourceSection: [30982,30999]`group is not None`
@@ -9834,7 +9828,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [31300,31314]`AssertionError`
                                                     Identifier: AssertionError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                EmptyNode SourceSection: None
+                                                NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     ElseNode SourceSection: [31400,31657]`for i in range(len(s...`
                       ForNode SourceSection: None
@@ -10141,7 +10135,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNode SourceSection: [32022,32028]`source`
                                             Frame: [0,source,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                                 IfNode SourceSection: [32074,32233]`if char == 'u':↵    ...`
                                   YesNodeGen SourceSection: None
@@ -10168,7 +10162,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNode SourceSection: [32203,32209]`source`
                                             Frame: [0,source,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: [32233,32250]`add_flags |= flag`
                                 Identifier: add_flags
@@ -10225,7 +10219,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadLocalVariableNode SourceSection: [32428,32434]`source`
                                           Frame: [0,source,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                    NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: [32458,32476]`char = sourceget()`
                                 Identifier: char
@@ -10251,7 +10245,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [32528,32534]`source`
                                         Frame: [0,source,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                               IfNode SourceSection: [32574,32626]`if char in ")-:":↵  ...`
                                 YesNodeGen SourceSection: None
@@ -10310,7 +10304,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadLocalVariableNode SourceSection: [32750,32756]`source`
                                           Frame: [0,source,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                    NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                         BlockNode SourceSection: None
                       BlockNode SourceSection: None
@@ -10369,7 +10363,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             ReadLocalVariableNode SourceSection: [32899,32905]`source`
                               Frame: [0,source,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [32967,33785]`if char == "-":↵    ...`
                       YesNodeGen SourceSection: None
@@ -10405,7 +10399,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                 ReadLocalVariableNode SourceSection: [33053,33059]`source`
                                   Frame: [0,source,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                         IfNode SourceSection: [33090,33238]`if char not in FLAGS...`
                           NotNodeGen SourceSection: [33093,33110]`char not in FLAGS`
@@ -10452,7 +10446,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   ReadLocalVariableNode SourceSection: [33201,33207]`source`
                                     Frame: [0,source,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                              NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                         BreakTargetNode SourceSection: [33238,33785]`while True:↵        ...`
                           WhileNode SourceSection: None
@@ -10498,7 +10492,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNode SourceSection: [33418,33424]`source`
                                             Frame: [0,source,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: [33448,33465]`del_flags |= flag`
                                   Identifier: del_flags
@@ -10535,7 +10529,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadLocalVariableNode SourceSection: [33548,33554]`source`
                                           Frame: [0,source,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                    NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                                 IfNode SourceSection: [33586,33636]`if char == ":":↵    ...`
                                   YesNodeGen SourceSection: None
@@ -10593,7 +10587,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNode SourceSection: [33752,33758]`source`
                                             Frame: [0,source,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                           BlockNode SourceSection: None
                       BlockNode SourceSection: None
@@ -10627,7 +10621,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             ReadLocalVariableNode SourceSection: [33851,33857]`source`
                               Frame: [0,source,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [33920,34024]`if add_flags & del_f...`
                       YesNodeGen SourceSection: None
@@ -10650,7 +10644,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             ReadLocalVariableNode SourceSection: [33960,33966]`source`
                               Frame: [0,source,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [34024,34051]`return add_flags, de...`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -10740,7 +10734,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34237,34247]`ValueError`
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                         IfNode SourceSection: [34301,34486]`if not flags & SRE_F...`
                           NotNodeGen SourceSection: [34304,34330]`not flags & SRE_FLAG...`
@@ -10782,7 +10776,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [34427,34437]`ValueError`
                                   Identifier: ValueError
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                              NoValueNode SourceSection: None
                             BlockNode SourceSection: None
                       BlockNode SourceSection: None
                         IfNode SourceSection: [34500,34614]`if flags & SRE_FLAG_...`
@@ -10803,7 +10797,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34547,34557]`ValueError`
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                         IfNode SourceSection: [34614,34745]`if flags & SRE_FLAG_...`
                           YesNodeGen SourceSection: None
@@ -10834,7 +10828,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34687,34697]`ValueError`
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [34745,34757]`return flags`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -11034,7 +11028,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Identifier: Verbose
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     SetAttributeNodeGen SourceSection: [35406,35455]`p.pattern.flags = fi...`
                       Attribute: flags
                       GetAttributeNodeGen SourceSection: [35406,35415]`p.pattern`
@@ -11101,7 +11094,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ReadLocalVariableNode SourceSection: [35537,35543]`source`
                                 Frame: [3,source,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          EmptyNode SourceSection: None
+                          NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [35581,35630]`if flags & SRE_FLAG_...`
                       YesNodeGen SourceSection: None
@@ -11315,7 +11308,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Frame: [3,s,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                                   IfNode SourceSection: [36027,36120]`if literal:↵        ...`
                                     YesNodeGen SourceSection: None
@@ -11489,7 +11482,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Frame: [2,s,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [36556,36578]`name = s.getuntil(">...`
                                       Identifier: name
@@ -11539,12 +11532,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [36760,36770]`IndexError`
                                                   Identifier: IndexError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                              NoValueNode SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [36720,36728]`KeyError`
                                               Identifier: KeyError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                          SaveExceptionStateNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         TryFinallyNode SourceSection: [36845,37176]`try:↵               ...`
                                           TryExceptNode SourceSection: None
@@ -11575,7 +11567,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [36964,36974]`ValueError`
                                                     Identifier: ValueError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                  NoValueNode SourceSection: None
                                                 BlockNode SourceSection: None
                                             ExceptNode SourceSection: None
                                               RaiseNodeGen SourceSection: [37038,37155]`raise s.error("bad c...`
@@ -11612,7 +11604,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Identifier: ValueError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                            SaveExceptionStateNodeGen SourceSection: None
                                         IfNode SourceSection: [37176,37344]`if index >= MAXGROUP...`
                                           YesNodeGen SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [37179,37197]`index >= MAXGROUPS`
@@ -11653,7 +11644,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     Frame: [2,s,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [37344,37374]`addgroup(index, len(...`
                                       PythonCallNodeGen SourceSection: [37344,37374]`addgroup(index, len(...`
@@ -11958,7 +11949,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             Frame: [2,s,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                    NoValueNode SourceSection: None
                                                   BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [38202,38217]`lappend(chr(c))`
                                                   PythonCallNodeGen SourceSection: [38202,38217]`lappend(chr(c))`
@@ -12075,13 +12066,12 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           Frame: [2,s,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadFromCellNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                  NoValueNode SourceSection: None
                                                 BlockNode SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [38420,38428]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                            SaveExceptionStateNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [38561,38574]`lappend(this)`
                                           PythonCallNodeGen SourceSection: [38561,38574]`lappend(this)`
                                             CallNodeGen SourceSection: None
@@ -12421,12 +12411,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [39229,39234]`error`
                                     Identifier: error
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [39203,39213]`IndexError`
                                 Identifier: IndexError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
-                            SaveExceptionStateNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [39277,39304]`return empty.join(li...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>

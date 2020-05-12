@@ -70,7 +70,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                       GeneratorWithNode SourceSection: [44,80]`with fn():↵    yield...`
                         GeneratorBlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [59,67]`yield 12`
@@ -103,7 +102,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None

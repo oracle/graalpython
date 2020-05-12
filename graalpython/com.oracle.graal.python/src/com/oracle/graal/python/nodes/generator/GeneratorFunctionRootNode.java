@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -65,14 +64,14 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfActiveFlags;
     private final int numOfGeneratorBlockNode;
     private final int numOfGeneratorForNode;
+    private final int numOfGeneratorTryNode;
     private final ExecutionCellSlots cellSlots;
     private final String name;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-    @Child private MaterializeFrameNode materializeNode;
 
     public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
         this.name = name;
@@ -81,6 +80,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
         this.numOfGeneratorForNode = numOfGeneratorForNode;
+        this.numOfGeneratorTryNode = numOfGeneratorTryNode;
     }
 
     @Override
@@ -91,7 +91,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
         }
         CompilerAsserts.partialEvaluationConstant(cellSlots);
         return factory.createGenerator(getName(), callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode, null);
+                        numOfGeneratorForNode, numOfGeneratorTryNode, null);
     }
 
     public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {

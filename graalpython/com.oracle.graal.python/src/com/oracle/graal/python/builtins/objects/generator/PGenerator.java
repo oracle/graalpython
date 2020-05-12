@@ -66,11 +66,12 @@ public final class PGenerator extends PythonBuiltinObject {
     private final boolean isPRangeIterator;
 
     public static PGenerator create(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
-                    ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, PythonObjectFactory factory, Object iterator) {
+                    ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, PythonObjectFactory factory,
+                    Object iterator) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
          */
-        GeneratorControlData generatorArgs = new GeneratorControlData(numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+        GeneratorControlData generatorArgs = new GeneratorControlData(numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
         Object[] generatorFrameArguments = PArguments.create();
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, frameDescriptor);
         PArguments.setGeneratorFrame(arguments, generatorFrame);
@@ -139,6 +140,10 @@ public final class PGenerator extends PythonBuiltinObject {
      */
     public RootCallTarget getCurrentCallTarget() {
         return callTargets[currentCallTarget];
+    }
+
+    public boolean isStarted() {
+        return currentCallTarget != 0;
     }
 
     public Object[] getArguments() {

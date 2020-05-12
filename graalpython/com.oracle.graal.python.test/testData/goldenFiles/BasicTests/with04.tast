@@ -59,7 +59,6 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                           CallNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                           GetClassNodeGen SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: a
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -81,7 +80,6 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

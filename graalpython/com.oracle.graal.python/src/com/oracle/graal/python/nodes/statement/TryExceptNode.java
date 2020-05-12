@@ -40,8 +40,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -72,14 +71,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
-public class TryExceptNode extends StatementNode implements TruffleObject {
+public class TryExceptNode extends ExceptionHandlingStatementNode implements TruffleObject {
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
     @Child private PythonObjectFactory ofactory;
-    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
-    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
-    @Child InteropLibrary interopLib;
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
 
@@ -114,22 +110,27 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        // store current exception state for later restore
-        ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
+        // The following statement is a no-op, but it helps graal to optimize the exception handler
+        // by moving the cast to PException to the beginning
+        saveExceptionState(frame);
+
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
-            if (!catchException(frame, ex, exceptionState)) {
+            if (!catchException(frame, ex)) {
                 throw ex;
             }
             return;
+        } catch (ControlFlowException e) {
+            throw e;
         } catch (Exception | StackOverflowError | AssertionError e) {
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
             }
             if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
-                if (catchException(frame, (TruffleException) e, exceptionState)) {
+                boolean handled = catchException(frame, (TruffleException) e);
+                if (handled) {
                     return;
                 }
             }
@@ -138,23 +139,27 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 shouldCatchAll = getContext().getOption(PythonOptions.CatchAllExceptions);
             }
             if (shouldCatchAll) {
-                if (e instanceof ControlFlowException) {
-                    throw e;
+                PException pe = PException.fromObject(getBaseException(e), this);
+                // Re-attach truffle stacktrace
+                moveTruffleStacktTrace(e, pe);
+                boolean handled = catchException(frame, pe);
+                if (handled) {
+                    return;
                 } else {
-                    PException pe = PException.fromObject(getBaseException(e), this);
-                    try {
-                        catchException(frame, pe, exceptionState);
-                    } catch (PException pe_thrown) {
-                        if (pe_thrown != pe) {
-                            throw e;
-                        }
-                    }
+                    throw pe;
                 }
-            } else {
-                throw e;
             }
+            throw e;
         }
         orelse.executeVoid(frame);
+    }
+
+    @TruffleBoundary
+    private static void moveTruffleStacktTrace(Throwable e, PException pe) {
+        pe.initCause(e.getCause());
+        // Host exceptions have their stacktrace already filled in, call this to set
+        // the cutoff point to the catch site
+        pe.getTruffleStackTrace();
     }
 
     @TruffleBoundary
@@ -163,30 +168,29 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    private boolean catchException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState) {
-        for (ExceptNode exceptNode : exceptNodes) {
-            if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
-                if (handleException(frame, exception, exceptionState, exceptNode)) {
-                    // restore previous exception state, this won't happen if the except block
-                    // raises an exception
-                    restoreExceptionState(frame, exceptionState);
-                    return true;
+    private boolean catchException(VirtualFrame frame, TruffleException exception) {
+        try {
+            for (ExceptNode exceptNode : exceptNodes) {
+                if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
+                    tryChainPreexistingException(frame, exception);
+                    ExceptionState exceptionState = saveExceptionState(frame);
+                    if (exception instanceof PException) {
+                        PException pException = (PException) exception;
+                        pException.setCatchingFrameReference(frame);
+                        SetCaughtExceptionNode.execute(frame, pException);
+                    }
+                    try {
+                        exceptNode.executeExcept(frame, exception);
+                    } finally {
+                        restoreExceptionState(frame, exceptionState);
+                    }
                 }
             }
-        }
-        return false;
-    }
-
-    private boolean handleException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState, ExceptNode exceptNode) {
-        try {
-            exceptNode.executeExcept(frame, exception);
-        } catch (ExceptionHandledException e) {
+        } catch (ExceptionHandledException eh) {
             return true;
-        } catch (ControlFlowException e) {
-            // restore previous exception state, this won't happen if the except block
-            // raises an exception
-            restoreExceptionState(frame, exceptionState);
-            throw e;
+        } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, exception);
+            throw handlerException;
         }
         return false;
     }
@@ -309,13 +313,4 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         this.catchesFunction = catchesFunction;
     }
 
-    private void restoreExceptionState(VirtualFrame frame, ExceptionState e) {
-        if (e != null) {
-            if (restoreExceptionStateNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
-            }
-            restoreExceptionStateNode.execute(frame, e);
-        }
-    }
 }

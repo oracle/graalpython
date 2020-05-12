@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.WithNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -73,14 +72,10 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected ExceptionState doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
+    protected void doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
         if (!gen.isActive(frame, enterSlot)) {
-            ExceptionState activeException = super.doEnter(frame, withObject, enterCallable);
-            gen.setActiveException(frame, activeException);
+            super.doEnter(frame, withObject, enterCallable);
             gen.setActive(frame, enterSlot, true);
-            return activeException;
-        } else {
-            return gen.getActiveException(frame);
         }
     }
 
@@ -95,19 +90,18 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException exception) {
+    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException pException) {
         reset(frame);
-        super.handleException(frame, withObject, exitCallable, exception);
+        super.handleException(frame, withObject, exitCallable, pException);
     }
 
     @Override
-    protected void doLeave(VirtualFrame frame, Object withObject, ExceptionState exceptionState, boolean gotException, Object exitCallable) {
+    protected void doLeave(VirtualFrame frame, Object withObject, boolean gotException, Object exitCallable) {
         if (gen.isActive(frame, yieldSlot)) {
             gen.setActive(frame, yieldSlot, false);
         } else {
             reset(frame);
-            gen.setActiveException(frame, exceptionState);
-            super.doLeave(frame, withObject, exceptionState, gotException, exitCallable);
+            super.doLeave(frame, withObject, gotException, exitCallable);
         }
     }
 

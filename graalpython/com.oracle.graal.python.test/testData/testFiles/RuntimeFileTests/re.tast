@@ -42,7 +42,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             ReadNameNodeGen SourceSection: [6592,6603]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [6643,6939]`__all__ = [↵    "mat...`
         Identifier: __all__
         ListLiteralNode SourceSection: [6653,6939]`[↵    "match", "full...`
@@ -1566,7 +1565,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Identifier: KeyError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     IfNode SourceSection: [12258,12439]`if isinstance(patter...`
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [12261,12289]`isinstance(pattern, ...`
@@ -1593,7 +1591,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12327,12337]`ValueError`
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                         FrameReturnNode SourceSection: [12420,12434]`return pattern`
                           WriteLocalVariableNodeGen SourceSection: None
@@ -1622,7 +1620,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12491,12500]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12558,12597]`p = sre_compile.comp...`
                       Identifier: p
@@ -1702,7 +1700,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
                               BlockNode SourceSection: None
-                              SaveExceptionStateNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         SetItemNodeGen SourceSection: [12851,12892]`_cache[type(pattern)...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: None

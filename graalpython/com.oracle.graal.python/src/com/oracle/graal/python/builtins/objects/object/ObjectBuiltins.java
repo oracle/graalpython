@@ -490,7 +490,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 }
             }
             if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, "attribute % is read-only", key);
+                throw raise(AttributeError, "attribute %s is read-only", key);
             } else {
                 throw raise(AttributeError, "%s object has no attribute '%s'", object, key);
             }

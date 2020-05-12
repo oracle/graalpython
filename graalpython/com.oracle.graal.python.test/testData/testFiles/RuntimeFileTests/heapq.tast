@@ -1683,7 +1683,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Identifier: StopIteration
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
-                                  SaveExceptionStateNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [14312,14343]`enumerate(map(iter, ...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [14312,14343]`enumerate(map(iter, ...`
@@ -1823,12 +1822,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Identifier: StopIteration
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
-                                SaveExceptionStateNodeGen SourceSection: None
                                 GeneratorAccessNode SourceSection: None
-                                SaveExceptionStateNodeGen SourceSection: None
-                                RestoreExceptionStateNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
-                              SaveExceptionStateNodeGen SourceSection: None
                             YesNodeGen SourceSection: None
                               BinaryComparisonNodeGen SourceSection: [14546,14556]`len(h) > 1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -2008,7 +2003,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Identifier: StopIteration
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BlockNode SourceSection: None
-                              SaveExceptionStateNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [15148,15179]`enumerate(map(iter, ...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [15148,15179]`enumerate(map(iter, ...`
@@ -2180,12 +2174,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Identifier: StopIteration
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
-                            SaveExceptionStateNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
-                            SaveExceptionStateNodeGen SourceSection: None
-                            RestoreExceptionStateNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [15392,15402]`len(h) > 1`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -2538,7 +2528,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
                           BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     IfNode SourceSection: [19687,20351]`if key is None:↵    ...`
                       YesNodeGen SourceSection: None
                         IsExpressionNodeGen SourceSection: [19690,19701]`key is None`
@@ -3497,7 +3486,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
                           BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     IfNode SourceSection: [21580,22142]`if key is None:↵    ...`
                       YesNodeGen SourceSection: None
                         IsExpressionNodeGen SourceSection: [21583,21594]`key is None`
@@ -4269,7 +4257,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             ReadNameNodeGen SourceSection: [22702,22713]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       TryFinallyNode SourceSection: [22724,22798]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [22733,22768]`from _heapq import _...`
@@ -4288,7 +4275,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             ReadNameNodeGen SourceSection: [22776,22787]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       TryFinallyNode SourceSection: [22798,22868]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [22807,22838]`from _heapq import _...`
@@ -4307,7 +4293,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             ReadNameNodeGen SourceSection: [22846,22857]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       TryFinallyNode SourceSection: [22868,22940]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [22877,22908]`from _heapq import _...`
@@ -4326,7 +4311,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             ReadNameNodeGen SourceSection: [22916,22927]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None

@@ -21,4 +21,3 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,43]`try:↵  pass↵exce
               ReadNameNodeGen SourceSection: [19,29]`ValueError`
                 Identifier: ValueError
             BlockNode SourceSection: None
-            SaveExceptionStateNodeGen SourceSection: None

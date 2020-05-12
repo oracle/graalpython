@@ -29,9 +29,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -41,13 +38,11 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -69,7 +64,6 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private WriteNode exceptName;
     @Child private ExpressionNode exceptType;
 
-    @Child private PythonObjectFactory factory;
     @Child private ExceptMatchNode matchNode;
 
     public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName) {
@@ -85,18 +79,12 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, TruffleException e) {
-        if (e instanceof PException) {
-            PException pE = (PException) e;
-            SetCaughtExceptionNode.execute(frame, pE);
-            if (exceptName != null) {
-                PBaseException exceptionObject = pE.getExceptionObject();
-                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                info.markAsEscaped();
-                exceptionObject.reifyException(info, this);
-                exceptName.doWrite(frame, exceptionObject);
+        if (exceptName != null) {
+            if (e instanceof PException) {
+                exceptName.doWrite(frame, ((PException) e).getEscapedException());
+            } else {
+                exceptName.doWrite(frame, getExceptionObject(e));
             }
-        } else if (exceptName != null) {
-            exceptName.doWrite(frame, getExceptionObject(e));
         }
         body.executeVoid(frame);
         if (exceptName != null) {

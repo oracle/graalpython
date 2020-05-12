@@ -95,6 +95,10 @@ public abstract class MaterializeFrameNode extends Node {
         this.adoptable = adoptable;
     }
 
+    public static MaterializeFrameNode create() {
+        return MaterializeFrameNodeGen.create();
+    }
+
     public final PFrame execute(VirtualFrame frame, boolean markAsEscaped, Frame frameToMaterialize) {
         return execute(frame, markAsEscaped, false, frameToMaterialize);
     }

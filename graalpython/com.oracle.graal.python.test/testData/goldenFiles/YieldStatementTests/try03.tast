@@ -49,7 +49,6 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,105]`def gen():↵  try:
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                       GeneratorTryFinallyNode SourceSection: [59,105]`try:↵    yield 3↵  e...`
                         GeneratorTryExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [68,75]`yield 3`
@@ -65,12 +64,8 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,105]`def gen():↵  try:
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
-                          RestoreExceptionStateNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]

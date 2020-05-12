@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -91,6 +91,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     private int numOfYields;
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
+    private int numOfGeneratorTryNode;
     protected FactorySSTVisitor parentVisitor;
 
     public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source, FactorySSTVisitor parentVisitor) {
@@ -104,6 +105,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         this.numOfYields = 1;
         this.numOfGeneratorBlockNode = 0;
         this.numOfGeneratorForNode = 0;
+        this.numOfGeneratorTryNode = 0;
     }
 
     public int getNumOfActiveFlags() {
@@ -132,6 +134,10 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
     public int getNextNumOfGeneratorForNode() {
         return numOfGeneratorForNode++;
+    }
+
+    public int getNumOfGeneratorTryNode() {
+        return numOfGeneratorTryNode;
     }
 
     @Override
@@ -217,7 +223,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(funcRoot);
         ExpressionNode loopIterator = getIterator;
         GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, callTarget, loopIterator, fd, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
         genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameDescriptor());
         genExprDef.assignSourceSection(funcRoot.getSourceSection());
         genExprDef.setEnclosingFrameGenerator(node.level != 0 || parentVisitor.comprLevel != 0 || node.scope.getParent().getScopeKind() == ScopeInfo.ScopeKind.Generator);
@@ -381,8 +387,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         if (oldNumber == numOfActiveFlags) {
             result = nodeFactory.createTryExceptElseFinallyNode(body, exceptNodes, elseStatement, finalyStatement);
         } else {
-            result = new GeneratorTryExceptNode(body, exceptNodes, elseStatement, numOfActiveFlags++, numOfActiveFlags++, numOfGeneratorBlockNode++);
-            result = new GeneratorTryFinallyNode(result, finalyStatement, numOfActiveFlags++);
+            result = new GeneratorTryExceptNode(body, exceptNodes, elseStatement, numOfActiveFlags++, numOfActiveFlags++, numOfGeneratorBlockNode++, numOfGeneratorTryNode++);
+            result = new GeneratorTryFinallyNode(result, finalyStatement, numOfActiveFlags++, numOfGeneratorTryNode++);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;

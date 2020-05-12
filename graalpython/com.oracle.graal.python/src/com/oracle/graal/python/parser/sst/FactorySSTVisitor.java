@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.NoValueNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -808,7 +809,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         if (scopeEnvironment.isInGeneratorScope()) {
             funcDef = GeneratorFunctionDefinitionNode.create(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(), annotations);
+                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(),
+                            generatorFactory.getNumOfGeneratorTryNode(), annotations);
         } else {
             funcDef = new FunctionDefinitionNode(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
                             scopeEnvironment.getExecutionCellSlots(), annotations);
@@ -966,7 +968,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         if (scopeEnvironment.isInGeneratorScope()) {
             funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(), null);
+                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(),
+                            generatorFactory.getNumOfGeneratorTryNode(), null);
         } else {
             funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
                             scopeEnvironment.getExecutionCellSlots(), null);
@@ -1045,9 +1048,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(RaiseSSTNode node) {
-        // TODO: Do we need to create the empty nodes here?
-        ExpressionNode value = node.value != null ? (ExpressionNode) node.value.accept(this) : EmptyNode.create();
-        ExpressionNode from = node.from != null ? (ExpressionNode) node.from.accept(this) : EmptyNode.create();
+        ExpressionNode value = node.value != null ? (ExpressionNode) node.value.accept(this) : NoValueNode.create();
+        ExpressionNode from = node.from != null ? (ExpressionNode) node.from.accept(this) : NoValueNode.create();
         PNode result = RaiseNode.create(value, from);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;

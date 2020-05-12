@@ -651,7 +651,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4546,4556]`SystemExit`
                             Identifier: SystemExit
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -1052,7 +1052,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                           Identifier: BaseException
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
-                                      SaveExceptionStateNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [6,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1314,7 +1313,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     Frame: [4,warnings,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [6403,6428]`return hook(*args, *...`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
@@ -1549,7 +1547,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               Identifier: UnicodeEncodeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [7061,7079]`stdout.write("\n")`
                         PythonCallNodeGen SourceSection: [7061,7079]`stdout.write("\n")`
                           CallNodeGen SourceSection: None

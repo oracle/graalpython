@@ -50,6 +50,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     private final int numOfActiveFlags;
     private final int numOfGeneratorBlockNode;
     private final int numOfGeneratorForNode;
+    private final int numOfGeneratorTryNode;
 
     @CompilationFinal private FrameDescriptor enclosingFrameDescriptor;
     @CompilationFinal private boolean isEnclosingFrameGenerator;
@@ -59,7 +60,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
 
     public GeneratorExpressionNode(String name, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
                     ExecutionCellSlots executionCellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode) {
         super(definitionCellSlots, executionCellSlots);
         this.name = name;
         this.callTarget = callTarget;
@@ -68,6 +69,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
         this.numOfGeneratorForNode = numOfGeneratorForNode;
+        this.numOfGeneratorTryNode = numOfGeneratorTryNode;
     }
 
     public String getName() {
@@ -119,6 +121,10 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         return numOfGeneratorForNode;
     }
 
+    public int getNumOfGeneratorTryNode() {
+        return numOfGeneratorTryNode;
+    }
+
     public RootNode getFunctionRootNode() {
         return callTarget.getRootNode();
     }
@@ -145,7 +151,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         return factory.createGenerator(name, callTargets, frameDescriptor, arguments, closure, executionCellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, iterator);
+                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode, iterator);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,81 +40,85 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.Node;
 
-public final class PTraceback extends PythonBuiltinObject {
+/**
+ * A lazy representation of an exception traceback that can be evaluated to a python object by
+ * {@link GetTracebackNode}.
+ *
+ * @see GetTracebackNode
+ */
+public class LazyTraceback {
+    private final PFrame.Reference frameInfo;
+    private final PFrame frame;
+    private final PException exception;
+    private final LazyTraceback nextChain;
+    private PTraceback traceback;
+    private boolean materialized;
 
-    private PFrame frame;
-    private PFrame.Reference frameInfo;
-    private int lineno = -2;
-    private PTraceback next;
-    private LazyTraceback lazyTraceback;
+    public LazyTraceback(PFrame.Reference frameInfo, PException exception, LazyTraceback nextChain) {
+        this.frame = null;
+        this.frameInfo = frameInfo;
+        this.exception = exception;
+        this.nextChain = nextChain;
+        this.materialized = false;
+    }
 
-    public PTraceback(PFrame frame, int lineno, PTraceback next) {
-        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
+    public LazyTraceback(PFrame frame, PException exception, LazyTraceback nextChain) {
         this.frame = frame;
-        this.lineno = lineno;
-        this.next = next;
+        this.frameInfo = null;
+        this.exception = exception;
+        this.nextChain = nextChain;
+        this.materialized = false;
     }
 
-    public PTraceback(LazyTraceback lazyTraceback) {
-        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
-        this.lazyTraceback = lazyTraceback;
-        this.frameInfo = lazyTraceback.getFrameInfo();
-        this.frame = lazyTraceback.getFrame();
-    }
-
-    public PFrame getFrame() {
-        return frame;
-    }
-
-    public void setFrame(PFrame frame) {
-        this.frame = frame;
+    public LazyTraceback(PTraceback traceback) {
+        this.traceback = traceback;
+        this.frameInfo = null;
+        this.frame = null;
+        this.nextChain = null;
+        this.exception = null;
+        this.materialized = true;
     }
 
     public PFrame.Reference getFrameInfo() {
         return frameInfo;
     }
 
-    public int getLineno() {
-        return lineno;
+    public PFrame getFrame() {
+        return frame;
     }
 
-    public LazyTraceback getLazyTraceback() {
-        return lazyTraceback;
+    public PException getException() {
+        return exception;
     }
 
-    public PTraceback getNext() {
-        return next;
+    public LazyTraceback getNextChain() {
+        return nextChain;
     }
 
-    public void setNext(PTraceback next) {
-        this.next = next;
+    public PTraceback getTraceback() {
+        return traceback;
     }
 
-    public void setLineno(int lineno) {
-        this.lineno = lineno;
-    }
-
-    public void markMaterialized() {
-        this.lazyTraceback = null;
+    public void setTraceback(PTraceback traceback) {
+        this.traceback = traceback;
+        this.materialized = true;
     }
 
     public boolean isMaterialized() {
-        return lazyTraceback == null;
+        return materialized;
     }
 
-    public static final String TB_FRAME = "tb_frame";
-    public static final String TB_NEXT = "tb_next";
-    public static final String TB_LASTI = "tb_lasti";
-    public static final String TB_LINENO = "tb_lineno";
-
-    @CompilationFinal(dimensions = 1) private static final Object[] TB_DIR_FIELDS = new Object[]{TB_FRAME, TB_NEXT, TB_LASTI, TB_LINENO};
-
-    static Object[] getTbFieldNames() {
-        return TB_DIR_FIELDS.clone();
+    public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
+        Frame frame = element.getFrame();
+        Node location = element.getLocation();
+        // only include frames of non-builtin python functions
+        return PArguments.isPythonFrame(frame) && location != null && location.getRootNode() != null && !location.getRootNode().isInternal();
     }
 }

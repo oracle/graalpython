@@ -213,7 +213,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1366,1425]`nl = format[0][len(f...`
                       Identifier: nl
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -366,7 +365,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [1764,1776]`lines.sort()`
                       PythonCallNodeGen SourceSection: [1764,1776]`lines.sort()`
                         CallNodeGen SourceSection: None
@@ -460,7 +458,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     WithNode SourceSection: [2133,2207]`with open(optfile, '...`
                       ExpressionStatementNode SourceSection: [2184,2205]`fp.writelines(format...`
                         PythonCallNodeGen SourceSection: [2184,2205]`fp.writelines(format...`
@@ -503,7 +500,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
