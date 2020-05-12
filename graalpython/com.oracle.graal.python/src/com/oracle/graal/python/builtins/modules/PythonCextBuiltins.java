@@ -157,6 +157,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCal
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -3276,34 +3277,27 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         public static int doConvert(CExtContext nativeContext, Object argv, Object nativeKwds, Object nativeFormat, Object nativeKwdnames, Object nativeVarargs,
+                        SplitFormatStringNode splitFormatStringNode,
                         InteropLibrary kwdsRefLib,
                         InteropLibrary kwdnamesRefLib,
                         ConditionProfile kwdsProfile,
                         ConditionProfile kwdnamesProfile,
-                        ConditionProfile functionNameProfile,
                         CExtAsPythonObjectNode kwdsToJavaNode,
                         CastToJavaStringNode castToStringNode,
                         CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
 
             // force 'format' to be a String
-            String format;
+            String[] split;
             try {
-                format = castToStringNode.execute(nativeFormat);
+                split = splitFormatStringNode.execute(castToStringNode.execute(nativeFormat));
+                assert split.length == 2;
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
-            String functionName = null;
 
-            int colonIdx = format.indexOf(":");
-            if (functionNameProfile.profile(colonIdx != -1)) {
-                // extract function name
-                // use 'colonIdx+1' because we do not want to include the colon
-                functionName = format.substring(colonIdx + 1);
-
-                // trim off function name
-                format = format.substring(0, colonIdx);
-            }
+            String format = split[0];
+            String functionName = split[1];
 
             // sort out if kwds is native NULL
             Object kwds;
@@ -3333,21 +3327,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class ParseTupleAndKeywordsNode extends ParseTupleAndKeywordsBaseNode {
 
         @Specialization(guards = "arguments.length == 5", limit = "2")
-        static int doConvert(Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static int doConvert(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached SplitFormatStringNode splitFormatStringNode,
                         @CachedLibrary("getKwds(arguments)") InteropLibrary kwdsInteropLib,
                         @CachedLibrary("getKwdnames(arguments)") InteropLibrary kwdnamesRefLib,
                         @Cached("createBinaryProfile()") ConditionProfile kwdsProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
                         @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             CExtContext nativeContext = context.getCApiContext();
             Object argv = argvToJavaNode.execute(arguments[0]);
-            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsInteropLib, kwdnamesRefLib, kwdsProfile,
-                            kwdnamesProfile, functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
+            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], arguments[4], splitFormatStringNode, kwdsInteropLib, kwdnamesRefLib,
+                            kwdsProfile, kwdnamesProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
         }
 
     }
@@ -3357,13 +3351,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class ParseTupleAndKeywordsVaListNode extends ParseTupleAndKeywordsBaseNode {
 
         @Specialization(guards = "arguments.length == 5", limit = "2")
-        static int doConvert(Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static int doConvert(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached SplitFormatStringNode splitFormatStringNode,
                         @CachedLibrary("getKwds(arguments)") InteropLibrary kwdsRefLib,
                         @CachedLibrary("getKwdnames(arguments)") InteropLibrary kwdnamesRefLib,
                         @Cached("createBinaryProfile()") ConditionProfile kwdsProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
                         @Cached PCallCExtFunction callMallocOutVarPtr,
                         @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
@@ -3372,8 +3366,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             CExtContext nativeContext = context.getCApiContext();
             Object argv = argvToJavaNode.execute(arguments[0]);
             VaListWrapper varargs = new VaListWrapper(nativeContext, arguments[4], callMallocOutVarPtr.call(nativeContext, NativeCAPISymbols.FUN_ALLOCATE_OUTVAR));
-            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], varargs, kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
-                            functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
+            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], varargs, splitFormatStringNode, kwdsRefLib, kwdnamesRefLib, kwdsProfile,
+                            kwdnamesProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
         }
     }
 

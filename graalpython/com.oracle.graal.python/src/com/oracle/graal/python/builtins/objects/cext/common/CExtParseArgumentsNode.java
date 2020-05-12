@@ -106,6 +106,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtParseArgumentsNode {
     static final char FORMAT_LOWER_S = 's';
@@ -1321,6 +1322,34 @@ public abstract class CExtParseArgumentsNode {
         static ParseArgumentsException raise() {
             CompilerDirectives.transferToInterpreter();
             throw new ParseArgumentsException();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class SplitFormatStringNode extends Node {
+
+        public abstract String[] execute(String format);
+
+        @Specialization(guards = "cachedFormat.equals(format)", limit = "1")
+        static String[] doCached(@SuppressWarnings("unused") String format,
+                        @Cached("format") @SuppressWarnings("unused") String cachedFormat,
+                        @Cached(value = "extractFormatOnly(format)", dimensions = 1) String[] cachedResult) {
+            return cachedResult;
+        }
+
+        @Specialization(replaces = "doCached")
+        static String[] doGeneric(String format,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFunctionNameProfile) {
+            int colonIdx = format.indexOf(":");
+            if (hasFunctionNameProfile.profile(colonIdx != -1)) {
+                // trim off function name
+                return new String[]{format.substring(0, colonIdx), format.substring(colonIdx + 1)};
+            }
+            return new String[]{format, ""};
+        }
+
+        static String[] extractFormatOnly(String format) {
+            return doGeneric(format, ConditionProfile.getUncached());
         }
     }
 }
