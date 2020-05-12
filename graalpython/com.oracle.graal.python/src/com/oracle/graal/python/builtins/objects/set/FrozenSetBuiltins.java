@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -555,6 +556,69 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             }
         }
 
+    }
+
+    @Builtin(name = "isdisjoint", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IsDisjointNode extends PythonBinaryBuiltinNode {
+        @Child private GetLazyClassNode getClassNode;
+
+        @Specialization(guards = "self == other", limit = "2")
+        boolean isDisjointSameObject(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
+            return lib.lengthWithState(self.getDictStorage(), state) == 0;
+        }
+
+        @Specialization(guards = {"self != other", "cannotBeOverridden(getClass(other))"}, limit = "2")
+        boolean isDisjointFastPath(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib) {
+            ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
+            return selfLib.isDisjointWithState(self.getDictStorage(), other.getDictStorage(), state);
+        }
+
+        @Specialization(guards = {"self != other", "!cannotBeOverridden(getClass(other))"}, limit = "2")
+        boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            return isDisjointGeneric(frame, self, other, hasFrame, selfLib, getIteratorNode, getNextNode, errorProfile);
+        }
+
+        @Specialization(guards = {"!isAnySet(other)"}, limit = "3")
+        boolean isDisjointGeneric(VirtualFrame frame, PBaseSet self, Object other,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
+            HashingStorage selfStorage = self.getDictStorage();
+            Object iterator = getIteratorNode.executeWith(frame, other);
+            while (true) {
+                try {
+                    Object nextValue = getNextNode.execute(frame, iterator);
+                    if (selfLib.hasKeyWithState(selfStorage, nextValue, state)) {
+                        return false;
+                    }
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return true;
+                }
+            }
+        }
+
+        public LazyPythonClass getClass(Object obj) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetLazyClassNode.create());
+            }
+            return getClassNode.execute(obj);
+        }
     }
 
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
