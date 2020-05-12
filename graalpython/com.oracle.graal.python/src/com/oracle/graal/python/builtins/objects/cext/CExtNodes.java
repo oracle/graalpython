@@ -3023,23 +3023,40 @@ public abstract class CExtNodes {
             delegate.clearNativeWrapper();
         }
 
-        @Specialization
-        static void doPrimitiveNativeWrapper(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+        @Specialization(guards = "delegate == null")
+        static void doPrimitiveNativeWrapper(@SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
+            if (profile.profile(nativeWrapper.getHandleValidAssumption() != null)) {
+                nativeWrapper.getHandleValidAssumption().invalidate("releasing handle for native wrapper");
+            }
+        }
+
+        @Specialization(guards = "delegate != null")
+        static void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
-                assert !CApiGuards.isSmallIntegerWrapper(nativeWrapper) : "clearing primitive native wrapper for small integer";
+                assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
                 delegate.clearNativeWrapper();
             }
         }
 
-        @Specialization(guards = "!isAnyPythonObject(delegate)")
+        @Specialization(guards = {"delegate != null", "!isAnyPythonObject(delegate)"})
         static void doOther(@SuppressWarnings("unused") Object delegate, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper) {
+            assert !isPrimitiveNativeWrapper(nativeWrapper);
             // ignore
         }
 
         static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {
             return nativeWrapper instanceof PrimitiveNativeWrapper;
         }
+
+        private static boolean isSmallIntegerWrapperSingleton(ContextReference<PythonContext> contextRef, PrimitiveNativeWrapper nativeWrapper) {
+            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && ToSulongNode.doLongSmall(null, nativeWrapper.getLong(), contextRef) == nativeWrapper;
+        }
+
     }
 
     @GenerateUncached
