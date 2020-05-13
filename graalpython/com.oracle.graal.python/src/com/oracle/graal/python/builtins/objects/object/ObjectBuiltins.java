@@ -603,7 +603,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT_SUBCLASS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __INIT_SUBCLASS__, minNumOfPositionalArgs = 1, isClassmethod = true)
     @GenerateNodeFactory
     abstract static class InitSubclass extends PythonUnaryBuiltinNode {
         @Specialization
