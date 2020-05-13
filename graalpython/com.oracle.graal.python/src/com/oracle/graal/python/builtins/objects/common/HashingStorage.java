@@ -372,7 +372,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage addAllToOther(HashingStorage other,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Cached AddToOtherInjectNode injectNode) {
         return libSelf.injectInto(this, new HashingStorage[]{this, other}, injectNode)[1];
     }
@@ -516,7 +516,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage intersect(HashingStorage other,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Cached IntersectInjectionNode injectNode) {
         HashingStorage newStore = EconomicMapStorage.create();
         return libSelf.injectInto(this, new HashingStorage[]{other, newStore}, injectNode)[1];
@@ -550,7 +550,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public boolean isDisjointWithState(HashingStorage other, ThreadState state,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile selfIsShorterProfile,
                     @Cached IsDisjointForEachNode isDisjointForEachNode) {
@@ -611,7 +611,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage diff(HashingStorage other,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Exclusive @Cached DiffInjectNode diffNode) {
         HashingStorage newStore = EconomicMapStorage.create();
         return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
