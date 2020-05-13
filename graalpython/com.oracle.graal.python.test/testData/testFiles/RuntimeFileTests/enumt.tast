@@ -6706,9 +6706,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [7,<return_val>,Illegal]
-                                        TernaryArithmeticExpression SourceSection: [26602,26619]`2 ** (high_bit+1)`
-                                          LookupAndCallTernaryNodeGen SourceSection: None
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                        BinaryArithmeticExpression SourceSection: [26602,26619]`2 ** (high_bit+1)`
+                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                            Op: __pow__
                                           IntegerLiteralNode SourceSection: [26602,26603]`2`
                                             Value: 2
                                           BinaryArithmeticExpression SourceSection: [26608,26618]`high_bit+1`
@@ -8569,9 +8569,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     Identifier: flag_value
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [7,flag_value,Illegal]
-                                                    TernaryArithmeticExpression SourceSection: [30753,30761]`2 ** bit`
-                                                      LookupAndCallTernaryNodeGen SourceSection: None
-                                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                                    BinaryArithmeticExpression SourceSection: [30753,30761]`2 ** bit`
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __pow__
                                                       IntegerLiteralNode SourceSection: [30753,30754]`2`
                                                         Value: 2
                                                       ReadLocalVariableNode SourceSection: [30758,30761]`bit`
@@ -10131,9 +10131,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ReadLocalVariableNode SourceSection: [34530,34535]`value`
                                 Frame: [0,value,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              TernaryArithmeticExpression SourceSection: [34539,34560]`2 ** _high_bit(value...`
-                                LookupAndCallTernaryNodeGen SourceSection: None
-                                  CallTernaryMethodCachedNodeGen SourceSection: None
+                              BinaryArithmeticExpression SourceSection: [34539,34560]`2 ** _high_bit(value...`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __pow__
                                 IntegerLiteralNode SourceSection: [34539,34540]`2`
                                   Value: 2
                                 PythonCallNodeGen SourceSection: [34544,34560]`_high_bit(value)`

@@ -168,6 +168,14 @@ print its path as the last output, if successful.
 
     mx python-svm
 
+If you made changes to the parser, you may have to regenerate the golden files
+like so:
+
+    find graalpython -name *.scope -delete
+    find graalpython -name *.tast -delete
+    mx punittest com.oracle.graal.python.test.parser
+
+
 ### Benchmarking
 
 We use the `mx` facilities for benchmarking. Use this to list the available

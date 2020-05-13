@@ -5,9 +5,9 @@ ModuleRootNode Name: <module 'binaryOp03'> SourceSection: [0,6]`3 ** 2`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,6]`3 ** 2`
-    TernaryArithmeticExpression SourceSection: [0,6]`3 ** 2`
-      LookupAndCallTernaryNodeGen SourceSection: None
-        CallTernaryMethodCachedNodeGen SourceSection: None
+    BinaryArithmeticExpression SourceSection: [0,6]`3 ** 2`
+      LookupAndCallBinaryNodeGen SourceSection: None
+        Op: __pow__
       IntegerLiteralNode SourceSection: [0,1]`3`
         Value: 3
       IntegerLiteralNode SourceSection: [5,6]`2`

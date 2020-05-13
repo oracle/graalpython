@@ -77,7 +77,6 @@ import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
@@ -1138,15 +1137,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         ExpressionNode subscript = (ExpressionNode) node.subscript.accept(this);
         PNode result = nodeFactory.createSubscriptLoad(receiver, subscript);
-        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-        return result;
-    }
-
-    @Override
-    public PNode visit(TernaryArithmeticSSTNode node) {
-        ExpressionNode left = (ExpressionNode) node.left.accept(this);
-        ExpressionNode right = (ExpressionNode) node.right.accept(this);
-        ExpressionNode result = TernaryArithmetic.Pow.create(left, right);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }

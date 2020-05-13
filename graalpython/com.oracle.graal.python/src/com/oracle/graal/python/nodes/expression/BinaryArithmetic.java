@@ -42,12 +42,11 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 
@@ -63,7 +62,8 @@ public enum BinaryArithmetic {
     And(SpecialMethodNames.__AND__, "&"),
     Or(SpecialMethodNames.__OR__, "|"),
     Xor(SpecialMethodNames.__XOR__, "^"),
-    MatMul(SpecialMethodNames.__MATMUL__, "@");
+    MatMul(SpecialMethodNames.__MATMUL__, "@"),
+    Pow(SpecialMethodNames.__POW__, "**");
 
     private final String methodName;
     private final String operator;
