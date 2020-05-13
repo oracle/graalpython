@@ -89,17 +89,12 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             return self;
         }
 
-        /*
-         * NOTE: we deliberately use 'PGuards.isNone' because we allow NO_VALUE (which would be a
-         * NULL pointer in CPython) and CPython allows this.
-         */
-        @Specialization(guards = {"!isNone(instance)", "!self.isStatic()"})
+        @Specialization(guards = {"!isPNone(instance)", "!self.isStatic()"})
         protected PMethod doMethod(PFunction self, Object instance, Object klass) {
             return factory().createMethod(instance, self);
         }
 
-        // NOTE: we deliberately use 'PGuards.isNone' because NO_VALUE is NOT allowed here.
-        @Specialization(guards = "isNone(instance)")
+        @Specialization
         protected Object doFunction(PFunction self, PNone instance, Object klass) {
             return self;
         }
@@ -110,18 +105,12 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             return self;
         }
 
-        /*
-         * NOTE: we deliberately use 'PGuards.isNone' because we allow NO_VALUE (which would be a
-         * NULL pointer in CPython) and CPython allows this.
-         */
-        @Specialization(guards = {"!isNone(instance)", "!self.isStatic()"})
+        @Specialization(guards = {"!isPNone(instance)", "!self.isStatic()"})
         protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
-            // a builtin method does neither require an instance nor a class
             return factory().createBuiltinMethod(instance, self);
         }
 
-        // NOTE: we deliberately use 'PGuards.isNone' because NO_VALUE is NOT allowed here.
-        @Specialization(guards = "isNone(instance)")
+        @Specialization
         protected Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
             return self;
         }
