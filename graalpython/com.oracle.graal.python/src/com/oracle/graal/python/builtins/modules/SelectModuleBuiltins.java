@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.nodes.util.CoerceToFileDescriptorNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -80,6 +81,11 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 
 @CoreFunctions(defineModule = "select")
 public class SelectModuleBuiltins extends PythonBuiltins {
+
+    public SelectModuleBuiltins() {
+        builtinConstants.put("error", PythonErrorType.OSError);
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SelectModuleBuiltinsFactory.getFactories();

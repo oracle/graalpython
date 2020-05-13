@@ -168,6 +168,9 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     ZLibError("error", "zlib"),
     LZMAError("LZMAError", "_lzma"),
     StructError("StructError", "_struct"),
+    SocketGAIError("gaierror", "_socket"),
+    SocketHError("herror", "_socket"),
+    SocketTimeout("timeout", "_socket"),
 
     // todo: all OS errors
 
@@ -318,6 +321,9 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         ZipImportError.base = ImportError;
         ZLibError.base = Exception;
         LZMAError.base = Exception;
+        SocketGAIError.base = OSError;
+        SocketHError.base = OSError;
+        SocketTimeout.base = OSError;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;
