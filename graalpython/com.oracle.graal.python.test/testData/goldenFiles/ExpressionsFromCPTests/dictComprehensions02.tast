@@ -45,9 +45,9 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                     YieldNode SourceSection: None
                       flagSlot: 0
                       TupleLiteralNode SourceSection: None
-                        TernaryArithmeticExpression SourceSection: [1,5]`x**2`
-                          LookupAndCallTernaryNodeGen SourceSection: None
-                            CallTernaryMethodCachedNodeGen SourceSection: None
+                        BinaryArithmeticExpression SourceSection: [1,5]`x**2`
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __pow__
                           ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                             Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
