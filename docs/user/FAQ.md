@@ -18,10 +18,12 @@ supported. Please see our [migration document](./JYTHON) for details.
 ### Do I need to compile and run native modules as LLVM bitcode to use GraalPython?
 
 If you want to run C extensions or use certain built-in features, yes, you need
-to build the module with GraalPython and then it will run using on the GraalVM
-LLVM runtime. However, many of the core features of Python, including large
-parts of the `os` API, are implemented in Java so many standard library modules
-and packages work without requiring running LLVM bitcode.
+to build the module with GraalPython and then it will run using the GraalVM LLVM
+runtime. However, many of the core features of Python (including e.g. large
+parts of the `os` API) are implemented in pure Java and many standard library
+modules and packages work without running any LLVM bitcode. So even though
+GraalPython depends on GraalVM LLVM, for many use cases you can disallow native
+modules entirely.
 
 ### Can I use GraalVM sandboxing features with GraalPython?
 
