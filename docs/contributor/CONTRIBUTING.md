@@ -51,9 +51,9 @@ are:
 - `python-unittest` - Run the unittests written in Python, including those for the C extension API
 - `python-license` - Check that all files have the correct copyright headers applied to them
 
-###### Builtin modules and classes
+###### Built-In modules and classes
 
-For the most part, builtin modules and classes are implemented in the
+For the most part, built-in modules and classes are implemented in the
 `com.oracle.graal.python.builtins` package. For each module or class, there's
 Java class annoted with `@CoreFunctions`. Each function in a module or a class
 is implemented in a Node annotated with `@Builtin`. Take a look at the existing
@@ -61,13 +61,37 @@ implementations to get a feel for how this is done. For now, when adding new
 classes or modules, they need to be added to the list in
 `com.oracle.graal.python.builtins.Python3Core`.
 
-Some builtin functions, modules, and classes are implemented in pure Python. The
+Some built-in functions, modules, and classes are implemented in pure Python. The
 files for this are in `graalpython/lib-graalpython`. These files are listed in
 the Java `com.oracle.graal.python.builtins.Python3Core` class. Take a look at
 these files to see what they do. If a file is called exactly as a built-in
 module is, it is executed in the context of that module during startup, so some
 of our modules are implemented both in Java and Python. If the name matches no
 existing module, the file is executed just for the side-effects.
+
+When implementing a new (or fixing an existing) built-in, take a look at the
+CPython source. The layout and naming of modules and types is kept similar to
+the CPython source so it should be relatively easy to find the right piece of
+code. For some special dunder methods (`__add__`, `__getitem__`,
+`__getattribute__`, ...) you may have to figure out the C API slot names for
+them to find the right piece of code (`nb_add`, `sq_item`, `tp_getattr`, ...).
+
+You will find that often there are specific C API methods that are called to
+convert or coerce arguments, to look up methods either starting on the object or
+only on the class, to call a callable object or invoke a method, and more. In
+general, most of these methods should have equivalents in our
+`PythonObjectLibrary`. See the
+[IMPLEMENTATION_DETAILS.md](./IMPLEMENTATION_DETAILS.md) file for details on
+that library. If something is missing that is commonly used, we probably have
+some Node for it, but it may be a good idea to add it to the
+`PythonObjectLibrary` for easier discovery.
+
+Sometimes, you will not easily find what exactly happens for a given piece of
+code when that involves more than just a simple built-in call. The `dis` module
+on CPython can often help get an angle on what a particular piece of code is
+doing. You can call `dis.dis` on any Python function and it will print you
+details of the bytecode and associated data, which can be a good starting point
+to browse through the CPython source.
 
 ###### Python C API
 
