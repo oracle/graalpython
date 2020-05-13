@@ -564,7 +564,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Child private GetLazyClassNode getClassNode;
 
         @Specialization(guards = "self == other", limit = "2")
-        boolean isDisjointSameObject(VirtualFrame frame, PBaseSet self, PBaseSet other,
+        boolean isDisjointSameObject(VirtualFrame frame, PBaseSet self, @SuppressWarnings("unused") PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
