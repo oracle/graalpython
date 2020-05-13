@@ -200,7 +200,6 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
@@ -323,6 +322,7 @@ final class Signals {
             this.seconds = seconds;
         }
 
+        @Override
         public void run() {
             long t0 = System.currentTimeMillis();
             while ((System.currentTimeMillis() - t0) < seconds * 1000) {
@@ -348,6 +348,7 @@ final class Signals {
             this.handler = handler;
         }
 
+        @Override
         public void handle(sun.misc.Signal arg0) {
             handler.run();
         }
