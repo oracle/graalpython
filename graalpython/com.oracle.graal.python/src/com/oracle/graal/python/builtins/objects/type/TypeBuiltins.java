@@ -630,7 +630,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @CompilationFinal private IsBuiltinClassProfile isTupleProfile;
 
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
-        boolean doManagedManaged(VirtualFrame frame, LazyPythonClass cls, LazyPythonClass derived) {
+        boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived) {
             return isSameType(cls, derived) || isSubtypeNode.execute(frame, derived, cls);
         }
 
