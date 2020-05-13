@@ -39,6 +39,7 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -355,6 +356,7 @@ public final class Python3Core implements PythonCore {
                         new TimeModuleBuiltins(),
                         new ModuleBuiltins(),
                         new MathModuleBuiltins(),
+                        new CmathModuleBuiltins(),
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
