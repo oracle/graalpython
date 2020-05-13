@@ -210,6 +210,7 @@ def nativebuild(args):
 
 
 def nativeclean(args):
+    print("native clean")
     "Clean the non-Java Python projects"
     mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
@@ -1699,6 +1700,18 @@ def checkout_find_version_for_graalvm(args):
                 if other_version:
                     break
 
+orig_clean = mx.command_function("clean")
+def python_clean(args): 
+    orig_clean(args)
+    count = 0;
+    for path in os.walk(SUITE.dir):
+        for file in glob.iglob(os.path.join(path[0], '*.pyc')):
+            count += 1
+            os.remove(file)
+            
+    if count > 0:
+        print ('Cleaning', count, "`*.pyc` files...")
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -1724,4 +1737,5 @@ mx.update_commands(SUITE, {
     'python-src-import': [import_python_sources, ''],
     'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
+    'clean': [python_clean, ''],
 })
