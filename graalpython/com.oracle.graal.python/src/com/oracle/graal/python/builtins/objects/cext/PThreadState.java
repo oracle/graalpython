@@ -285,21 +285,8 @@ public class PThreadState extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberInsertable(String member) {
-        // TODO: cbasca, fangerer is this true ?
-        switch (member) {
-            case CUR_EXC_TYPE:
-            case CUR_EXC_VALUE:
-            case CUR_EXC_TRACEBACK:
-            case EXC_TYPE:
-            case EXC_VALUE:
-            case EXC_TRACEBACK:
-            case RECURSION_DEPTH:
-            case OVERFLOWED:
-                return true;
-            default:
-                return false;
-        }
+    protected boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+        return false;
     }
 
     @ExportMessage
