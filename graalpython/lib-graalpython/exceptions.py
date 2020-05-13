@@ -143,7 +143,13 @@ def _oserror_init(self, *arg):
         if(narg >= 5):
             self.filename2 = arg[4]
         if(narg >= 3):
-            self.filename = arg[2]
+            if type(self) == BlockingIOError:
+                try:
+                    self.characters_written = arg[2].__index__()
+                except Exception:
+                    self.filename = arg[2]
+            else:
+                self.filename = arg[2]
 
 def OSError__new__(subtype, *args, **kwds):
     newtype = subtype
