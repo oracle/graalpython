@@ -66,6 +66,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static final String LANGUAGE_ID = "python";
     private static final String MIME_TYPE = "text/x-python";
 
+    // provided by GraalVM bash launchers, ignored in native image mode
+    private static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+
     private ArrayList<String> programArgs = null;
     private String commandString = null;
     private String inputFile = null;
@@ -287,6 +290,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         relaunchArgs.add(arg);
     }
 
+    private String[] execListWithRelaunchArgs(String executableName) {
+        if (relaunchArgs == null) {
+            return new String[]{executableName};
+        } else {
+            ArrayList<String> execList = new ArrayList<>(relaunchArgs.size() + 1);
+            execList.add(executableName);
+            execList.addAll(relaunchArgs);
+            return execList.toArray(new String[execList.size()]);
+        }
+    }
+
     private static void printShortHelp() {
         print("usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
                         "Try `python -h' for more information.");
@@ -298,13 +312,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private String[] getExecutableList() {
         if (ImageInfo.inImageCode()) {
-            ArrayList<String> exec_list = new ArrayList<>();
-            exec_list.add(ProcessProperties.getExecutableName());
-            if (relaunchArgs != null) {
-                exec_list.addAll(relaunchArgs);
-            }
-            return exec_list.toArray(new String[exec_list.size()]);
+            return execListWithRelaunchArgs(ProcessProperties.getExecutableName());
         } else {
+            if (BASH_LAUNCHER_EXEC_NAME != null) {
+                return execListWithRelaunchArgs(BASH_LAUNCHER_EXEC_NAME);
+            }
             StringBuilder sb = new StringBuilder();
             ArrayList<String> exec_list = new ArrayList<>();
             sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
@@ -338,6 +350,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (ImageInfo.inImageBuildtimeCode()) {
             return "";
         } else {
+            if (BASH_LAUNCHER_EXEC_NAME != null) {
+                return BASH_LAUNCHER_EXEC_NAME;
+            }
             String[] executableList = getExecutableList();
             for (int i = 0; i < executableList.length; i++) {
                 if (executableList[i].matches("\\s")) {
