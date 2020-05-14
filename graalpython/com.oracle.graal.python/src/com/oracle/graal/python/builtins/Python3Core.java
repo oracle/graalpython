@@ -39,7 +39,6 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -49,6 +48,7 @@ import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
