@@ -277,9 +277,20 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PTuple doC(PComplex value) {
-            double r = Math.hypot(value.getImag(), value.getReal()); //TODO: why doesn't ComplexBuiltins.AbsNode use this?
-            if (Double.isInfinite(r)) {
-                throw raise(OverflowError, "absolute value too large");
+            double r;
+            if (!Double.isFinite(value.getReal()) || !Double.isFinite(value.getImag())) {
+                if (Double.isInfinite(value.getReal())) {
+                    r = Math.abs(value.getReal());
+                } else if (Double.isInfinite(value.getImag())) {
+                    r = Math.abs(value.getImag());
+                } else {
+                    r = Double.NaN;
+                }
+            } else {
+                r = Math.hypot(value.getReal(), value.getImag()); //TODO: why doesn't ComplexBuiltins.AbsNode use this?
+                if (Double.isInfinite(r)) {
+                    throw raise(OverflowError, "absolute value too large");
+                }
             }
             return factory().createTuple(new Object[]{ r, Math.atan2(value.getImag(), value.getReal()) });
         }
