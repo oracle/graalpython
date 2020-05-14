@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -94,7 +93,6 @@ import com.oracle.graal.python.util.WeakASTReference;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -160,12 +158,14 @@ public abstract class PGuards {
         return value instanceof PBuiltinFunction || value instanceof PFunction || value instanceof PBuiltinMethod || value instanceof PMethod;
     }
 
-    public static boolean isClass(Object value) {
-        return value instanceof PythonBuiltinClassType || value instanceof PythonManagedClass || value instanceof PythonAbstractNativeObject;
-    }
-
-    public static boolean isClass(Object value, InteropLibrary lib) {
-        return lib.isMetaObject(value) && isAnyPythonObject(value, lib);
+    public static boolean isClass(Object obj, InteropLibrary lib) {
+        try {
+            return lib.isMetaObject(obj) && lib.hasLanguage(obj) && lib.getLanguage(obj) == PythonLanguage.class;
+        } catch (UnsupportedMessageException e) {
+            // cannot happen due to check
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
+        }
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {
@@ -249,17 +249,6 @@ public abstract class PGuards {
 
     public static boolean isPythonObject(Object obj) {
         return obj instanceof PythonObject;
-    }
-
-    private static boolean isPythonObject(Object obj, InteropLibrary lib) {
-        // assert lib.hasLanguage(obj);
-        try {
-            return lib.getLanguage(obj) == PythonLanguage.class;
-        } catch (UnsupportedMessageException e) {
-            // cannot happen due to check
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException(e);
-        }
     }
 
     /**
@@ -369,19 +358,6 @@ public abstract class PGuards {
 
     public static boolean isAnyPythonObject(Object obj) {
         return obj instanceof PythonAbstractObject;
-    }
-
-    public static boolean isAnyPythonObject(Object obj, InteropLibrary lib) {
-        return lib.hasLanguage(obj) && isPythonObject(obj, lib);
-    }
-
-    public static boolean isForeignObject(Object obj, InteropLibrary lib) {
-        return !(obj instanceof String || obj instanceof Integer || obj instanceof Long || obj instanceof Double || obj instanceof Boolean ||
-                        isAnyPythonObject(obj, lib));
-    }
-
-    public static boolean isForeignObject(Object obj) {
-        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
     }
 
     public static boolean isPInt(Object obj) {

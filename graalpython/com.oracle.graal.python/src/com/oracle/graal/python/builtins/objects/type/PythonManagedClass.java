@@ -238,4 +238,17 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public boolean needsNativeAllocation() {
         return needsNativeAllocation;
     }
+
+    public static boolean isInstance(Object object) {
+        return object instanceof PythonClass || object instanceof PythonBuiltinClass;
+    }
+
+    public static PythonManagedClass cast(Object object) {
+        if (object instanceof PythonClass) {
+            return (PythonClass) object;
+        } else {
+            return (PythonBuiltinClass) object;
+        }
+    }
+
 }

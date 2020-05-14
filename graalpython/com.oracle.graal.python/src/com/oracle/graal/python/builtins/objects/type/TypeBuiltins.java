@@ -249,13 +249,13 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = {"doItUnboxedUser", "doItUnboxedBuiltin", "doItUnboxedBuiltinType"})
         protected Object doItUnboxedIndirect(VirtualFrame frame, PNone noSelf, Object[] arguments, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             Object self = arguments[0];
             if (self instanceof PythonBuiltinClassType) {
                 return doItUnboxedBuiltinType(frame, noSelf, arguments, keywords, self, lib);
             } else if (PGuards.isPythonBuiltinClass(self)) {
                 return doItUnboxedBuiltin(frame, noSelf, arguments, keywords, self, lib);
-            } else if (PGuards.isClass(self)) {
+            } else if (PGuards.isClass(self, lib)) {
                 return doItUnboxedUser(frame, noSelf, arguments, keywords, self, lib);
             } else {
                 throw raise(TypeError, "descriptor '__call__' requires a 'type' object but received a '%p'", self);

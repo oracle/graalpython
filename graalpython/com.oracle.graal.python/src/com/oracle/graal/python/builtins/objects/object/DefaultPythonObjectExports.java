@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -213,5 +214,18 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary oLib, ThreadState state) {
         return receiver == other || oLib.equalsInternal(receiver, other, state) == 1;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    static boolean isForeignObject(Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary lib) {
+        try {
+            return !lib.hasLanguage(receiver) || lib.getLanguage(receiver) != PythonLanguage.class;
+        } catch (UnsupportedMessageException e) {
+            // cannot happen due to check
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
+        }
     }
 }
