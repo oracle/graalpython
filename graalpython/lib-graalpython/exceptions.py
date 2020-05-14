@@ -131,17 +131,25 @@ def _oserror_use_init(subtype):
 
 def _oserror_init(self, *arg):
     narg = len(arg)
+    self.args = arg
     self.errno = None
     self.strerror = None
     self.filename = None
     self.filename2 = None
     if (2 <= narg and narg <= 5):
+        self.args = arg[0:2]
         self.errno = arg[0]
         self.strerror = arg[1]
         if(narg >= 5):
             self.filename2 = arg[4]
         if(narg >= 3):
-            self.filename = arg[2]
+            if type(self) == BlockingIOError:
+                try:
+                    self.characters_written = arg[2].__index__()
+                except Exception:
+                    self.filename = arg[2]
+            else:
+                self.filename = arg[2]
 
 def OSError__new__(subtype, *args, **kwds):
     newtype = subtype
@@ -149,8 +157,8 @@ def OSError__new__(subtype, *args, **kwds):
         myerrno = args[0]
         if (type(myerrno) is int and subtype is OSError and myerrno in _errnomap):
             newtype = _errnomap[myerrno]
-    
-    self = BaseException.__new__(newtype, *args, **kwds)
+
+    self = BaseException.__new__(newtype)
     self.errno = self.strerror = self.filename = self.filename2 = None
     if (not _oserror_use_init(newtype)):
         _oserror_init(self, *args)
