@@ -40,15 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -99,6 +102,40 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
+    static class IsSame {
+        @Specialization
+        static boolean bb(Boolean receiver, boolean other) {
+            return receiver == other;
+        }
+
+        @Specialization
+        static boolean bI(Boolean receiver, PInt other,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            if (receiver) {
+                if (other == context.getCore().getTrue()) {
+                    return true; // avoid the TruffleBoundary isOne call if we can
+                } else if (isBuiltin.profileObject(other, PythonBuiltinClassType.Boolean)) {
+                    return other.isOne();
+                }
+            } else {
+                if (other == context.getCore().getFalse()) {
+                    return true;
+                } else if (isBuiltin.profileObject(other, PythonBuiltinClassType.Boolean)) {
+                    return other.isZero();
+                }
+            }
+            return false;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean bO(Boolean receiver, Object other) {
+            return false;
+        }
+    }
+
+    @ExportMessage
     static class EqualsInternal {
         @Specialization
         static int bb(Boolean receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
@@ -127,9 +164,9 @@ final class DefaultPythonBooleanExports {
 
         @Specialization
         static int bF(Boolean receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltinFloat.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
+            if (isBuiltin.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
                 return (receiver && other.getValue() == 1 || receiver && other.getValue() == 0) ? 1 : 0;
             } else {
                 return -1;
@@ -175,8 +212,8 @@ final class DefaultPythonBooleanExports {
 
         @Specialization
         static boolean bF(Boolean receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
-                        @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
-            if (isBuiltinFloat.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
                 return receiver ? other.getValue() == 1 : other.getValue() == 0;
             } else {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;

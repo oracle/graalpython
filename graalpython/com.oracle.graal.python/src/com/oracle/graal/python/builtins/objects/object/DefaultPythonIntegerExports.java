@@ -99,6 +99,38 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
+    static class IsSame {
+        @Specialization
+        static boolean ii(Integer receiver, int other) {
+            return receiver == other;
+        }
+
+        @Specialization
+        static boolean il(Integer receiver, long other) {
+            return receiver == other;
+        }
+
+        @Specialization
+        static boolean iP(Integer receiver, PInt other,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                try {
+                    return receiver == other.intValueExact();
+                } catch (ArithmeticException e) {
+                    // pass
+                }
+            }
+            return false;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean iO(Integer receiver, Object other) {
+            return false;
+        }
+    }
+
+    @ExportMessage
     static class EqualsInternal {
         @Specialization
         static int ib(Integer receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
@@ -127,9 +159,9 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static int iF(Integer receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltinFloat.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
+            if (isBuiltin.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
                 return other.getValue() == receiver ? 1 : 0;
             } else {
                 return -1;
@@ -174,9 +206,9 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static boolean iF(Integer receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
-                        @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltinFloat.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
+            if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
                 return receiver == other.getValue();
             } else {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;

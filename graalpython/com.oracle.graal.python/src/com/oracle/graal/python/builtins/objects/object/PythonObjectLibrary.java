@@ -357,6 +357,11 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Compare {@code receiver} to {@code other} using CPython pointer comparison semantics.
+     */
+    public abstract boolean isSame(Object receiver, Object other);
+
+    /**
      * Compare {@code receiver} to {@code other}. If the receiver does not know how to compare
      * itself to the argument, the comparison is tried in reverse. This implements
      * {@code PyObject_RichCompareBool} (which calls {@code do_richcompare}) for the {@code __eq__}
@@ -370,9 +375,10 @@ public abstract class PythonObjectLibrary extends Library {
      *            dispatch.
      */
     public boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary otherLibrary, ThreadState threadState) {
-        if (receiver == other) {
+        if (isSame(receiver, other)) {
             return true; // guarantee
         }
+
         boolean checkedReverseOp = false;
 
         LazyPythonClass leftClass = getLazyPythonClass(receiver);

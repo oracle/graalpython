@@ -45,6 +45,8 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -80,6 +82,30 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static boolean isTrue(Double value) {
         return value != 0.0;
+    }
+
+    @ExportMessage
+    static class IsSame {
+        @Specialization
+        static boolean dd(Double receiver, double other) {
+            return Double.compare(receiver, other) == 0;
+        }
+
+        @Specialization
+        static boolean dF(Double receiver, PFloat other,
+                        @Cached IsBuiltinClassProfile isFloat) {
+            if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
+                return dd(receiver, other.getValue());
+            } else {
+                return false;
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean dO(Double receiver, Object other) {
+            return false;
+        }
     }
 
     @ExportMessage
