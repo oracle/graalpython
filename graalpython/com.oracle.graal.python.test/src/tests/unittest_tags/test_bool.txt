@@ -7,6 +7,7 @@
 *BoolTest.test_fileclosed
 *BoolTest.test_float
 *BoolTest.test_format
+*BoolTest.test_from_bytes
 *BoolTest.test_hasattr
 *BoolTest.test_int
 *BoolTest.test_isinstance
