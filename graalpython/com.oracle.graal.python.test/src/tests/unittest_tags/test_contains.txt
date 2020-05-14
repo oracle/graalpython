@@ -1,2 +1,4 @@
 *TestContains.test_block_fallback
 *TestContains.test_builtin_sequence_types
+*TestContains.test_common_tests
+*TestContains.test_nonreflexive

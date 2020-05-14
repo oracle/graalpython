@@ -1772,7 +1772,7 @@ public abstract class SequenceStorageNodes {
 
         @Override
         protected boolean cmp(double l, double r) {
-            return l == r;
+            return java.lang.Double.compare(l, r) == 0;
         }
 
         @Override
@@ -1790,7 +1790,6 @@ public abstract class SequenceStorageNodes {
     public abstract static class CmpNode extends SequenceStorageBaseNode {
         @Child private GetItemScalarNode getItemNode;
         @Child private GetItemScalarNode getRightItemNode;
-        @Child private BinaryComparisonNode eqNode;
         @Child private BinaryComparisonNode comparisonNode;
         @Child private CoerceToBooleanNode castToBooleanNode;
 
@@ -1899,21 +1898,23 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 double litem = left.getDoubleItemNormalized(i);
                 double ritem = right.getDoubleItemNormalized(i);
-                if (litem != ritem) {
+                if (java.lang.Double.compare(litem, ritem) != 0) {
                     return cmpOp.cmp(litem, ritem);
                 }
             }
             return cmpOp.cmp(llen, rlen);
         }
 
-        @Fallback
-        boolean doGeneric(VirtualFrame frame, SequenceStorage left, SequenceStorage right) {
+        @Specialization
+        boolean doGeneric(VirtualFrame frame, SequenceStorage left, SequenceStorage right,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             int llen = getLenNode().execute(left);
             int rlen = getLenNode().execute(right);
+            ThreadState state = PArguments.getThreadState(frame);
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 Object leftItem = getGetItemNode().execute(left, i);
                 Object rightItem = getGetRightItemNode().execute(right, i);
-                if (!eq(frame, leftItem, rightItem)) {
+                if (!lib.equalsWithState(leftItem, rightItem, lib, state)) {
                     return cmpGeneric(frame, leftItem, rightItem);
                 }
             }
@@ -1934,14 +1935,6 @@ public abstract class SequenceStorageNodes {
                 getRightItemNode = insert(GetItemScalarNode.create());
             }
             return getRightItemNode;
-        }
-
-        private boolean eq(VirtualFrame frame, Object left, Object right) {
-            if (eqNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(BinaryComparisonNode.create(__EQ__, __EQ__, "=="));
-            }
-            return castToBoolean(frame, eqNode.executeWith(frame, left, right));
         }
 
         private boolean cmpGeneric(VirtualFrame frame, Object left, Object right) {
@@ -3521,7 +3514,7 @@ public abstract class SequenceStorageNodes {
         int doDouble(SequenceStorage s, double item, int start, int end,
                         @Cached @SuppressWarnings("unused") GetElementType getElementType) {
             for (int i = start; i < getLength(s, end); i++) {
-                if (getItemScalarNode().executeDouble(s, i) == item) {
+                if (java.lang.Double.compare(getItemScalarNode().executeDouble(s, i), item) == 0) {
                     return i;
                 }
             }
@@ -3530,11 +3523,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         int doGeneric(VirtualFrame frame, SequenceStorage s, Object item, int start, int end,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            ThreadState state = PArguments.getThreadState(frame);
             for (int i = start; i < getLength(s, end); i++) {
                 Object object = getItemScalarNode().execute(s, i);
-                if (castToBooleanNode.executeBoolean(frame, eqNode.executeWith(frame, object, item))) {
+                if (lib.equalsWithState(object, item, lib, state)) {
                     return i;
                 }
             }
