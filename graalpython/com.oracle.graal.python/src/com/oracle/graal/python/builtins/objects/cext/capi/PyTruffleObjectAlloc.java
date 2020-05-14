@@ -92,7 +92,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         try {
             objectSize = castToJavaLongNode.execute(sizeObject);
         } catch (CannotCastException e) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
         }
 

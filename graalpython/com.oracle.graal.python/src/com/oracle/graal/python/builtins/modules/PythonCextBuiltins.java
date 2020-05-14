@@ -3016,7 +3016,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             Object reprString = callReprNode.executeObject(frame, val);
-            return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
+            try {
+                return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException();
+            }
         }
 
         @Specialization(guards = "!isReprFormatCode(formatCode)")
@@ -3026,7 +3031,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 Object reprString = callReprNode.executeObject(frame, val, joinFormatCode(formatCode, precision));
-                return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
+                try {
+                    return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
+                } catch (CannotCastException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException();
+                }
             } catch (PException e) {
                 transformToNative(frame, e);
                 return getNativeNullNode.execute(module);
@@ -3277,7 +3287,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
 
             // force 'format' to be a String
-            String format = castToStringNode.execute(nativeFormat);
+            String format;
+            try {
+                format = castToStringNode.execute(nativeFormat);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException();
+            }
             String functionName = null;
 
             int colonIdx = format.indexOf(":");
@@ -3560,7 +3576,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 size = castToJavaLongNode.execute(sizeObject);
             } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
             }
 

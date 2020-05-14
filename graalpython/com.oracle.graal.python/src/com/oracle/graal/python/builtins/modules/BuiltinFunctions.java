@@ -153,6 +153,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -1506,13 +1507,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            String sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
-            if (sep == null) {
+            String sep;
+            try {
+                sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
+            } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "sep must be None or a string, not %p", sepIn);
             }
 
-            String end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
-            if (end == null) {
+            String end;
+            try {
+                end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
+            } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "end must be None or a string, not %p", sepIn);
             }
 
@@ -1587,8 +1592,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "isString(obj)")
         public Object asciiString(Object obj,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            String str = castToJavaStringNode.execute(obj);
-            return doAsciiString(str);
+            try {
+                String str = castToJavaStringNode.execute(obj);
+                return doAsciiString(str);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
         }
 
         @TruffleBoundary

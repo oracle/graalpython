@@ -70,6 +70,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -541,19 +542,25 @@ public final class DictBuiltins extends PythonBuiltins {
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
                             @Cached("createBinaryProfile()") ConditionProfile lengthCheck,
-                            @Cached("createBinaryProfile()") ConditionProfile nullKeyCheck,
-                            @Cached("createBinaryProfile()") ConditionProfile nullValueCheck,
+                            @Cached BranchProfile nullKey,
+                            @Cached BranchProfile nullValue,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
                 Object keyRepr = reprKeyNode.executeObject(key, __REPR__);
-                String keyReprString = castStr.execute(keyRepr);
-                if (nullKeyCheck.profile(keyReprString == null)) {
+                String keyReprString;
+                try {
+                    keyReprString = castStr.execute(keyRepr);
+                } catch (CannotCastException e) {
+                    nullKey.enter();
                     throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", keyRepr);
                 }
 
                 Object value = lib.getItem(s.dictStorage, key);
                 Object valueRepr = value != s.self ? reprValueNode.executeObject(value, __REPR__) : "{...}";
-                String valueReprString = castStr.execute(valueRepr);
-                if (nullValueCheck.profile(valueReprString == null)) {
+                String valueReprString;
+                try {
+                    valueReprString = castStr.execute(valueRepr);
+                } catch (CannotCastException e) {
+                    nullValue.enter();
                     throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", valueRepr);
                 }
 

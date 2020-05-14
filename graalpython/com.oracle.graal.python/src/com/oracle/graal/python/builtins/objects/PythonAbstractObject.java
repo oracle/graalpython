@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
@@ -136,6 +135,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -897,11 +897,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } else {
             pathObject = callNode.executeObject(PArguments.frameForCall(state), func, this);
         }
-        String path = castToJavaStringNode.execute(pathObject);
-        if (path == null) {
+        try {
+            return castToJavaStringNode.execute(pathObject);
+        } catch (CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, "expected %p.__fspath__() to return str or bytes, not %p", this, pathObject);
         }
-        return path;
     }
 
     @ExportMessage
@@ -1865,11 +1865,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             } else {
                 names = BuiltinNames.STR;
             }
+
             String result = null;
             PythonModule builtins = context.getBuiltins();
             if (toStringUsed.profile(builtins != null)) {
                 toStrAttr = readStr.execute(builtins, names);
-                result = castStr.execute(callNode.execute(toStrAttr, receiver));
+                try {
+                    result = castStr.execute(callNode.execute(toStrAttr, receiver));
+                } catch (CannotCastException e) {
+                    // do nothing
+                }
             }
             if (toStringUsed.profile(result != null)) {
                 return result;

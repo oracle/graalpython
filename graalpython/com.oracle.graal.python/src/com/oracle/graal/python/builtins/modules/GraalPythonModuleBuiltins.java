@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -82,6 +83,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -168,7 +170,12 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             assert n <= pathList.length;
             String[] paths = new String[n];
             for (int i = 0; i < n; i++) {
-                paths[i] = castString.execute(pathList[i]);
+                try {
+                    paths[i] = castString.execute(pathList[i]);
+                } catch (CannotCastException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException();
+                }
             }
             return doCache(modulename, moduleFile, paths, ctxt, lang);
         }
@@ -211,7 +218,12 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
             String[] paths = new String[pathList.length];
             for (int i = 0; i < pathList.length; i++) {
-                paths[i] = castString.execute(pathList[i]);
+                try {
+                    paths[i] = castString.execute(pathList[i]);
+                } catch (CannotCastException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException();
+                }
             }
             return cacheWithModulePath(modulename, paths, lang, ct);
         }

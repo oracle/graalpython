@@ -39,6 +39,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -180,7 +181,12 @@ public final class PString extends PImmutableSequence {
 
     @ExportMessage
     public String asPath(@Cached CastToJavaStringNode castToJavaStringNode) {
-        return castToJavaStringNode.execute(this);
+        try {
+            return castToJavaStringNode.execute(this);
+        } catch (CannotCastException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("should not be reached");
+        }
     }
 
     @Override

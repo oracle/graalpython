@@ -101,6 +101,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -122,6 +123,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
@@ -237,13 +239,16 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doGeneric(Object self, Object other,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringNode castOtherNode,
-                        @Cached("createBinaryProfile()") ConditionProfile otherIsStringProfile) {
+                        @Cached BranchProfile noStringBranch) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __EQ__, self);
-            String otherStr = castOtherNode.execute(other);
-            if (otherIsStringProfile.profile(otherStr != null)) {
-                return operator(selfStr, otherStr);
+            String otherStr;
+            try {
+                otherStr = castOtherNode.execute(other);
+            } catch (CannotCastException e) {
+                noStringBranch.enter();
+                return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return operator(selfStr, otherStr);
         }
 
         @SuppressWarnings("unused")
@@ -259,12 +264,15 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         boolean doit(Object self, Object other,
                         @Cached CastToJavaStringNode castStr) {
-            String selfStr = castStr.execute(self);
-            String otherStr = castStr.execute(other);
-            if (selfStr != null && otherStr != null) {
-                return op(selfStr, otherStr);
+            String selfStr = null;
+            String otherStr = null;
+            try {
+                selfStr = castStr.execute(self);
+                otherStr = castStr.execute(other);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, "'in <string>' requires string as left operand, not %P", other);
             }
-            throw raise(TypeError, "'in <string>' requires string as left operand, not %P", other);
+            return op(selfStr, otherStr);
         }
 
         @TruffleBoundary
@@ -530,12 +538,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         private boolean doIt(String self, PTuple substrs, int start, int stop) {
             for (Object element : ensureGetObjectArrayNode().execute(substrs)) {
-                String elementStr = castPrefix(element);
-                if (elementStr != null) {
+                try {
+                    String elementStr = castPrefix(element);
                     if (doIt(self, elementStr, start, stop)) {
                         return true;
                     }
-                } else {
+                } catch (CannotCastException e) {
                     throw raise(TypeError, getErrorMessage(), element);
                 }
             }

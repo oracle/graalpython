@@ -40,6 +40,7 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -127,8 +128,10 @@ public class ImportStarNode extends AbstractImportNode {
                 int n = ensurePythonLibrary().lengthWithState(attrAll, PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
                     Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
-                    String attrName = ensureCastToStringNode().execute(attrNameObj);
-                    if (attrName == null) {
+                    String attrName;
+                    try {
+                        attrName = ensureCastToStringNode().execute(attrNameObj);
+                    } catch (CannotCastException e) {
                         // TODO(fa): this error should be raised by the ReadAttributeFromObjectNode;
                         // but that needs some refactoring first.
                         throw raise(PythonBuiltinClassType.TypeError, "attribute name must be string, not '%p'", attrNameObj);
