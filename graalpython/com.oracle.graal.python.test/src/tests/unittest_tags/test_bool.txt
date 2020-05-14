@@ -3,6 +3,7 @@
 *BoolTest.test_callable
 *BoolTest.test_contains
 *BoolTest.test_convert
+*BoolTest.test_convert_to_bool
 *BoolTest.test_fileclosed
 *BoolTest.test_float
 *BoolTest.test_format
