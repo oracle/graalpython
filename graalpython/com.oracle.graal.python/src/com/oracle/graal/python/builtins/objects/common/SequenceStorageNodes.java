@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -283,6 +284,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    @ImportStatic(PythonOptions.class)
     abstract static class SequenceStorageBaseNode extends PNodeWithContext {
 
         protected static final int DEFAULT_CAPACITY = 8;
@@ -2581,20 +2583,12 @@ public abstract class SequenceStorageNodes {
     }
 
     public abstract static class ContainsNode extends SequenceStorageBaseNode {
-        @Child private LenNode lenNode;
-        @Child private GetItemScalarNode getItemNode;
-        @Child private BinaryComparisonNode equalsNode;
-        @Child private CoerceToBooleanNode castToBooleanNode;
-
         public abstract boolean execute(VirtualFrame frame, SequenceStorage left, Object item);
 
-        protected boolean isEmpty(SequenceStorage left) {
-            return getLenNode().execute(left) == 0;
-        }
-
-        @Specialization(guards = "isEmpty(left)")
+        @Specialization(guards = "lenNode.execute(left) == 0")
         @SuppressWarnings("unused")
-        boolean doEmpty(SequenceStorage left, Object item) {
+        boolean doEmpty(SequenceStorage left, Object item,
+                        @Cached LenNode lenNode) {
             return false;
         }
 
@@ -2619,46 +2613,18 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        boolean doGeneric(VirtualFrame frame, SequenceStorage left, Object item) {
-            for (int i = 0; i < getLenNode().execute(left); i++) {
-                Object leftItem = getGetItemNode().execute(left, i);
-                if (eq(frame, leftItem, item)) {
+        boolean doGeneric(VirtualFrame frame, SequenceStorage left, Object item,
+                        @Cached LenNode lenNode,
+                        @Cached GetItemScalarNode getItemNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            ThreadState threadState = PArguments.getThreadState(frame);
+            for (int i = 0; i < lenNode.execute(left); i++) {
+                Object leftItem = getItemNode.execute(left, i);
+                if (lib.equalsWithState(leftItem, item, lib, threadState)) {
                     return true;
                 }
             }
             return false;
-        }
-
-        private GetItemScalarNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemScalarNode.create());
-            }
-            return getItemNode;
-        }
-
-        private LenNode getLenNode() {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(LenNode.create());
-            }
-            return lenNode;
-        }
-
-        private boolean eq(VirtualFrame frame, Object left, Object right) {
-            if (equalsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                equalsNode = insert(BinaryComparisonNode.create(__EQ__, __EQ__, "=="));
-            }
-            return castToBoolean(frame, equalsNode.executeWith(frame, left, right));
-        }
-
-        private boolean castToBoolean(VirtualFrame frame, Object value) {
-            if (castToBooleanNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
-            }
-            return castToBooleanNode.executeBoolean(frame, value);
         }
 
         public static ContainsNode create() {
