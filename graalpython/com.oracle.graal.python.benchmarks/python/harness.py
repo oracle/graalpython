@@ -52,6 +52,8 @@ ATTR_PROCESS_ARGS = '__process_args__'
 ATTR_SETUP = '__setup__'
 #: gets called with the preprocessed arguments N times
 ATTR_BENCHMARK = '__benchmark__'
+#: this function is used to clean up benchmark storage and reset for a subsequent run.
+ATTR_CLEANUP = '__cleanup__'
 #: performs any teardown needed in the benchmark
 ATTR_TEARDOWN = '__teardown__'
 
@@ -276,6 +278,7 @@ class BenchRunner(object):
                 print("### (pre)warming up for %s iterations ... " % self.warmup_runs)
                 for _ in range(self.warmup_runs):
                     bench_func(*args)
+                    self._call_attr(ATTR_CLEANUP, *args)
 
             for iteration in range(self.iterations):
                 start = time()
@@ -283,6 +286,7 @@ class BenchRunner(object):
                 duration = time() - start
                 durations.append(duration)
                 duration_str = "%.3f" % duration
+                self._call_attr(ATTR_CLEANUP, *args)
                 if self._run_once:
                     print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
                 else:
