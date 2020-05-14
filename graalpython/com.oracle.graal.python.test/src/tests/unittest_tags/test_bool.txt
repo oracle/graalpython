@@ -14,6 +14,7 @@
 *BoolTest.test_issubclass
 *BoolTest.test_keyword_args
 *BoolTest.test_marshal
+*BoolTest.test_math
 *BoolTest.test_operator
 *BoolTest.test_pickle
 *BoolTest.test_picklevalues
