@@ -38,6 +38,26 @@
 # SOFTWARE.
 
 
+if "_truffle_pack" in globals():
+    @__graalpython__.builtin
+    def pack(fmt, *values):
+        try:
+            return _truffle_pack(fmt, *values)
+        except:
+            import _cpython_struct
+            return _cpython_struct.pack(fmt, *values)
+
+
+if "_truffle_unpack" in globals():
+    @__graalpython__.builtin
+    def unpack(fmt, buffer):
+        try:
+            return _truffle_unpack(fmt, buffer)
+        except:
+            import _cpython_struct
+            return _cpython_struct.unpack(fmt, buffer)
+
+
 __graalpython__.import_current_as_named_module_with_delegate(
     module_name="_struct",
     delegate_name="_cpython_struct",
