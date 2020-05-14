@@ -53,7 +53,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -63,11 +62,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateUncached
 @ImportStatic(PGuards.class)
 public abstract class CastToJavaBooleanNode extends PNodeWithContext {
-
-    public static final class CannotCastException extends ControlFlowException {
-        private static final long serialVersionUID = 1L;
-        private static final CannotCastException INSTANCE = new CannotCastException();
-    }
 
     public abstract boolean execute(Object x) throws CannotCastException;
 

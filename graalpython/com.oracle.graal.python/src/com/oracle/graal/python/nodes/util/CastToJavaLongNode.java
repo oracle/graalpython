@@ -53,7 +53,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 
 /**
  * Casts a Python integer to a Java long, lossy and without coercion. <b>ATTENTION:</b> If the cast
@@ -62,11 +61,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 @GenerateUncached
 @ImportStatic(PGuards.class)
 public abstract class CastToJavaLongNode extends PNodeWithContext {
-
-    public static final class CannotCastException extends ControlFlowException {
-        private static final long serialVersionUID = 1L;
-        private static final CannotCastException INSTANCE = new CannotCastException();
-    }
 
     public abstract long execute(Object x) throws CannotCastException;
 

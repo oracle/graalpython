@@ -120,6 +120,7 @@ import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
@@ -748,7 +749,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
             try {
                 return castToBoolean.execute(result);
-            } catch (CastToJavaBooleanNode.CannotCastException e) {
+            } catch (CannotCastException e) {
                 // cast node will act as a branch profile already for the compiler
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "__bool__ should return bool, returned %p", result);
             }
@@ -793,7 +794,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         // hash call is always a plain long, forcibly and lossy read from memory.
         try {
             return castToLong.execute(result);
-        } catch (CastToJavaLongNode.CannotCastException e) {
+        } catch (CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
         }
     }
@@ -1004,7 +1005,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         long longResult;
         try {
             longResult = castToLong.execute(result); // this is a lossy cast
-        } catch (CastToJavaLongNode.CannotCastException e) {
+        } catch (CannotCastException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
         }
