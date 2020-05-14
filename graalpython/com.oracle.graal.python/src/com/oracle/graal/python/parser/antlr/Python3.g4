@@ -330,7 +330,7 @@ locals
 	(
 		NEWLINE
 		| simple_stmt
-		| compound_stmt NEWLINE
+		| compound_stmt
 	)
 	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
 	{

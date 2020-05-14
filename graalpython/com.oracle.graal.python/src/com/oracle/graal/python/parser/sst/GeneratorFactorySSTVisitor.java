@@ -289,7 +289,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             for (int i = 0; i < node.variables.length; i++) {
                 variables[i] = (ExpressionNode) node.variables[i].accept(this);
             }
-            variable = makeWriteNode(nodeFactory.createObjectLiteral(variables));
+            variable = makeWriteNode(nodeFactory.createTupleLiteral(variables));
         }
         body = GeneratorForNode.create((WriteNode) variable,
                         node.level == 0 ? ReadIndexedArgumentNode.create(0).asExpression() : iterator,
@@ -322,7 +322,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                 }
             }
         } else {
-            target = nodeFactory.createObjectLiteral(targets);
+            target = nodeFactory.createTupleLiteral(targets);
         }
         StatementNode body = (StatementNode) node.body.accept(this);
         if (node.containsContinue) {
