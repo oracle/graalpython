@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -817,6 +818,46 @@ public abstract class TypeNodes {
 
         public static IsTypeNode getUncached() {
             return IsTypeNodeGen.getUncached();
+        }
+    }
+
+    public abstract static class IsAcceptableBaseNode extends Node {
+        private static final long Py_TPFLAGS_BASETYPE = (1L << 10);
+
+        public abstract boolean execute(Object obj);
+
+        @Specialization
+        boolean doUserClass(@SuppressWarnings("unused") PythonClass obj) {
+            return true;
+        }
+
+        @Specialization
+        boolean doBuiltinClass(@SuppressWarnings("unused") PythonBuiltinClass obj) {
+            return obj.getType().isAcceptableBase();
+        }
+
+        @Specialization
+        boolean doBuiltinType(@SuppressWarnings("unused") PythonBuiltinClassType obj) {
+            return obj.isAcceptableBase();
+        }
+
+        @Specialization
+        boolean doNativeClass(PythonAbstractNativeObject obj,
+                        @Cached IsTypeNode isType,
+                        @Cached GetTypeFlagsNode getFlags) {
+            if (isType.execute(obj)) {
+                return (getFlags.execute(obj) & Py_TPFLAGS_BASETYPE) != 0;
+            }
+            return false;
+        }
+
+        @Fallback
+        boolean doOther(@SuppressWarnings("unused") Object obj) {
+            return false;
+        }
+
+        public static IsAcceptableBaseNode create() {
+            return IsAcceptableBaseNodeGen.create();
         }
     }
 
