@@ -26,7 +26,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
@@ -1690,7 +1690,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PTuple targs = factory().createTuple(varargs);
             PDict dkwargs = factory().createDict(kwarr);
             return asPythonObjectNode.execute(
-                            callCapiFunction.call(FUN_PY_OBJECT_GENERIC_NEW, toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs),
+                            callCapiFunction.call(FUN_PY_OBJECT_NEW, toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs),
                                             toSulongNodes[3].execute(dkwargs)));
         }
     }

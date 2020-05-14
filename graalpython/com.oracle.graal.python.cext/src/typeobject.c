@@ -48,6 +48,8 @@ typedef struct {
     PyTypeObject *obj_type;
 } superobject;
 
+static void PyTruffle_Type_AddSlots(PyTypeObject* cls, PyGetSetDef** getsets, uint64_t n_getsets, PyMemberDef** members, uint64_t n_members);
+
 static void object_dealloc(PyObject *self) {
     Py_TYPE(self)->tp_free(self);
 }
@@ -317,6 +319,18 @@ static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, 
 	);
 }
 
+void add_getset(PyTypeObject* cls, char* name, getter getter_fun, setter setter_fun, char* doc, void* closure) {
+	polyglot_invoke(PY_TRUFFLE_CEXT,
+                    "AddGetSet",
+                    cls,
+                    polyglot_from_string(name, SRC_CS),
+                    getter_fun != NULL ? (getter) native_pointer_to_java(getter_fun) : to_java(Py_None),
+                    setter_fun != NULL ? (setter) native_pointer_to_java(setter_fun) : to_java(Py_None),
+                    doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
+                    /* do not convert the closure, it is handed to the getter and setter as-is */
+                    closure);
+}
+
 static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* result_conversion, void* meth, int flags, void* signature, char* doc) {
         polyglot_invoke(PY_TRUFFLE_CEXT,
                        "AddFunction",
@@ -334,7 +348,11 @@ static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* nam
 	add_member((__javacls__), (__tpdict__), (__mname__), (__mtype__), (__moffset__), (__mflags__), (__mdoc__))
 
 
-UPCALL_ID(PyTruffle_Type_Slots);
+#define ADD_GETSET(__javacls__, __name__, __getter__, __setter__, __doc__, __closure__)     \
+	add_getset((__javacls__), (__name__), (__getter__), (__setter__), (__doc__), (__closure__))
+
+
+UPCALL_ID(PyTruffle_Get_Inherited_Native_Slots);
 UPCALL_ID(PyTruffle_Compute_Mro);
 int PyType_Ready(PyTypeObject* cls) {
 #define RETURN_ERROR(__type__) \
@@ -458,18 +476,7 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyGetSetDef getset = getsets[i];
         while (getset.name != NULL) {
-            getter getter_fun = getset.get;
-            setter setter_fun = getset.set;
-            polyglot_invoke(PY_TRUFFLE_CEXT,
-                            "AddGetSet",
-                            cls,
-                            polyglot_from_string(getset.name, SRC_CS),
-                            getter_fun != NULL ? pytruffle_decorate_function(native_pointer_to_java((getter)getter_fun), native_to_java_stealing_exported) : to_java(Py_None),
-                            setter_fun != NULL ? (setter)setter_fun : to_java(Py_None),
-                            getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : native_to_java(Py_None),
-                            // do not convert the closure, it is handed to the
-                            // getter and setter as-is
-                            getset.closure);
+        	ADD_GETSET(cls, getset.name, getset.get, getset.set, getset.doc, getset.closure);
             getset = getsets[++i];
         }
     }
@@ -625,10 +632,14 @@ int PyType_Ready(PyTypeObject* cls) {
     // CPython doesn't do that in 'PyType_Ready' but we must because a native type can inherit
     // dynamic slots from a managed Python class. Since the managed Python class may be created
     // when the C API is not loaded, we need to do that later.
-    PyObject* inherited_slots_tuple = UPCALL_CEXT_O(_jls_PyTruffle_Type_Slots, native_to_java((PyObject*)cls));
-    if(inherited_slots_tuple != NULL) {
-    	PyTruffle_Type_AddSlots(cls, inherited_slots_tuple);
-    }
+    /*
+    UPCALL_CEXT_O(_jls_PyTruffle_Type_Slots, native_to_java((PyObject*)cls), native_to_java(cls->tp_dict));
+    */
+    PyGetSetDef** inherited_getset = (PyGetSetDef**) UPCALL_CEXT_PTR(_jls_PyTruffle_Get_Inherited_Native_Slots, native_to_java((PyObject*)cls), polyglot_from_string("getsets", SRC_CS));
+    PyMemberDef** inherited_members = (PyMemberDef**) UPCALL_CEXT_PTR(_jls_PyTruffle_Get_Inherited_Native_Slots, native_to_java((PyObject*)cls), polyglot_from_string("members", SRC_CS));
+    uint64_t n_getsets = polyglot_get_array_size(inherited_getset);
+    uint64_t n_members = polyglot_get_array_size(inherited_members);
+  	PyTruffle_Type_AddSlots(cls, inherited_getset, n_getsets, inherited_members, n_members);
 
     /* Initialize this classes' tp_subclasses dict. This is necessary because our managed classes won't do. */
     cls->tp_subclasses = PyDict_New();
@@ -693,27 +704,31 @@ MUST_INLINE static int valid_identifier(PyObject *s) {
     return 1;
 }
 
-/* Add get-set descriptors for slots provided in 'slotsTuple'. */
-Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple) {
-    int i;
-    Py_ssize_t cur_offset = cls->tp_basicsize;
-    Py_ssize_t dictoffset = cls->tp_dictoffset;
-    Py_ssize_t slotLen = PyTuple_Size(slotsTuple);
-    PyObject* slot;
-
-    for(i = 0; i < slotLen; i++) {
-    	slot = PyTuple_GetItem(slotsTuple, i);
-    	// note: no flags and no doc (see typeobject.c in function 'type_new')
-    	ADD_MEMBER(cls, cls->tp_dict, slot, T_OBJECT_EX, cur_offset, 0, NULL);
-    	cur_offset += sizeof(PyObject*);
-    	dictoffset += sizeof(PyObject*);
-    }
-    // only update if there was a dictoffset
-    if (cls->tp_dictoffset != 0) {
-    	cls->tp_dictoffset = dictoffset;
-    }
-    cls->tp_basicsize = cur_offset;
-    return cur_offset;
+/* Add get-set descriptors for slots provided in 'getsets' and 'members'. */
+static void PyTruffle_Type_AddSlots(PyTypeObject* cls, PyGetSetDef** getsets, uint64_t n_getsets, PyMemberDef** members, uint64_t n_members) {
+	for (uint64_t j = 0; j < n_getsets; j++) {
+		PyGetSetDef* getsets_sub = getsets[j];
+		if (getsets_sub) {
+			int i = 0;
+			PyGetSetDef getset = getsets_sub[i];
+			while (getset.name != NULL) {
+				ADD_GETSET(cls, getset.name, getset.get, getset.set, getset.doc, getset.closure);
+				getset = getsets_sub[++i];
+			}
+		}
+	}
+	for (uint64_t j = 0; j < n_getsets; j++) {
+		PyMemberDef* members_sub = members[j];
+		if (members_sub) {
+			int i = 0;
+			PyMemberDef member = members_sub[i];
+			PyObject* dict = cls->tp_dict;
+			while (member.name != NULL) {
+				ADD_MEMBER(cls, dict, polyglot_from_string(member.name, SRC_CS), member.type, member.offset, member.flags, member.doc);
+				member = members_sub[++i];
+			}
+		}
+	}
 }
 
 unsigned long PyType_GetFlags(struct _typeobject *type) {
