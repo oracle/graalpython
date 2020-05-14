@@ -1,4 +1,5 @@
 *BoolTest.test_blocked
+*BoolTest.test_boolean
 *BoolTest.test_callable
 *BoolTest.test_contains
 *BoolTest.test_convert
