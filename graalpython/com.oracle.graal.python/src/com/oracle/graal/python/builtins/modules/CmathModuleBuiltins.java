@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
@@ -51,6 +52,7 @@ import java.util.List;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 @CoreFunctions(defineModule = "cmath")
@@ -275,10 +277,11 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PTuple doC(PComplex value) {
-            return factory().createTuple(new Object[]{
-                    Math.hypot(value.getImag(), value.getReal()), //TODO: why doesn't ComplexBuiltins.AbsNode use this?
-                    Math.atan2(value.getImag(), value.getReal())
-            });
+            double r = Math.hypot(value.getImag(), value.getReal()); //TODO: why doesn't ComplexBuiltins.AbsNode use this?
+            if (Double.isInfinite(r)) {
+                throw raise(OverflowError, "absolute value too large");
+            }
+            return factory().createTuple(new Object[]{ r, Math.atan2(value.getImag(), value.getReal()) });
         }
 
         @Specialization(guards = "!isNumber(value)")
