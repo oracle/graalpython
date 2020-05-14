@@ -152,8 +152,8 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberInsertable(String member) {
-        return DOC.equals(member);
+    protected boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+        return false;
     }
 
     @ExportMessage
