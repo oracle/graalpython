@@ -255,11 +255,21 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class ContainsNode extends BinaryStringOpNode {
-        @Override
+    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean doit(Object self, Object other,
+                        @Cached CastToJavaStringNode castStr) {
+            String selfStr = castStr.execute(self);
+            String otherStr = castStr.execute(other);
+            if (selfStr != null && otherStr != null) {
+                return op(selfStr, otherStr);
+            }
+            throw raise(TypeError, "'in <string>' requires string as left operand, not %P", other);
+        }
+
         @TruffleBoundary
-        boolean operator(String self, String other) {
-            return self.contains(other);
+        private static final boolean op(String left, String right) {
+            return left.contains(right);
         }
     }
 
