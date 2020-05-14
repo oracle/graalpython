@@ -200,9 +200,14 @@ class TestObject(object):
 
     def test_slots(self):
         TestSlots = CPyExtType("TestSlots", 
-                               '',
+                               '''
+                               static PyObject* testslots_bincomp(PyObject* cls) {
+                                   return ((PyTypeObject*)cls)->tp_basicsize == sizeof(TestSlotsObject) ? Py_True : Py_False;
+                               }
+                               ''',
                               includes='#include "datetime.h"',
                               cmembers="PyDateTime_DateTime __pyx_base;",
+                              tp_methods='{"is_binary_compatible", (PyCFunction)testslots_bincomp, METH_NOARGS | METH_CLASS, ""}',
                               ready_code='''PyTypeObject* datetime_type = NULL;
                               PyDateTime_IMPORT;
                               datetime_type = PyDateTimeAPI->DateTimeType;
@@ -212,6 +217,7 @@ class TestObject(object):
                               ''')
         tester = TestSlots(1, 1, 1)
         assert tester.year == 1, "year was %s "% tester.year
+        assert tester.is_binary_compatible()
 
     def test_slots_initialized(self):
         TestSlotsInitialized = CPyExtType("TestSlotsInitialized", 
