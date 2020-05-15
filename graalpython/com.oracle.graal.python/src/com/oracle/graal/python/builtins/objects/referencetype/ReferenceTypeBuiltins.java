@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -119,12 +118,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             Object referent = self.getObject();
             if (referentProfile.profile(referent != null)) {
-                long hash;
-                if (frameProfile.profile(frame != null)) {
-                    hash = lib.hashWithState(referent, PArguments.getThreadState(frame));
-                } else {
-                    hash = lib.hash(referent);
-                }
+                long hash = lib.hashWithFrame(referent, frameProfile, frame);
                 self.setHash(hash);
                 return hash;
             } else {

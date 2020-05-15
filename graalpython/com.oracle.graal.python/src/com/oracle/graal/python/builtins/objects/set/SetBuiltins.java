@@ -40,8 +40,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -152,18 +150,10 @@ public final class SetBuiltins extends PythonBuiltins {
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
-            boolean hasKey; // TODO: FIXME: this might call __hash__ twice
-            if (hasFrame.profile(frame != null)) {
-                ThreadState state = PArguments.getThreadState(frame);
-                hasKey = lib.hasKeyWithState(storage, key, state);
-                if (hasKey) {
-                    newStore = lib.delItemWithState(storage, key, state);
-                }
-            } else {
-                hasKey = lib.hasKey(storage, key);
-                if (hasKey) {
-                    newStore = lib.delItem(storage, key);
-                }
+            // TODO: FIXME: this might call __hash__ twice
+            boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+            if (hasKey) {
+                newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
             }
 
             if (hasKey) {
@@ -188,18 +178,10 @@ public final class SetBuiltins extends PythonBuiltins {
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
-            boolean hasKey; // TODO: FIXME: this might call __hash__ twice
-            if (hasFrame.profile(frame != null)) {
-                ThreadState state = PArguments.getThreadState(frame);
-                hasKey = lib.hasKeyWithState(storage, key, state);
-                if (hasKey) {
-                    newStore = lib.delItemWithState(storage, key, state);
-                }
-            } else {
-                hasKey = lib.hasKey(storage, key);
-                if (hasKey) {
-                    newStore = lib.delItem(storage, key);
-                }
+            // TODO: FIXME: this might call __hash__ twice
+            boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+            if (hasKey) {
+                newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
             }
 
             if (hasKey) {
@@ -220,18 +202,10 @@ public final class SetBuiltins extends PythonBuiltins {
                         HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
-            boolean hasKey; // TODO: FIXME: this might call __hash__ twice
-            if (hasFrame.profile(frame != null)) {
-                ThreadState state = PArguments.getThreadState(frame);
-                hasKey = lib.hasKeyWithState(storage, key, state);
-                if (hasKey) {
-                    newStore = lib.delItemWithState(storage, key, state);
-                }
-            } else {
-                hasKey = lib.hasKey(storage, key);
-                if (hasKey) {
-                    newStore = lib.delItem(storage, key);
-                }
+            // TODO: FIXME: this might call __hash__ twice
+            boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+            if (hasKey) {
+                newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
             }
 
             if (hasKey) {

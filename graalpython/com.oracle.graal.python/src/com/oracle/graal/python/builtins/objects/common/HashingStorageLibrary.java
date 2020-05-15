@@ -42,13 +42,16 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /*
  * TODO:
@@ -93,6 +96,17 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
+     * @see #lengthWithState(HashingStorage, ThreadState)
+     */
+    public final int lengthWithFrame(HashingStorage self, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return lengthWithState(self, PArguments.getThreadState(frame));
+        } else {
+            return length(self);
+        }
+    }
+
+    /**
      * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
      * with Python semantics.
      *
@@ -108,6 +122,17 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public boolean hasKey(HashingStorage self, Object key) {
         return getItem(self, key) != null;
+    }
+
+    /**
+     * @see #hasKeyWithState(HashingStorage, Object, ThreadState)
+     */
+    public final boolean hasKeyWithFrame(HashingStorage self, Object key, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return hasKeyWithState(self, key, PArguments.getThreadState(frame));
+        } else {
+            return hasKey(self, key);
+        }
     }
 
     /**
@@ -130,6 +155,17 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public Object getItem(HashingStorage self, Object key) {
         return getItemWithState(self, key, null);
+    }
+
+    /**
+     * @see #getItemWithState(HashingStorage, Object, ThreadState)
+     */
+    public final Object getItemWithFrame(HashingStorage self, Object key, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return getItemWithState(self, key, PArguments.getThreadState(frame));
+        } else {
+            return getItem(self, key);
+        }
     }
 
     /**
@@ -156,6 +192,17 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
+     * @see #setItemWithState(HashingStorage, Object, Object, ThreadState)
+     */
+    public final HashingStorage setItemWithFrame(HashingStorage self, Object key, Object value, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return setItemWithState(self, key, value, PArguments.getThreadState(frame));
+        } else {
+            return setItem(self, key, value);
+        }
+    }
+
+    /**
      * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
      * with Python semantics.
      *
@@ -172,6 +219,14 @@ public abstract class HashingStorageLibrary extends Library {
 
     public HashingStorage delItem(HashingStorage self, Object key) {
         return delItemWithState(self, key, null);
+    }
+
+    public final HashingStorage delItemWithFrame(HashingStorage self, Object key, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return delItemWithState(self, key, PArguments.getThreadState(frame));
+        } else {
+            return delItem(self, key);
+        }
     }
 
     /**
@@ -276,6 +331,17 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
+     * @see #compareKeysWithState(HashingStorage, HashingStorage, ThreadState)
+     */
+    public final int compareKeysWithFrame(HashingStorage self, HashingStorage other, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return compareKeysWithState(self, other, PArguments.getThreadState(frame));
+        } else {
+            return compareKeys(self, other);
+        }
+    }
+
+    /**
      * @return {@code 0} if all entries are equal, {@code -1} if {@code self} is a subset, or
      *         {@code 1} if neither.
      */
@@ -310,6 +376,17 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public HashingStorage intersect(HashingStorage self, HashingStorage other) {
         return intersectWithState(self, other, null);
+    }
+
+    /**
+     * @see #intersectWithState(HashingStorage, HashingStorage, ThreadState)
+     */
+    public final HashingStorage intersectWithFrame(HashingStorage self, HashingStorage other, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return intersectWithState(self, other, PArguments.getThreadState(frame));
+        } else {
+            return intersect(self, other);
+        }
     }
 
     /**
@@ -357,6 +434,17 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public HashingStorage diff(HashingStorage self, HashingStorage other) {
         return diffWithState(self, other, null);
+    }
+
+    /**
+     * @see #getItemWithState(HashingStorage, Object, ThreadState)
+     */
+    public final HashingStorage diffWithFrame(HashingStorage self, HashingStorage other, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return diffWithState(self, other, PArguments.getThreadState(frame));
+        } else {
+            return diff(self, other);
+        }
     }
 
     /**

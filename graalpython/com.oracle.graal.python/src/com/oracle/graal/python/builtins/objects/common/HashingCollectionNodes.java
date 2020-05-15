@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.common;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
@@ -89,11 +88,7 @@ public abstract class HashingCollectionNodes {
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
             HashingStorage storage = cachedClass.cast(c).getDictStorage();
-            if (hasFrame.profile(frame != null)) {
-                storage = lib.setItemWithState(storage, key, value, PArguments.getThreadState(frame));
-            } else {
-                storage = lib.setItem(storage, key, value);
-            }
+            storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
             cachedClass.cast(c).setDictStorage(storage);
         }
 
@@ -102,11 +97,7 @@ public abstract class HashingCollectionNodes {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = c.getDictStorage();
-            if (hasFrame.profile(frame != null)) {
-                storage = lib.setItemWithState(storage, key, value, PArguments.getThreadState(frame));
-            } else {
-                storage = lib.setItem(storage, key, value);
-            }
+            storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
             c.setDictStorage(storage);
         }
 

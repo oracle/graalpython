@@ -76,7 +76,6 @@ import java.io.PrintStream;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.List;
-import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -163,6 +162,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -305,12 +305,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isPInt) {
-            Object index;
-            if (hasFrame.profile(frame != null)) {
-                index = lib.asIndexWithState(x, PArguments.getThreadState(frame));
-            } else {
-                index = lib.asIndex(x);
-            }
+            Object index = lib.asIndexWithFrame(x, hasFrame, frame);
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
@@ -461,11 +456,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         long hash(VirtualFrame frame, Object object,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            if (profile.profile(frame != null)) {
-                return lib.hashWithState(object, PArguments.getThreadState(frame));
-            } else {
-                return lib.hash(object);
-            }
+            return lib.hashWithFrame(object, profile, frame);
         }
     }
 
@@ -1221,11 +1212,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public int len(VirtualFrame frame, Object obj,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.lengthWithState(obj, PArguments.getThreadState(frame));
-            } else {
-                return lib.length(obj);
-            }
+            return lib.lengthWithFrame(obj, hasFrame, frame);
         }
     }
 

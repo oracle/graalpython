@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -590,12 +589,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, tupleStore, i);
-                long tmp;
-                if (hasFrame.profile(frame != null)) {
-                    tmp = lib.hashWithState(item, PArguments.getThreadState(frame));
-                } else {
-                    tmp = lib.hash(item);
-                }
+                long tmp = lib.hashWithFrame(item, hasFrame, frame);
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }

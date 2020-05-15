@@ -67,6 +67,7 @@ import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * The standard Python object library. This implements a general-purpose Python object interface.
@@ -229,6 +230,17 @@ public abstract class PythonObjectLibrary extends Library {
         return hashWithState(receiver, null);
     }
 
+    /**
+     * @see #hashWithState(Object, ThreadState)
+     */
+    public final long hashWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return hashWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return hash(receiver);
+        }
+    }
+
     @SuppressWarnings("static-method")
     public final long hash(boolean receiver) {
         return DefaultPythonBooleanExports.hash(receiver);
@@ -344,7 +356,7 @@ public abstract class PythonObjectLibrary extends Library {
     // used.
     @Child private DefaultNodes defaultNodes;
 
-    private final DefaultNodes getDefaultNodes() {
+    private DefaultNodes getDefaultNodes() {
         if (isAdoptable()) {
             if (defaultNodes == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -410,6 +422,17 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * @see #equalsWithState
+     */
+    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, ConditionProfile hasFrame, VirtualFrame frame) {
+        if (hasFrame.profile(frame != null)) {
+            return equalsWithState(receiver, other, otherLibrary, PArguments.getThreadState(frame));
+        } else {
+            return equals(receiver, other, otherLibrary);
+        }
+    }
+
+    /**
      * Compare {@code receiver} to {@code other} using {@code __eq__}.
      *
      * @param threadState may be {@code null}
@@ -452,6 +475,17 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public Object asIndex(Object receiver) {
         return asIndexWithState(receiver, null);
+    }
+
+    /**
+     * @see #asIndexWithState
+     */
+    public Object asIndexWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return asIndexWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return asIndex(receiver);
+        }
     }
 
     /**
@@ -579,6 +613,17 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public int length(Object receiver) {
         return lengthWithState(receiver, null);
+    }
+
+    /**
+     * @see #asIndexWithState
+     */
+    public int lengthWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return lengthWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return length(receiver);
+        }
     }
 
     /**
