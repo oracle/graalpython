@@ -2,6 +2,9 @@ graalpython/com.oracle.graal.python.benchmarks/python/host_interop/euler_java.py
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix-java.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/macro/gcbench.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/go.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/raytrace-simple.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/ai-nqueen.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/binarytrees3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/bm-float.py,benchmarks.copyright
