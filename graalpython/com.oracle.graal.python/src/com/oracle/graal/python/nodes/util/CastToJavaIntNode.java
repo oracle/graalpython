@@ -40,26 +40,21 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntLossyNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
@@ -110,33 +105,6 @@ public abstract class CastToJavaIntNode extends PNodeWithContext {
     @Specialization
     public int toInt(PInt x) {
         return toIntInternal(x);
-    }
-
-    @Specialization(guards = "!isNumber(x)")
-    public int toInt(Object x,
-                    @Cached BranchProfile noValueProfile,
-                    @Cached BranchProfile integerProfile,
-                    @Cached BranchProfile longProfile,
-                    @Cached BranchProfile pIntProfile,
-                    @Cached BranchProfile errorProfile,
-                    @Cached PRaiseNode raise,
-                    @Cached LookupAndCallUnaryDynamicNode callIntNode) {
-        Object result = callIntNode.executeObject(x, __INT__);
-        if (result instanceof PNone) {
-            noValueProfile.enter();
-            throw raise.raise(TypeError, "must be numeric, not %p", x);
-        } else if (result instanceof Integer) {
-            integerProfile.enter();
-            return ((Integer) result).intValue();
-        } else if (result instanceof Long) {
-            longProfile.enter();
-            return toIntInternal((long) result);
-        } else if (result instanceof PInt) {
-            pIntProfile.enter();
-            return toIntInternal((PInt) result);
-        }
-        errorProfile.enter();
-        throw raise.raise(TypeError, "%p.__int__ returned a non int (type %p)", x, result);
     }
 
     @GenerateUncached
