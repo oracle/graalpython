@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -98,7 +99,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -131,7 +131,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -1744,47 +1743,33 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    @ImportStatic(PythonOptions.class)
-    public static class ToDisplayString {
-        public static boolean useReprForPrintString(PythonContext context) {
-            return context.getOption(PythonOptions.UseReprForPrintString);
-        }
-
-        @Specialization(guards = {"allowSideEffects", "builtins != null"}) // may be null during
-                                                                           // initialization
-        public static String builtin(PythonAbstractObject self, boolean allowSideEffects,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached(value = "context.getBuiltins()", allowUncached = true) PythonModule builtins,
-                        @Cached ReadAttributeFromObjectNode readStr,
-                        @Cached CallNode callNode,
-                        @Cached CastToJavaStringNode castStr,
-                        @Cached(value = "useReprForPrintString(context)", allowUncached = true) boolean useRepr) {
+    public String toDisplayString(boolean allowSideEffects,
+                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Exclusive @Cached ReadAttributeFromObjectNode readStr,
+                    @Exclusive @Cached CallNode callNode,
+                    @Cached CastToJavaStringNode castStr,
+                    @Cached ConditionProfile conditionProfile) {
+        PythonModule builtins = context.getBuiltins();
+        String result = null;
+        if (conditionProfile.profile(builtins != null && allowSideEffects)) {
             Object toStrAttr;
-            if (useRepr) {
-                toStrAttr = readStr.execute(builtins, BuiltinNames.REPR);
+            String names;
+            if (context.getOption(PythonOptions.UseReprForPrintString)) {
+                names = BuiltinNames.REPR;
             } else {
-                toStrAttr = readStr.execute(builtins, BuiltinNames.STR);
+                names = BuiltinNames.STR;
             }
-            String result = castStr.execute(callNode.execute(toStrAttr, self));
-            if (result != null) {
-                return result;
-            } else {
-                return fallback(self, allowSideEffects, context, builtins);
-            }
+            toStrAttr = readStr.execute(builtins, names);
+            result = castStr.execute(callNode.execute(toStrAttr, this));
+            return result;
+        } else {
+            return toStringImpl();
         }
+    }
 
-        public static final PythonModule none() {
-            return null;
-        }
-
-        @TruffleBoundary
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!allowSideEffects || builtins == null")
-        public static String fallback(PythonAbstractObject self, boolean allowSideEffects,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached(value = "context.getBuiltins()", uncached = "none()") PythonModule builtins) {
-            return self.toString();
-        }
+    @TruffleBoundary
+    private String toStringImpl() {
+        return toString();
     }
 
     @ExportMessage
