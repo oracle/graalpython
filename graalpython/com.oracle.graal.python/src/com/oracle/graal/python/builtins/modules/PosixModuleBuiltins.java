@@ -547,13 +547,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         protected abstract Object executeWith(VirtualFrame frame, Object path, Object followSymlinks);
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "2")
         Object doStatPath(VirtualFrame frame, Object path, boolean followSymlinks,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
             return stat(frame, lib.asPath(path), followSymlinks);
         }
 
-        @Specialization(guards = "isNoValue(followSymlinks)", limit = "1")
+        @Specialization(guards = "isNoValue(followSymlinks)", limit = "2")
         Object doStatDefault(VirtualFrame frame, Object path, @SuppressWarnings("unused") PNone followSymlinks,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
             return stat(frame, lib.asPath(path), true);

@@ -463,15 +463,15 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignObject(object, lib)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
+        @Specialization(guards = {"lib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
         static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
 
         @Specialization(guards = "isFallback(object, lib)", limit = "1")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib) {
             assert object != null : "Java 'null' cannot be a Sulong value";
             assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
             return object;
@@ -481,10 +481,10 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object, InteropLibrary lib) {
+        static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
                             object instanceof PythonNativeNull || object instanceof PythonAbstractObject) &&
-                            !(PGuards.isForeignObject(object, lib) && !CApiGuards.isNativeWrapper(object));
+                            !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
         }
 
         protected static boolean isNaN(double d) {
@@ -701,16 +701,16 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignObject(object, lib)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
+        @Specialization(guards = {"lib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
         static Object doForeignObject(CExtContext cextContext, TruffleObject object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
             return ToSulongNode.doForeignObject(cextContext, object, lib);
         }
 
         @Specialization(guards = "isFallback(object, lib)", limit = "1")
         static Object run(CExtContext cextContext, Object object,
-                        @CachedLibrary("object") InteropLibrary lib) {
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
             return ToSulongNode.run(cextContext, object, lib);
         }
 
@@ -718,7 +718,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object, InteropLibrary lib) {
+        static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return ToSulongNode.isFallback(object, lib);
         }
 
@@ -860,16 +860,16 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignObject(object, lib)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
+        @Specialization(guards = {"lib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
         static Object doForeignObject(CExtContext cextContext, TruffleObject object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary lib) {
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
             return ToSulongNode.doForeignObject(cextContext, object, lib);
         }
 
         @Specialization(guards = "isFallback(object, lib)", limit = "1")
         static Object run(CExtContext cextContext, Object object,
-                        @CachedLibrary("object") InteropLibrary lib) {
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
             return ToSulongNode.run(cextContext, object, lib);
         }
 
@@ -877,7 +877,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object, InteropLibrary lib) {
+        static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return ToSulongNode.isFallback(object, lib);
         }
 

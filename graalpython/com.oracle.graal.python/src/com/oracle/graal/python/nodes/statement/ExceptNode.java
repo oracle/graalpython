@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -56,6 +57,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateWrapper
@@ -194,7 +197,7 @@ abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
     }
 }
 
-@ImportStatic(PythonOptions.class)
+@ImportStatic({PGuards.class, PythonOptions.class})
 abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
     @Child private PRaiseNode raiseNode;
 
@@ -214,8 +217,9 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         throw raiseNode.raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
     }
 
-    @Specialization
-    boolean matchPythonSingle(VirtualFrame frame, PException e, LazyPythonClass clause,
+    @Specialization(guards = "isClass(clause, lib)", limit = "3")
+    boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
+                    @SuppressWarnings("unused") @CachedLibrary("clause") InteropLibrary lib,
                     @Cached ValidExceptionNode isValidException,
                     @Cached GetLazyClassNode getLazyClass,
                     @Cached IsSubtypeNode isSubtype) {

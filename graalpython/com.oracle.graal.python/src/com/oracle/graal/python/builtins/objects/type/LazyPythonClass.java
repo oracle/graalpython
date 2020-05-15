@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public interface LazyPythonClass extends TruffleObject {
@@ -49,4 +50,17 @@ public interface LazyPythonClass extends TruffleObject {
      * is available.
      */
     String getName();
+
+    static boolean isInstance(Object object) {
+        return object instanceof PythonBuiltinClassType || PythonAbstractClass.isInstance(object);
+    }
+
+    static LazyPythonClass cast(Object object) {
+        if (object instanceof PythonBuiltinClassType) {
+            return (PythonBuiltinClassType) object;
+        } else {
+            return PythonAbstractClass.cast(object);
+        }
+    }
+
 }

@@ -658,6 +658,34 @@ public abstract class PythonObjectLibrary extends Library {
         throw UnsupportedMessageException.create();
     }
 
+    /**
+     * Checks whether the receiver is a Foreign Object.
+     *
+     * @see DefaultPythonObjectExports#isForeignObject(Object,
+     *      com.oracle.truffle.api.interop.InteropLibrary) {@code DefaultPythonObjectExports}
+     *      implements the logic of how an unknown object is being checked.
+     *
+     * @param receiver
+     * @return True if the receiver is a Foreign Object
+     */
+
+    public boolean isForeignObject(Object receiver) {
+        return false;
+    }
+
+    /**
+     * When a {@code receiver} is a wrapped primitive object that utilizes a #ReflectionLibrary, the
+     * value will appear here as primitive contrary to the value in the call cite which should
+     * represent the {@code receiverOrigin}
+     *
+     * @param receiver the receiver Object
+     * @param receiverOrigin also the receiver Object
+     * @return True if there has been a reflection
+     */
+    public boolean isRefelectedObject(Object receiver, Object receiverOrigin) {
+        return receiver != receiverOrigin;
+    }
+
     public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
         PythonContext context = contextRef.get();
         Object state = IndirectCallContext.enter(frame, context, callNode);
