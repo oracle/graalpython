@@ -1,27 +1,42 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
- * Copyright (c) 2014, Regents of the University of California
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * All rights reserved.
+ * The Universal Permissive License (UPL), Version 1.0
  *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
- * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice, this list of
- * conditions and the following disclaimer in the documentation and/or other materials provided
- * with the distribution.
+ * (a) the Software, and
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.modules;
 
@@ -34,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
@@ -77,10 +91,10 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class CmathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
+    abstract static class CmathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
         @Child private LookupAndCallUnaryNode callComplexFunc;
 
-        protected PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
+        PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
             //TODO taken from BuiltinConstructors, should probably be refactored somehow
             if (callComplexFunc == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -105,37 +119,39 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
-    public abstract static class CmathComplexUnaryBuiltinNode extends CmathUnaryBuiltinNode {
+    abstract static class CmathComplexUnaryBuiltinNode extends CmathUnaryBuiltinNode {
 
-        public abstract PComplex executeObject(VirtualFrame frame, Object value);
+        abstract PComplex executeObject(VirtualFrame frame, Object value);
 
-        public PComplex compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
-            throw raise(NotImplementedError, "compute function in cmath");
+        PComplex compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("should not be reached");
         }
 
         @Specialization
-        public PComplex doL(long value) {
+        PComplex doL(long value) {
             return compute(value, 0);
         }
 
         @Specialization
-        public PComplex doD(double value) {
+        PComplex doD(double value) {
             return compute(value, 0);
         }
 
         @Specialization
-        public PComplex doPI(PInt value) {
+        PComplex doPI(PInt value) {
             return compute(value.doubleValue(), 0);
         }
 
         @Specialization
-        public PComplex doC(PComplex value) {
+        PComplex doC(PComplex value) {
             return compute(value.getReal(), value.getImag());
         }
 
-        @Specialization(guards = "!isNumber(value)")        //TODO: what is the purpose of this guard?
-        public PComplex doGeneral(VirtualFrame frame, Object value,
-                                @Cached("create()") CoerceToDoubleNode coerceToDouble) {
+        @Specialization(guards = "!isNumber(value)")
+        PComplex doGeneral(VirtualFrame frame, Object value,
+                                @Cached("create()") CoerceToDoubleNode coerceToDouble
+                                ) {
             //TODO should this be replaced with something like CoerceToComplexNode?
             PComplex complex = getComplexNumberFromObject(frame, value);
             if (complex != null) {
@@ -147,36 +163,37 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
-    public abstract static class CmathBooleanUnaryBuiltinNode extends CmathUnaryBuiltinNode {
+    abstract static class CmathBooleanUnaryBuiltinNode extends CmathUnaryBuiltinNode {
 
-        public abstract boolean executeObject(VirtualFrame frame, Object value);
+        abstract boolean executeObject(VirtualFrame frame, Object value);
 
-        public boolean compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
-            throw raise(NotImplementedError, "compute function in cmath");
+        boolean compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("should not be reached");
         }
 
         @Specialization
-        public boolean doL(long value) {
+        boolean doL(long value) {
             return compute(value, 0);
         }
 
         @Specialization
-        public boolean doD(double value) {
+        boolean doD(double value) {
             return compute(value, 0);
         }
 
         @Specialization
-        public boolean doPI(PInt value) {
+        boolean doPI(PInt value) {
             return compute(value.doubleValue(), 0);
         }
 
         @Specialization
-        public boolean doC(PComplex value) {
+        boolean doC(PComplex value) {
             return compute(value.getReal(), value.getImag());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean doGeneral(VirtualFrame frame, Object value,
+        boolean doGeneral(VirtualFrame frame, Object value,
                                   @Cached("create()") CoerceToDoubleNode coerceToDouble) {
             PComplex complex = getComplexNumberFromObject(frame, value);
             if (complex != null) {
@@ -188,27 +205,27 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "isnan", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class IsNanNode extends CmathBooleanUnaryBuiltinNode {
+    abstract static class IsNanNode extends CmathBooleanUnaryBuiltinNode {
         @Override
-        public boolean compute(double real, double imag) {
+        boolean compute(double real, double imag) {
             return Double.isNaN(real) || Double.isNaN(imag);
         }
     }
 
     @Builtin(name = "isinf", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class IsInfNode extends CmathBooleanUnaryBuiltinNode {
+    abstract static class IsInfNode extends CmathBooleanUnaryBuiltinNode {
         @Override
-        public boolean compute(double real, double imag) {
+        boolean compute(double real, double imag) {
             return Double.isInfinite(real) || Double.isInfinite(imag);
         }
     }
 
     @Builtin(name = "isfinite", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class IsFiniteNode extends CmathBooleanUnaryBuiltinNode {
+    abstract static class IsFiniteNode extends CmathBooleanUnaryBuiltinNode {
         @Override
-        public boolean compute(double real, double imag) {
+        boolean compute(double real, double imag) {
             return Double.isFinite(real) && Double.isFinite(imag);
         }
     }
@@ -217,32 +234,32 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class PhaseNode extends CmathUnaryBuiltinNode {
+    abstract static class PhaseNode extends CmathUnaryBuiltinNode {
 
-        public abstract double executeObject(VirtualFrame frame, Object value);
+        abstract double executeObject(VirtualFrame frame, Object value);
 
         @Specialization
-        public double doL(long value) {
+        double doL(long value) {
             return value < 0 ? Math.PI : 0;
         }
 
         @Specialization
-        public double doD(double value) {
+        double doD(double value) {
             return value < 0 ? Math.PI : 0;
         }
 
         @Specialization
-        public double doPI(PInt value) {
+        double doPI(PInt value) {
             return value.isNegative() ? Math.PI : 0;
         }
 
         @Specialization
-        public double doC(PComplex value) {
+        double doC(PComplex value) {
             return Math.atan2(value.getImag(), value.getReal());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double doGeneral(VirtualFrame frame, Object value,
+        double doGeneral(VirtualFrame frame, Object value,
                                 @Cached("create()") CoerceToDoubleNode coerceToDouble) {
             PComplex complex = getComplexNumberFromObject(frame, value);
             if (complex != null) {
@@ -256,27 +273,29 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class PolarNode extends CmathUnaryBuiltinNode {
+    abstract static class PolarNode extends CmathUnaryBuiltinNode {
 
-        public abstract PTuple executeObject(VirtualFrame frame, Object value);
+        abstract PTuple executeObject(VirtualFrame frame, Object value);
 
         @Specialization
-        public PTuple doL(long value) {
+        PTuple doL(long value) {
             return doD(value);
         }
 
         @Specialization
-        public PTuple doD(double value) {
+        PTuple doD(double value) {
             return factory().createTuple(new Object[]{Math.abs(value), value < 0 ? Math.PI : 0});
         }
 
         @Specialization
-        public PTuple doPI(PInt value) {
+        PTuple doPI(PInt value) {
             return doD(value.doubleValue());
         }
 
         @Specialization
-        public PTuple doC(PComplex value) {
+        PTuple doC(PComplex value) {
+            //TODO: the implementation of abs(z) should be shared with ComplexBuiltins.AbsNode, but it currently does
+            //not pass the ooverflow test
             double r;
             if (!Double.isFinite(value.getReal()) || !Double.isFinite(value.getImag())) {
                 if (Double.isInfinite(value.getReal())) {
@@ -287,7 +306,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                     r = Double.NaN;
                 }
             } else {
-                r = Math.hypot(value.getReal(), value.getImag()); //TODO: why doesn't ComplexBuiltins.AbsNode use this?
+                r = Math.hypot(value.getReal(), value.getImag());
                 if (Double.isInfinite(r)) {
                     throw raise(OverflowError, "absolute value too large");
                 }
@@ -296,7 +315,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public PTuple doGeneral(VirtualFrame frame, Object value,
+        PTuple doGeneral(VirtualFrame frame, Object value,
                                 @Cached("create()") CoerceToDoubleNode coerceToDouble) {
             PComplex complex = getComplexNumberFromObject(frame, value);
             if (complex != null) {
@@ -332,9 +351,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "sqrt", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class SqrtNode extends CmathComplexUnaryBuiltinNode {
+    abstract static class SqrtNode extends CmathComplexUnaryBuiltinNode {
         @Override
-        public PComplex compute(double real, double imag) {
+        PComplex compute(double real, double imag) {
             if (isInf(imag)) {
                 return factory().createComplex(Double.POSITIVE_INFINITY, imag);
             }
@@ -382,9 +401,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public abstract static class DummyNode extends CmathComplexUnaryBuiltinNode {
+    abstract static class DummyNode extends CmathComplexUnaryBuiltinNode {
         @Override
-        public PComplex compute(double real, double imag) {
+        PComplex compute(double real, double imag) {
             return factory().createComplex(real, imag);
         }
     }
