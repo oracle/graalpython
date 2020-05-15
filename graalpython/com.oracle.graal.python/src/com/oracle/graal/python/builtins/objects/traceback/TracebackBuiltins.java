@@ -299,8 +299,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
-        Object get(@SuppressWarnings("unused") PTraceback self) {
-            return -1;
+        Object get(PTraceback self) {
+            return self.getLasti();
         }
     }
 

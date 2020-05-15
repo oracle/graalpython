@@ -618,6 +618,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PTraceback(frame, lineno, next));
     }
 
+    public PTraceback createTraceback(PFrame frame, int lineno, int lasti, PTraceback next) {
+        return trace(new PTraceback(frame, lineno, lasti, next));
+    }
+
     public PTraceback createTraceback(LazyTraceback tb) {
         return trace(new PTraceback(tb));
     }

@@ -136,6 +136,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -189,6 +190,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -2827,12 +2829,40 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "traceback", constructsClass = PythonBuiltinClassType.PTraceback, isPublic = false)
+    @Builtin(name = "TracebackType", constructsClass = PythonBuiltinClassType.PTraceback, isPublic = false, minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame", "tb_lasti",
+                    "tb_lineno"})
     @GenerateNodeFactory
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
-        @Specialization
-        Object call() {
-            throw raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "traceback type");
+        @Specialization(limit = "1")
+        Object createTraceback(@SuppressWarnings("unused") LazyPythonClass cls, PTraceback next, PFrame frame, Object lasti, Object lineno,
+                        @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
+                        @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTraceback(frame, linenoLib.asSize(lineno), lastiLib.asSize(lasti), next);
+        }
+
+        @Specialization(limit = "1")
+        Object createTraceback(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") PNone next, PFrame frame, Object lasti, Object lineno,
+                        @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
+                        @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTraceback(frame, linenoLib.asSize(lineno), lastiLib.asSize(lasti), null);
+        }
+
+        @Specialization(guards = {"!isPTraceback(next)", "!isNone(next)"})
+        @SuppressWarnings("unused")
+        Object errorNext(LazyPythonClass cls, Object next, Object frame, Object lasti, Object lineno) {
+            throw raise(TypeError, "expected traceback object or None, got '%p'", next);
+        }
+
+        @Specialization(guards = "!isPFrame(frame)")
+        @SuppressWarnings("unused")
+        Object errorFrame(LazyPythonClass cls, Object next, Object frame, Object lasti, Object lineno) {
+            throw raise(TypeError, "TracebackType() argument 'tb_frame' must be frame, not %p", frame);
+        }
+
+        protected static boolean isPFrame(Object obj) {
+            return obj instanceof PFrame;
         }
     }
 
