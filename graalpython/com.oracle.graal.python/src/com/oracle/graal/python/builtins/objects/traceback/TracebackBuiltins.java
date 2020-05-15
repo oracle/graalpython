@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.traceback;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_FRAME;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LASTI;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LINENO;
@@ -58,6 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
@@ -271,7 +273,16 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(next)")
         Object set(PTraceback self, PTraceback next,
+                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+            // Check for loops
+            PTraceback tb = next;
+            while (loopProfile.profile(tb != null)) {
+                if (tb == self) {
+                    throw raise(ValueError, "traceback loop detected");
+                }
+                tb = tb.getNext();
+            }
             // Realize whatever was in the truffle stacktrace, so that we don't overwrite the
             // user-set next later
             materializeTruffleStacktraceNode.execute(self);
