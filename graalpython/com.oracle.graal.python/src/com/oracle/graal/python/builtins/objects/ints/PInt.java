@@ -257,6 +257,17 @@ public final class PInt extends PythonBuiltinObject {
         return castToLong.execute(this);
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean canBePInt() {
+        return true;
+    }
+
+    @ExportMessage
+    public PInt asPInt() {
+        return this;
+    }
+
     @Override
     public int hashCode() {
         return value.hashCode();

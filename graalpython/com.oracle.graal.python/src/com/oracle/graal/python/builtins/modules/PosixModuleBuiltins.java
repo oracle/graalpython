@@ -126,7 +126,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -1793,20 +1792,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
 
-        @Child private CoerceToIntegerNode castIntNode;
+        @Child private PythonObjectLibrary asPIntLib;
         @Child private GetTerminalSizeNode recursiveNode;
 
         @CompilationFinal private ConditionProfile errorProfile;
         @CompilationFinal private ConditionProfile overflowProfile;
 
-        private CoerceToIntegerNode getCastIntNode() {
-            if (castIntNode == null) {
+        private PythonObjectLibrary getAsPIntLibrary() {
+            if (asPIntLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
+                asPIntLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
             }
-            return castIntNode;
+            return asPIntLib;
         }
 
         private ConditionProfile getErrorProfile() {
@@ -1876,7 +1873,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object getTerminalSize(VirtualFrame frame, Object fd) {
-            Object value = getCastIntNode().execute(fd);
+            PythonObjectLibrary lib = getAsPIntLibrary();
+            if (!lib.canBePInt(fd)) {
+                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", fd);
+            }
+            Object value = lib.asPInt(fd);
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = create();

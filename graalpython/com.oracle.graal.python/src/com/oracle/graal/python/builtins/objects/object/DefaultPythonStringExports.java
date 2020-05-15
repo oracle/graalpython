@@ -157,7 +157,29 @@ final class DefaultPythonStringExports {
         return receiver;
     }
 
+    @ExportMessage
     @SuppressWarnings("static-method")
+    static boolean canBePInt(@SuppressWarnings("unused") String receiver) {
+        return false;
+    }
+
+    @ExportMessage
+    static int asPInt(String receiver,
+                    @Exclusive @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", receiver);
+    }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") String receiver) {
+        return false;
+    }
+
+    @ExportMessage
+    static long asJavaLong(String receiver,
+                    @Exclusive @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "must be numeric, not %p", receiver);
+    }
+
     @ExportMessage
     static boolean canBeJavaDouble(@SuppressWarnings("unused") String receiver) {
         return false;
@@ -165,7 +187,7 @@ final class DefaultPythonStringExports {
 
     @ExportMessage
     static double asJavaDouble(String receiver,
-                    @Cached PRaiseNode raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, "must be real number, not %p", receiver);
     }
 

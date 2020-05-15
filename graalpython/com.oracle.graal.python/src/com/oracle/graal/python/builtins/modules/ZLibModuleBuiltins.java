@@ -62,12 +62,12 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -79,6 +79,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = ZLibModuleBuiltins.MODULE_NAME)
@@ -153,8 +154,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Crc32Node extends PythonBinaryBuiltinNode {
 
-        @Child private CoerceToIntegerNode castToIntNode;
-
         // we can't use jdk Crc32 class, if there is done init value of crc
         private static final int[] CRC32_TABLE = {
                         0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419,
@@ -221,16 +220,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private CoerceToIntegerNode getCastToIntNode() {
-            if (castToIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
-            }
-            return castToIntNode;
-        }
-
         @Specialization
         public long doitNone(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
                         @Cached ToBytesNode toBytesNode) {
@@ -264,8 +253,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public long doObject(VirtualFrame frame, Object data, Object value,
-                        @Cached("create()") Crc32Node recursiveNode) {
-            return (long) recursiveNode.execute(frame, data, getCastToIntNode().execute(value));
+                        @Cached("create()") Crc32Node recursiveNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            if (!lib.canBePInt(value)) {
+                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", value);
+            }
+            return (long) recursiveNode.execute(frame, data, lib.asPInt(value));
         }
 
         protected static Crc32Node create() {
@@ -278,8 +271,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class Adler32Node extends PythonBinaryBuiltinNode {
-
-        @Child private CoerceToIntegerNode castToIntNode;
 
         private static final int DEFER = 3850;
         private static final int BASE = 65521;
@@ -301,16 +292,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             }
             result = (s2 << 16) | s1;
             return result;
-        }
-
-        private CoerceToIntegerNode getCastToIntNode() {
-            if (castToIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
-            }
-            return castToIntNode;
         }
 
         @TruffleBoundary
@@ -346,8 +327,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public long doObject(VirtualFrame frame, Object data, Object value,
-                        @Cached("create()") Adler32Node recursiveNode) {
-            return (long) recursiveNode.execute(frame, data, getCastToIntNode().execute(value));
+                        @Cached("create()") Adler32Node recursiveNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            if (!lib.canBePInt(value)) {
+                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", value);
+            }
+            return (long) recursiveNode.execute(frame, data, lib.asPInt(value));
         }
 
         protected static Adler32Node create() {
@@ -583,7 +568,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DecompressNode extends PythonTernaryBuiltinNode {
 
-        @Child private CoerceToIntegerNode castToIntNode;
         @Child private SequenceStorageNodes.ToByteArrayNode toArrayNode;
 
         private final ConditionProfile bufSizeProfile = ConditionProfile.createBinaryProfile();
@@ -594,16 +578,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 toArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toArrayNode;
-        }
-
-        private CoerceToIntegerNode getCastToIntNode() {
-            if (castToIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
-            }
-            return castToIntNode;
         }
 
         @TruffleBoundary
@@ -652,8 +626,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, Object bufsize,
-                        @Cached("create()") DecompressNode recursiveNode) {
-            Object bufferLen = getCastToIntNode().execute(bufsize);
+                        @Cached("create()") DecompressNode recursiveNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            if (!lib.canBePInt(bufsize)) {
+                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", bufsize);
+            }
+            Object bufferLen = lib.asPInt(bufsize);
             return (PBytes) recursiveNode.execute(frame, data, wbits, bufferLen);
         }
 

@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntExac
 import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntLossyNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -105,6 +106,11 @@ public abstract class CastToJavaIntNode extends PNodeWithContext {
     @Specialization
     public int toInt(PInt x) {
         return toIntInternal(x);
+    }
+
+    @Fallback
+    static int doUnsupported(@SuppressWarnings("unused") Object x) {
+        throw CannotCastException.INSTANCE;
     }
 
     @GenerateUncached

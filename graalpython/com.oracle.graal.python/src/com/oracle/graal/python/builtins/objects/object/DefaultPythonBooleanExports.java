@@ -261,7 +261,6 @@ final class DefaultPythonBooleanExports {
         return receiver ? 1.0 : 0.0;
     }
 
-    @SuppressWarnings("static-method")
     @ExportMessage
     static boolean canBeJavaLong(@SuppressWarnings("unused") Boolean receiver) {
         return true;
@@ -269,6 +268,16 @@ final class DefaultPythonBooleanExports {
 
     @ExportMessage
     static long asJavaLong(Boolean receiver) {
+        return receiver ? 1 : 0;
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Boolean receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static int asPInt(Boolean receiver) {
         return receiver ? 1 : 0;
     }
 

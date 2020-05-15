@@ -575,6 +575,40 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Checks whether the receiver can be coerced to a Python int.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
+     * and <b>__index__</b> special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a Python int
+     */
+    @Abstract(ifExported = {"asPIntWithState", "asPInt"})
+    public boolean canBePInt(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Python {@code int}. This method follows the
+     * semantics of CPython's function {@code _PyLong_AsInt}.
+     */
+    public Object asPIntWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asPInt(receiver);
+    }
+
+    /**
+     * @see #asPIntWithState
+     */
+    public Object asPInt(Object receiver) {
+        return asPIntWithState(receiver, null);
+    }
+
+    /**
      * Checks whether the receiver can be coerced to a Java long.
      *
      * <br>
@@ -582,7 +616,7 @@ public abstract class PythonObjectLibrary extends Library {
      * special method.
      *
      * @param receiver the receiver Object
-     * @return True if object can be converted to a java double
+     * @return True if object can be converted to a java long
      */
     @Abstract(ifExported = {"asJavaLongWithState", "asJavaLong"})
     public boolean canBeJavaLong(Object receiver) {

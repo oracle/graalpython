@@ -305,4 +305,27 @@ final class DefaultPythonObjectExports {
         }
         throw raise.raise(TypeError, "must be real number, not %p", receiver);
     }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary lib) {
+        return lib.fitsInLong(receiver);
+    }
+
+    @ExportMessage
+    static long asPInt(Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary lib,
+                    @Cached.Exclusive @Cached PRaiseNode raise) {
+        if (lib.fitsInLong(receiver)) {
+            try {
+                return lib.asLong(receiver);
+            } catch (UnsupportedMessageException ex) {
+                // cannot happen due to check
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(ex);
+            }
+        }
+        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", receiver);
+    }
+
 }

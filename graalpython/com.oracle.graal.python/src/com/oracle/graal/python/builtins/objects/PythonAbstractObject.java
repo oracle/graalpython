@@ -849,8 +849,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex) {
-        return hasIndex.execute(this, __INDEX__);
+    public final boolean canBeIndex(@Shared("asIndexLookup") @Cached LookupInheritedAttributeNode.Dynamic lookupIndex) {
+        return lookupIndex.execute(this, __INDEX__) != PNone.NO_VALUE;
     }
 
     @ExportMessage
@@ -859,7 +859,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached IsSubtypeNode isSubtype,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @Shared("asIndexLookup") @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
@@ -1010,6 +1010,43 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean canBePInt(@Shared("asPIntLookupAttr") @Cached LookupInheritedAttributeNode.Dynamic lookup) {
+        return lookup.execute(this, __INDEX__) != PNone.NO_VALUE || lookup.execute(this, __INT__) != PNone.NO_VALUE;
+    }
+
+    @ExportMessage
+    public Object asPIntWithState(ThreadState state,
+                    @Shared("asPIntLookupAttr") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
+                    @Exclusive @Cached() ConditionProfile hasIntFunc) {
+        Object result = PNone.NO_VALUE;
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            result = lib.asIndex(this);
+        }
+        if (result == PNone.NO_VALUE) {
+            Object func = lookup.execute(this, __INT__);
+            if (hasIntFunc.profile(func != PNone.NO_VALUE)) {
+                if (gotState.profile(state == null)) {
+                    result = callNode.executeObject(func, this);
+                } else {
+                    result = callNode.executeObject(PArguments.frameForCall(state), func, this);
+                }
+            }
+            if (result == PNone.NO_VALUE) {
+                throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", this);
+            }
+        }
+        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
+            throw raise.raise(TypeError, "__index__ returned non-int (type %p)", result);
+        }
+        return result;
+    }
+
+    @ExportMessage
     public int asSizeWithState(LazyPythonClass type, ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached BranchProfile overflow,
@@ -1042,15 +1079,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public boolean canBeJavaDouble(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex) {
-        return hasIndex.execute(this, __FLOAT__) || canBeIndex(hasIndex);
+    public boolean canBeJavaDouble(@Shared("asJavaLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @CachedLibrary("this") PythonObjectLibrary lib) {
+        return lookup.execute(this, __FLOAT__) != PNone.NO_VALUE || lib.canBeIndex(this);
     }
 
     @ExportMessage
     public double asJavaDoubleWithState(ThreadState state,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached() ConditionProfile hasIndexFunc,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Shared("asJavaLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached ConditionProfile gotState,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
@@ -1085,13 +1123,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean canBeJavaLong(
-                    @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasAttr) {
-        return hasAttr.execute(this, __INT__);
+                    @Shared("asJavaLongLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup) {
+        return lookup.execute(this, __INT__) != PNone.NO_VALUE;
     }
 
     @ExportMessage
     public long asJavaLongWithState(ThreadState state,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Shared("asJavaLongLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached ConditionProfile gotState,
                     @Exclusive @Cached CastToJavaLongNode castToLong,

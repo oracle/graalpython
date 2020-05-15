@@ -234,31 +234,51 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "!isNoValue(fileno)"})
         Object socket(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
                         @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
+            try {
+                return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", fileno);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
+            try {
+                return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
+            try {
+                return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
+            try {
+                return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "!isNoValue(fileno)"})
         Object socket(VirtualFrame frame, LazyPythonClass cls, Object family, Object type, Object proto, Object fileno,
                         @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
+            try {
+                return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         private Object createSocketInternal(LazyPythonClass cls, int family, int type, int proto) {

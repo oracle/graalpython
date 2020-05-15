@@ -287,7 +287,6 @@ final class DefaultPythonLongExports {
         return receiver.doubleValue();
     }
 
-    @SuppressWarnings("static-method")
     @ExportMessage
     static boolean canBeJavaLong(@SuppressWarnings("unused") Long receiver) {
         return true;
@@ -295,6 +294,16 @@ final class DefaultPythonLongExports {
 
     @ExportMessage
     static long asJavaLong(Long receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Long receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static long asPInt(Long receiver) {
         return receiver;
     }
 

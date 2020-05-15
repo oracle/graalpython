@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -488,9 +487,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public Object factorialObject(VirtualFrame frame, Object value,
-                        @Cached("create()") CoerceToIntegerNode castNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached("create()") FactorialNode recursiveNode) {
-            return recursiveNode.execute(frame, castNode.execute(value));
+            return recursiveNode.execute(frame, lib.asPInt(value));
         }
 
         protected boolean isInteger(double value) {
