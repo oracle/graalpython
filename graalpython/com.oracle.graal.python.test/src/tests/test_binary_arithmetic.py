@@ -72,6 +72,10 @@ def test_mod():
     assert 0x8000000000000000 % 0x8000000000000001 == 0x8000000000000000
     assert 0x8000000000000001 % 0x8000000000000000 == 1
 
+    class MyInt(int):
+        pass
+    assert 7 % MyInt(-2) == -1
+
 
 def test_add_bool():
     assert True.__add__(True) == 2, "True.__add__(True)"
