@@ -796,6 +796,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNSUPPORTED_FORMAT_CHAR_AT_INDEX = tsLiteral("unsupported format character '%c' (0x%x) at index %d");
     public static final TruffleString UNSUPPORTED_INSTANCEOF = tsLiteral("unsupported instanceof(%p, %p)");
     public static final TruffleString UNSUPPORTED_LOCALE_SETTING = tsLiteral("unsupported locale setting");
+    public static final TruffleString UNKNOWN_LOCALE = tsLiteral("Unknown locale");
     public static final TruffleString UNSUPPORTED_OBJ_IN = tsLiteral("unsupported object in '%s'");
     public static final TruffleString UNSUPPORTED_OPERAND_P = tsLiteral("unsupported operand '%p'");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P = tsLiteral("unsupported operand type(s) for %s: '%p' and '%p'");

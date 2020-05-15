@@ -154,6 +154,7 @@ import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
+import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Consumer;
@@ -697,6 +698,9 @@ public final class PythonContext extends Python3Core {
     // A thread-local to store the full path to the currently active import statement, for Jython
     // compat
     private final ThreadLocal<ArrayDeque<TruffleString>> currentImport = new ThreadLocal<>();
+
+    /** State for the locale module, the default locale can be passed as an option */
+    private PythonLocale currentLocale;
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
     private final AllocationReporter allocationReporter;
@@ -1366,18 +1370,6 @@ public final class PythonContext extends Python3Core {
         getThreadState(lang).caughtException = e;
     }
 
-    public PException getCaughtException(PythonLanguage lang) {
-        return getThreadState(lang).caughtException;
-    }
-
-    public void setTopFrameInfo(PythonLanguage lang, PFrame.Reference topframeref) {
-        getThreadState(lang).topframeref = topframeref;
-    }
-
-    public PFrame.Reference popTopFrameInfo(PythonLanguage lang) {
-        return getThreadState(lang).popTopFrameInfo();
-    }
-
     public PFrame.Reference peekTopFrameInfo(PythonLanguage lang) {
         return getThreadState(lang).topframeref;
     }
@@ -1423,6 +1415,18 @@ public final class PythonContext extends Python3Core {
     public byte[] getHashSecret() {
         assert !ImageInfo.inImageBuildtimeCode();
         return hashSecret;
+    }
+
+    public void setCurrentLocale(PythonLocale locale) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (getOption(PythonOptions.RunViaLauncher)) {
+            locale.setAsJavaDefault();
+        }
+        currentLocale = locale;
+    }
+
+    public PythonLocale getCurrentLocale() {
+        return currentLocale;
     }
 
     public boolean isInitialized() {
@@ -1582,10 +1586,15 @@ public final class PythonContext extends Python3Core {
         }
     }
 
+    private void initializeLocale() {
+        setCurrentLocale(PythonLocale.initializeFromTruffleEnv(env));
+    }
+
     private void setupRuntimeInformation(boolean isPatching) {
         if (!ImageInfo.inImageBuildtimeCode()) {
             initializeHashSecret();
         }
+        initializeLocale();
         setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
         if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
             nativeZlib = NFIZlibSupport.createNative(this, "");

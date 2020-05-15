@@ -1203,7 +1203,9 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                         self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
                                                       env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
                                                       out=self.out, err=self.out, timeout=timeout, report=report)
+                        self.out.lines.append(f"Thread {self.name} finished with result {self.result}")
                     except BaseException as e: # pylint: disable=broad-except;
+                        self.out.lines.append(f"Thread {self.name} finished with exception {e}")
                         self.result = e
         else:
             threads = []
@@ -1216,6 +1218,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                     self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
                                                        env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal,
                                                        timeout=timeout, report=report)
+                    print(f"Thread {self.name} finished with result {self.result}")
 
                 def join(self, *args, **kwargs):
                     return
@@ -1241,12 +1244,16 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                 mx.logv("## Progress (last 5 lines) of thread %r:\n%s\n" % (t.name, os.linesep.join(t.out.lines[-5:])))
                 alive[i] = t.is_alive()
 
-        thread_errors = [t.result for t in threads if t.result != 0]
+        failed_threads = [t for t in threads if t.result != 0]
         for t in threads:
             mx.log("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
-        if any(thread_errors):
+        if any(failed_threads):
+            threads_info = [f"{t.name} (result: {t.result})" for t in failed_threads]
+            message = "HPy testing threads failed: " + ', '.join(threads_info)
             if nonZeroIsFatal:
-                mx.abort("At least one HPy testing thread failed.")
+                mx.abort("ERROR: " + message)
+            else:
+                mx.warn(message)
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True,
