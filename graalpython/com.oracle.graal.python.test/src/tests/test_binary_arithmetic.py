@@ -272,3 +272,17 @@ def test_sub():
 def test_rshift():
     assert 1 >> 64 == 0
     assert 0xffffffffffff >> 128 == 0
+    assert 0x7fffffec >> 24 == 0x7f
+    assert 0x7fffffec >> 32 == 0
+    assert 0x7fffffffffffffec >> 64 == 0
+    bigint = 0xffffffffffffffffffffffffffffffff
+    assert bigint >> 120 == 0xff
+    assert bigint >> 128 == 0
+    trimmed = bigint & 0x7fffffffffffffff
+    assert trimmed >> 64 == 0
+
+
+def test_lshift():
+    assert 1 << 32 == 0x100000000
+    assert 1 << 64 == 0x10000000000000000
+    assert 1 << 128 == 0x100000000000000000000000000000000
