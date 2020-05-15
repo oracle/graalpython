@@ -41,12 +41,15 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -58,30 +61,34 @@ import com.oracle.truffle.api.dsl.Specialization;
  * Casts a Python integer to a Java long, lossy and without coercion. <b>ATTENTION:</b> If the cast
  * fails, the node will throw a {@link CannotCastException}.
  */
-@GenerateUncached
 @ImportStatic(PGuards.class)
 public abstract class CastToJavaLongNode extends PNodeWithContext {
 
     public abstract long execute(Object x) throws CannotCastException;
 
+    protected long toLongInternal(@SuppressWarnings("unused") PInt x) {
+        CompilerAsserts.neverPartOfCompilation();
+        throw new IllegalStateException("should not be reached");
+    }
+
     @Specialization
-    static long doLong(boolean x) {
+    long doLong(boolean x) {
         return x ? 1 : 0;
     }
 
     @Specialization
-    static long doLong(int x) {
+    long doLong(int x) {
         return x;
     }
 
     @Specialization
-    static long doLong(long x) {
+    long doLong(long x) {
         return x;
     }
 
     @Specialization
-    static long doPInt(PInt x) {
-        return x.longValue();
+    long doPInt(PInt x) {
+        return toLongInternal(x);
     }
 
     @Specialization
@@ -102,10 +109,39 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
     }
 
     public static CastToJavaLongNode create() {
-        return CastToJavaLongNodeGen.create();
+        return CastToJavaLongNodeGen.CastToJavaLongExactNodeGen.create();
     }
 
     public static CastToJavaLongNode getUncached() {
-        return CastToJavaLongNodeGen.getUncached();
+        return CastToJavaLongNodeGen.CastToJavaLongExactNodeGen.getUncached();
+    }
+
+    public static CastToJavaLongNode createLossy() {
+        return CastToJavaLongNodeGen.CastToJavaLongLossyNodeGen.create();
+    }
+
+    public static CastToJavaLongNode getLossyUncached() {
+        return CastToJavaLongNodeGen.CastToJavaLongLossyNodeGen.getUncached();
+    }
+
+    @GenerateUncached
+    abstract static class CastToJavaLongLossyNode extends CastToJavaLongNode {
+        @Override
+        protected long toLongInternal(PInt x) {
+            return x.longValue();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class CastToJavaLongExactNode extends CastToJavaLongNode {
+        @Override
+        protected long toLongInternal(PInt x) {
+            try {
+                return x.longValueExact();
+            } catch (ArithmeticException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as long (type %p)", x, x);
+            }
+        }
     }
 }

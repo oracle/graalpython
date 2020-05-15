@@ -75,7 +75,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
 
     @ExportMessage
     Object execute(Object[] arguments,
-                    @Cached CastToJavaLongNode castToJavaLongNode,
+                    @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
                     @Cached GetCurrentFrameRef getCurrentFrameRef,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                     @Cached GenericInvokeNode invokeNode,

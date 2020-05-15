@@ -261,6 +261,17 @@ final class DefaultPythonBooleanExports {
         return receiver ? 1.0 : 0.0;
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Boolean receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static long asJavaLong(Boolean receiver) {
+        return receiver ? 1 : 0;
+    }
+
     @ExportMessage
     public static Object lookupAttribute(Boolean x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {

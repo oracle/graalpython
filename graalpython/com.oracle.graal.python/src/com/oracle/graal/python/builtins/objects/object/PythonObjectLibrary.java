@@ -569,10 +569,43 @@ public abstract class PythonObjectLibrary extends Library {
 
     /**
      * @see #asJavaDoubleWithState
-     * @see #asJavaDoubleWithStateAndErrHandler
      */
     public double asJavaDouble(Object receiver) {
         return asJavaDoubleWithState(receiver, null);
+    }
+
+    /**
+     * Checks whether the receiver can be coerced to a Java long.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a java double
+     */
+    @Abstract(ifExported = {"asJavaLongWithState", "asJavaLong"})
+    public boolean canBeJavaLong(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Java {@code long}. This method follows the semantics
+     * of CPython's function {@code PyLong_AsLong}.
+     */
+    public long asJavaLongWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asJavaLong(receiver);
+    }
+
+    /**
+     * @see #asJavaLongWithState
+     */
+    public long asJavaLong(Object receiver) {
+        return asJavaLongWithState(receiver, null);
     }
 
     /**
@@ -590,7 +623,7 @@ public abstract class PythonObjectLibrary extends Library {
         if (threadState == null) {
             // this will very likely always raise an integer interpretation error in
             // asIndexWithState
-            long result = CastToJavaLongNode.getUncached().execute(asIndexWithState(receiver, null));
+            long result = CastToJavaLongNode.getLossyUncached().execute(asIndexWithState(receiver, null));
             int intResult = (int) result;
             if (intResult == result) {
                 return intResult;

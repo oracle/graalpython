@@ -183,6 +183,12 @@ public class PFloat extends PythonBuiltinObject {
         return true;
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean canBeJavaDouble() {
+        return true;
+    }
+
     @ExportMessage
     public double asJavaDouble(
                     @Cached CastToJavaDoubleNode cast) {

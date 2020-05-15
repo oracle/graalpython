@@ -283,7 +283,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
         static String doBytes(Object arr, Object elementSizeObj,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
                         @CachedLibrary("arr") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {

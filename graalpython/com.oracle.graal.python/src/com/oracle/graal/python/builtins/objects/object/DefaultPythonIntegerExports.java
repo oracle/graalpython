@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -256,6 +255,17 @@ final class DefaultPythonIntegerExports {
     @ExportMessage
     static double asJavaDouble(Integer receiver) {
         return receiver.doubleValue();
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static long asJavaLong(Integer receiver) {
+        return receiver;
     }
 
     @ExportMessage

@@ -283,4 +283,26 @@ final class DefaultPythonObjectExports {
     public static Object lookupAttribute(@SuppressWarnings("unused") Object x, @SuppressWarnings("unused") String name, @SuppressWarnings("unused") boolean inheritedOnly) {
         return PNone.NO_VALUE;
     }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Object receiver,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        return interopLib.fitsInLong(receiver);
+    }
+
+    @ExportMessage
+    static long asJavaLong(Object receiver,
+                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        if (canBeJavaDouble(receiver, interopLib)) {
+            try {
+                return interopLib.asLong(receiver);
+            } catch (UnsupportedMessageException ex) {
+                // cannot happen due to check
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(ex);
+            }
+        }
+        throw raise.raise(TypeError, "must be real number, not %p", receiver);
+    }
 }

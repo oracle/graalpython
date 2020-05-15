@@ -37,8 +37,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -236,7 +236,6 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public double asJavaDouble(
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached() ConditionProfile hasIndexFunc,
                     @Exclusive @Cached PRaiseNode raise) {
@@ -244,6 +243,18 @@ public final class PInt extends PythonBuiltinObject {
             return castToDouble.execute(lib.asIndex(this));
         }
         throw raise.raise(TypeError, "must be real number, not %p", this);
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean canBeJavaLong() {
+        return true;
+    }
+
+    @ExportMessage
+    public long asJavaLong(
+                    @Cached CastToJavaLongNode castToLong) {
+        return castToLong.execute(this);
     }
 
     @Override

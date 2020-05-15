@@ -104,6 +104,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -1014,7 +1015,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongNode castToLong) {
+                    @Exclusive @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToLong) {
         Object result = lib.asIndexWithState(this, state);
         long longResult;
         try {
@@ -1048,7 +1049,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public double asJavaDoubleWithState(ThreadState state,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex,
                     @Exclusive @Cached() ConditionProfile hasIndexFunc,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
@@ -1058,10 +1058,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached PRaiseNode raise) {
 
         assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
-
-        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-            return castToDouble.execute(lib.asIndex(this));
-        }
 
         Object func = lookup.execute(this, __FLOAT__);
         if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
@@ -1080,7 +1076,44 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
 
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            return castToDouble.execute(lib.asIndex(this));
+        }
+
         throw raise.raise(TypeError, "must be real number, not %p", this);
+    }
+
+    @ExportMessage
+    public boolean canBeJavaLong(
+                    @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasAttr) {
+        return hasAttr.execute(this, __INT__);
+    }
+
+    @ExportMessage
+    public long asJavaLongWithState(ThreadState state,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @Exclusive @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached PRaiseNode raise) {
+
+        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
+
+        Object func = lookup.execute(this, __INT__);
+        if (func == PNone.NO_VALUE) {
+            throw raise.raise(TypeError, "must be numeric, not %p", this);
+        }
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.executeObject(func, this);
+        } else {
+            result = callNode.executeObject(PArguments.frameForCall(state), func, this);
+        }
+        try {
+            return castToLong.execute(result);
+        } catch (CannotCastException e) {
+            throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", this, result);
+        }
     }
 
     @ExportMessage

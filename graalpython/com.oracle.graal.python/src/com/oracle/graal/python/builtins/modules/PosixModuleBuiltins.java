@@ -127,7 +127,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -1033,11 +1032,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
                         @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached CoerceToJavaLongNode castFdNode,
-                        @Cached CoerceToJavaLongNode castPosNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libFd,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libPos,
                         @Cached CastToJavaIntNode castHowNode) {
 
-            return lseek(frame, castFdNode.execute(fd), castPosNode.execute(pos), castHowNode.execute(how), channelClassProfile);
+            return lseek(frame, libFd.asJavaLong(fd), libPos.asJavaLong(pos), castHowNode.execute(how), channelClassProfile);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1239,17 +1238,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CoerceToJavaLongNode castToLongNode) {
-            return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libSize) {
+            return readLong(frame, fd, libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
 
         @Specialization
         Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CoerceToJavaLongNode castToLongNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libSize,
                         @Cached CastToJavaIntNode castToIntNode) {
-            return readLong(frame, castToIntNode.execute(fd), castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+            return readLong(frame, castToIntNode.execute(fd), libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
     }
 

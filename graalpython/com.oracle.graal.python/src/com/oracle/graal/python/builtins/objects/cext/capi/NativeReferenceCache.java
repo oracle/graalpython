@@ -140,7 +140,7 @@ public final class NativeReferenceCache implements TruffleObject {
 
         @Specialization(guards = {"!isResolved(pointerObject)", "!isNoRefCnt(refCnt)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
         static Object doGenericIntWithRefCnt(Object pointerObject, Object refCnt, boolean steal,
-                        @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Shared("castToJavaLongNode") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
                         @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
@@ -173,7 +173,7 @@ public final class NativeReferenceCache implements TruffleObject {
         @Specialization(guards = "!isResolved(pointerObject)", replaces = {"doCachedPointer", "doGenericIntWithRefCnt", "doGenericInt"})
         static Object doGeneric(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
-                        @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Shared("castToJavaLongNode") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
                         @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
@@ -219,7 +219,7 @@ public final class NativeReferenceCache implements TruffleObject {
                 if (isNoRefCnt(refCnt)) {
                     idx = CApiContext.idFromRefCnt(GetRefCntNodeGen.getUncached().execute(pointerObject));
                 } else {
-                    idx = CApiContext.idFromRefCnt(CastToJavaLongNode.getUncached().execute(refCnt));
+                    idx = CApiContext.idFromRefCnt(CastToJavaLongNode.getLossyUncached().execute(refCnt));
                 }
                 return cApiContext.lookupNativeObjectReference(idx);
             }

@@ -545,7 +545,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PException raiseSecondArgError(Object x) {
-            throw raise(PythonBuiltinClassType.TypeError, "complex() second argument must be a string or a number, not '%p'", x);
+            throw raise(PythonBuiltinClassType.TypeError, "complex() second argument must be a number, not '%p'", x);
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {

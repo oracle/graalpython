@@ -3567,7 +3567,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static int doNativeWrapper(Object ptr, Object sizeObject,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {

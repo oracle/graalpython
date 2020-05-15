@@ -98,7 +98,6 @@ import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteByteToChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteToChannelNode;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -248,10 +247,10 @@ public class MMapBuiltins extends PythonBuiltins {
         int doSingle(PMMap self, Object idxObj,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
-                        @Cached("create()") CoerceToJavaLongNode castToLongNode) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libIdx) {
 
             try {
-                long i = castToLongNode.execute(idxObj);
+                long i = libIdx.asJavaLong(idxObj);
                 long len = self.getLength();
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
@@ -304,12 +303,12 @@ public class MMapBuiltins extends PythonBuiltins {
         PNone doSingle(PMMap self, Object idxObj, Object val,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") WriteByteToChannelNode writeByteNode,
-                        @Cached("create()") CoerceToJavaLongNode castToLongNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary libIdx,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
                         @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {
 
             try {
-                long i = castToLongNode.execute(idxObj);
+                long i = libIdx.asJavaLong(idxObj);
                 long len = self.getLength();
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
@@ -622,7 +621,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(VirtualFrame frame, PMMap primary, PIBytesLike sub, Object starting, Object ending,
-                        @Shared("castLong") @Cached CastToJavaLongNode castLong,
+                        @Shared("castLong") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
@@ -665,7 +664,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(PMMap primary, int sub, Object starting, @SuppressWarnings("unused") Object ending,
-                        @Shared("castLong") @Cached CastToJavaLongNode castLong,
+                        @Shared("castLong") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
