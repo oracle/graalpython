@@ -1761,10 +1761,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
             toStrAttr = readStr.execute(builtins, names);
             result = castStr.execute(callNode.execute(toStrAttr, this));
-            return result;
-        } else {
-            return toStringImpl();
+            // reusing the same condition profile here as it effectively
+            // has the same effect.
+            if (conditionProfile.profile(result != null)) {
+                return result;
+            }
         }
+        return toStringImpl();
     }
 
     @TruffleBoundary
