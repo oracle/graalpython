@@ -1742,16 +1742,19 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         return PythonLanguage.class;
     }
 
-    @ExportMessage
-    public String toDisplayString(boolean allowSideEffects,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Exclusive @Cached ReadAttributeFromObjectNode readStr,
-                    @Exclusive @Cached CallNode callNode,
-                    @Cached CastToJavaStringNode castStr,
-                    @Cached ConditionProfile conditionProfile) {
-        PythonModule builtins = context.getBuiltins();
-        String result = null;
-        if (conditionProfile.profile(builtins != null && allowSideEffects)) {
+    @GenerateUncached
+    @SuppressWarnings("unused")
+    public abstract static class ToDisplaySideEffectingNode extends Node {
+
+        public abstract String execute(PythonAbstractObject receiver);
+
+        @Specialization
+        public String doDefault(PythonAbstractObject receiver,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ReadAttributeFromObjectNode readStr,
+                        @Cached CallNode callNode,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached ConditionProfile toStringUsed) {
             Object toStrAttr;
             String names;
             if (context.getOption(PythonOptions.UseReprForPrintString)) {
@@ -1759,19 +1762,40 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             } else {
                 names = BuiltinNames.STR;
             }
-            toStrAttr = readStr.execute(builtins, names);
-            result = castStr.execute(callNode.execute(toStrAttr, this));
-            // reusing the same condition profile here as it effectively
-            // has the same effect.
-            if (conditionProfile.profile(result != null)) {
+            String result = null;
+            PythonModule builtins = context.getBuiltins();
+            if (toStringUsed.profile(builtins != null)) {
+                toStrAttr = readStr.execute(builtins, names);
+                result = castStr.execute(callNode.execute(toStrAttr, receiver));
+            }
+            if (toStringUsed.profile(result != null)) {
                 return result;
+            } else {
+                return receiver.toStringBoundary();
             }
         }
-        return toStringImpl();
+
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static class ToDisplayString {
+
+        @Specialization(guards = "allowSideEffects")
+        public static String doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
+                        @Cached ToDisplaySideEffectingNode toDisplayCallnode) {
+            return toDisplayCallnode.execute(receiver);
+        }
+
+        @Specialization(guards = "!allowSideEffects")
+        public static String doNonSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects) {
+            return receiver.toStringBoundary();
+        }
+
     }
 
     @TruffleBoundary
-    private String toStringImpl() {
+    final String toStringBoundary() {
         return toString();
     }
 
