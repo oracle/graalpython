@@ -1679,11 +1679,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary(allowInlining = true)
         PBytes urandom(int size) {
-            // size is in bytes
-            BigInteger bigInteger = new BigInteger(size * 8, new Random());
-            // sign may introduce an extra byte
-            byte[] range = Arrays.copyOfRange(bigInteger.toByteArray(), 0, size);
-            return factory().createBytes(range);
+            byte[] bytes = new byte[size];
+            new Random().nextBytes(bytes);
+            return factory().createBytes(bytes);
         }
     }
 
