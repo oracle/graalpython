@@ -379,6 +379,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             if (result != null) {
                 return result;
             }
+            if (real == 0.0 && imag == 0.0) {
+                return factory().createComplex(0.0, imag);
+            }
 
             double ax = Math.abs(real);
             double ay = Math.abs(imag);
