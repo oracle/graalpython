@@ -123,6 +123,79 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     abstract static class CmathComplexUnaryBuiltinNode extends CmathUnaryBuiltinNode {
 
+        // Constants used for the definition of special values tables in subclassess
+        static final double INF = Double.POSITIVE_INFINITY;
+        static final double NAN = Double.NaN;
+
+        protected static class ComplexConstant {
+            final double real;
+            final double imag;
+
+            ComplexConstant(double real, double imag) {
+                this.real = real;
+                this.imag = imag;
+            }
+        }
+
+        private enum SpecialType {
+            NINF,           // 0, negative infinity
+            NEG,            // 1, negative finite number (nonzero)
+            NZERO,          // 2, -0.0
+            PZERO,          // 3, +0.0
+            POS,            // 4, positive finite number (nonzero)
+            PINF,           // 5, positive infinity
+            NAN;            // 6, Not a Number
+
+            static SpecialType ofDouble(double d) {
+                if (Double.isFinite(d)) {
+                    if (d != 0) {
+                        if (Math.copySign(1.0, d) == 1.0) {
+                            return POS;
+                        } else {
+                            return NEG;
+                        }
+                    } else {
+                        if (Math.copySign(1.0, d) == 1.0) {
+                            return PZERO;
+                        } else {
+                            return NZERO;
+                        }
+                    }
+                }
+                if (Double.isNaN(d)) {
+                    return NAN;
+                }
+                if (Math.copySign(1.0, d) == 1.0) {
+                    return PINF;
+                } else {
+                    return NINF;
+                }
+            }
+        };
+
+        protected PComplex specialValue(ComplexConstant[][] table, double real, double imag) {
+            if (!Double.isFinite(real) || !Double.isFinite(imag)) {
+                ComplexConstant c = table[SpecialType.ofDouble(real).ordinal()][SpecialType.ofDouble(imag).ordinal()];
+                if (c == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("should not be reached");
+                }
+                return factory().createComplex(c.real, c.imag);
+            }
+            return null;
+        }
+
+        /**
+         * Creates an instance of ComplexConstant. The name of this factory method is intentionally short to allow
+         * subclassess compact definition of their tables of special values.
+         * @param real the real part of the complex constant
+         * @param imag the imaginary part of the complex constant
+         * @return a new instance of ComplexConstant representing the complex number real + i * imag
+         */
+        protected static ComplexConstant C(double real, double imag) {
+            return new ComplexConstant(real, imag);
+        }
+
         abstract PComplex executeObject(VirtualFrame frame, Object value);
 
         PComplex compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
@@ -285,55 +358,26 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static boolean isInf(double d) {
-        return Double.isInfinite(d);
-    }
-
-    private static boolean isNaN(double d) {
-        return Double.isNaN(d);
-    }
-
-    private static boolean isPos(double d) {
-        return Math.copySign(1.0, d) == 1.0;
-    }
-
-    private static boolean isNeg(double d) {
-        return Math.copySign(1.0, d) != 1.0;
-    }
-
-    private static boolean isPosInf(double d) {
-        return isInf(d) && isPos(d);
-    }
-
-    private static boolean isNegInf(double d) {
-        return isInf(d) && isNeg(d);
-    }
-
     @Builtin(name = "sqrt", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SqrtNode extends CmathComplexUnaryBuiltinNode {
+
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                { C(INF, -INF), C(0.0, -INF), C(0.0, -INF), C(0.0, INF), C(0.0, INF), C(INF, INF), C(NAN, INF) },
+                { C(INF, -INF), null,         null,         null,        null,        C(INF, INF), C(NAN, NAN) },
+                { C(INF, -INF), null,         C(0.0, -0.0), C(0.0, 0.0), null,        C(INF, INF), C(NAN, NAN) },
+                { C(INF, -INF), null,         C(0.0, -0.0), C(0.0, 0.0), null,        C(INF, INF), C(NAN, NAN) },
+                { C(INF, -INF), null,         null,         null,        null,        C(INF, INF), C(NAN, NAN) },
+                { C(INF, -INF), C(INF, -0.0), C(INF, -0.0), C(INF, 0.0), C(INF, 0.0), C(INF, INF), C(INF, NAN) },
+                { C(INF, -INF), C(NAN, NAN),  C(NAN, NAN),  C(NAN, NAN), C(NAN, NAN), C(INF, INF), C(NAN, NAN) },
+        };
+
         @Override
         PComplex compute(double real, double imag) {
-            if (isInf(imag)) {
-                return factory().createComplex(Double.POSITIVE_INFINITY, imag);
-            }
-            if (isNegInf(real)) {
-                if (isNaN(imag)) {
-                    return factory().createComplex(Double.NaN, Double.POSITIVE_INFINITY);
-                }
-                return factory().createComplex(0.0, Math.copySign(Double.POSITIVE_INFINITY, imag));
-            }
-            if (isPosInf(real)) {
-                if (isNaN(imag)) {
-                    return factory().createComplex(Double.POSITIVE_INFINITY, Double.NaN);
-                }
-                return factory().createComplex(Double.POSITIVE_INFINITY, Math.copySign(0.0, imag));
-            }
-            if (isNaN(real) || isNaN(imag)) {
-                return factory().createComplex(Double.NaN, Double.NaN);
-            }
-            if (real == 0.0 && imag == 0.0) {
-                return factory().createComplex(0.0, imag);
+            PComplex result = specialValue(SPECIAL_VALUES, real, imag);
+            if (result != null) {
+                return result;
             }
 
             double ax = Math.abs(real);
