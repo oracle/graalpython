@@ -171,7 +171,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                     return NINF;
                 }
             }
-        };
+        }
 
         protected PComplex specialValue(ComplexConstant[][] table, double real, double imag) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
