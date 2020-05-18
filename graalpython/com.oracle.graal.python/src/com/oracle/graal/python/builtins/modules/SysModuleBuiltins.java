@@ -102,7 +102,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public static final String PLATFORM_DARWIN = "darwin";
     public static final String PLATFORM_WIN32 = "win32";
     public static final PNone FRAMEWORK = PNone.NONE;
-    private static boolean DONT_WRITE_BYTECODE = false;
 
     static {
         String compile_time;
@@ -127,7 +126,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("abiflags", "");
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
-        builtinConstants.put("dont_write_bytecode", DONT_WRITE_BYTECODE);
         builtinConstants.put("modules", core.factory().createDict());
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
@@ -191,10 +189,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute("executable", context.getOption(PythonOptions.Executable));
             sys.setAttribute("_base_executable", context.getOption(PythonOptions.Executable));
         }
+        sys.setAttribute("dont_write_bytecode", context.getOption(PythonOptions.DontWriteBytecodeFlag));
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
-                        DONT_WRITE_BYTECODE,  // dont_write_bytecode
+                        context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
                         false, // hash_randomization
                         context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
                         context.getOption(PythonOptions.InspectFlag), // inspect

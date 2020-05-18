@@ -84,6 +84,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private List<String> relaunchArgs;
     private boolean wantsExperimental = false;
     private Map<String, String> enginePolyglotOptions;
+    private boolean dontWriteBytecode = ImageInfo.inImageBuildtimeCode();
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -99,6 +100,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             String arg = arguments.get(i);
             switch (arg) {
                 case "-B":
+                    dontWriteBytecode = true;
                     break;
                 case "-c":
                     i += 1;
@@ -359,6 +361,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
+            dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
         }
 
         String executable = getContextOptionIfSetViaCommandLine("python.Executable");
@@ -377,6 +380,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.InspectFlag", Boolean.toString(inspectFlag));
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
+        contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
         }

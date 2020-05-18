@@ -102,6 +102,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -I flag. Isolate from the users environment by not adding the cwd to the path", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> IsolateFlag = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -B flag. Don't write bytecode files.", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> DontWriteBytecodeFlag = new OptionKey<>(false);
+
     @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> CAPI = new OptionKey<>("");
 
