@@ -102,6 +102,14 @@ class PosixTests(unittest.TestCase):
         os.chmod(new_file_path, st.st_mode | stat.S_IEXEC)
         return new_file_path, cwd
 
+    def test_empty_stat(self):
+        try:
+            os.stat("")
+        except FileNotFoundError:
+            assert True
+        else:
+            assert False
+
     def delete_file(self, new_file_path, cwd):
         os.remove(new_file_path)
         os.remove(cwd + '/test.txt')

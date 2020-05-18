@@ -47,7 +47,6 @@ public final class ListLiteralNode extends SequenceLiteralNode {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ListLiteralNode.class);
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-    @Child private SequenceStorageNodes.ConcatNode concatStoragesNode;
     @Child private SequenceStorageNodes.AppendNode appendNode;
 
     /**
@@ -96,11 +95,10 @@ public final class ListLiteralNode extends SequenceLiteralNode {
         // we will usually have more than 'values.length' elements
         SequenceStorage storage = new ObjectSequenceStorage(values.length);
         for (ExpressionNode n : values) {
-            if (n instanceof StarredExpressionNode) {
-                SequenceStorage addElements = ((StarredExpressionNode) n).getStorage(frame);
-                storage = ensureConcatStoragesNode().execute(storage, addElements);
+            Object element = n.execute(frame);
+            if (StarredExpressionNode.isStarredExpression(n)) {
+                storage = ((StarredExpressionNode) n.unwrap()).appendToStorage(frame, storage, element);
             } else {
-                Object element = n.execute(frame);
                 storage = ensureAppendNode().execute(storage, element, ListGeneralizationNode.SUPPLIER);
             }
         }
@@ -124,14 +122,6 @@ public final class ListLiteralNode extends SequenceLiteralNode {
     @Override
     protected int getCapacityEstimate() {
         return initialCapacity.estimate();
-    }
-
-    private SequenceStorageNodes.ConcatNode ensureConcatStoragesNode() {
-        if (concatStoragesNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            concatStoragesNode = insert(SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create));
-        }
-        return concatStoragesNode;
     }
 
     private SequenceStorageNodes.AppendNode ensureAppendNode() {

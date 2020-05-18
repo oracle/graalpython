@@ -458,12 +458,11 @@ void* PyTruffle_CstrToString(void* o) {
     return polyglot_from_string(o, SRC_CS);
 }
 
-PyObject* PyTruffle_Type_GenericNew(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
-    PyObject* newInstance;
-    newInstance = dominatingNativeClass->tp_alloc(cls, 0);
-    newInstance->ob_refcnt = 0;
-    Py_TYPE(newInstance) = cls;
-    return newInstance;
+/* To be used from Java code only.
+ * This function is used if a native class inherits from a managed class but uses the 'object.__new__'.
+ * This function roughly corresponds to CPython's 'object_new'. */
+PyObject* PyTruffle_Object_New(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
+    return native_to_java_stealing(dominatingNativeClass->tp_alloc(cls, 0));
 }
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
@@ -718,4 +717,10 @@ double truffle_read_ob_fval(PyFloatObject* fobj) {
 /* called from Java to get number of bits per long digit */
 int32_t get_long_bits_in_digit() {
 	return PYLONG_BITS_IN_DIGIT;
+}
+
+void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
+    if (getsets || members) {
+        polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Native_Slots", native_type_to_java(managed_class), native_pointer_to_java(getsets), native_pointer_to_java(members));
+    }
 }

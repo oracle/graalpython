@@ -202,8 +202,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // foreign Object
-    @Specialization(guards = "isForeignObject(object)")
+    @Specialization(guards = "plib.isForeignObject(object)", limit = "3")
     protected Object readForeign(TruffleObject object, Object key,
+                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode fromForeign,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
         try {
@@ -218,8 +219,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // not a Python or Foreign Object
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!isForeignObject(object)"})
-    protected PNone readUnboxed(Object object, Object key) {
+    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!plib.isForeignObject(object)"}, limit = "3")
+    protected PNone readUnboxed(Object object, Object key,
+                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib) {
         return PNone.NO_VALUE;
     }
 

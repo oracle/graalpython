@@ -18,9 +18,11 @@
 *TestCase.test_iter_function_stop
 *TestCase.test_iter_idempotency
 *TestCase.test_iter_independence
+*TestCase.test_iter_overflow
 *TestCase.test_nested_comprehensions_for
 *TestCase.test_nested_comprehensions_iter
 *TestCase.test_new_style_iter_class
+*TestCase.test_ref_counting_behavior
 *TestCase.test_sinkstate_callable
 *TestCase.test_sinkstate_dict
 *TestCase.test_sinkstate_enumerate

@@ -43,23 +43,21 @@ package com.oracle.graal.python.builtins.objects.exception;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PBaseException extends PythonObject {
     private static final Object[] EMPTY_ARGS = new Object[0];
@@ -73,10 +71,36 @@ public final class PBaseException extends PythonObject {
     private final Object[] messageArgs;
 
     private PException exception;
-    private PTraceback traceback;
+    private LazyTraceback traceback;
 
-    /** The frame info of the Python frame that first caught the exception. */
-    private PFrame.Reference frameInfo;
+    private PBaseException context;
+    private PBaseException cause;
+    private boolean suppressContext = false;
+
+    public PBaseException getContext() {
+        return context;
+    }
+
+    public void setContext(PBaseException context) {
+        this.context = context;
+    }
+
+    public PBaseException getCause() {
+        return cause;
+    }
+
+    public void setCause(PBaseException cause) {
+        this.cause = cause;
+        this.suppressContext = true;
+    }
+
+    public boolean getSuppressContext() {
+        return suppressContext;
+    }
+
+    public void setSuppressContext(boolean suppressContext) {
+        this.suppressContext = suppressContext;
+    }
 
     public PBaseException(LazyPythonClass cls, DynamicObject storage, PTuple args) {
         super(cls, storage);
@@ -110,35 +134,29 @@ public final class PBaseException extends PythonObject {
         this.exception = exception;
     }
 
-    /**
-     * use {@link GetTracebackNode}
-     */
-    PTraceback getTraceback() {
+    public void ensureReified() {
+        if (exception != null) {
+            // If necessary, this will call back to this object to set the traceback
+            exception.ensureReified();
+        }
+    }
+
+    public LazyTraceback getTraceback() {
+        ensureReified();
         return traceback;
     }
 
-    public void setTraceback(PTraceback traceback) {
+    public void setTraceback(LazyTraceback traceback) {
+        ensureReified();
         this.traceback = traceback;
-        // Explicitly setting the traceback also makes the frame info for creating a lazy traceback
-        // obsolete or even incorrect. So it is cleared.
-        this.frameInfo = null;
+    }
+
+    public void setTraceback(PTraceback traceback) {
+        setTraceback(new LazyTraceback(traceback));
     }
 
     public void clearTraceback() {
         this.traceback = null;
-    }
-
-    /**
-     * It should usually not be necessary to use this method because that would mean that the
-     * exception wasn't correctly reified. But it can make sense to do reification at a later point
-     * for best-effort results.
-     */
-    public boolean hasTraceback() {
-        return this.traceback != null;
-    }
-
-    public PFrame.Reference getFrameInfo() {
-        return frameInfo;
     }
 
     /**
@@ -192,62 +210,10 @@ public final class PBaseException extends PythonObject {
         return getFormattedMessage(null);
     }
 
-    /**
-     * Associate this exception with a frame info that represents the {@link PFrame} instance that
-     * caught the exception. Furthermore, store the location at which this exception was caught so
-     * we can later reconstruct the correct traceback location.<br>
-     * <p>
-     * The use case for calling this method is when an exception is caught and the ExceptNode needs
-     * to be recorded so that we can later have the correct info.
-     * </p>
-     */
-    public void reifyException(PFrame.Reference info, ExceptNode node) {
-        info.setCallNode(node);
-        reifyException(info);
-    }
-
-    /**
-     * Create the traceback for this exception using the provided {@link PFrame} instance (which
-     * usually is the frame of the function that caught the exception).
-     * <p>
-     * This function (of {@link #reifyException(PFrame.Reference)} must be called before handing out
-     * exceptions into the Python value space because otherwise the stack will not be correct if the
-     * exception object escapes the current function.
-     * </p>
-     */
-    public void reifyException(PFrame pyFrame, PythonObjectFactory factory) {
-        traceback = factory.createTraceback(pyFrame, exception);
-        frameInfo = pyFrame.getRef();
-
-        // TODO: frames: provide legacy stack walk method via Python option
-        // TruffleStackTrace.fillIn(exception);
-    }
-
-    /**
-     * Associate this exception with a frame info that represents the {@link PFrame} instance that
-     * caught the exception.<br>
-     * <p>
-     * In contrast to {@link #reifyException(PFrame, PythonObjectFactory)}, this method can be used
-     * if the {@link PFrame} instance isn't already available and if the Truffle frame is also not
-     * available to create the {@link PFrame} instance using the
-     * {@link com.oracle.graal.python.nodes.frame.MaterializeFrameNode}.
-     * </p>
-     * <p>
-     * The most common use case for calling this method is when an exception is thrown in some
-     * Python code but we catch the exception in some interop node (that is certainly adopted by
-     * some foreign language's root node). In this case, we do not want to eagerly create the
-     * {@link PFrame} instance when calling from Python to the foreign language since this could be
-     * expensive. The traceback can then be created lazily from the frame info.
-     * </p>
-     */
-    public void reifyException(PFrame.Reference curFrameInfo) {
+    public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {
         assert curFrameInfo != PFrame.Reference.EMPTY;
-        traceback = null;
-        curFrameInfo.markAsEscaped();
-        this.frameInfo = curFrameInfo;
-
-        // TODO: frames: provide legacy stack walk method via Python option
-        // TruffleStackTrace.fillIn(exception);
+        traceback = new LazyTraceback(curFrameInfo, exception, traceback);
+        return traceback;
     }
 
     @ExportMessage
@@ -257,22 +223,46 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    RuntimeException throwException(@Cached("createBinaryProfile()") ConditionProfile hasExc,
-                    @Cached GetLazyClassNode getClass,
+    RuntimeException throwException(@Cached GetLazyClassNode getClass,
                     @Cached PRaiseNode raiseNode) {
-        PException exc = getException();
-        if (hasExc.profile(exc != null)) {
-            throw exc;
-        } else {
-            Object[] newArgs = messageArgs;
-            if (newArgs == null) {
-                newArgs = EMPTY_ARGS;
-            }
-            Object format = messageFormat;
-            if (format == null) {
-                format = PNone.NO_VALUE;
-            }
-            throw raiseNode.execute(getClass.execute(this), this, format, newArgs);
+        Object[] newArgs = messageArgs;
+        if (newArgs == null) {
+            newArgs = EMPTY_ARGS;
         }
+        Object format = messageFormat;
+        if (format == null) {
+            format = PNone.NO_VALUE;
+        }
+        throw raiseNode.execute(getClass.execute(this), this, format, newArgs);
+    }
+
+    /**
+     * Prepare a {@link PException} for reraising this exception, as done by <code>raise</code>
+     * without arguments.
+     *
+     * <p>
+     * We must be careful to never rethrow a PException that has already been caught and exposed to
+     * the program, because its Truffle lazy stacktrace may have been already materialized, which
+     * would prevent it from capturing frames after the rethrow. So we need a new PException even
+     * though its just a dumb rethrow. We also need a new PException for the reason below.
+     * </p>
+     *
+     * <p>
+     * CPython reraises the exception with the traceback captured in sys.exc_info, discarding the
+     * traceback in the exception, which may have changed since the time the exception had been
+     * caught. This can happen due to explicit modification by the program or, more commonly, by
+     * accumulating more frames by being reraised in the meantime. That's why this method takes an
+     * explicit traceback argument
+     * </p>
+     *
+     * <p>
+     * Reraises shouldn't be visible in the stacktrace. We mark them as such.
+     * </p>
+     **/
+    public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
+        setTraceback(reraiseTraceback);
+        PException newException = PException.fromObject(this, exception.getLocation());
+        newException.setHideLocation(true);
+        return newException;
     }
 }

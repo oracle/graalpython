@@ -18,5 +18,7 @@
 *MiscTests.test_stack_size_not_None
 *RLockTests.test_multiple_acquire
 *ThreadTests.test_SystemExit
+*ThreadTests.test_arg_passing
+*ThreadTests.test_args_not_tuple
 *ThreadTests.test_kwargs_not_dict
 *ThreadTests.test_multi_thread_creation

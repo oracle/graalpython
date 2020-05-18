@@ -100,6 +100,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -489,7 +490,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 }
             }
             if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, "attribute % is read-only", key);
+                throw raise(AttributeError, "attribute %s is read-only", key);
             } else {
                 throw raise(AttributeError, "%s object has no attribute '%s'", object, key);
             }
@@ -511,9 +512,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary("self") InteropLibrary iLib) {
             PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -527,9 +529,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"}, limit = "1")
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)"}, limit = "1")
         Object dict(PythonObject self, PDict dict,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary("self") InteropLibrary iLib) {
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
@@ -600,7 +603,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT_SUBCLASS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __INIT_SUBCLASS__, minNumOfPositionalArgs = 1, isClassmethod = true)
     @GenerateNodeFactory
     abstract static class InitSubclass extends PythonUnaryBuiltinNode {
         @Specialization

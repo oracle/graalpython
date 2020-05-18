@@ -1226,7 +1226,7 @@ power returns [SSTNode result]
 :
 	atom_expr { $result = $atom_expr.result; }
 	(
-		'**' factor { $result = new TernaryArithmeticSSTNode($result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
+		'**' factor { $result = new BinaryArithmeticSSTNode(BinaryArithmetic.Pow, $result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
 	)?
 ;
 

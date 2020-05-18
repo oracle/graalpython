@@ -219,8 +219,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean absInt(boolean arg) {
-            return arg;
+        public int absInt(boolean arg) {
+            return arg ? 1 : 0;
         }
 
         @Specialization
@@ -1388,7 +1388,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return next.execute(frame, iterator);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
-                throw raise(TypeError, e.getExceptionObject(), "'%p' object is not an iterator", iterator);
+                throw raise(TypeError, e.setCatchingFrameAndGetEscapedException(frame), "'%p' object is not an iterator", iterator);
             }
         }
 

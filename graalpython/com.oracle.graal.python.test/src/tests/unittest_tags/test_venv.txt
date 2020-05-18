@@ -1,0 +1,7 @@
+*BasicTest.test_deactivate_with_strict_bash_opts
+*BasicTest.test_isolation
+*BasicTest.test_overwrite_existing
+*BasicTest.test_prompt
+*BasicTest.test_unicode_in_batch_file
+*BasicTest.test_unoverwritable_fails
+*EnsurePipTest.test_devnull

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.control;
 import java.util.List;
 
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.util.PythonUtils;
 
 public abstract class BaseBlockNode extends StatementNode {
 
@@ -49,7 +50,7 @@ public abstract class BaseBlockNode extends StatementNode {
 
         assert insertAt != -1;
         StatementNode[] extendedStatements = new StatementNode[statements.length + insertees.size()];
-        System.arraycopy(statements, 0, extendedStatements, 0, insertAt);
+        PythonUtils.arraycopy(statements, 0, extendedStatements, 0, insertAt);
 
         for (int i = 0; i < insertees.size(); i++) {
             extendedStatements[i + insertAt] = insertees.get(i);

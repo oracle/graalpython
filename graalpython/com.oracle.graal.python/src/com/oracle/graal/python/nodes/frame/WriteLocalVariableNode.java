@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNodeGen.WriteLocalFrameSlotNodeGen;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -88,39 +87,30 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
         public abstract Object executeWith(VirtualFrame frame, Object value);
 
         @Specialization(guards = "isBooleanKind(frame)")
-        public boolean write(VirtualFrame frame, boolean value) {
+        public boolean writeBool(VirtualFrame frame, boolean value) {
             frame.setBoolean(frameSlot, value);
             return value;
         }
 
         @Specialization(guards = "isIntegerKind(frame)")
-        public int write(VirtualFrame frame, int value) {
+        public int writeInt(VirtualFrame frame, int value) {
             frame.setInt(frameSlot, value);
             return value;
         }
 
-        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()", "isLongKind(frame)"}, rewriteOn = ArithmeticException.class)
-        public long writeSmallPIntAsLong(VirtualFrame frame, PInt value) {
-            long longValue = value.longValueExact();
-            frame.setLong(frameSlot, longValue);
-            return longValue;
-        }
-
-        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
-        public long writeSmallPIntAsObject(VirtualFrame frame, PInt value) {
-            ensureObjectKind(frame);
-            long longValue = value.longValueExact();
-            frame.setObject(frameSlot, longValue);
-            return longValue;
+        @Specialization(guards = "isLongKind(frame)")
+        public long writeLong(VirtualFrame frame, long value) {
+            frame.setLong(frameSlot, value);
+            return value;
         }
 
         @Specialization(guards = "isDoubleKind(frame)")
-        public double write(VirtualFrame frame, double value) {
+        public double writeDouble(VirtualFrame frame, double value) {
             frame.setDouble(frameSlot, value);
             return value;
         }
 
-        @Specialization
+        @Specialization(replaces = {"writeBool", "writeInt", "writeDouble", "writeLong"})
         public Object write(VirtualFrame frame, Object value) {
             ensureObjectKind(frame);
             frame.setObject(frameSlot, value);

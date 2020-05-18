@@ -56,7 +56,7 @@ import com.oracle.truffle.api.object.Shape;
 public enum PythonBuiltinClassType implements LazyPythonClass {
 
     ForeignObject(BuiltinNames.FOREIGN),
-    Boolean("bool", BuiltinNames.BUILTINS),
+    Boolean("bool", BuiltinNames.BUILTINS, false),
     GetSetDescriptor("get_set_desc"),
     PArray("array", "array"),
     PArrayIterator("arrayiterator"),
@@ -131,6 +131,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     GeneratorExit("GeneratorExit", BuiltinNames.BUILTINS),
     Exception("Exception", BuiltinNames.BUILTINS),
     StopIteration("StopIteration", BuiltinNames.BUILTINS),
+    StopAsyncIteration("StopAsyncIteration", BuiltinNames.BUILTINS),
     ArithmeticError("ArithmeticError", BuiltinNames.BUILTINS),
     FloatingPointError("FloatingPointError", BuiltinNames.BUILTINS),
     OverflowError("OverflowError", BuiltinNames.BUILTINS),
@@ -166,6 +167,10 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     ZipImportError("ZipImportError", "zipimport"),
     ZLibError("error", "zlib"),
     LZMAError("LZMAError", "_lzma"),
+    StructError("StructError", "_struct"),
+    SocketGAIError("gaierror", "_socket"),
+    SocketHError("herror", "_socket"),
+    SocketTimeout("timeout", "_socket"),
 
     // todo: all OS errors
 
@@ -201,11 +206,12 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     private final Shape instanceShape;
     private final String publicInModule;
     private final String qualifiedName;
+    private final boolean basetype;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
 
-    PythonBuiltinClassType(String name, String publicInModule) {
+    PythonBuiltinClassType(String name, String publicInModule, boolean basetype) {
         this.name = name;
         this.publicInModule = publicInModule;
         if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
@@ -214,10 +220,19 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
             qualifiedName = name;
         }
         this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
+        this.basetype = basetype;
+    }
+
+    PythonBuiltinClassType(String name, String publicInModule) {
+        this(name, publicInModule, true);
     }
 
     PythonBuiltinClassType(String name) {
-        this(name, null);
+        this(name, null, true);
+    }
+
+    public boolean isAcceptableBase() {
+        return basetype;
     }
 
     @Override
@@ -280,6 +295,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         GeneratorExit.base = PBaseException;
         Exception.base = PBaseException;
         StopIteration.base = Exception;
+        StopAsyncIteration.base = Exception;
         ArithmeticError.base = Exception;
         FloatingPointError.base = ArithmeticError;
         OverflowError.base = ArithmeticError;
@@ -300,10 +316,10 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         BlockingIOError.base = OSError;
         ChildProcessError.base = OSError;
         ConnectionError.base = OSError;
-        BrokenPipeError.base = OSError;
-        ConnectionAbortedError.base = OSError;
-        ConnectionRefusedError.base = OSError;
-        ConnectionResetError.base = OSError;
+        BrokenPipeError.base = ConnectionError;
+        ConnectionAbortedError.base = ConnectionError;
+        ConnectionRefusedError.base = ConnectionError;
+        ConnectionResetError.base = ConnectionError;
         FileExistsError.base = OSError;
         FileNotFoundError.base = OSError;
         InterruptedError.base = OSError;
@@ -315,10 +331,13 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         ZipImportError.base = ImportError;
         ZLibError.base = Exception;
         LZMAError.base = Exception;
+        SocketGAIError.base = OSError;
+        SocketHError.base = OSError;
+        SocketTimeout.base = OSError;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;
-        NotImplementedError.base = Exception;
+        NotImplementedError.base = RuntimeError;
         SyntaxError.base = Exception;
         IndentationError.base = SyntaxError;
         TabError.base = IndentationError;

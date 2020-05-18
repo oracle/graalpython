@@ -118,6 +118,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -181,8 +182,9 @@ public class TypeBuiltins extends PythonBuiltins {
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
-        @Specialization(guards = "!isClass(object)")
-        Object doit(Object object) {
+        @Specialization(guards = "!isClass(object, iLib)", limit = "3")
+        Object doit(Object object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary iLib) {
             throw raise(TypeError, "descriptor 'mro' requires a 'type' object but received an '%p'", object);
         }
     }
@@ -213,42 +215,48 @@ public class TypeBuiltins extends PythonBuiltins {
             return ary[0];
         }
 
-        protected static boolean accept(Object[] ary, Object cachedSelf) {
+        protected static boolean accept(Object[] ary, Object cachedSelf, InteropLibrary lib) {
             Object first = first(ary);
-            return first == cachedSelf && PGuards.isClass(first);
+            return first == cachedSelf && PGuards.isClass(first, lib);
         }
 
         /* self is in the arguments */
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)", "isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf, lib)",
+                        "isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
         protected Object doItUnboxedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
-                        @Cached("first(arguments)") Object cachedSelf) {
+                        @Cached("first(arguments)") Object cachedSelf,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             PythonBuiltinClassType type = ((PythonBuiltinClass) cachedSelf).getType();
             arguments[0] = type;
             return op(frame, type, arguments, keywords, false);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)", "!isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf, lib)",
+                        "!isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
         protected Object doItUnboxedUser(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
-                        @Cached("first(arguments)") Object cachedSelf) {
+                        @Cached("first(arguments)") Object cachedSelf,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return op(frame, (PythonAbstractClass) cachedSelf, arguments, keywords, false);
 
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)", "isPythonBuiltinClassType(cachedSelf)"})
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf, lib)", "isPythonBuiltinClassType(cachedSelf)"})
         protected Object doItUnboxedBuiltinType(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
-                        @Cached("first(arguments)") Object cachedSelf) {
+                        @Cached("first(arguments)") Object cachedSelf,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return op(frame, (PythonBuiltinClassType) cachedSelf, arguments, keywords, false);
         }
 
         @Specialization(replaces = {"doItUnboxedUser", "doItUnboxedBuiltin", "doItUnboxedBuiltinType"})
-        protected Object doItUnboxedIndirect(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
+        protected Object doItUnboxedIndirect(VirtualFrame frame, PNone noSelf, Object[] arguments, PKeyword[] keywords,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             Object self = arguments[0];
             if (self instanceof PythonBuiltinClassType) {
-                return doItUnboxedBuiltinType(frame, noSelf, arguments, keywords, self);
+                return doItUnboxedBuiltinType(frame, noSelf, arguments, keywords, self, lib);
             } else if (PGuards.isPythonBuiltinClass(self)) {
-                return doItUnboxedBuiltin(frame, noSelf, arguments, keywords, self);
-            } else if (PGuards.isClass(self)) {
-                return doItUnboxedUser(frame, noSelf, arguments, keywords, self);
+                return doItUnboxedBuiltin(frame, noSelf, arguments, keywords, self, lib);
+            } else if (PGuards.isClass(self, lib)) {
+                return doItUnboxedUser(frame, noSelf, arguments, keywords, self, lib);
             } else {
                 throw raise(TypeError, "descriptor '__call__' requires a 'type' object but received a '%p'", self);
             }
@@ -622,7 +630,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @CompilationFinal private IsBuiltinClassProfile isTupleProfile;
 
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
-        boolean doManagedManaged(VirtualFrame frame, LazyPythonClass cls, LazyPythonClass derived) {
+        boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived) {
             return isSameType(cls, derived) || isSubtypeNode.execute(frame, derived, cls);
         }
 

@@ -4,6 +4,7 @@
 *CodeTestCase.test_many_codeobjects
 *CodeTestCase.test_same_filename_used
 *ContainerTestCase.test_dict
+*ContainerTestCase.test_empty_frozenset_singleton
 *ContainerTestCase.test_list
 *ContainerTestCase.test_sets
 *ContainerTestCase.test_tuple

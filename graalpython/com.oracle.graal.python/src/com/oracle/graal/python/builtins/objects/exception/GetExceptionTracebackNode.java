@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,21 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.builtins.objects.exception;
 
-package com.oracle.graal.python.parser.sst;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class TernaryArithmeticSSTNode extends SSTNode {
-    protected final SSTNode left;
-    protected final SSTNode right;
+/**
+ * Use this node to get the traceback object of an exception object. The traceback may need to be
+ * created lazily and this node takes care of it.
+ */
+public abstract class GetExceptionTracebackNode extends Node {
 
-    public TernaryArithmeticSSTNode(SSTNode left, SSTNode right, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
-        this.left = left;
-        this.right = right;
+    public abstract PTraceback execute(VirtualFrame frame, PBaseException e);
+
+    @Specialization
+    static PTraceback doExisting(PBaseException e,
+                    @Cached GetTracebackNode getTracebackNode,
+                    @Cached("createBinaryProfile()") ConditionProfile nullProfile) {
+        if (nullProfile.profile(e.getTraceback() == null)) {
+            return null;
+        }
+        return getTracebackNode.execute(e.getTraceback());
     }
 
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
+    public static GetExceptionTracebackNode create() {
+        return GetExceptionTracebackNodeGen.create();
     }
 }

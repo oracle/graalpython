@@ -27,7 +27,6 @@ ModuleRootNode Name: <module 'try07'> SourceSection: [0,91]`try:↵    pass↵ex
                 Identifier: ValueError
             ExceptNode SourceSection: None
               RaiseNodeGen SourceSection: [86,91]`raise`
-                EmptyNode SourceSection: None
-                EmptyNode SourceSection: None
+                NoValueNode SourceSection: None
+                NoValueNode SourceSection: None
             BlockNode SourceSection: None
-            SaveExceptionStateNodeGen SourceSection: None

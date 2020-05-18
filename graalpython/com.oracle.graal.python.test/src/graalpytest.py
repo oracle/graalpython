@@ -380,14 +380,16 @@ class TestRunner(object):
         ThreadPool.shutdown()
         print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
         for e in self.exceptions:
-            print(e)
+            msg, exc = e
+            print(msg)
             if verbose:
-                msg, exc = e
                 try:
                     import traceback
-                    traceback.print_tb(exc.__traceback__)
-                except BaseException:
+                    traceback.print_exception(type(exc), exc, exc.__traceback__)
+                except Exception:
                     pass
+            else:
+                print(exc)
 
         if self.exceptions or self.failed:
             os._exit(1)

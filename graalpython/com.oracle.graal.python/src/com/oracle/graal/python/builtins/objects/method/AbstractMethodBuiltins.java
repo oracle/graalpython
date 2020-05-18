@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -97,7 +98,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Override
         public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            PythonUtils.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
     }

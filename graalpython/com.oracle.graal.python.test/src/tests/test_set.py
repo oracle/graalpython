@@ -330,3 +330,60 @@ def test_equality():
     s2 = {1, 3}
     assert not s1 == s2
     assert not s2 == s1
+
+
+def test_isdisjoint():
+    x = {1, 2, 3}
+    y = set()
+    assert not x.isdisjoint(x)
+    assert y.isdisjoint(y)
+    assert {1, 2, 3}.isdisjoint({4, 5})
+    assert {4, 5}.isdisjoint({1, 2, 3})
+    assert not {1, 2, 3}.isdisjoint({4, 5, 1, 8})
+    assert not {1, 2, 3, 4, 5, 6}.isdisjoint({4, 5})
+    assert set().isdisjoint({4, 5})
+    assert {4, 5}.isdisjoint(set())
+
+
+def test_isdisjoint_customobjs():
+    class MyIter:
+        def __init__(self, length):
+            self.index = length
+
+        def __next__(self):
+            if self.index == 0:
+                raise StopIteration
+            self.index -= 1
+            return self.index
+
+    class MySetWithIter(frozenset):
+        def __init__(self, forward):
+            frozenset.__init__(forward)
+
+        def __iter__(self):
+            return MyIter(4)
+
+        def __len__(self):
+            return 4
+
+    # iterates over the custom set
+    assert {10, 11}.isdisjoint(MySetWithIter({}))
+    assert not {1, 2}.isdisjoint(MySetWithIter({}))
+
+    # for 'self' we check the actual set elements, not what iterator gives
+    assert MySetWithIter({}).isdisjoint({1,2})
+    assert not MySetWithIter({1}).isdisjoint({1,2})
+    assert MySetWithIter({10, 11, 12, 13}).isdisjoint({1,2})
+
+    # with non-set object
+    class NonSetWithIter:
+        def __iter__(self):
+            return MyIter(4)
+
+        def __len__(self):
+            return 4
+
+    assert {10, 11}.isdisjoint(NonSetWithIter())
+    assert {10, 11, 12, 13, 14}.isdisjoint(NonSetWithIter())
+    assert not {1, 2}.isdisjoint(NonSetWithIter())
+    assert not {1, 2, 3, 4, 5}.isdisjoint(NonSetWithIter())

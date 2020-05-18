@@ -65,7 +65,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    public PythonManagedClass(LazyPythonClass typeClass, DynamicObject storage, String name, PythonAbstractClass... baseClasses) {
+    protected PythonManagedClass(LazyPythonClass typeClass, DynamicObject storage, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
         super(typeClass, storage);
         this.className = name;
 
@@ -86,11 +86,15 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         setAttribute(__NAME__, getBaseName(name));
         setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);
-        // provide our instances with a fresh shape tree
-        if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
-            this.instanceShape = PythonObject.freshShape(this);
+        if (instanceShape != null) {
+            this.instanceShape = instanceShape;
         } else {
-            this.instanceShape = PythonObject.freshShape();
+            // provide our instances with a fresh shape tree
+            if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+                this.instanceShape = PythonObject.freshShape(this);
+            } else {
+                this.instanceShape = PythonObject.freshShape();
+            }
         }
     }
 
@@ -238,4 +242,17 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public boolean needsNativeAllocation() {
         return needsNativeAllocation;
     }
+
+    public static boolean isInstance(Object object) {
+        return object instanceof PythonClass || object instanceof PythonBuiltinClass;
+    }
+
+    public static PythonManagedClass cast(Object object) {
+        if (object instanceof PythonClass) {
+            return (PythonClass) object;
+        } else {
+            return (PythonBuiltinClass) object;
+        }
+    }
+
 }

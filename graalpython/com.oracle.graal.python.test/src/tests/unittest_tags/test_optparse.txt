@@ -110,6 +110,7 @@
 *TestOptionParser.test_get_option
 *TestOptionParser.test_get_option_equals
 *TestOptionParser.test_has_option
+*TestOptionParser.test_refleak
 *TestOptionParser.test_remove_long_opt
 *TestOptionParser.test_remove_nonexistent
 *TestOptionParser.test_remove_short_opt

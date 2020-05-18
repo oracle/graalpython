@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -70,9 +72,9 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -88,8 +90,10 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.util.WeakASTReference;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -154,8 +158,14 @@ public abstract class PGuards {
         return value instanceof PBuiltinFunction || value instanceof PFunction || value instanceof PBuiltinMethod || value instanceof PMethod;
     }
 
-    public static boolean isClass(Object value) {
-        return value instanceof PythonAbstractClass;
+    public static boolean isClass(Object obj, InteropLibrary lib) {
+        try {
+            return lib.isMetaObject(obj) && lib.hasLanguage(obj) && lib.getLanguage(obj) == PythonLanguage.class;
+        } catch (UnsupportedMessageException e) {
+            // cannot happen due to check
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
+        }
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {
@@ -350,10 +360,6 @@ public abstract class PGuards {
         return obj instanceof PythonAbstractObject;
     }
 
-    public static boolean isForeignObject(Object obj) {
-        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
-    }
-
     public static boolean isPInt(Object obj) {
         return obj instanceof PInt;
     }
@@ -380,6 +386,14 @@ public abstract class PGuards {
 
     public static boolean isPCode(Object obj) {
         return obj instanceof PCode;
+    }
+
+    public static boolean isPBaseException(Object obj) {
+        return obj instanceof PBaseException;
+    }
+
+    public static boolean isPTraceback(Object obj) {
+        return obj instanceof PTraceback;
     }
 
     public static boolean isInteger(Object obj) {

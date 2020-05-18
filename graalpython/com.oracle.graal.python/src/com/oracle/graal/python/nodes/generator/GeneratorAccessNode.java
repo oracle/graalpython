@@ -29,7 +29,8 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -69,7 +70,7 @@ final class GeneratorAccessNode extends Node {
                 if (active.length <= flagSlot) {
                     byte[] newActive = new byte[flagSlot + 1];
                     Arrays.fill(newActive, UNSET);
-                    System.arraycopy(active, 0, newActive, 0, active.length);
+                    PythonUtils.arraycopy(active, 0, newActive, 0, active.length);
                     active = newActive;
                 }
             }
@@ -102,7 +103,7 @@ final class GeneratorAccessNode extends Node {
                 if (indices.length <= blockIndexSlot) {
                     int[] newIndices = new int[blockIndexSlot + 1];
                     Arrays.fill(newIndices, UNSET);
-                    System.arraycopy(indices, 0, newIndices, 0, indices.length);
+                    PythonUtils.arraycopy(indices, 0, newIndices, 0, indices.length);
                     indices = newIndices;
                 }
             }
@@ -136,12 +137,12 @@ final class GeneratorAccessNode extends Node {
         getControlData(frame).setIteratorAt(iteratorSlot, value);
     }
 
-    public ExceptionState getActiveException(VirtualFrame frame) {
-        return getControlData(frame).getActiveException();
+    public PException getActiveException(VirtualFrame frame, int slot) {
+        return getControlData(frame).getActiveException(slot);
     }
 
-    public void setActiveException(VirtualFrame frame, ExceptionState ex) {
-        getControlData(frame).setActiveException(ex);
+    public void setActiveException(VirtualFrame frame, int slot, PException ex) {
+        getControlData(frame).setActiveException(slot, ex);
     }
 
     public static GeneratorAccessNode create() {

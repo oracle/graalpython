@@ -27,10 +27,54 @@ def test_add_long_overflow():
     assert val + 128 == 0x800000000000007f
 
 
+def test_sub_long_overflow():
+    # max long value is written as long primitive
+    val = -0x8000000000000000
+    assert val - 15 == -0x800000000000000f
+
+
+def test_add_bignum():
+    # 0x8000000000000000 is just one more than long max value
+    left = 0x8000000000000000 + 1
+    assert left == 0x8000000000000001
+    right = 1 + 0x8000000000000000
+    assert left == right
+    both = left + right
+    assert both == 0x10000000000000002
+
+
+def test_add_bignum_narrowing():
+    # -9223372036854775809 is just one less than long min value
+    left = -0x8000000000000001 + 2
+    assert left == -0x7fffffffffffffff
+    right = 2 + -0x8000000000000001
+    assert left == right
+    both = left + right
+    assert both == -0xfffffffffffffffe
+
+
 def test_mul_long_overflow():
     # max long value is written as long primitive
     val = 0x7fffffffffffffff
     assert val * 2 == 0xfffffffffffffffe
+    assert 0x8000000000000000 * 1 == 0x8000000000000000
+
+
+def test_mod():
+    assert 5 % 2 == 1
+    assert 0x8000000000000000 % 2 == 0
+    assert 2 % 0x8000000000000000 == 2
+    assert 2 % -0x8000000000000000 == -0x7ffffffffffffffe
+    assert 0x8000000000000000f % -0x8000000000000000 == -0x7ffffffffffffff1
+    assert -2 % 0x8000000000000000 == 0x7ffffffffffffffe
+    assert 0x8000000000000000 % 0x8000000000000000 == 0
+    assert 0x8000000000000000 % 0x8000000000000000 == 0
+    assert 0x8000000000000000 % 0x8000000000000001 == 0x8000000000000000
+    assert 0x8000000000000001 % 0x8000000000000000 == 1
+
+    class MyInt(int):
+        pass
+    assert 7 % MyInt(-2) == -1
 
 
 def test_add_bool():
@@ -128,6 +172,15 @@ def test_floor_div():
     assert 15.5 // 5 == 3.0
     assert 16.5 // 5.5 == 3.0
     assert 16.5 // 3.2 == 5.0
+    assert -0x8000000000000001 // 2 == -0x4000000000000001
+    # 0x8000000000000000 is one above long max
+    assert 3 // 0x8000000000000000 == 0
+    narrowed = 0x8000000000000000 // 0x10
+    widenum = 0x80000000000000000 // 0x10
+    assert narrowed == 0x800000000000000
+    assert widenum == 0x8000000000000000
+    longval = 0x80000000
+    assert 0x8000000000000000 // longval == 0x100000000
     assert_exception(lambda: True // False, ZeroDivisionError)
     assert_exception(lambda: True // 0, ZeroDivisionError)
     assert_exception(lambda: True // 0.0, ZeroDivisionError)
@@ -137,6 +190,12 @@ def test_floor_div():
     assert_exception(lambda: 3.0 // False, ZeroDivisionError)
     assert_exception(lambda: 5.4 // 0, ZeroDivisionError)
     assert_exception(lambda: 5.4 // 0.0, ZeroDivisionError)
+
+
+def test_int_rfloor_div():
+    assert int.__rfloordiv__(2, 5) == 2
+    assert int.__rfloordiv__(2, 0x8000000000000001) == 0x4000000000000000
+    assert int.__rfloordiv__(2, -0x8000000000000001) == -0x4000000000000001
 
 
 def test_divmod():
@@ -217,3 +276,17 @@ def test_sub():
 def test_rshift():
     assert 1 >> 64 == 0
     assert 0xffffffffffff >> 128 == 0
+    assert 0x7fffffec >> 24 == 0x7f
+    assert 0x7fffffec >> 32 == 0
+    assert 0x7fffffffffffffec >> 64 == 0
+    bigint = 0xffffffffffffffffffffffffffffffff
+    assert bigint >> 120 == 0xff
+    assert bigint >> 128 == 0
+    trimmed = bigint & 0x7fffffffffffffff
+    assert trimmed >> 64 == 0
+
+
+def test_lshift():
+    assert 1 << 32 == 0x100000000
+    assert 1 << 64 == 0x10000000000000000
+    assert 1 << 128 == 0x100000000000000000000000000000000

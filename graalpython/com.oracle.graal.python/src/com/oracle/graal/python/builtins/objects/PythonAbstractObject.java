@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -130,7 +131,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -713,7 +713,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public final boolean isCallable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
-        assert !PGuards.isCallable(this) || PGuards.isClass(this);
         Object call = callAttrGetterNode.execute(this, __CALL__);
         return PGuards.isCallable(call);
     }
@@ -866,6 +865,30 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
         }
         return result;
+    }
+
+    @ExportMessage
+    public String asPathWithState(ThreadState state,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Exclusive @Cached ConditionProfile gotState) {
+        Object func = lookup.execute(this, __FSPATH__);
+        if (func == PNone.NO_VALUE) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", this);
+        }
+        Object pathObject;
+        if (gotState.profile(state == null)) {
+            pathObject = callNode.executeObject(func, this);
+        } else {
+            pathObject = callNode.executeObject(PArguments.frameForCall(state), func, this);
+        }
+        String path = castToJavaStringNode.execute(pathObject);
+        if (path == null) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "expected %p.__fspath__() to return str or bytes, not %p", this, pathObject);
+        }
+        return path;
     }
 
     @ExportMessage
@@ -1719,48 +1742,61 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         return PythonLanguage.class;
     }
 
-    @ExportMessage
-    @ImportStatic(PythonOptions.class)
-    public static class ToDisplayString {
-        public static boolean useReprForPrintString(PythonContext context) {
-            return context.getOption(PythonOptions.UseReprForPrintString);
-        }
+    @GenerateUncached
+    @SuppressWarnings("unused")
+    public abstract static class ToDisplaySideEffectingNode extends Node {
 
-        @Specialization(guards = {"allowSideEffects", "builtins != null"}) // may be null during
-                                                                           // initialization
-        public static String builtin(PythonAbstractObject self, boolean allowSideEffects,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached(value = "context.getBuiltins()", allowUncached = true) PythonModule builtins,
+        public abstract String execute(PythonAbstractObject receiver);
+
+        @Specialization
+        public String doDefault(PythonAbstractObject receiver,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ReadAttributeFromObjectNode readStr,
                         @Cached CallNode callNode,
                         @Cached CastToJavaStringNode castStr,
-                        @Cached(value = "useReprForPrintString(context)", allowUncached = true) boolean useRepr) {
+                        @Cached ConditionProfile toStringUsed) {
             Object toStrAttr;
-            if (useRepr) {
-                toStrAttr = readStr.execute(builtins, BuiltinNames.REPR);
+            String names;
+            if (context.getOption(PythonOptions.UseReprForPrintString)) {
+                names = BuiltinNames.REPR;
             } else {
-                toStrAttr = readStr.execute(builtins, BuiltinNames.STR);
+                names = BuiltinNames.STR;
             }
-            String result = castStr.execute(callNode.execute(toStrAttr, self));
-            if (result != null) {
+            String result = null;
+            PythonModule builtins = context.getBuiltins();
+            if (toStringUsed.profile(builtins != null)) {
+                toStrAttr = readStr.execute(builtins, names);
+                result = castStr.execute(callNode.execute(toStrAttr, receiver));
+            }
+            if (toStringUsed.profile(result != null)) {
                 return result;
             } else {
-                return fallback(self, allowSideEffects, context, builtins);
+                return receiver.toStringBoundary();
             }
         }
 
-        public static final PythonModule none() {
-            return null;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static class ToDisplayString {
+
+        @Specialization(guards = "allowSideEffects")
+        public static String doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
+                        @Cached ToDisplaySideEffectingNode toDisplayCallnode) {
+            return toDisplayCallnode.execute(receiver);
         }
 
-        @TruffleBoundary
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!allowSideEffects || builtins == null")
-        public static String fallback(PythonAbstractObject self, boolean allowSideEffects,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached(value = "context.getBuiltins()", uncached = "none()") PythonModule builtins) {
-            return self.toString();
+        @Specialization(guards = "!allowSideEffects")
+        public static String doNonSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects) {
+            return receiver.toStringBoundary();
         }
+
+    }
+
+    @TruffleBoundary
+    final String toStringBoundary() {
+        return toString();
     }
 
     @ExportMessage

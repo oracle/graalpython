@@ -37,6 +37,7 @@
 *TestNamedTemporaryFile.test_del_on_close
 *TestNamedTemporaryFile.test_dis_del_on_close
 *TestNamedTemporaryFile.test_iter
+*TestNamedTemporaryFile.test_method_lookup
 *TestNamedTemporaryFile.test_multiple_close
 *TestRandomNameSequence.test_get_six_char_str
 *TestRandomNameSequence.test_many

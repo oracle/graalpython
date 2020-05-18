@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -51,6 +51,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     protected final int numOfActiveFlags;
     protected final int numOfGeneratorBlockNode;
     protected final int numOfGeneratorForNode;
+    protected final int numOfGeneratorTryNode;
     protected final FrameDescriptor frameDescriptor;
 
     @CompilationFinal private RootCallTarget generatorCallTarget;
@@ -58,20 +59,21 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
 
     public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
-                    int numOfGeneratorBlockNode, int numOfGeneratorForNode, Map<String, ExpressionNode> annotations) {
+                    int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, Map<String, ExpressionNode> annotations) {
         super(name, enclosingClassName, doc, defaults, kwDefaults, callTarget, definitionCellSlots, executionCellSlots, annotations);
         this.frameDescriptor = frameDescriptor;
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
         this.numOfGeneratorForNode = numOfGeneratorForNode;
+        this.numOfGeneratorTryNode = numOfGeneratorTryNode;
     }
 
     public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
-                    int numOfGeneratorBlockNode, int numOfGeneratorForNode, Map<String, ExpressionNode> annotations) {
+                    int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, Map<String, ExpressionNode> annotations) {
         return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, defaults, kwDefaults, callTarget,
                         frameDescriptor, definitionCellSlots, executionCellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, annotations);
+                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode, annotations);
     }
 
     @Override
@@ -101,7 +103,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(getContext().getLanguage(), callTarget, functionName, frameDescriptor,
-                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
             generatorCallTarget = Truffle.getRuntime().createCallTarget(generatorFunctionRootNode);
         }
         PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();

@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class ObjectSequenceStorage extends BasicSequenceStorage {
@@ -84,7 +85,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         Object[] newArray = new Object[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new ObjectSequenceStorage(newArray);
         }
 

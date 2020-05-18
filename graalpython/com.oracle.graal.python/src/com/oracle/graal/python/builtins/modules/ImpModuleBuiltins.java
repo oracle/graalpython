@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -318,9 +317,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
-            Object pythonCause = PNone.NONE;
+            PBaseException pythonCause = null;
             if (e instanceof PException) {
-                PBaseException excObj = ((PException) e).getExceptionObject();
+                PBaseException excObj = ((PException) e).getEscapedException();
                 pythonCause = excObj;
                 sb.append(callReprNode.executeObject(null, excObj));
             } else {
@@ -330,10 +329,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             Throwable cause = e;
             while ((cause = cause.getCause()) != null) {
                 if (e instanceof PException) {
-                    if (pythonCause != PNone.NONE) {
-                        ((PythonObject) pythonCause).setAttribute(__CAUSE__, ((PException) e).getExceptionObject());
+                    PBaseException pythonException = ((PException) e).getEscapedException();
+                    if (pythonCause != null) {
+                        pythonCause.setCause(pythonException);
                     }
-                    pythonCause = ((PException) e).getExceptionObject();
+                    pythonCause = pythonException;
                 } else {
                     logJavaException(e);
                 }
@@ -343,9 +343,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             }
             Object[] args = new Object[]{path, sb.toString()};
-            PBaseException importExc = factory().createBaseException(ImportError, "cannot load %s: %s", args);
-            importExc.setAttribute(__CAUSE__, pythonCause);
-            throw raise(importExc);
+            if (pythonCause != null) {
+                throw raise(ImportError, pythonCause, "cannot load %s: %s", args);
+            } else {
+                throw raise(ImportError, "cannot load %s: %s", args);
+            }
         }
     }
 

@@ -53,12 +53,8 @@ ModuleRootNode Name: <module 'try01'> SourceSection: [0,60]`def gen(x):↵  try:
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
-                        RestoreExceptionStateNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

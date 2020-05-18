@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -155,8 +156,9 @@ public abstract class CastToByteNode extends Node {
         return doIntOvf(getItemNode.executeInt(frame, getStorageNode.execute(value), 0));
     }
 
-    @Specialization(guards = "isForeignObject(value)", limit = "1")
+    @Specialization(guards = "plib.isForeignObject(value)", limit = "1")
     protected byte doForeign(Object value,
+                    @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary plib,
                     @CachedLibrary("value") InteropLibrary lib) {
         if (lib.fitsInByte(value)) {
             try {

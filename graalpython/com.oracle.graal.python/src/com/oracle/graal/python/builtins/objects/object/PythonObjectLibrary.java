@@ -455,6 +455,25 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Return the file system path representation of the object. If the object is str or bytes, then
+     * allow it to pass through. If the object defines __fspath__(), then return the result of that
+     * method. All other types raise a TypeError.
+     */
+    public String asPathWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
+        }
+        return asPath(receiver);
+    }
+
+    /**
+     * @see #asPathWithState
+     */
+    public String asPath(Object receiver) {
+        return asPathWithState(receiver, null);
+    }
+
+    /**
      * Coerces the receiver into an index-sized integer, using the same mechanism as
      * {@code PyNumber_AsSsize_t}:
      * <ol>
@@ -520,7 +539,7 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Checks wether this object should be interpreted as {@code
+     * Checks whether this object should be interpreted as {@code
      * true}-ish. Mimics the coercion behaviour of {@code PyObject_IsTrue}, and thus uses both
      * {@code slot_nb_bool} coercion and {@link #length}/{@link #lengthWithState}.
      */
@@ -637,6 +656,34 @@ public abstract class PythonObjectLibrary extends Library {
     @Abstract(ifExported = {"isBuffer", "getBufferLength"})
     public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
+    }
+
+    /**
+     * Checks whether the receiver is a Foreign Object.
+     *
+     * @see DefaultPythonObjectExports#isForeignObject(Object,
+     *      com.oracle.truffle.api.interop.InteropLibrary) {@code DefaultPythonObjectExports}
+     *      implements the logic of how an unknown object is being checked.
+     *
+     * @param receiver
+     * @return True if the receiver is a Foreign Object
+     */
+
+    public boolean isForeignObject(Object receiver) {
+        return false;
+    }
+
+    /**
+     * When a {@code receiver} is a wrapped primitive object that utilizes a #ReflectionLibrary, the
+     * value will appear here as primitive contrary to the value in the call cite which should
+     * represent the {@code receiverOrigin}
+     *
+     * @param receiver the receiver Object
+     * @param receiverOrigin also the receiver Object
+     * @return True if there has been a reflection
+     */
+    public boolean isRefelectedObject(Object receiver, Object receiverOrigin) {
+        return receiver != receiverOrigin;
     }
 
     public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {

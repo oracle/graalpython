@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,7 +37,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
 import sys
+
+class SignalTests(unittest.TestCase):
+    def test_args_validation(self):
+        try:
+            import _signal
+        except ImportError:
+            import signal as _signal
+        self.assertRaises(OverflowError, lambda : _signal.signal(0x8000000000000000, 0))
+        self.assertRaises(OverflowError, lambda : _signal.signal(0x800000000000000, 0))
+        self.assertRaises(TypeError, lambda : _signal.signal(_signal.SIGALRM, 0x100))
+        self.assertRaises(TypeError, lambda : _signal.signal(_signal.SIGALRM, 'string'))
+
 
 def test_alarm2():
     try:

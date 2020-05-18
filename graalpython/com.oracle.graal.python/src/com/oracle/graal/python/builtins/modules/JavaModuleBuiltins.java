@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -65,6 +66,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "java")
 public class JavaModuleBuiltins extends PythonBuiltins {
@@ -173,8 +175,10 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})
-        boolean check(Object object, TruffleObject klass) {
+        @Specialization(guards = {"!iLibObject.isForeignObject(object)", "iLibKlass.isForeignObject(klass)"}, limit = "3")
+        boolean check(Object object, TruffleObject klass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary iLibObject,
+                        @SuppressWarnings("unused") @CachedLibrary("klass") PythonObjectLibrary iLibKlass) {
             Env env = getContext().getEnv();
             try {
                 Object hostKlass = env.asHostObject(klass);
@@ -187,8 +191,10 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "isForeignObject(klass)"})
-        boolean checkForeign(Object object, TruffleObject klass) {
+        @Specialization(guards = {"iLibObject.isForeignObject(object)", "iLibKlass.isForeignObject(klass)"}, limit = "3")
+        boolean checkForeign(Object object, TruffleObject klass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary iLibObject,
+                        @SuppressWarnings("unused") @CachedLibrary("klass") PythonObjectLibrary iLibKlass) {
             Env env = getContext().getEnv();
             try {
                 Object hostObject = env.asHostObject(object);

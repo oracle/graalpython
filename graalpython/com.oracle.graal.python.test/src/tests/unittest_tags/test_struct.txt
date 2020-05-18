@@ -1,6 +1,7 @@
 *StructTest.test_1530559
 *StructTest.test_705836
 *StructTest.test_Struct_reinitialization
+*StructTest.test__sizeof__
 *StructTest.test_bool
 *StructTest.test_boundary_error_message
 *StructTest.test_boundary_error_message_with_large_offset

@@ -474,7 +474,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           RaiseNodeGen SourceSection: [1166,1181]`raise TypeError`
             ReadNameNodeGen SourceSection: [1172,1181]`TypeError`
               Identifier: TypeError
-            EmptyNode SourceSection: None
+            NoValueNode SourceSection: None
           ExceptNode SourceSection: None
             BlockNode SourceSection: None
               WriteNameNodeGen SourceSection: [1204,1226]`tb = sys.exc_info()[...`
@@ -516,7 +516,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             ReadNameNodeGen SourceSection: [1189,1198]`TypeError`
               Identifier: TypeError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1365,1415]`GetSetDescriptorType...`
         Identifier: GetSetDescriptorType
         PythonCallNodeGen SourceSection: [1388,1415]`type(FunctionType.__...`
@@ -885,7 +884,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2467,2476]`TypeError`
                                       Identifier: TypeError
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                                   SetItemNodeGen SourceSection: [2542,2581]`new_bases[i+shift:i+...`
                                     ReadLocalVariableNode SourceSection: None
@@ -1306,7 +1305,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [4096,4105]`TypeError`
                                     Identifier: TypeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3871,3876]`bases`
                           GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3871,3876]`bases`
@@ -1593,7 +1592,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5483,5497]`AttributeError`
                                               Identifier: AttributeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          EmptyNode SourceSection: None
+                                          NoValueNode SourceSection: None
                                       IfNode SourceSection: None
                                         YesNodeGen SourceSection: None
                                           IsExpressionNodeGen SourceSection: [5513,5530]`self.fget is None`
@@ -1613,7 +1612,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5550,5564]`AttributeError`
                                               Identifier: AttributeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          EmptyNode SourceSection: None
+                                          NoValueNode SourceSection: None
                                         BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [5597,5623]`return self.fget(ins...`
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -1701,7 +1700,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5713,5727]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [5759,5785]`self.fset(instance, ...`
                                       PythonCallNodeGen SourceSection: [5759,5785]`self.fset(instance, ...`
@@ -1781,7 +1780,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5871,5885]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [5920,5939]`self.fdel(instance)`
                                       PythonCallNodeGen SourceSection: [5920,5939]`self.fdel(instance)`
@@ -3021,7 +3020,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7748,7757]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [7803,8984]`if (func.__class__ i...`
                       YesNodeGen SourceSection: None

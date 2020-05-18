@@ -15,4 +15,4 @@ ModuleRootNode Name: <module 'raise03'> SourceSection: [0,24]`raise NameError('P
             StringLiteralNode SourceSection: [16,23]`'Pavel'`
             ReadNameNodeGen SourceSection: [6,15]`NameError`
               Identifier: NameError
-          EmptyNode SourceSection: None
+          NoValueNode SourceSection: None

@@ -360,13 +360,19 @@ public abstract class HashingStorage {
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
-            return new HashingStorage[]{self, lib.setItem(other, key, lib.getItem(self, key))};
+            HashingStorage newOther = lib.setItem(other, key, lib.getItem(self, key));
+            if (CompilerDirectives.inInterpreter() && other == newOther) {
+                // Avoid the allocation in interpreter if possible
+                return accumulator;
+            } else {
+                return new HashingStorage[]{self, newOther};
+            }
         }
     }
 
     @ExportMessage
     public HashingStorage addAllToOther(HashingStorage other,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Cached AddToOtherInjectNode injectNode) {
         return libSelf.injectInto(this, new HashingStorage[]{this, other}, injectNode)[1];
     }
@@ -450,7 +456,7 @@ public abstract class HashingStorage {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, "dictionary changed during comparison operation");
             }
             if (hashLib.equals(selfValue, otherValue, hashLib)) {
-                return new HashingStorage[]{self, other};
+                return accumulator;
             } else {
                 throw AbortIteration.INSTANCE;
             }
@@ -499,16 +505,68 @@ public abstract class HashingStorage {
             if (value != null) {
                 output = lib.setItem(output, key, value);
             }
-            return new HashingStorage[]{other, output};
+            if (CompilerDirectives.inInterpreter() && output == accumulator[1]) {
+                // Avoid the allocation in interpreter if possible
+                return accumulator;
+            } else {
+                return new HashingStorage[]{other, output};
+            }
         }
     }
 
     @ExportMessage
     public HashingStorage intersect(HashingStorage other,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Cached IntersectInjectionNode injectNode) {
         HashingStorage newStore = EconomicMapStorage.create();
         return libSelf.injectInto(this, new HashingStorage[]{other, newStore}, injectNode)[1];
+    }
+
+    protected static final class IsDisjoinForEachAcc {
+        private final HashingStorage other;
+        private final HashingStorageLibrary libOther;
+        private final ThreadState state;
+
+        public IsDisjoinForEachAcc(HashingStorage other, HashingStorageLibrary libOther, ThreadState state) {
+            this.other = other;
+            this.libOther = libOther;
+            this.state = state;
+        }
+    }
+
+    @GenerateUncached
+    protected abstract static class IsDisjointForEachNode extends ForEachNode<IsDisjoinForEachAcc> {
+        @Override
+        public abstract IsDisjoinForEachAcc execute(Object key, IsDisjoinForEachAcc arg);
+
+        @Specialization
+        IsDisjoinForEachAcc doit(Object key, IsDisjoinForEachAcc acc) {
+            if (acc.libOther.hasKeyWithState(acc.other, key, acc.state)) {
+                throw AbortIteration.INSTANCE;
+            }
+            return acc;
+        }
+    }
+
+    @ExportMessage
+    public boolean isDisjointWithState(HashingStorage other, ThreadState state,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile selfIsShorterProfile,
+                    @Cached IsDisjointForEachNode isDisjointForEachNode) {
+        try {
+            int selfLen = libSelf.lengthWithState(this, state);
+            int otherLen = libOther.lengthWithState(other, state);
+            if (selfIsShorterProfile.profile(selfLen < otherLen)) {
+                libSelf.forEach(this, isDisjointForEachNode, new IsDisjoinForEachAcc(other, libOther, state));
+            } else {
+                libOther.forEach(other, isDisjointForEachNode, new IsDisjoinForEachAcc(this, libSelf, state));
+            }
+            return true;
+        } catch (AbortIteration e) {
+            // iteration is aborted iff we found a key that is in both sets
+            return false;
+        }
     }
 
     @GenerateUncached
@@ -522,7 +580,12 @@ public abstract class HashingStorage {
             if (!lib.hasKey(other, key)) {
                 output = lib.setItem(output, key, lib.getItem(self, key));
             }
-            return new HashingStorage[]{self, other, output};
+            if (CompilerDirectives.inInterpreter() && output == accumulator[2]) {
+                // Avoid the allocation in interpreter if possible
+                return accumulator;
+            } else {
+                return new HashingStorage[]{self, other, output};
+            }
         }
     }
 
@@ -548,7 +611,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage diff(HashingStorage other,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Exclusive @Cached DiffInjectNode diffNode) {
         HashingStorage newStore = EconomicMapStorage.create();
         return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
@@ -566,10 +629,12 @@ public abstract class HashingStorage {
             this.entriesIterator = new EntriesIterator(self, lib);
         }
 
+        @Override
         public boolean hasNext() {
             return entriesIterator.hasNext();
         }
 
+        @Override
         public Object next() {
             return entriesIterator.next().getValue();
         }
@@ -591,10 +656,12 @@ public abstract class HashingStorage {
             this.keysIterator = lib.keys(self).iterator();
         }
 
+        @Override
         public boolean hasNext() {
             return keysIterator.hasNext();
         }
 
+        @Override
         public DictEntry next() {
             Object key = keysIterator.next();
             Object value = lib.getItem(self, key);

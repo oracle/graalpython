@@ -40,6 +40,7 @@
 import _io
 import os
 import sys
+import types
 from time import time
 
 
@@ -51,6 +52,8 @@ ATTR_PROCESS_ARGS = '__process_args__'
 ATTR_SETUP = '__setup__'
 #: gets called with the preprocessed arguments N times
 ATTR_BENCHMARK = '__benchmark__'
+#: this function is used to clean up benchmark storage and reset for a subsequent run.
+ATTR_CLEANUP = '__cleanup__'
 #: performs any teardown needed in the benchmark
 ATTR_TEARDOWN = '__teardown__'
 
@@ -229,7 +232,7 @@ class BenchRunner(object):
             return bench_module
 
         else:
-            bench_module = type(sys)(name, bench_file)
+            bench_module = types.ModuleType(name, bench_file)
             with _io.FileIO(bench_file, "r") as f:
                 bench_module.__file__ = bench_file
                 bench_module.ccompile = ccompile
@@ -256,7 +259,10 @@ class BenchRunner(object):
         args = self._call_attr(ATTR_PROCESS_ARGS, *self.bench_args)
         if args is None:
             # default args processor considers all args as ints
-            args = list(map(int, self.bench_args))
+            if sys.version_info.major < 3:
+                args = list(map(lambda x: int(x.replace("_", "")), self.bench_args))
+            else:
+                args = list(map(int, self.bench_args))
 
         print("### args = ", args)
         print(_HRULE)
@@ -272,6 +278,7 @@ class BenchRunner(object):
                 print("### (pre)warming up for %s iterations ... " % self.warmup_runs)
                 for _ in range(self.warmup_runs):
                     bench_func(*args)
+                    self._call_attr(ATTR_CLEANUP, *args)
 
             for iteration in range(self.iterations):
                 start = time()
@@ -279,6 +286,7 @@ class BenchRunner(object):
                 duration = time() - start
                 durations.append(duration)
                 duration_str = "%.3f" % duration
+                self._call_attr(ATTR_CLEANUP, *args)
                 if self._run_once:
                     print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
                 else:

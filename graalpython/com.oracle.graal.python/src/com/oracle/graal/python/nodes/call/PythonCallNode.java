@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -218,13 +219,15 @@ public abstract class PythonCallNode extends ExpressionNode {
             this.key = key;
         }
 
-        @Specialization(guards = "isForeignObject(object)")
-        Object getForeignInvoke(TruffleObject object) {
+        @Specialization(guards = "lib.isForeignObject(object)", limit = "getCallSiteInlineCacheMaxDepth()")
+        Object getForeignInvoke(TruffleObject object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib) {
             return new ForeignInvoke(object, key);
         }
 
-        @Specialization(guards = "!isForeignObject(object)")
+        @Specialization(guards = "!lib.isForeignObject(object)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object getCallAttribute(VirtualFrame frame, Object object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, object);
         }

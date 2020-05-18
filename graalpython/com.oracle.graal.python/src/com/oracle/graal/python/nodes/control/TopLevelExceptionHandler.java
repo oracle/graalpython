@@ -48,8 +48,7 @@ import java.io.IOException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -58,14 +57,10 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins.GetTracebackNextNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -74,7 +69,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -92,12 +86,9 @@ public class TopLevelExceptionHandler extends RootNode {
     private final SourceSection sourceSection;
     @CompilationFinal private ContextReference<PythonContext> context;
 
-    @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
     @Child private CallNode exceptionHookCallNode = CallNode.create();
-    @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
-    @Child private PythonObjectFactory factory;
-    @Child private GetTracebackNode getTracebackNode;
+    @Child private GetExceptionTracebackNode getExceptionTracebackNode;
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
@@ -124,7 +115,7 @@ public class TopLevelExceptionHandler extends RootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         if (exception != null) {
-            printExc(frame, exception);
+            printExc(frame, exception.getEscapedException());
             return null;
         } else {
             assert getContext().getCurrentException() == null;
@@ -132,13 +123,8 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 assert !PArguments.isPythonFrame(frame);
-                // we cannot reify at this point because we have no Python frame; so create the full
-                // traceback chain
-                PTraceback tbHead = GetTracebackNextNode.createTracebackChain(e, materializeFrameNode, factory());
-                if (tbHead != PTraceback.NO_TRACEBACK) {
-                    e.getExceptionObject().setTraceback(tbHead);
-                }
-                printExc(frame, e);
+                PBaseException pythonException = e.getEscapedException();
+                printExc(frame, pythonException);
                 if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
                 }
@@ -165,15 +151,15 @@ public class TopLevelExceptionHandler extends RootNode {
      * This function is kind-of analogous to PyErr_PrintEx. TODO (timfel): Figure out if we should
      * move this somewhere else
      */
-    private void printExc(VirtualFrame frame, PException e) {
+    private void printExc(VirtualFrame frame, PBaseException pythonException) {
         CompilerDirectives.transferToInterpreter();
         PythonContext theContext = getContext();
         PythonCore core = theContext.getCore();
-        if (IsBuiltinClassProfile.profileClassSlowPath(e.getExceptionObject().getLazyPythonClass(), SystemExit)) {
-            handleSystemExit(frame, e);
+        if (IsBuiltinClassProfile.profileClassSlowPath(pythonException.getLazyPythonClass(), SystemExit)) {
+            handleSystemExit(frame, pythonException);
         }
 
-        PBaseException value = e.getExceptionObject();
+        PBaseException value = pythonException;
         PythonAbstractClass type = value.getPythonClass();
         PTraceback execute = ensureGetTracebackNode().execute(frame, value);
         Object tb = execute != null ? execute : PNone.NONE;
@@ -194,7 +180,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 } catch (PException internalError) {
                     // More complex handling of errors in exception printing is done in our
                     // Python code, if we get here, we just fall back to the launcher
-                    throw e;
+                    throw pythonException.getExceptionForReraise(pythonException.getTraceback());
                 }
                 if (!getSourceSection().getSource().isInteractive()) {
                     throw new PythonExitException(this, 1);
@@ -207,16 +193,16 @@ public class TopLevelExceptionHandler extends RootNode {
                 }
             }
         }
-        throw e;
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
-    private void handleSystemExit(VirtualFrame frame, PException e) {
+    private void handleSystemExit(VirtualFrame frame, PBaseException pythonException) {
         PythonContext theContext = getContext();
         if (theContext.getOption(PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }
-        Object attribute = e.getExceptionObject().getAttribute("code");
+        Object attribute = pythonException.getAttribute("code");
         Integer exitcode = null;
         if (attribute instanceof Number) {
             exitcode = ((Number) attribute).intValue();
@@ -233,12 +219,13 @@ public class TopLevelExceptionHandler extends RootNode {
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
             try {
-                theContext.getEnv().err().write(callStrNode.executeObject(frame, e.getExceptionObject()).toString().getBytes());
+                theContext.getEnv().err().write(callStrNode.executeObject(frame, pythonException).toString().getBytes());
                 theContext.getEnv().err().write('\n');
             } catch (IOException e1) {
             }
             throw new PythonExitException(this, 1);
         }
+        PException e = pythonException.getExceptionForReraise(pythonException.getTraceback());
         e.setExit(true);
         throw e;
     }
@@ -248,20 +235,12 @@ public class TopLevelExceptionHandler extends RootNode {
         e.printStackTrace();
     }
 
-    private PythonObjectFactory factory() {
-        if (factory == null) {
+    private GetExceptionTracebackNode ensureGetTracebackNode() {
+        if (getExceptionTracebackNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
+            getExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
         }
-        return factory;
-    }
-
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNodeGen.create());
-        }
-        return getTracebackNode;
+        return getExceptionTracebackNode;
     }
 
     private Object run(VirtualFrame frame) {

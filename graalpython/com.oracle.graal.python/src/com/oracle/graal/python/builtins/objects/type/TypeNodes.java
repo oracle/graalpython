@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -85,6 +86,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -96,6 +98,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -563,11 +566,12 @@ public abstract class TypeNodes {
         static PythonAbstractClass doNative(PythonNativeClass obj,
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBaseNode,
-                        @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
+                        @Cached("createClassProfile()") ValueProfile resultTypeProfile,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
             if (PGuards.isPNone(result)) {
                 return null;
-            } else if (PGuards.isClass(result)) {
+            } else if (PGuards.isClass(result, lib)) {
                 return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();
@@ -722,7 +726,7 @@ public abstract class TypeNodes {
                     currentMRO = new PythonAbstractClass[]{cls};
                 } else {
                     currentMRO = new PythonAbstractClass[baseMRO.length + 1];
-                    System.arraycopy(baseMRO, 0, currentMRO, 1, baseMRO.length);
+                    PythonUtils.arraycopy(baseMRO, 0, currentMRO, 1, baseMRO.length);
                     currentMRO[0] = cls;
                 }
             } else {
@@ -803,7 +807,7 @@ public abstract class TypeNodes {
             return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
         }
 
-        @Specialization(guards = "!isClass(obj)")
+        @Fallback
         boolean doOther(@SuppressWarnings("unused") Object obj) {
             return false;
         }
@@ -814,6 +818,46 @@ public abstract class TypeNodes {
 
         public static IsTypeNode getUncached() {
             return IsTypeNodeGen.getUncached();
+        }
+    }
+
+    public abstract static class IsAcceptableBaseNode extends Node {
+        private static final long Py_TPFLAGS_BASETYPE = (1L << 10);
+
+        public abstract boolean execute(Object obj);
+
+        @Specialization
+        boolean doUserClass(@SuppressWarnings("unused") PythonClass obj) {
+            return true;
+        }
+
+        @Specialization
+        boolean doBuiltinClass(@SuppressWarnings("unused") PythonBuiltinClass obj) {
+            return obj.getType().isAcceptableBase();
+        }
+
+        @Specialization
+        boolean doBuiltinType(@SuppressWarnings("unused") PythonBuiltinClassType obj) {
+            return obj.isAcceptableBase();
+        }
+
+        @Specialization
+        boolean doNativeClass(PythonAbstractNativeObject obj,
+                        @Cached IsTypeNode isType,
+                        @Cached GetTypeFlagsNode getFlags) {
+            if (isType.execute(obj)) {
+                return (getFlags.execute(obj) & Py_TPFLAGS_BASETYPE) != 0;
+            }
+            return false;
+        }
+
+        @Fallback
+        boolean doOther(@SuppressWarnings("unused") Object obj) {
+            return false;
+        }
+
+        public static IsAcceptableBaseNode create() {
+            return IsAcceptableBaseNodeGen.create();
         }
     }
 

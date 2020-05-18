@@ -37,34 +37,45 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
@@ -73,6 +84,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
     private static Object resumeGenerator(PGenerator self) {
         try {
             return self.getCurrentCallTarget().call(self.getArguments());
+        } catch (PException e) {
+            self.markAsFinished();
+            throw e;
         } finally {
             self.setNextCallTarget();
             PArguments.setSpecialArgument(self.getArguments(), null);
@@ -99,10 +113,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
-        @Child private GetCaughtExceptionNode getCaughtExceptionNode;
-
-        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
-
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
             return CallTargetInvokeNode.create(target, false, true);
         }
@@ -125,7 +135,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Object[] arguments = self.getArguments();
                 return call.execute(frame, null, null, arguments);
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
             } finally {
@@ -143,7 +152,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Object[] arguments = self.getArguments();
                 return call.execute(frame, self.getCurrentCallTarget(), arguments);
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
             } finally {
@@ -167,66 +175,169 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @Builtin(name = "throw", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ThrowNode extends PythonBuiltinNode {
-        @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
-                        @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, new Object[]{typ});
-            if (instance instanceof PBaseException) {
-                PException pException = PException.fromObject((PBaseException) instance, this);
-                PArguments.setSpecialArgument(self.getArguments(), pException);
-            } else {
-                throw raise(TypeError, "exceptions must derive from BaseException");
+
+        @Child private MaterializeFrameNode materializeFrameNode;
+        @Child private GetTracebackNode getTracebackNode;
+
+        @ImportStatic({PGuards.class, SpecialMethodNames.class})
+        public abstract static class PrepareExceptionNode extends Node {
+            public abstract PBaseException execute(VirtualFrame frame, Object type, Object value);
+
+            private PRaiseNode raiseNode;
+            private IsSubtypeNode isSubtypeNode;
+
+            @Specialization
+            PBaseException doException(PBaseException exc, @SuppressWarnings("unused") PNone value) {
+                return exc;
             }
-            return resumeGenerator(self);
-        }
 
-        @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
-                        @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
-            Object[] array = getObjectArrayNode.execute(val);
-            Object[] args = new Object[array.length + 1];
-            System.arraycopy(array, 0, args, 1, array.length);
-            args[0] = typ;
-            Object instance = callTyp.execute(frame, typ, args);
-            if (instance instanceof PBaseException) {
-                PException pException = PException.fromObject((PBaseException) instance, this);
-                PArguments.setSpecialArgument(self.getArguments(), pException);
-            } else {
-                throw raise(TypeError, "exceptions must derive from BaseException");
+            @Specialization(guards = "!isPNone(value)")
+            PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
+                            @Cached PRaiseNode raise) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, "instance exception may not have a separate value");
             }
-            return resumeGenerator(self);
-        }
 
-        @Specialization(guards = {"!isPNone(val)", "!isPTuple(val)"})
-        Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, Object val, @SuppressWarnings("unused") PNone tb,
-                        @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, new Object[]{typ, val});
-            if (instance instanceof PBaseException) {
-                PException pException = PException.fromObject((PBaseException) instance, this);
-                PArguments.setSpecialArgument(self.getArguments(), pException);
-            } else {
-                throw raise(TypeError, "exceptions must derive from BaseException");
+            @Specialization
+            PBaseException doException(VirtualFrame frame, LazyPythonClass type, PBaseException value,
+                            @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
+                            @Cached BranchProfile isNotInstanceProfile,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                if (isInstanceNode.executeWith(frame, value, type)) {
+                    checkExceptionClass(type);
+                    return value;
+                } else {
+                    isNotInstanceProfile.enter();
+                    return doCreateObject(frame, type, value, callConstructor);
+                }
             }
-            return resumeGenerator(self);
+
+            @Specialization
+            PBaseException doCreate(VirtualFrame frame, LazyPythonClass type, @SuppressWarnings("unused") PNone value,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                checkExceptionClass(type);
+                Object instance = callConstructor.execute(frame, type, new Object[]{type});
+                if (instance instanceof PBaseException) {
+                    return (PBaseException) instance;
+                } else {
+                    throw raise().raise(TypeError, "exceptions must derive from BaseException");
+                }
+            }
+
+            @Specialization
+            PBaseException doCreateTuple(VirtualFrame frame, LazyPythonClass type, PTuple value,
+                            @Cached GetObjectArrayNode getObjectArrayNode,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                checkExceptionClass(type);
+                Object[] array = getObjectArrayNode.execute(value);
+                Object[] args = new Object[array.length + 1];
+                args[0] = type;
+                PythonUtils.arraycopy(array, 0, args, 1, array.length);
+                Object instance = callConstructor.execute(frame, type, args);
+                if (instance instanceof PBaseException) {
+                    return (PBaseException) instance;
+                } else {
+                    throw raise().raise(TypeError, "exceptions must derive from BaseException");
+                }
+            }
+
+            @Specialization(guards = {"!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"})
+            PBaseException doCreateObject(VirtualFrame frame, LazyPythonClass type, Object value,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                checkExceptionClass(type);
+                Object instance = callConstructor.execute(frame, type, new Object[]{type, value});
+                if (instance instanceof PBaseException) {
+                    return (PBaseException) instance;
+                } else {
+                    throw raise().raise(TypeError, "exceptions must derive from BaseException");
+                }
+            }
+
+            @Fallback
+            PBaseException doError(Object type, @SuppressWarnings("unused") Object value) {
+                throw raise().raise(TypeError, "exceptions must be classes or instances deriving from BaseException, not %p", type);
+            }
+
+            private PRaiseNode raise() {
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                return raiseNode;
+            }
+
+            private void checkExceptionClass(LazyPythonClass type) {
+                if (isSubtypeNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    isSubtypeNode = insert(IsSubtypeNode.create());
+                }
+                if (!isSubtypeNode.execute(type, PythonBuiltinClassType.PBaseException)) {
+                    throw raise().raise(TypeError, "exceptions must be classes or instances deriving from BaseException, not %p", type);
+                }
+            }
         }
 
         @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, PBaseException instance, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
-                        @Cached MaterializeFrameNode materializeNode) {
-            PException pException = PException.fromObject(instance, this);
-            PFrame pyFrame = materializeNode.execute(frame, this, true, false);
-            pException.getExceptionObject().setTraceback(factory().createTraceback(pyFrame, pException));
-            PArguments.setSpecialArgument(self.getArguments(), pException);
-            return resumeGenerator(self);
+        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, @SuppressWarnings("unused") PNone tb,
+                        @Cached PrepareExceptionNode prepareExceptionNode) {
+            PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
+            return doThrow(self, instance);
         }
 
         @Specialization
-        Object sendThrow(PGenerator self, @SuppressWarnings("unused") LazyPythonClass typ, PBaseException instance, PTraceback tb) {
-            PException pException = PException.fromObject(instance, this);
+        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, PTraceback tb,
+                        @Cached PrepareExceptionNode prepareExceptionNode) {
+            PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             instance.setTraceback(tb);
-            PArguments.setSpecialArgument(self.getArguments(), pException);
-            return resumeGenerator(self);
+            return doThrow(self, instance);
+        }
+
+        private Object doThrow(PGenerator self, PBaseException instance) {
+            instance.setContext(null); // Will be filled when caught
+            if (self.isStarted()) {
+                instance.ensureReified();
+                // Pass it to the generator where it will be thrown by the last yield, the location
+                // will be filled there
+                PException pException = PException.fromObject(instance, null);
+                PArguments.setSpecialArgument(self.getArguments(), pException);
+                return resumeGenerator(self);
+            } else {
+                // Unstarted generator, we cannot pass the exception into the generator as there is
+                // nothing that would handle it.
+                // Instead, we throw the exception here and fake entering the generator by adding
+                // its frame to the traceback manually.
+                Node location = self.getCurrentCallTarget().getRootNode();
+                MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                PFrame pFrame = ensureMaterializeFrameNode().execute(null, location, false, false, generatorFrame);
+                PTraceback existingTraceback = null;
+                if (instance.getTraceback() != null) {
+                    existingTraceback = ensureGetTracebackNode().execute(instance.getTraceback());
+                }
+                PTraceback newTraceback = factory().createTraceback(pFrame, pFrame.getLine(), existingTraceback);
+                instance.setTraceback(newTraceback);
+                throw PException.fromObject(instance, location);
+            }
+        }
+
+        @Specialization(guards = {"!isPNone(tb)", "!isPTraceback(tb)"})
+        @SuppressWarnings("unused")
+        Object doError(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb) {
+            throw raise(TypeError, "throw() third argument must be a traceback object");
+        }
+
+        private MaterializeFrameNode ensureMaterializeFrameNode() {
+            if (materializeFrameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeFrameNode = insert(MaterializeFrameNode.create());
+            }
+            return materializeFrameNode;
+        }
+
+        private GetTracebackNode ensureGetTracebackNode() {
+            if (getTracebackNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTracebackNode = insert(GetTracebackNode.create());
+            }
+            return getTracebackNode;
         }
     }
 

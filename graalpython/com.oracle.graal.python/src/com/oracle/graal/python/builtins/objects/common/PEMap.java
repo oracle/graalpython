@@ -42,16 +42,17 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
 
+import org.graalvm.collections.MapCursor;
+
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.DictKey;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.util.BiFunction;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import org.graalvm.collections.MapCursor;
 
 @SuppressWarnings("javadoc")
 /**
@@ -424,7 +425,7 @@ final class PEMap implements Iterable<DictKey> {
             throw new UnsupportedOperationException("map grown too large!");
         }
         Object[] newEntries = new Object[newSize << 1];
-        System.arraycopy(entries, 0, newEntries, 0, entriesLength);
+        PythonUtils.arraycopy(entries, 0, newEntries, 0, entriesLength);
         entries = newEntries;
         if ((entriesLength < LARGE_HASH_THRESHOLD && newEntries.length >= LARGE_HASH_THRESHOLD) ||
                         (entriesLength < VERY_LARGE_HASH_THRESHOLD && newEntries.length > VERY_LARGE_HASH_THRESHOLD)) {

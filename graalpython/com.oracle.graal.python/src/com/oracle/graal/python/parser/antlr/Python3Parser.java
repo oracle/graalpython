@@ -6363,7 +6363,7 @@ public class Python3Parser extends Parser {
 				match(POWER);
 				setState(1228);
 				_localctx.factor = factor();
-				 _localctx.result =  new TernaryArithmeticSSTNode(_localctx.result, _localctx.factor.result, getStartIndex(_localctx), getStopIndex((_localctx.factor!=null?(_localctx.factor.stop):null))); 
+				 _localctx.result =  new BinaryArithmeticSSTNode(BinaryArithmetic.Pow, _localctx.result, _localctx.factor.result, getStartIndex(_localctx), getStopIndex((_localctx.factor!=null?(_localctx.factor.stop):null))); 
 				}
 			}
 

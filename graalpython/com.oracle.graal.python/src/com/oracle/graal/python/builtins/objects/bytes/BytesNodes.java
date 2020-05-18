@@ -67,6 +67,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -114,13 +115,13 @@ public abstract class BytesNodes {
             if (parts.size() > 0) {
                 int offset = 0;
                 byte[] array = parts.get(0);
-                System.arraycopy(array, 0, joinedBytes, offset, array.length);
+                PythonUtils.arraycopy(array, 0, joinedBytes, offset, array.length);
                 offset += array.length;
                 for (int i = 1; i < parts.size(); i++) {
                     array = parts.get(i);
-                    System.arraycopy(sep, 0, joinedBytes, offset, sep.length);
+                    PythonUtils.arraycopy(sep, 0, joinedBytes, offset, sep.length);
                     offset += sep.length;
-                    System.arraycopy(array, 0, joinedBytes, offset, array.length);
+                    PythonUtils.arraycopy(array, 0, joinedBytes, offset, array.length);
                     offset += array.length;
                 }
             }

@@ -2,6 +2,9 @@ graalpython/com.oracle.graal.python.benchmarks/python/host_interop/euler_java.py
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix-java.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/macro/gcbench.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/go.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/raytrace-simple.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/ai-nqueen.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/binarytrees3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/bm-float.py,benchmarks.copyright
@@ -128,7 +131,7 @@ graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_mmap.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_sre.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright

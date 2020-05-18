@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -139,7 +140,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         PythonAbstractClass[] newArray = new PythonAbstractClass[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new MroSequenceStorage(getClassName(), newArray);
         }
 

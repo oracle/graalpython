@@ -276,4 +276,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     public static IsSubtypeNode create() {
         return IsSubtypeNodeGen.create();
     }
+
+    public static IsSubtypeNode getUncached() {
+        return IsSubtypeNodeGen.getUncached();
+    }
 }

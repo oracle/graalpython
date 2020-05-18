@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,8 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -81,7 +80,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     @Child private LookupAndCallBinaryNode getSendNode;
     @Child private CallNode callSendNode;
 
-    @Child private GetTracebackNode getTracebackNode;
+    @Child private GetExceptionTracebackNode getExceptionTracebackNode;
 
     private final IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
     private final IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
@@ -93,8 +92,6 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     private final BranchProfile noThrow = BranchProfile.create();
 
     @Child private ExpressionNode right;
-
-    @Child private PythonObjectFactory ofactory;
 
     public YieldFromNode(ExpressionNode right) {
         this.right = right;
@@ -115,7 +112,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                 _y = next.execute(frame, _i);
             } catch (PException e) {
                 e.expectStopIteration(stopIterProfile1);
-                return getGetValue().executeObject(frame, e.getExceptionObject());
+                return getGetValue().executeObject(frame, e.setCatchingFrameAndGetEscapedException(frame));
             }
             access.setIterator(frame, iteratorSlot, _i);
         }
@@ -171,15 +168,16 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                         throw _e;
                     } else {
                         try {
+                            PBaseException pythonException = ((PException) _s).setCatchingFrameAndGetEscapedException(frame);
                             _y = getCallThrowNode().execute(frame, _m,
-                                            new Object[]{_i, getExceptionClassNode().execute(((PException) _s).getExceptionObject()),
-                                                            ((PException) _s).getExceptionObject(),
-                                                            ensureGetTracebackNode().execute(frame, ((PException) _s).getExceptionObject())},
+                                            new Object[]{_i, getExceptionClassNode().execute(pythonException),
+                                                            pythonException,
+                                                            ensureGetTracebackNode().execute(frame, pythonException)},
                                             PKeyword.EMPTY_KEYWORDS);
                         } catch (PException _e2) {
                             access.setIterator(frame, iteratorSlot, null);
                             _e2.expectStopIteration(stopIterProfile2);
-                            return getGetValue().executeObject(frame, _e2.getExceptionObject());
+                            return getGetValue().executeObject(frame, _e2.setCatchingFrameAndGetEscapedException(frame));
                         }
                     }
                 } else {
@@ -204,7 +202,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     } catch (PException _e) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e.expectStopIteration(stopIterProfile3);
-                        return getGetValue().executeObject(frame, _e.getExceptionObject());
+                        return getGetValue().executeObject(frame, _e.setCatchingFrameAndGetEscapedException(frame));
                     }
                 }
             }
@@ -275,12 +273,12 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         return callSendNode;
     }
 
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
+    private GetExceptionTracebackNode ensureGetTracebackNode() {
+        if (getExceptionTracebackNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNodeGen.create());
+            getExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
         }
-        return getTracebackNode;
+        return getExceptionTracebackNode;
     }
 
     public void setIteratorSlot(int slot) {

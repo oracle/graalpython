@@ -158,8 +158,8 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return passExceptionNode.execute(frame);
     }
 
-    public final PException raise(PBaseException exc) {
-        return getRaiseNode().raise(exc);
+    public PException raise(LazyPythonClass type, String string) {
+        return getRaiseNode().raise(factory().createBaseException(type, string, new Object[0]));
     }
 
     public PException raise(LazyPythonClass exceptionType) {

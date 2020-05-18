@@ -33,9 +33,9 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                 ExpressionStatementNode SourceSection: [1,5]`x**y`
                   YieldNode SourceSection: [1,5]`x**y`
                     flagSlot: 0
-                    TernaryArithmeticExpression SourceSection: [1,5]`x**y`
-                      LookupAndCallTernaryNodeGen SourceSection: None
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                    BinaryArithmeticExpression SourceSection: [1,5]`x**y`
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __pow__
                       ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None

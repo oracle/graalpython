@@ -2327,7 +2327,7 @@ static struct PyModuleDef _structmodule = {
 };
 
 PyMODINIT_FUNC
-PyInit__struct(void)
+PyInit__cpython_struct(void)
 {
     PyObject *m;
 

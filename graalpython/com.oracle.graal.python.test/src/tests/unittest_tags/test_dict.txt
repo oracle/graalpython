@@ -1,3 +1,4 @@
+*CAPITest.test_getitem_knownhash
 *DictTest.test_bad_key
 *DictTest.test_bool
 *DictTest.test_clear
@@ -28,3 +29,22 @@
 *DictTest.test_keys_contained
 *DictTest.test_len
 *DictTest.test_literal_constructor
+*DictTest.test_mutating_iteration
+*DictTest.test_mutating_lookup
+*DictTest.test_object_set_item_single_instance_non_str_key
+*DictTest.test_reentrant_insertion
+*DictTest.test_repr
+*DictTest.test_resize1
+*DictTest.test_resize2
+*DictTest.test_setdefault
+*DictTest.test_setitem_atomic_at_resize
+*DictTest.test_splittable_del
+*DictTest.test_splittable_pop
+*DictTest.test_splittable_pop_pending
+*DictTest.test_splittable_popitem
+*DictTest.test_splittable_setattr_after_pop
+*DictTest.test_splittable_setdefault
+*DictTest.test_track_dynamic
+*DictTest.test_track_literals
+*DictTest.test_track_subtypes
+*DictTest.test_values

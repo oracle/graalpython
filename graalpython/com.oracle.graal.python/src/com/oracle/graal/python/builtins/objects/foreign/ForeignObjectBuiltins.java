@@ -517,7 +517,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 long size = lib.getArraySize(iterable);
                 if (size < Integer.MAX_VALUE) {
-                    return factory().createForeignArrayIterator(iterable, (int) size);
+                    return factory().createForeignArrayIterator(iterable);
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
@@ -549,9 +549,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.a
          */
-        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
+        @Specialization(guards = {"plib.isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "3")
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
+                        @CachedLibrary("callee") InteropLibrary lib,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
                         @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {
@@ -586,8 +587,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
-        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "3")
+        @Specialization(guards = {"plib.isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "4")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PTypeToForeignNode toForeignNode,
@@ -819,7 +821,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 long size = lib.getArraySize(object);
                 if (size <= Integer.MAX_VALUE && size >= 0) {
-                    PForeignArrayIterator iterable = factory().createForeignArrayIterator(object, (int) size);
+                    PForeignArrayIterator iterable = factory().createForeignArrayIterator(object);
                     return getCallStrNode().executeObject(frame, asList.execute(frame, iterable));
                 }
             } catch (UnsupportedMessageException e) {

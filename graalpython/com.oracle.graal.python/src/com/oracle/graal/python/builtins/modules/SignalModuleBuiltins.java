@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static java.lang.StrictMath.toIntExact;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -49,11 +47,11 @@ import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -69,6 +67,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_signal")
@@ -201,27 +200,28 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
-        private int getSignum(long signum) {
-            try {
-                return toIntExact(signum);
-            } catch (ArithmeticException ae) {
-                throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
-            }
+
+        @Specialization(guards = "!idNumLib.isCallable(idNum)", limit = "1")
+        Object signalId(@SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
+                        @SuppressWarnings("unused") @CachedLibrary("idNum") PythonObjectLibrary idNumLib,
+                        @CachedLibrary("signal") PythonObjectLibrary signalLib) {
+            // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants, which
+            // are instances of Handlers enum
+            // The -1 fallback will be correctly reported as an error later on
+            int id = idNum instanceof Integer ? (int) idNum : -1;
+            return signal(signalLib.asSize(signal), id);
         }
 
-        @Specialization
         @TruffleBoundary
-        Object signal(@SuppressWarnings("unused") PythonModule self, long signalNumber, int id) {
-            int signum = getSignum(signalNumber);
+        private Object signal(int signum, int id) {
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, id);
             } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.ValueError, e);
+                throw raise(PythonErrorType.TypeError, "TypeError: signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object");
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {
@@ -234,12 +234,17 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
-        @Specialization
-        @TruffleBoundary
-        Object signal(PythonModule self, long signalNumber, Object handler,
+        @Specialization(guards = "handlerLib.isCallable(handler)", limit = "1")
+        Object signalHandler(PythonModule self, Object signal, Object handler,
+                        @SuppressWarnings("unused") @CachedLibrary("handler") PythonObjectLibrary handlerLib,
+                        @CachedLibrary("signal") PythonObjectLibrary signalLib,
                         @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
                         @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
-            int signum = getSignum(signalNumber);
+            return signal(self, signalLib.asSize(signal), handler, readQueueNode, readSemaNode);
+        }
+
+        @TruffleBoundary
+        private Object signal(PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readQueueNode, ReadAttributeFromObjectNode readSemaNode) {
             ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
             Semaphore semaphore = getSemaphore(self, readSemaNode);
             Object retval;
@@ -317,6 +322,7 @@ final class Signals {
             this.seconds = seconds;
         }
 
+        @Override
         public void run() {
             long t0 = System.currentTimeMillis();
             while ((System.currentTimeMillis() - t0) < seconds * 1000) {
@@ -342,6 +348,7 @@ final class Signals {
             this.handler = handler;
         }
 
+        @Override
         public void handle(sun.misc.Signal arg0) {
             handler.run();
         }

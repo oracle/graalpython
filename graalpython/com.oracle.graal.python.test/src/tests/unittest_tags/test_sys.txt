@@ -2,3 +2,4 @@
 *ExceptHookTest.test_original_excepthook
 *SysModuleTest.test_43581
 *SysModuleTest.test__enablelegacywindowsfsencoding
+*SysModuleTest.test_clear_type_cache

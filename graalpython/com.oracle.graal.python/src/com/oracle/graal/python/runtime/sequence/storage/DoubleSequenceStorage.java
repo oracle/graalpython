@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class DoubleSequenceStorage extends TypedSequenceStorage {
@@ -148,7 +149,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         double[] newArray = new double[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new DoubleSequenceStorage(newArray);
         }
 

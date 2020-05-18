@@ -39,6 +39,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -70,8 +71,11 @@ public final class PString extends PImmutableSequence {
     }
 
     public static String getValue(CharSequence charSequence) {
-        if (charSequence instanceof PCharSequence) {
-            PCharSequence s = (PCharSequence) charSequence;
+        if (charSequence instanceof LazyString) {
+            LazyString s = (LazyString) charSequence;
+            return s.materialize();
+        } else if (charSequence instanceof NativeCharSequence) {
+            NativeCharSequence s = (NativeCharSequence) charSequence;
             return s.materialize();
         } else {
             return (String) charSequence;
@@ -174,6 +178,11 @@ public final class PString extends PImmutableSequence {
         }
     }
 
+    @ExportMessage
+    public String asPath(@Cached CastToJavaStringNode castToJavaStringNode) {
+        return castToJavaStringNode.execute(this);
+    }
+
     @Override
     public String toString() {
         return value.toString();
@@ -243,6 +252,11 @@ public final class PString extends PImmutableSequence {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, String sub, int fromIndex) {
+        return s.lastIndexOf(sub, fromIndex);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static String substring(String str, int start, int end) {
         return str.substring(start, end);
     }
@@ -266,5 +280,14 @@ public final class PString extends PImmutableSequence {
     @TruffleBoundary
     public static boolean equals(String left, String other) {
         return left.equals(other);
+    }
+
+    @TruffleBoundary
+    public static String cat(Object... args) {
+        StringBuilder sb = new StringBuilder();
+        for (Object arg : args) {
+            sb.append(arg);
+        }
+        return sb.toString();
     }
 }

@@ -22,9 +22,11 @@
 *ReTests.test_bug_926075
 *ReTests.test_bug_931848
 *ReTests.test_bytes_str_mixing
+*ReTests.test_case_helpers
 *ReTests.test_category
 *ReTests.test_compile
 *ReTests.test_constants
+*ReTests.test_debug_flag
 *ReTests.test_dollar_matches_twice
 *ReTests.test_enum
 *ReTests.test_flags

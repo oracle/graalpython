@@ -40,7 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.NonReadableChannelException;
+import java.nio.channels.NonWritableChannelException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
+import java.nio.file.FileSystemLoopException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.NotLinkException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 public enum OSErrorEnum {
 
@@ -50,7 +68,7 @@ public enum OSErrorEnum {
      * <pre>
      * awk -F'\\s+'  '/#define/ { printf("%s(%s, \"",$2,$3); for (i=5; i<=NF-1; i++) {if(i==5){printf("%s",$i);}else{printf("%s%s",sep,$i);} sep=OFS}; print "\")," }' /usr/include/asm-generic/errno*
      * </pre>
-     * 
+     *
      * Manually are changed EWOULDBLOCK and EDEADLOCK and move before appropriate errors with the
      * same number, because ErrnoModuleBuiltins and PosixModuleBuiltins built a dictionary from this
      * enum.
@@ -222,11 +240,93 @@ public enum OSErrorEnum {
     @TruffleBoundary
     public static OSErrorEnum fromNumber(int number) {
         OSErrorEnum[] values = values();
-        for (int i = number; i < values.length; i++) {
+        for (int i = 0; i < values.length; i++) {
             if (values[i].getNumber() == number) {
                 return values[i];
             }
         }
         return null;
+    }
+
+    public static ErrorAndMessagePair fromException(Exception e) {
+        if (e instanceof IOException) {
+            if (e instanceof NoSuchFileException || e instanceof FileNotFoundException) {
+                return new ErrorAndMessagePair(OSErrorEnum.ENOENT, OSErrorEnum.ENOENT.getMessage());
+            } else if (e instanceof AccessDeniedException) {
+                return new ErrorAndMessagePair(OSErrorEnum.EACCES, OSErrorEnum.EACCES.getMessage());
+            } else if (e instanceof FileAlreadyExistsException) {
+                return new ErrorAndMessagePair(OSErrorEnum.EEXIST, OSErrorEnum.EEXIST.getMessage());
+            } else if (e instanceof NotDirectoryException) {
+                return new ErrorAndMessagePair(OSErrorEnum.ENOTDIR, OSErrorEnum.ENOTDIR.getMessage());
+            } else if (e instanceof DirectoryNotEmptyException) {
+                return new ErrorAndMessagePair(OSErrorEnum.ENOTEMPTY, OSErrorEnum.ENOTEMPTY.getMessage());
+            } else if (e instanceof FileSystemLoopException) {
+                return new ErrorAndMessagePair(OSErrorEnum.ELOOP, OSErrorEnum.ELOOP.getMessage());
+            } else if (e instanceof NotLinkException) {
+                return new ErrorAndMessagePair(OSErrorEnum.EINVAL, OSErrorEnum.EINVAL.getMessage());
+            } else if (e instanceof ClosedChannelException) {
+                return new ErrorAndMessagePair(OSErrorEnum.EPIPE, OSErrorEnum.EPIPE.getMessage());
+            } else if (e instanceof FileSystemException) {
+                String reason = getReason((FileSystemException) e);
+                OSErrorEnum oserror = OSErrorEnum.fromMessage(reason);
+                if (oserror == null) {
+                    return new ErrorAndMessagePair(OSErrorEnum.EIO, reason);
+                } else {
+                    return new ErrorAndMessagePair(oserror, oserror.getMessage());
+                }
+            } else { // Generic IOException
+                OSErrorEnum oserror = tryFindErrnoFromMessage(e);
+                if (oserror == null) {
+                    return new ErrorAndMessagePair(OSErrorEnum.EIO, getMessage(e));
+                } else {
+                    return new ErrorAndMessagePair(oserror, oserror.getMessage());
+                }
+            }
+        } else if (e instanceof SecurityException) {
+            return new ErrorAndMessagePair(OSErrorEnum.EPERM, OSErrorEnum.EPERM.getMessage());
+        } else if (e instanceof IllegalArgumentException) {
+            return new ErrorAndMessagePair(OSErrorEnum.EINVAL, OSErrorEnum.EINVAL.getMessage());
+        } else if (e instanceof UnsupportedOperationException) {
+            return new ErrorAndMessagePair(OSErrorEnum.EOPNOTSUPP, OSErrorEnum.EOPNOTSUPP.getMessage());
+        } else if (e instanceof NonReadableChannelException || e instanceof NonWritableChannelException) {
+            return new ErrorAndMessagePair(OSErrorEnum.EBADF, OSErrorEnum.EBADF.getMessage());
+        } else if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+        } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new RuntimeException(getMessage(e), e);
+        }
+    }
+
+    private static final Pattern ERRNO_PATTERN = Pattern.compile("error=(\\d+)");
+
+    @TruffleBoundary
+    private static String getMessage(Exception e) {
+        return e.getMessage();
+    }
+
+    @TruffleBoundary
+    private static String getReason(FileSystemException e) {
+        return e.getReason();
+    }
+
+    @TruffleBoundary
+    private static OSErrorEnum tryFindErrnoFromMessage(Exception e) {
+        Matcher m = ERRNO_PATTERN.matcher(e.getMessage());
+        if (m.find()) {
+            return fromNumber(Integer.parseInt(m.group(1)));
+        }
+        return null;
+    }
+
+    @ValueType
+    public static final class ErrorAndMessagePair {
+        public final OSErrorEnum oserror;
+        public final String message;
+
+        public ErrorAndMessagePair(OSErrorEnum oserror, String message) {
+            this.oserror = oserror;
+            this.message = message;
+        }
     }
 }

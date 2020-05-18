@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -57,7 +57,10 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
                 return PNone.NONE;
             } else if (specialArgument instanceof PException) {
                 gotException.enter();
-                throw (PException) specialArgument;
+                PException exception = (PException) specialArgument;
+                // The exception needs to appear as if raised from the yield
+                ((PException) specialArgument).setLocation(this);
+                throw exception;
             } else {
                 gotValue.enter();
                 return specialArgument;

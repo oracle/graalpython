@@ -165,7 +165,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [973,981]`KeyError`
                                           Identifier: KeyError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -241,7 +241,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Identifier: KeyError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
-                                              SaveExceptionStateNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1043,1052]`self.maps`
                                           GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [1043,1052]`self.maps`
@@ -1260,12 +1259,11 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3047,3055]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3019,3027]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1333,12 +1331,11 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3325,3333]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3297,3305]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1435,12 +1432,11 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3607,3615]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3579,3587]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1607,7 +1603,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4123,4132]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [4236,4254]`self, *args = args`
                                       ReadLocalVariableNode SourceSection: [4250,4254]`args`
@@ -1668,7 +1664,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4299,4308]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [4369,4686]`if args:↵           ...`
                                       YesNodeGen SourceSection: None
@@ -1968,7 +1964,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5078,5086]`KeyError`
                                           Identifier: KeyError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2390,7 +2386,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Frame: [1,copy,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [5757,5773]`self.data = data`
                                         Attribute: data
                                         ReadLocalVariableNode SourceSection: [5757,5761]`self`

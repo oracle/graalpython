@@ -29,33 +29,29 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -72,14 +68,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
-public class TryExceptNode extends StatementNode implements TruffleObject {
+public class TryExceptNode extends ExceptionHandlingStatementNode implements TruffleObject {
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
     @Child private PythonObjectFactory ofactory;
-    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
-    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
-    @Child InteropLibrary interopLib;
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
 
@@ -114,22 +107,27 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        // store current exception state for later restore
-        ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
+        // The following statement is a no-op, but it helps graal to optimize the exception handler
+        // by moving the cast to PException to the beginning
+        saveExceptionState(frame);
+
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
-            if (!catchException(frame, ex, exceptionState)) {
+            if (!catchException(frame, ex)) {
                 throw ex;
             }
             return;
+        } catch (ControlFlowException e) {
+            throw e;
         } catch (Exception | StackOverflowError | AssertionError e) {
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
             }
             if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
-                if (catchException(frame, (TruffleException) e, exceptionState)) {
+                boolean handled = catchException(frame, (TruffleException) e);
+                if (handled) {
                     return;
                 }
             }
@@ -138,23 +136,27 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 shouldCatchAll = getContext().getOption(PythonOptions.CatchAllExceptions);
             }
             if (shouldCatchAll) {
-                if (e instanceof ControlFlowException) {
-                    throw e;
+                PException pe = PException.fromObject(getBaseException(e), this);
+                // Re-attach truffle stacktrace
+                moveTruffleStacktTrace(e, pe);
+                boolean handled = catchException(frame, pe);
+                if (handled) {
+                    return;
                 } else {
-                    PException pe = PException.fromObject(getBaseException(e), this);
-                    try {
-                        catchException(frame, pe, exceptionState);
-                    } catch (PException pe_thrown) {
-                        if (pe_thrown != pe) {
-                            throw e;
-                        }
-                    }
+                    throw pe;
                 }
-            } else {
-                throw e;
             }
+            throw e;
         }
         orelse.executeVoid(frame);
+    }
+
+    @TruffleBoundary
+    private static void moveTruffleStacktTrace(Throwable e, PException pe) {
+        pe.initCause(e.getCause());
+        // Host exceptions have their stacktrace already filled in, call this to set
+        // the cutoff point to the catch site
+        pe.getTruffleStackTrace();
     }
 
     @TruffleBoundary
@@ -163,30 +165,29 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    private boolean catchException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState) {
-        for (ExceptNode exceptNode : exceptNodes) {
-            if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
-                if (handleException(frame, exception, exceptionState, exceptNode)) {
-                    // restore previous exception state, this won't happen if the except block
-                    // raises an exception
-                    restoreExceptionState(frame, exceptionState);
-                    return true;
+    private boolean catchException(VirtualFrame frame, TruffleException exception) {
+        try {
+            for (ExceptNode exceptNode : exceptNodes) {
+                if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
+                    tryChainPreexistingException(frame, exception);
+                    ExceptionState exceptionState = saveExceptionState(frame);
+                    if (exception instanceof PException) {
+                        PException pException = (PException) exception;
+                        pException.setCatchingFrameReference(frame);
+                        SetCaughtExceptionNode.execute(frame, pException);
+                    }
+                    try {
+                        exceptNode.executeExcept(frame, exception);
+                    } finally {
+                        restoreExceptionState(frame, exceptionState);
+                    }
                 }
             }
-        }
-        return false;
-    }
-
-    private boolean handleException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState, ExceptNode exceptNode) {
-        try {
-            exceptNode.executeExcept(frame, exception);
-        } catch (ExceptionHandledException e) {
+        } catch (ExceptionHandledException eh) {
             return true;
-        } catch (ControlFlowException e) {
-            // restore previous exception state, this won't happen if the except block
-            // raises an exception
-            restoreExceptionState(frame, exceptionState);
-            throw e;
+        } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, exception);
+            throw handlerException;
         }
         return false;
     }
@@ -210,7 +211,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return getContext().getEnv().asGuestValue(new String[]{StandardTags.TryBlockTag.CATCHES});
+        return new InteropArray(new String[]{StandardTags.TryBlockTag.CATCHES});
     }
 
     @ExportMessage
@@ -224,46 +225,30 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExportMessage
-    CatchesFunction readMember(String name,
-                    @Shared("getAttr") @Cached ReadAttributeFromObjectNode getattr) throws UnknownIdentifierException {
+    CatchesFunction readMember(String name) throws UnknownIdentifierException {
         if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
             if (catchesFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ArrayList<Object> literalCatches = new ArrayList<>();
-                PythonModule builtins = getContext().getBuiltins();
-                if (builtins == null) {
-                    return new CatchesFunction(null, null);
-                }
-
                 for (ExceptNode node : exceptNodes) {
                     PNode exceptType = node.getExceptType();
-                    if (exceptType instanceof ReadGlobalOrBuiltinNode) {
-                        try {
-                            literalCatches.add(getattr.execute(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
-                        } catch (PException e) {
-                        }
+                    if (exceptType instanceof ReadNameNode) {
+                        literalCatches.add(((ReadNameNode) exceptType).getAttributeId());
+                    } else if (exceptType instanceof ReadGlobalOrBuiltinNode) {
+                        literalCatches.add(((ReadGlobalOrBuiltinNode) exceptType).getAttributeId());
                     } else if (exceptType instanceof TupleLiteralNode) {
                         for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
-                            if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
-                                try {
-                                    literalCatches.add(getattr.execute(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
-                                } catch (PException e) {
-                                }
+                            if (tupleValue instanceof ReadNameNode) {
+                                literalCatches.add(((ReadNameNode) tupleValue).getAttributeId());
+                            } else if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
+                                literalCatches.add(((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId());
                             }
                         }
+                    } else {
+                        literalCatches.add("BaseException");
                     }
                 }
-
-                Object isinstanceFunc = getattr.execute(builtins, BuiltinNames.ISINSTANCE);
-                PTuple caughtClasses = factory().createTuple(literalCatches.toArray());
-
-                if (isinstanceFunc instanceof PBuiltinMethod) {
-                    RootCallTarget callTarget = ((PBuiltinMethod) isinstanceFunc).getFunction().getCallTarget();
-                    catchesFunction = new CatchesFunction(callTarget, caughtClasses);
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("isinstance was redefined, cannot check exceptions");
-                }
+                catchesFunction = new CatchesFunction(literalCatches.toArray(new String[0]));
             }
             return catchesFunction;
         } else {
@@ -272,32 +257,45 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExportMessage
-    Object invokeMember(String name, Object[] arguments,
-                    @Shared("getAttr") @Cached ReadAttributeFromObjectNode getattr) throws ArityException, UnknownIdentifierException {
+    Object invokeMember(String name, Object[] arguments) throws ArityException, UnknownIdentifierException {
         if (arguments.length != 1) {
             throw ArityException.create(1, arguments.length);
         }
-        return readMember(name, getattr).catches(arguments[0]);
+        return readMember(name).catches(arguments[0]);
     }
 
+    @ExportLibrary(InteropLibrary.class)
     static class CatchesFunction implements TruffleObject {
-        private final RootCallTarget isInstance;
-        private final Object[] args = PArguments.create(2);
+        private String[] caughtClasses;
 
-        CatchesFunction(RootCallTarget callTarget, PTuple caughtClasses) {
-            this.isInstance = callTarget;
-            PArguments.setArgument(args, 1, caughtClasses);
+        CatchesFunction(String[] caughtClasses) {
+            this.caughtClasses = caughtClasses;
         }
 
-        boolean catches(Object exception) {
-            if (isInstance == null) {
-                return false;
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage(name = "execute")
+        boolean catches(Object... arguments) throws ArityException {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
             }
+            Object exception = arguments[0];
             if (exception instanceof PBaseException) {
-                PArguments.setArgument(args, 0, exception);
-                try {
-                    return isInstance.call(args) == Boolean.TRUE;
-                } catch (PException e) {
+                PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                IsSubtypeNode isSubtype = IsSubtypeNode.getUncached();
+                ReadAttributeFromObjectNode readAttr = ReadAttributeFromObjectNode.getUncached();
+
+                for (String c : caughtClasses) {
+                    Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
+                    if (cls instanceof LazyPythonClass) {
+                        if (isSubtype.execute(lib.getLazyPythonClass(exception), (LazyPythonClass) cls)) {
+                            return true;
+                        }
+                    }
                 }
             }
             return false;
@@ -309,13 +307,4 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         this.catchesFunction = catchesFunction;
     }
 
-    private void restoreExceptionState(VirtualFrame frame, ExceptionState e) {
-        if (e != null) {
-            if (restoreExceptionStateNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
-            }
-            restoreExceptionStateNode.execute(frame, e);
-        }
-    }
 }

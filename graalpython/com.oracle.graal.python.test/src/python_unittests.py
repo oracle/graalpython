@@ -40,14 +40,17 @@
 import csv
 import gzip
 import os
+import signal
 import re
 import html
+import time
 import subprocess
 from collections import defaultdict
 from json import dumps
 from multiprocessing import Pool, TimeoutError
 from pprint import pformat
 
+   
 import argparse
 import sys
 from time import gmtime, strftime
@@ -62,6 +65,7 @@ _BASE_NAME = "unittests"
 TXT_RESULTS_NAME = "{}.txt.gz".format(_BASE_NAME)
 CSV_RESULTS_NAME = "{}.csv".format(_BASE_NAME)
 HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
+LATEST_HTML_NAME = "latest.html"
 
 HR = "".join(['-' for _ in range(120)])
 
@@ -80,23 +84,23 @@ PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
 PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
 PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
 
-TEST_TYPES = ('array','buffer','code','frame','long','memoryview','unicode','exceptions',
+TEST_TYPES = tuple(sorted(('array','buffer','code','frame','long','memoryview','unicode','exceptions',
             'baseexception','range','builtin','bytes','thread','property','class','dictviews',
             'sys','imp','rlcompleter','types','coroutines','dictcomps','int_literal','mmap',
             'module','numeric_tower','syntax','traceback','typechecks','int','keyword','raise',
             'descr','generators','list','complex','tuple','enumerate','super','float',
-            'bool','fstring','dict','iter','string','scope','with','set')
+            'bool','fstring','dict','iter','string','scope','with','set')))
 
-TEST_APP_SCRIPTING = ('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
+TEST_APP_SCRIPTING = tuple(sorted(('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
             'pickle','pickletester','pickle','picklebuffer','pickletools','codecs','functools',
-            'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport',
-            'zipapp','gzip','bz2','builtin')
+            'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport','re',
+            'zipapp','gzip','bz2','builtin')))
 
-TEST_SERVER_SCRIPTING_DS = ('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
+TEST_SERVER_SCRIPTING_DS = tuple(sorted(('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
                             'fork','forkserver','main_handling','spawn','socket','socket','socketserver',
                             'signal','mmap','resource','thread','dummy_thread','threading','threading_local',
-                            'threadsignals','dummy_threading','threadedtempfile','thread','hashlib','re',
-                            'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING
+                            'threadsignals','dummy_threading','threadedtempfile','thread','hashlib',
+                            'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING))
 
 
 USE_CASE_GROUPS = {
@@ -125,29 +129,44 @@ def file_name(name, current_date_time):
         return '{}-{}{}'.format(name[:idx], current_date_time, name[idx:])
     return '{}-{}'.format(name, current_date_time)
 
+def get_tail(output, count=15):
+    lines = output.split("\n")
+    start = max(0, len(lines) - count)
+    return '\n'.join(lines[start:])
+
+TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # exec utils
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def _run_cmd(cmd, capture_on_failure=True):
+def _run_cmd(cmd, timeout=TIMEOUT, capture_on_failure=True):
     if isinstance(cmd, str):
         cmd = cmd.split(" ")
     assert isinstance(cmd, (list, tuple))
 
-    log("[EXEC] cmd: {} ...".format(' '.join(cmd)))
-    success = True
-    output = None
+    cmd_string = ' '.join(cmd)
+    log("[EXEC] starting '{}' ...".format(cmd_string))
 
+    start_time = time.monotonic()
+    # os.setsid is used to create a process group, to be able to call os.killpg upon timeout
+    proc = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     try:
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        log("[ERR] Could not execute CMD. Reason: {}".format(e))
-        if capture_on_failure:
-            output = e.output
-
-    return success, output.decode("utf-8", "ignore")
+        output = proc.communicate(timeout=timeout)[0]
+    except subprocess.TimeoutExpired as e:
+        delta = time.monotonic() - start_time
+        os.killpg(proc.pid, signal.SIGKILL)
+        output = proc.communicate()[0]
+        msg = "TimeoutExpired: {:.3f}s".format(delta)
+        tail = get_tail(output.decode('utf-8', 'ignore'))
+        log("[ERR] timeout '{}' after {:.3f}s, killing process group {}, last lines of output:\n{}\n{}", cmd_string, delta, proc.pid, tail, HR)
+    else:
+        delta = time.monotonic() - start_time
+        log("[EXEC] finished '{}' with exit code {} in {:.3f}s", cmd_string, proc.returncode, delta)
+        msg = "Finished: {:.3f}s".format(delta)
+    
+    return proc.returncode == 0, output.decode("utf-8", "ignore") + "\n" + msg
 
 
 def scp(results_file_path, destination_path, destination_name=None):
@@ -157,20 +176,18 @@ def scp(results_file_path, destination_path, destination_name=None):
     return _run_cmd(cmd)[0]
 
 
-def _run_unittest(test_path, with_cpython=False):
+def _run_unittest(test_path, timeout, with_cpython=False):
     if with_cpython:
         cmd = ["python3", test_path, "-v"]
     else:
         cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
-    success, output = _run_cmd(cmd)
+    output = _run_cmd(cmd, timeout)[1]
     output = '''
 ##############################################################
 #### running: {} 
     '''.format(test_path) + output
-    return success, output
+    return output
 
-
-TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
 
 
 def run_unittests(unittests, timeout, with_cpython=False):
@@ -178,33 +195,23 @@ def run_unittests(unittests, timeout, with_cpython=False):
     num_unittests = len(unittests)
     log("[EXEC] running {} unittests ... ", num_unittests)
     log("[EXEC] timeout per unittest: {} seconds", timeout)
-    results = []
 
-    pool = Pool()
-    for ut in unittests:
-        results.append(pool.apply_async(_run_unittest, args=(ut, with_cpython)))
-    pool.close()
-
-    log("[INFO] collect results ... ")
+    start_time = time.monotonic()
+    pool = Pool(processes=(os.cpu_count() // 4) or 1) # to account for hyperthreading and some additional overhead
+    
     out = []
-    timed_out = []
-    for i, res in enumerate(results):
-        try:
-            _, output = res.get(timeout)
-            out.append(output)
-        except TimeoutError:
-            log("[ERR] timeout while getting results for {}, skipping!", unittests[i])
-            timed_out.append(unittests[i])
-        log("[PROGRESS] {} / {}: \t {}%", i+1, num_unittests, int(((i+1) * 100.0) / num_unittests))
-
-    if timed_out:
-        log(HR)
-        for t in timed_out:
-            log("[TIMEOUT] skipped: {}", t)
-        log(HR)
-    log("[STATS] processed {} out of {} unittests", num_unittests - len(timed_out), num_unittests)
-    pool.terminate()
+    def callback(result):
+        out.append(result)
+        log("[PROGRESS] {} / {}: \t {:.1f}%", len(out), num_unittests, len(out) * 100 / num_unittests)
+        
+    # schedule all unittest runs
+    for ut in unittests:
+        pool.apply_async(_run_unittest, args=(ut, timeout, with_cpython), callback=callback)
+        
+    pool.close()
     pool.join()
+    pool.terminate()
+    log("[STATS] processed {} unittests in {:.3f}s", num_unittests, time.monotonic() - start_time)
     return out
 
 
@@ -346,11 +353,12 @@ def process_output(output_lines):
         match = re.match(PTRN_ERROR, line)
         if match:
             error_message = (match.group('error'), match.group('message'))
-            error_message_dict = error_messages[unittests[-1]]
-            d = error_message_dict.get(error_message)
-            if not d:
-                d = 0
-            error_message_dict[error_message] = d + 1
+            if not error_message[0] == 'Directory' and not error_message[0] == 'Components':
+                error_message_dict = error_messages[unittests[-1]]
+                d = error_message_dict.get(error_message)
+                if not d:
+                    d = 0
+                error_message_dict[error_message] = d + 1
             continue
 
         # extract java exceptions
@@ -521,6 +529,8 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
             unittest_errmsg = error_messages[unittest]
             if not unittest_errmsg:
                 unittest_errmsg = java_exceptions[unittest]
+            if not unittest_errmsg:
+                unittest_errmsg = {}
 
             rows.append({
                 Col.UNITTEST: unittest,
@@ -764,8 +774,8 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
                         var data = tr.data('errors');
                         if (data) {{
                             function formatEntry(entry) {{
-                                var description = entry[0][0];
-                                var text = ('' + entry[0][1]).replace(/(.{{195}} )/g, '$1<br/>&nbsp;&nbsp;&nbsp;&nbsp;'); // break long lines
+                                var description = ('' + entry[0][0]).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                                var text = ('' + entry[0][1]).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/(.{{195}} )/g, '$1<br/>&nbsp;&nbsp;&nbsp;&nbsp;'); // break long lines
                                 var count = (entry[1] > 1 ? ('<font color="red"> (x ' + entry[1] + ')</font>') : '');
                                 return description + ': ' + text + count + '<br/>';
                             }}
@@ -853,6 +863,15 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
     with open(report_name, 'w') as HTML:
         HTML.write(report)
 
+def generate_latest(output_name, html_report_path):
+    contents = '''
+<html>
+<head><style type="text/css"> body { margin:0; overflow:hidden; } #fr { height:100%; left:0px; position:absolute; top:0px; width:100%; }</style></head>
+<body><iframe id="fr" src="''' + html_report_path + '''" frameborder="0"></iframe></body>
+</html>
+'''
+    with open(output_name, 'w') as HTML:
+        HTML.write(contents)
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -867,12 +886,13 @@ def main(prog, args):
                         action="store_true")
     parser.add_argument("-l", "--limit", help="Limit the number of unittests to run.", default=None, type=int)
     parser.add_argument("-t", "--tests_path", help="Unittests path.", default=PATH_UNITTESTS)
-    parser.add_argument("-T", "--timeout", help="Timeout per unittest run.", default=TIMEOUT, type=int)
+    parser.add_argument("-T", "--timeout", help="Timeout per unittest run (seconds).", default=TIMEOUT, type=int)
     parser.add_argument("-o", "--only_tests", help="Run only these unittests (comma sep values).", default=None)
     parser.add_argument("-s", "--skip_tests", help="Run all unittests except (comma sep values)."
                                                    "the only_tets option takes precedence", default=None)
     parser.add_argument("-r", "--regression_running_tests", help="Regression threshold for running tests.", type=float,
                         default=None)
+    parser.add_argument("--no_latest", help="Don't generate latest.html file.", action="store_true")
     parser.add_argument("-g", "--gate", help="Run in gate mode (Skip cpython runs; Do not upload results; "
                                              "Detect regressions).", action="store_true")
     parser.add_argument("path", help="Path to store the csv output and logs to.", nargs='?', default=None)
@@ -951,6 +971,9 @@ def main(prog, args):
         scp(txt_report_path, flags.path)
         scp(csv_report_path, flags.path)
         scp(html_report_path, flags.path)
+        if not flags.no_latest:
+            generate_latest(LATEST_HTML_NAME, html_report_path)
+            scp(LATEST_HTML_NAME, flags.path)
 
     gate_failed = False
     if flags.gate and flags.regression_running_tests:

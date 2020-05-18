@@ -1197,6 +1197,10 @@ def PyErr_PrintEx(set_sys_last_vars):
     typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     if typ is None:
         return
+    if tb is native_null:
+        tb = None
+    if val.__traceback__ is None:
+        val.__traceback__ = tb
     if set_sys_last_vars:
         try:
             sys.last_type = typ
@@ -1351,22 +1355,6 @@ def PyCode_New(*args):
 @may_raise
 def PyCode_NewWithPosOnlyArgs(*args):
     return codetype(*args)
-
-
-## TRACEBACK
-
-tbtype = type(sys._getframe(0).f_trace)
-
-@may_raise(-1)
-def PyTraceBack_Here(frame):
-    exc, val, tb = sys.exc_info()
-    if val:
-        # CPython does a PyErr_Fetch and then PyErr_Restore with the newly
-        # created traceback. So if val is None, the restore would just do
-        # nothing. But if it is available, we basically just set the current
-        # __traceback__ to a traceback object wrapped around the exception here.
-        exc.__traceback__ = PyTruffleTraceBack_Here(frame, tb);
-    return 0
 
 
 ##################### C EXT HELPERS

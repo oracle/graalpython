@@ -31,7 +31,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
             CallNodeGen SourceSection: None
             YesNodeGen SourceSection: None
             GetClassNodeGen SourceSection: None
-            SaveExceptionStateNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: a
           PythonCallNodeGen SourceSection: [5,8]`A()`
@@ -50,4 +49,3 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
           CallNodeGen SourceSection: None
           YesNodeGen SourceSection: None
           GetClassNodeGen SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None

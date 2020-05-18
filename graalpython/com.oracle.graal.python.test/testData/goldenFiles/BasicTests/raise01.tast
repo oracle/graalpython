@@ -10,5 +10,5 @@ ModuleRootNode Name: <module 'raise01'> SourceSection: [0,5]`raise`
         EmptyNode SourceSection: None
       SideEffect:
         RaiseNodeGen SourceSection: [0,5]`raise`
-          EmptyNode SourceSection: None
-          EmptyNode SourceSection: None
+          NoValueNode SourceSection: None
+          NoValueNode SourceSection: None

@@ -481,7 +481,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                             getObject = insert(GetObjectNodeGen.create());
                             callGet = insert(CallTernaryMethodNode.create());
                         }
-                        res = callGet.execute(frame, get, res, getObject.execute(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
+                        res = callGet.execute(frame, get, res, getObject.execute(self) == startType ? PNone.NONE : self.getObject(), startType);
                     }
                     return res;
                 }

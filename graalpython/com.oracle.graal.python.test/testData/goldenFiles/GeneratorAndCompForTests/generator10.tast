@@ -105,7 +105,6 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]

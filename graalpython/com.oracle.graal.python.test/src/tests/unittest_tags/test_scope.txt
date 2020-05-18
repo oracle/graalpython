@@ -1,5 +1,6 @@
 *ScopeTests.testBoundAndFree
 *ScopeTests.testCellIsKwonlyArg
+*ScopeTests.testCellLeak
 *ScopeTests.testClassAndGlobal
 *ScopeTests.testClassNamespaceOverridesClosure
 *ScopeTests.testComplexDefinitions
@@ -8,9 +9,11 @@
 *ScopeTests.testExtraNesting
 *ScopeTests.testFreeVarInMethod
 *ScopeTests.testFreeingCell
+*ScopeTests.testInteractionWithTraceFunc
 *ScopeTests.testLambdas
 *ScopeTests.testListCompLocalVars
 *ScopeTests.testLocalsClass
+*ScopeTests.testLocalsClass_WithTrace
 *ScopeTests.testLocalsFunction
 *ScopeTests.testMixedFreevarsAndCellvars
 *ScopeTests.testNearestEnclosingScope

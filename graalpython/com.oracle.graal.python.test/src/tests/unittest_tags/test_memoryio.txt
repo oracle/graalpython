@@ -1,4 +1,10 @@
+*CBytesIOTest.test_cow_mutable
+*CBytesIOTest.test_cow_setstate
+*CBytesIOTest.test_cow_truncate
+*CBytesIOTest.test_cow_write
+*CBytesIOTest.test_sizeof
 *PyBytesIOTest.test_issue5449
 *PyBytesIOTest.test_read1
 *PyBytesIOTest.test_relative_seek
 *PyBytesIOTest.test_unicode
+*PyStringIOTest.test_lone_surrogates

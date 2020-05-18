@@ -150,8 +150,8 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberInsertable(String member) {
-        return member.equals(DOC);
+    protected boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+        return false;
     }
 
     @ExportMessage
@@ -164,16 +164,6 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
             throw UnsupportedMessageException.create();
         }
         setAttrNode.execute(lib.getDelegate(this), member, fromCharPointerNode.execute(value));
-    }
-
-    @ExportMessage
-    protected boolean isMemberRemovable(@SuppressWarnings("unused") String member) {
-        return false;
-    }
-
-    @ExportMessage
-    protected void removeMember(@SuppressWarnings("unused") String member) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage

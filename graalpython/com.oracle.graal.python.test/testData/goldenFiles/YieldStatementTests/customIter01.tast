@@ -162,7 +162,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [126,139]`StopIteration`
                                                           Identifier: StopIteration
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      EmptyNode SourceSection: None
+                                                      NoValueNode SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None

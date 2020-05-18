@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,44 +43,64 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
-    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
-    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+    private final BranchProfile exceptionProfile = BranchProfile.create();
 
     private final int finallyFlag;
+    private final int activeExceptionIndex;
 
-    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag) {
+    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag, int activeExceptionIndex) {
         super(body, finalbody);
         this.finallyFlag = finallyFlag;
+        this.activeExceptionIndex = activeExceptionIndex;
     }
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
-        PException exception = null;
+        ExceptionState savedExceptionState = null;
+        PException activeException = null;
         if (gen.isActive(frame, finallyFlag)) {
-            executeFinalBody(frame);
+            activeException = gen.getActiveException(frame, activeExceptionIndex);
         } else {
             try {
                 getBody().executeVoid(frame);
             } catch (PException e) {
-                exception = e;
+                // any thrown Python exception is visible in the finally block
+                exceptionProfile.enter();
+                activeException = e;
+                e.setCatchingFrameReference(frame);
+                e.markFrameEscaped();
+                tryChainPreexistingException(frame, e);
+                gen.setActiveException(frame, activeExceptionIndex, e);
             }
             gen.setActive(frame, finallyFlag, true);
+        }
+        if (activeException != null) {
+            savedExceptionState = saveExceptionState(frame);
+            SetCaughtExceptionNode.execute(frame, activeException);
+        }
+        try {
             executeFinalBody(frame);
+        } catch (PException handlerException) {
+            if (activeException != null) {
+                tryChainExceptionFromHandler(handlerException, activeException);
+            }
+            throw handlerException;
+        } finally {
+            if (activeException != null) {
+                restoreExceptionState(frame, savedExceptionState);
+            }
         }
         reset(frame);
-        if (exception != null) {
-            throw exception;
+        if (activeException != null) {
+            throw activeException.getExceptionForReraise();
         }
-        ensureSetCaughtExceptionNode().execute(frame, exceptionState);
     }
 
     private void executeFinalBody(VirtualFrame frame) {
@@ -92,13 +112,6 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     public void reset(VirtualFrame frame) {
         gen.setActive(frame, finallyFlag, false);
-    }
-
-    private RestoreExceptionStateNode ensureSetCaughtExceptionNode() {
-        if (restoreExceptionStateNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
-        }
-        return restoreExceptionStateNode;
+        gen.setActiveException(frame, activeExceptionIndex, null);
     }
 }

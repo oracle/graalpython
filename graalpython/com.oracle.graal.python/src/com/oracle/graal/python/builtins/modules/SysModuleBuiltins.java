@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -68,6 +67,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
@@ -82,6 +83,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -133,7 +135,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("version_info", core.factory().createTuple(new Object[]{PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, "dev", 0}));
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
-                        "\n[" + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
+                        "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
                         Double.MAX_VALUE,       // DBL_MAX
@@ -226,7 +228,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (option.length() > 0) {
             String[] split = option.split(context.getEnv().getPathSeparator());
             path = new Object[split.length + defaultPathsLen];
-            System.arraycopy(split, 0, path, 0, split.length);
+            PythonUtils.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
             path = new Object[defaultPathsLen];
@@ -313,30 +315,19 @@ public class SysModuleBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
-                PBaseException exception = currentException.getExceptionObject();
-                Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
-                PFrame escapedFrame = readCallerFrameNode.executeWith(frame, currentFrameInfo, 0);
-                currentFrameInfo.markAsEscaped();
-                PTraceback exceptionTraceback = getTracebackNode.execute(frame, exception);
-                // n.b. a call to 'sys.exc_info' always creates a new traceback with the current
-                // frame and links (via 'tb_next') to the traceback of the exception
-                PTraceback chainedTraceback;
-                if (exceptionTraceback != null) {
-                    chainedTraceback = factory().createTraceback(escapedFrame, exceptionTraceback);
-                } else {
-                    // it's still possible that there is no traceback if, for example, the exception
-                    // has been thrown and caught and did never escape
-                    chainedTraceback = factory().createTraceback(escapedFrame, currentException);
+                PBaseException exception = currentException.getEscapedException();
+                LazyTraceback lazyTraceback = currentException.getTraceback();
+                PTraceback traceback = null;
+                if (lazyTraceback != null) {
+                    traceback = getTracebackNode.execute(lazyTraceback);
                 }
-                exception.setTraceback(chainedTraceback);
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, chainedTraceback});
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
             }
         }
 

@@ -7,6 +7,7 @@
 *EnumerateTestCase.test_iteratorgenerator
 *EnumerateTestCase.test_iteratorseqn
 *EnumerateTestCase.test_noniterable
+*EnumerateTestCase.test_tuple_reuse
 *TestReversed.test_args
 *TestReversed.test_bug1229429
 *TestReversed.test_gc

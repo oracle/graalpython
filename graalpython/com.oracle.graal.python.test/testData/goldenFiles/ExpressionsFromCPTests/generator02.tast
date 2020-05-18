@@ -44,9 +44,9 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,34]`[x**3 for x in
                   ExpressionStatementNode SourceSection: [1,5]`x**3`
                     YieldNode SourceSection: [1,5]`x**3`
                       flagSlot: 0
-                      TernaryArithmeticExpression SourceSection: [1,5]`x**3`
-                        LookupAndCallTernaryNodeGen SourceSection: None
-                          CallTernaryMethodCachedNodeGen SourceSection: None
+                      BinaryArithmeticExpression SourceSection: [1,5]`x**3`
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __pow__
                         ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
