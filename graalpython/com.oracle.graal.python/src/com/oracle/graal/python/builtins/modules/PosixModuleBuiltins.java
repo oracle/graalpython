@@ -61,7 +61,10 @@ import java.nio.channels.Channel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -414,11 +417,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getpid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
+        @Specialization(rewriteOn = Exception.class)
+        @TruffleBoundary
+        long getPid() throws Exception {
+            Path path = Paths.get("/proc/self/stat");
+            return Long.parseLong(new String(Files.readAllBytes(path)).trim().split(" ")[0]);
+        }
+
         @Specialization
-        int getPid() {
-            // TODO: this needs to be implemented properly at some point (consider managed execution
-            // as well)
-            return System.identityHashCode(getContext());
+        @TruffleBoundary
+        long getPidFallback() {
+            String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+            return Long.parseLong(info.split("@")[0]);
         }
     }
 
