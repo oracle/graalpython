@@ -8,6 +8,7 @@
 *TestCollectionABCs.test_ByteString
 *TestCollectionABCs.test_MutableMapping_subclass
 *TestCollectionABCs.test_MutableSequence_mixins
+*TestCollectionABCs.test_Sequence_mixins
 *TestCollectionABCs.test_arithmetic_Set
 *TestCollectionABCs.test_equality_Set
 *TestCollectionABCs.test_hash_Set

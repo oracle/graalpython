@@ -1,1 +1,2 @@
+*ContextAPItests.test_from_legacy_strings
 *ExplicitConstructionTest.test_from_legacy_strings

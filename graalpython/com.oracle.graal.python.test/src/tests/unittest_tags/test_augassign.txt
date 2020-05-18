@@ -1,0 +1,7 @@
+*AugAssignTest.testBasic
+*AugAssignTest.testCustomMethods1
+*AugAssignTest.testCustomMethods2
+*AugAssignTest.testInDict
+*AugAssignTest.testInList
+*AugAssignTest.testSequences
+*AugAssignTest.test_with_unpacking

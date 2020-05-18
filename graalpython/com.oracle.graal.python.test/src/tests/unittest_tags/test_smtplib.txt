@@ -1,0 +1,8 @@
+*GeneralTests.testBasic1
+*GeneralTests.testBasic2
+*GeneralTests.testLocalHostName
+*GeneralTests.testQuoteData
+*GeneralTests.testSourceAddress
+*GeneralTests.testTimeoutDefault
+*GeneralTests.testTimeoutNone
+*GeneralTests.testTimeoutValue

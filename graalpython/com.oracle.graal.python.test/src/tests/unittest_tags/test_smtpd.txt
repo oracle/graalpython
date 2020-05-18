@@ -1,0 +1,3 @@
+*MiscTestCase.test__all__
+*SMTPDServerTest.test_decode_data_and_enable_SMTPUTF8_raises
+*TestFamilyDetection.test_socket_uses_IPv6
