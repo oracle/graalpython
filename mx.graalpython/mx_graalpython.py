@@ -210,7 +210,6 @@ def nativebuild(args):
 
 
 def nativeclean(args):
-    print("native clean")
     "Clean the non-Java Python projects"
     mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
