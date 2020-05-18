@@ -127,3 +127,34 @@ def test_annotation_scope():
     def foo(object: object):
         pass
     assert foo.__annotations__['object'] == object
+
+
+def test_cannot_assign():
+    import sys
+    if sys.implementation.version.minor >= 8:
+        def assert_raise(s, msg):
+            try:
+                compile("%s = 1" % s, "", "single")
+            except SyntaxError as e:
+                assert msg in str(e), str(e)
+            else:
+                assert False
+            try:
+                compile("with foo as %s:\n pass" % s, "", "single")
+            except SyntaxError as e:
+                assert msg in str(e), str(e)
+            else:
+                assert False
+        assert_raise("None", "cannot assign to None")
+        assert_raise("1", "cannot assign to literal")
+        assert_raise("1.1", "cannot assign to literal")
+        assert_raise("{1}", "cannot assign to set display")
+        assert_raise("{1: 2}", "cannot assign to dict display")
+        assert_raise("1.2j", "cannot assign to literal")
+        assert_raise("...", "cannot assign to Ellipsis")
+        assert_raise("True", "cannot assign to True")
+        assert_raise("False", "cannot assign to False")
+        assert_raise("b''", "cannot assign to literal")
+        assert_raise("''", "cannot assign to literal")
+        assert_raise("f''", "cannot assign to f-string expression")
+        assert_raise("(None,)", "cannot assign to None")
