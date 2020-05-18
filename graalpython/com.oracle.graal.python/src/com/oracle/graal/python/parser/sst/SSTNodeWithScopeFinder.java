@@ -412,11 +412,6 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     }
 
     @Override
-    public SSTNodeWithScope visit(TernaryArithmeticSSTNode node) {
-        return check(node, node.left, node.right);
-    }
-
-    @Override
     public SSTNodeWithScope visit(TernaryIfSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;

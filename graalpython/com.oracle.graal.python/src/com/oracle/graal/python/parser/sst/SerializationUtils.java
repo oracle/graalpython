@@ -84,7 +84,6 @@ public class SerializationUtils {
         StarID,
         StringLiteralID,
         SubscriptID,
-        TernaryArithmeticID,
         TernaryIfID,
         TryID,
         UnaryID,
@@ -157,6 +156,8 @@ public class SerializationUtils {
                 return 11;
             case MatMul:
                 return 12;
+            case Pow:
+                return 13;
             default:
                 throw new UnsupportedOperationException("Serialization of " + ba.name() + " is not supported.");
         }
@@ -188,6 +189,8 @@ public class SerializationUtils {
                 return BinaryArithmetic.Xor;
             case 12:
                 return BinaryArithmetic.MatMul;
+            case 13:
+                return BinaryArithmetic.Pow;
             default:
                 throw new UnsupportedOperationException("Deserialization of BinaryArithmetic with id " + id + " is not supported.");
         }

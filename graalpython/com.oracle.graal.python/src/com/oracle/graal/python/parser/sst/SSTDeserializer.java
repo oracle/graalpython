@@ -138,8 +138,6 @@ public class SSTDeserializer {
                 return readStringLiteral();
             case SubscriptID:
                 return readSubscript();
-            case TernaryArithmeticID:
-                return readTernaryArithmetic();
             case TernaryIfID:
                 return readTernaryIf();
             case TryID:
@@ -595,15 +593,6 @@ public class SSTDeserializer {
         SSTNode subscript = readNode();
         SSTNode receiver = readNode();
         return new SubscriptSSTNode(receiver, subscript, startOffset, endOffset);
-    }
-
-    private SSTNode readTernaryArithmetic() throws IOException {
-        readPosition();
-        int startOffset = startIndex;
-        int endOffset = endIndex;
-        SSTNode left = readNode();
-        SSTNode right = readNode();
-        return new TernaryArithmeticSSTNode(left, right, startOffset, endOffset);
     }
 
     private SSTNode readTernaryIf() throws IOException {

@@ -704,19 +704,6 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visit(TernaryArithmeticSSTNode node) {
-        try {
-            out.writeByte(SerializationUtils.getSSTNodeTypeId(SSTId.TernaryArithmeticID));
-            writePosition(node);
-            node.left.accept(this);
-            node.right.accept(this);
-        } catch (IOException e) {
-            handleIOExceptin(e);
-        }
-        return true;
-    }
-
-    @Override
     public Boolean visit(TernaryIfSSTNode node) {
         try {
             out.writeByte(SerializationUtils.getSSTNodeTypeId(SSTId.TernaryIfID));
