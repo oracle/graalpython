@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -59,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -136,6 +136,7 @@ import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
@@ -192,6 +193,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -200,7 +202,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -273,6 +274,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -767,9 +769,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Type_Slots", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    // directly called without landing function
+    @Builtin(name = "PyTruffle_Set_Native_Slots", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Type_SlotsNode extends NativeBuiltin {
+    abstract static class PyTruffleSetNativeSlots extends NativeBuiltin {
+        static final HiddenKey NATIVE_SLOTS = new HiddenKey("__native_slots__");
+
+        @Specialization
+        static int doPythonClass(PythonClassNativeWrapper pythonClassWrapper, Object nativeGetSets, Object nativeMembers,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+            Object pythonClass = asPythonObjectNode.execute(pythonClassWrapper);
+            assert pythonClass instanceof PythonManagedClass;
+            writeAttrNode.execute(pythonClass, NATIVE_SLOTS, new Object[]{nativeGetSets, nativeMembers});
+            return 0;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Get_Inherited_Native_Slots", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyTruffleGetInheritedNativeSlots extends NativeBuiltin {
+        private static final int INDEX_GETSETS = 0;
+        private static final int INDEX_MEMBERS = 1;
 
         /**
          * A native class may inherit from a managed class. However, the managed class may define
@@ -779,14 +800,36 @@ public class PythonCextBuiltins extends PythonBuiltins {
          *
          */
         @Specialization
-        Object slots(Object module, LazyPythonClass pythonClass,
-                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupSlotsNode,
-                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
-            Object execute = lookupSlotsNode.execute(pythonClass, __SLOTS__);
-            if (execute != PNone.NO_VALUE) {
-                return execute;
+        Object slots(Object module, LazyPythonClass pythonClass, String subKey,
+                        @Cached GetMroStorageNode getMroStorageNode,
+                        @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+            int idx;
+            if ("getsets".equals(subKey)) {
+                idx = INDEX_GETSETS;
+            } else if ("members".equals(subKey)) {
+                idx = INDEX_MEMBERS;
+            } else {
+                return getNativeNullNode.execute(module);
             }
-            return getNativeNullNode.execute(module);
+
+            Object[] values = collect(getMroStorageNode.execute(pythonClass), idx);
+            return new PySequenceArrayWrapper(factory().createTuple(values), Long.BYTES);
+        }
+
+        @TruffleBoundary
+        private static Object[] collect(MroSequenceStorage mro, int idx) {
+            ArrayList<Object> l = new ArrayList<>();
+            int mroLength = mro.length();
+            for (int i = 0; i < mroLength; i++) {
+                PythonAbstractClass kls = mro.getItemNormalized(i);
+                Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(kls, PyTruffleSetNativeSlots.NATIVE_SLOTS);
+                if (value != PNone.NO_VALUE) {
+                    Object[] tuple = (Object[]) value;
+                    assert tuple.length == 2;
+                    l.add(new PythonAbstractNativeObject((TruffleObject) tuple[idx]));
+                }
+            }
+            return l.toArray();
         }
     }
 

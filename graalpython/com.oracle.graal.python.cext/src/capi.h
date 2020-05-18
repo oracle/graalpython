@@ -226,13 +226,14 @@ extern free_upcall_fun_t free_upcall;
 #define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
-Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
+
+void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 
 
 MUST_INLINE
 PyObject* native_to_java(PyObject* obj) {
     if (!truffle_cannot_be_handle(obj)) {
-        return truffle_managed_from_handle(obj);
+        return resolve_handle(cache, (uint64_t)obj);
     }
     return ptr_cache(obj);
 }
