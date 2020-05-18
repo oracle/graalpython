@@ -47,7 +47,7 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PythonClass extends PythonManagedClass {
 
     public PythonClass(LazyPythonClass typeClass, DynamicObject storage, String name, PythonAbstractClass[] baseClasses) {
-        super(typeClass, storage, name, baseClasses);
+        super(typeClass, storage, null, name, baseClasses);
     }
 
     @ExportMessage

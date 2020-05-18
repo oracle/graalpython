@@ -260,6 +260,7 @@ public final class Python3Core implements PythonCore {
                         "_lsprof",
                         "marshal",
                         "_struct",
+                        "bool",
                         "_lzma"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {

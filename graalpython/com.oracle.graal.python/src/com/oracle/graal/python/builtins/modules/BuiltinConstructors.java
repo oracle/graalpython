@@ -145,6 +145,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
@@ -2100,6 +2101,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private GetMroNode getMroNode;
         @Child private IsSubtypeNode isSubtypeNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
+        @Child private IsAcceptableBaseNode isAcceptableBaseNode;
 
         protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
@@ -2122,7 +2124,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
-
             // Determine the proper metatype to deal with this
             LazyPythonClass metaclass = calculate_metaclass(frame, cls, bases, getMetaclassNode);
             if (metaclass != cls) {
@@ -2479,6 +2480,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private LazyPythonClass calculate_metaclass(VirtualFrame frame, LazyPythonClass cls, PTuple bases, GetLazyClassNode getMetaclassNode) {
             LazyPythonClass winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
+                if (!ensureIsAcceptableBaseNode().execute(base)) {
+                    throw raise(TypeError, "type '%p' is not an acceptable base type", base);
+                }
                 LazyPythonClass typ = getMetaclassNode.execute(base);
                 if (isSubType(frame, winner, typ)) {
                     continue;
@@ -2568,6 +2572,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
             }
             return getObjectArrayNode;
+        }
+
+        private IsAcceptableBaseNode ensureIsAcceptableBaseNode() {
+            if (isAcceptableBaseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isAcceptableBaseNode = insert(IsAcceptableBaseNode.create());
+            }
+            return isAcceptableBaseNode;
         }
     }
 

@@ -56,7 +56,7 @@ import com.oracle.truffle.api.object.Shape;
 public enum PythonBuiltinClassType implements LazyPythonClass {
 
     ForeignObject(BuiltinNames.FOREIGN),
-    Boolean("bool", BuiltinNames.BUILTINS),
+    Boolean("bool", BuiltinNames.BUILTINS, false),
     GetSetDescriptor("get_set_desc"),
     PArray("array", "array"),
     PArrayIterator("arrayiterator"),
@@ -206,11 +206,12 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     private final Shape instanceShape;
     private final String publicInModule;
     private final String qualifiedName;
+    private final boolean basetype;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
 
-    PythonBuiltinClassType(String name, String publicInModule) {
+    PythonBuiltinClassType(String name, String publicInModule, boolean basetype) {
         this.name = name;
         this.publicInModule = publicInModule;
         if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
@@ -219,10 +220,19 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
             qualifiedName = name;
         }
         this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
+        this.basetype = basetype;
+    }
+
+    PythonBuiltinClassType(String name, String publicInModule) {
+        this(name, publicInModule, true);
     }
 
     PythonBuiltinClassType(String name) {
-        this(name, null);
+        this(name, null, true);
+    }
+
+    public boolean isAcceptableBase() {
+        return basetype;
     }
 
     @Override

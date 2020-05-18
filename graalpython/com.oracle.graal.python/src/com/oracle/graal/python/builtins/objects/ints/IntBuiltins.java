@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -2132,7 +2133,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         private Object createIntObject(LazyPythonClass cl, BigInteger number) {
-            if (PGuards.isPythonBuiltinClass(cl)) {
+            PythonBuiltinClassType type = null;
+            if (cl instanceof PythonBuiltinClass) {
+                type = ((PythonBuiltinClass) cl).getType();
+            } else if (cl instanceof PythonBuiltinClassType) {
+                type = (PythonBuiltinClassType) cl;
+            }
+            if (type == PythonBuiltinClassType.PInt) {
                 return factory().createInt(number);
             }
             if (constructNode == null) {
