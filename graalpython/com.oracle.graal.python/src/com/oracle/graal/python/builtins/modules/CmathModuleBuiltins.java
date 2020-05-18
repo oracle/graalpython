@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -54,7 +53,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -65,7 +63,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import java.util.List;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -79,7 +76,6 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(PythonCore core) {
-        super.initialize(core);
         // Add constant values
         builtinConstants.put("pi", Math.PI);
         builtinConstants.put("e", Math.E);
@@ -88,11 +84,14 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("nan", Double.NaN);
         builtinConstants.put("infj", core.factory().createComplex(0, Double.POSITIVE_INFINITY));
         builtinConstants.put("nanj", core.factory().createComplex(0, Double.NaN));
+        super.initialize(core);
     }
 
+    //TODO should this be replaced with something like CoerceToComplexNode?
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CmathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
         @Child private LookupAndCallUnaryNode callComplexFunc;
+        @Child private CoerceToDoubleNode coerceToDouble;
 
         PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
             //TODO taken from BuiltinConstructors, should probably be refactored somehow
@@ -113,7 +112,10 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                     throw raise(TypeError, "__complex__ should return a complex object");
                 }
             }
-            return null;
+            if (coerceToDouble == null) {
+                coerceToDouble = insert(CoerceToDoubleNode.create());
+            }
+            return factory().createComplex(coerceToDouble.execute(frame, object), 0);
         }
     }
 
@@ -139,25 +141,13 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doPI(PInt value) {
-            return compute(value.doubleValue(), 0);
-        }
-
-        @Specialization
         PComplex doC(PComplex value) {
             return compute(value.getReal(), value.getImag());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        PComplex doGeneral(VirtualFrame frame, Object value,
-                                @Cached("create()") CoerceToDoubleNode coerceToDouble
-                                ) {
-            //TODO should this be replaced with something like CoerceToComplexNode?
-            PComplex complex = getComplexNumberFromObject(frame, value);
-            if (complex != null) {
-                return doC(complex);
-            }
-            return doD(coerceToDouble.execute(frame, value));
+        PComplex doGeneral(VirtualFrame frame, Object value) {
+            return doC(getComplexNumberFromObject(frame, value));
         }
     }
 
@@ -183,23 +173,13 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPI(PInt value) {
-            return compute(value.doubleValue(), 0);
-        }
-
-        @Specialization
         boolean doC(PComplex value) {
             return compute(value.getReal(), value.getImag());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        boolean doGeneral(VirtualFrame frame, Object value,
-                                  @Cached("create()") CoerceToDoubleNode coerceToDouble) {
-            PComplex complex = getComplexNumberFromObject(frame, value);
-            if (complex != null) {
-                return doC(complex);
-            }
-            return doD(coerceToDouble.execute(frame, value));
+        boolean doGeneral(VirtualFrame frame, Object value) {
+            return doC(getComplexNumberFromObject(frame, value));
         }
     }
 
@@ -249,23 +229,13 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double doPI(PInt value) {
-            return value.isNegative() ? Math.PI : 0;
-        }
-
-        @Specialization
         double doC(PComplex value) {
             return Math.atan2(value.getImag(), value.getReal());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        double doGeneral(VirtualFrame frame, Object value,
-                                @Cached("create()") CoerceToDoubleNode coerceToDouble) {
-            PComplex complex = getComplexNumberFromObject(frame, value);
-            if (complex != null) {
-                return doC(complex);
-            }
-            return doD(coerceToDouble.execute(frame, value));
+        double doGeneral(VirtualFrame frame, Object value) {
+            return doC(getComplexNumberFromObject(frame, value));
         }
     }
 
@@ -288,14 +258,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PTuple doPI(PInt value) {
-            return doD(value.doubleValue());
-        }
-
-        @Specialization
         PTuple doC(PComplex value) {
             //TODO: the implementation of abs(z) should be shared with ComplexBuiltins.AbsNode, but it currently does
-            //not pass the ooverflow test
+            //not pass the overflow test
             double r;
             if (!Double.isFinite(value.getReal()) || !Double.isFinite(value.getImag())) {
                 if (Double.isInfinite(value.getReal())) {
@@ -315,13 +280,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        PTuple doGeneral(VirtualFrame frame, Object value,
-                                @Cached("create()") CoerceToDoubleNode coerceToDouble) {
-            PComplex complex = getComplexNumberFromObject(frame, value);
-            if (complex != null) {
-                return doC(complex);
-            }
-            return doD(coerceToDouble.execute(frame, value));
+        PTuple doGeneral(VirtualFrame frame, Object value) {
+            return doC(getComplexNumberFromObject(frame, value));
         }
     }
 
@@ -398,33 +358,4 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return factory().createComplex(d, Math.copySign(s, imag));
         }
     }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////
-
-    abstract static class DummyNode extends CmathComplexUnaryBuiltinNode {
-        @Override
-        PComplex compute(double real, double imag) {
-            return factory().createComplex(real, imag);
-        }
-    }
-
-    @Builtin(name = "acos", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class AcosNode extends DummyNode {}
-    @Builtin(name = "acosh", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class AcoshNode extends DummyNode {}
-    @Builtin(name = "asin", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class AsinNode extends DummyNode {}
-    @Builtin(name = "asinh", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class AsinhNode extends DummyNode {}
-    @Builtin(name = "atan", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class AtanNode extends DummyNode {}
-    @Builtin(name = "atanh", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class AtanhNode extends DummyNode {}
-    @Builtin(name = "cos", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class CosNode extends DummyNode {}
-    @Builtin(name = "cosh", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class CoshNode extends DummyNode {}
-    @Builtin(name = "sin", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class SinNode extends DummyNode {}
-    @Builtin(name = "sinh", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class SinhNode extends DummyNode {}
-    @Builtin(name = "tan", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class TanNode extends DummyNode {}
-    @Builtin(name = "tanh", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class TanhNode extends DummyNode {}
-
-    @Builtin(name = "exp", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class ExpNode extends DummyNode {}
-    @Builtin(name = "log", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class LogNode extends DummyNode {}
-    @Builtin(name = "log10", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class Log10Node extends DummyNode {}
-
-    @Builtin(name = "isclose", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class IsCloseNode extends DummyNode {}
-    @Builtin(name = "rect", minNumOfPositionalArgs = 1) @GenerateNodeFactory public abstract static class RectNode extends DummyNode {}
 }
