@@ -1214,7 +1214,7 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RShiftNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "right < 64")
+        @Specialization(guards = "right < 32")
         int doIISmall(int left, int right) {
             raiseNegativeShiftCount(right < 0);
             return left >> right;
@@ -1225,10 +1225,10 @@ public class IntBuiltins extends PythonBuiltins {
             raiseNegativeShiftCount(right < 0);
             // Note: according to JLS, if 'left' is an int, then only the 5 LSBs of 'right' are
             // considered. However, Python would consider more bits, so do the max possible shift.
-            return left >> (right >= 64 ? 63 : right);
+            return left >> (right >= 32 ? 31 : right);
         }
 
-        @Specialization(guards = "right < 128")
+        @Specialization(guards = "right < 64")
         long doLLSmall(long left, long right) {
             raiseNegativeShiftCount(right < 0);
             return left >> right;
@@ -1238,7 +1238,7 @@ public class IntBuiltins extends PythonBuiltins {
         long doLL(long left, long right) {
             raiseNegativeShiftCount(right < 0);
             // for explanation, see 'doII'
-            return left >> (right >= 128 ? 127 : right);
+            return left >> (right >= 64 ? 63 : right);
         }
 
         @Specialization
