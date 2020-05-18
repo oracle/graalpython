@@ -565,10 +565,28 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.floorMod(left, right);
         }
 
-        @Specialization
+        @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = ArithmeticException.class)
+        long doLPiAndNarrow(long left, PInt right) {
+            raiseDivisionByZero(right.isZero());
+            return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
+        }
+
+        @Specialization(guards = "right.isZeroOrPositive()", replaces = "doLPiAndNarrow")
         PInt doLPi(long left, PInt right) {
             raiseDivisionByZero(right.isZero());
             return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
+        }
+
+        @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = ArithmeticException.class)
+        long doLPiNegativeAndNarrow(long left, PInt right) {
+            raiseDivisionByZero(right.isZero());
+            return PInt.longValueExact(opNeg(PInt.longToBigInteger(left), right.getValue()));
+        }
+
+        @Specialization(guards = "!right.isZeroOrPositive()", replaces = "doLPiNegativeAndNarrow")
+        PInt doLPiNegative(long left, PInt right) {
+            raiseDivisionByZero(right.isZero());
+            return factory().createInt(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
