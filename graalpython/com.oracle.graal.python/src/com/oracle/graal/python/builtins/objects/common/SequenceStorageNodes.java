@@ -1907,14 +1907,26 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, SequenceStorage left, SequenceStorage right,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             int llen = getLenNode().execute(left);
             int rlen = getLenNode().execute(right);
-            ThreadState state = PArguments.getThreadState(frame);
+            ThreadState state;
+            if (hasFrame.profile(frame != null)) {
+                state = PArguments.getThreadState(frame);
+            } else {
+                state = null;
+            }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 Object leftItem = getGetItemNode().execute(left, i);
                 Object rightItem = getGetRightItemNode().execute(right, i);
-                if (!lib.equalsWithState(leftItem, rightItem, lib, state)) {
+                boolean isEqual;
+                if (hasFrame.profile(state != null)) {
+                    isEqual = lib.equalsWithState(leftItem, rightItem, lib, state);
+                } else {
+                    isEqual = lib.equals(leftItem, rightItem, lib);
+                }
+                if (!isEqual) {
                     return cmpGeneric(frame, leftItem, rightItem);
                 }
             }
