@@ -219,6 +219,11 @@ def python3_unittests(args):
     mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
+def compare_unittests(args):
+    """compare the output of two runs of the cPython stdlib unittests"""
+    mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/compare_unittests.py", "-v"] + args)
+
+
 def retag_unittests(args):
     """run the cPython stdlib unittests"""
     parser = ArgumentParser('mx python-retag-unittests')
@@ -1722,6 +1727,7 @@ mx.update_commands(SUITE, {
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
+    'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
     'python-update-unittest-tags': [update_unittest_tags, ''],
     'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
