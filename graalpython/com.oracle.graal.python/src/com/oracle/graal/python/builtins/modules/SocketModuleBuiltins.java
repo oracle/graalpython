@@ -55,6 +55,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -78,6 +80,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -91,8 +94,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
@@ -673,16 +674,59 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private byte[] aton(String s) {
-            try {
-                return Inet4Address.getByName(s).getAddress();
-            } catch (UnknownHostException e) {
-                throw raise(PythonBuiltinClassType.OSError, "illegal IP address string passed to inet_aton");
+            // This supports any number of dot separated numbers, all but the last number are
+            // interpreted as bytes, the last number is unpacked into as many individual bytes as
+            // necessary to end up with 4 bytes total
+            String[] parts = s.split("\\.");
+            byte[] result = new byte[4];
+            // leading bytes:
+            for (int i = 0; i < parts.length - 1; i++) {
+                try {
+                    long val = parseUnsigned(parts[i]);
+                    if ((val & ~0xff) != 0) {
+                        throw raiseIllegalAddr();
+                    }
+                    result[i] = (byte) (val & 0xff);
+                } catch (NumberFormatException e) {
+                    throw raiseIllegalAddr();
+                }
             }
+            // the last number fills in the remaining bytes
+            long lastNum;
+            try {
+                lastNum = parseUnsigned(parts[parts.length - 1]);
+            } catch (NumberFormatException e) {
+                throw raiseIllegalAddr();
+            }
+            for (int i = result.length - 1; i >= parts.length - 1; i--) {
+                result[i] = (byte) (lastNum & 0xff);
+                lastNum >>= 8;
+            }
+            if (lastNum > 0) {
+                throw raiseIllegalAddr();
+            }
+            return result;
         }
 
         @Fallback
         PBytes doError(Object obj) {
             throw raise(PythonBuiltinClassType.TypeError, "inet_aton() argument 1 must be str, not %p", obj);
+        }
+
+        private PException raiseIllegalAddr() {
+            throw raise(PythonBuiltinClassType.OSError, "illegal IP address string passed to inet_aton");
+        }
+
+        private static long parseUnsigned(String valueIn) throws NumberFormatException {
+            String value = valueIn.trim();
+            int radix = 10;
+            if (value.startsWith("0x") || value.startsWith("0X")) {
+                value = value.substring(2);
+                radix = 16;
+            } else if (value.startsWith("0")) {
+                radix = 8;
+            }
+            return Long.parseUnsignedLong(value, radix);
         }
     }
 

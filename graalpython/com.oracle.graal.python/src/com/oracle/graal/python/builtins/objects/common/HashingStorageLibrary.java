@@ -313,6 +313,24 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
+     * @return {@code true} iff the intersection of the two sets is empty.
+     */
+    public boolean isDisjointWithState(HashingStorage self, HashingStorage other, ThreadState state) {
+        if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError("HashingStorageLibrary.isDisjointWithState");
+        }
+        return isDisjoint(self, other);
+    }
+
+    /**
+     * @see #isDisjointWithState(HashingStorage, HashingStorage, ThreadState)
+     */
+    public boolean isDisjoint(HashingStorage self, HashingStorage other) {
+        return isDisjointWithState(self, other, null);
+    }
+
+    /**
      * @return the xor of the two storages.
      */
     public abstract HashingStorage xor(HashingStorage self, HashingStorage other);
