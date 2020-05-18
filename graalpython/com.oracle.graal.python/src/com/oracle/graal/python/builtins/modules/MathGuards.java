@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 
@@ -58,6 +59,10 @@ public class MathGuards {
 
     public static boolean isNumber(Object value) {
         return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
+    }
+
+    public static boolean isComplexNumber(Object value) {
+        return isNumber(value) || value instanceof PComplex;
     }
 
     public static boolean isInteger(Object value) {

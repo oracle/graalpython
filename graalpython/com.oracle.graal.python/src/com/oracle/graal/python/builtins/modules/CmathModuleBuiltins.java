@@ -196,8 +196,6 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return new ComplexConstant(real, imag);
         }
 
-        abstract PComplex executeObject(VirtualFrame frame, Object value);
-
         PComplex compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("should not be reached");
@@ -218,7 +216,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return compute(value.getReal(), value.getImag());
         }
 
-        @Specialization(guards = "!isNumber(value)")
+        @Specialization(guards = "!isComplexNumber(value)")
         PComplex doGeneral(VirtualFrame frame, Object value) {
             return doC(getComplexNumberFromObject(frame, value));
         }
@@ -227,8 +225,6 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     abstract static class CmathBooleanUnaryBuiltinNode extends CmathUnaryBuiltinNode {
-
-        abstract boolean executeObject(VirtualFrame frame, Object value);
 
         boolean compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -250,7 +246,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return compute(value.getReal(), value.getImag());
         }
 
-        @Specialization(guards = "!isNumber(value)")
+        @Specialization(guards = "!isComplexNumber(value)")
         boolean doGeneral(VirtualFrame frame, Object value) {
             return doC(getComplexNumberFromObject(frame, value));
         }
@@ -289,8 +285,6 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PhaseNode extends CmathUnaryBuiltinNode {
 
-        abstract double executeObject(VirtualFrame frame, Object value);
-
         @Specialization
         double doL(long value) {
             return value < 0 ? Math.PI : 0;
@@ -306,7 +300,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return Math.atan2(value.getImag(), value.getReal());
         }
 
-        @Specialization(guards = "!isNumber(value)")
+        @Specialization(guards = "!isComplexNumber(value)")
         double doGeneral(VirtualFrame frame, Object value) {
             return doC(getComplexNumberFromObject(frame, value));
         }
@@ -317,8 +311,6 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     abstract static class PolarNode extends CmathUnaryBuiltinNode {
-
-        abstract PTuple executeObject(VirtualFrame frame, Object value);
 
         @Specialization
         PTuple doL(long value) {
@@ -352,7 +344,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{ r, Math.atan2(value.getImag(), value.getReal()) });
         }
 
-        @Specialization(guards = "!isNumber(value)")
+        @Specialization(guards = "!isComplexNumber(value)")
         PTuple doGeneral(VirtualFrame frame, Object value) {
             return doC(getComplexNumberFromObject(frame, value));
         }
