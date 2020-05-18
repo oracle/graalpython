@@ -43,16 +43,15 @@ package com.oracle.graal.python.builtins.modules;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
+import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -62,9 +61,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 import java.util.List;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 @CoreFunctions(defineModule = "cmath")
 public class CmathModuleBuiltins extends PythonBuiltins {
@@ -87,41 +84,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    //TODO should this be replaced with something like CoerceToComplexNode?
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class CmathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
-        @Child private LookupAndCallUnaryNode callComplexFunc;
-        @Child private CoerceToDoubleNode coerceToDouble;
-
-        PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
-            //TODO taken from BuiltinConstructors, should probably be refactored somehow
-            if (callComplexFunc == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callComplexFunc = insert(LookupAndCallUnaryNode.create(__COMPLEX__));
-            }
-            Object result = callComplexFunc.executeObject(frame, object);
-            if (result != PNone.NO_VALUE) {
-                if (result instanceof PComplex) {
-                    // TODO we need pass here deprecation warning
-                    // DeprecationWarning: __complex__ returned non-complex (type %p).
-                    // The ability to return an instance of a strict subclass of complex is
-                    // deprecated,
-                    // and may be removed in a future version of Python.
-                    return (PComplex) result;
-                } else {
-                    throw raise(TypeError, "__complex__ should return a complex object");
-                }
-            }
-            if (coerceToDouble == null) {
-                coerceToDouble = insert(CoerceToDoubleNode.create());
-            }
-            return factory().createComplex(coerceToDouble.execute(frame, object), 0);
-        }
-    }
-
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
-    abstract static class CmathComplexUnaryBuiltinNode extends CmathUnaryBuiltinNode {
+    abstract static class CmathComplexUnaryBuiltinNode extends PythonUnaryBuiltinNode {
 
         // Constants used for the definition of special values tables in subclassess
         static final double INF = Double.POSITIVE_INFINITY;
@@ -217,14 +182,14 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isComplexNumber(value)")
-        PComplex doGeneral(VirtualFrame frame, Object value) {
-            return doC(getComplexNumberFromObject(frame, value));
+        PComplex doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+            return doC(coerceToComplex.execute(frame, value));
         }
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
-    abstract static class CmathBooleanUnaryBuiltinNode extends CmathUnaryBuiltinNode {
+    abstract static class CmathBooleanUnaryBuiltinNode extends PythonUnaryBuiltinNode {
 
         boolean compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -247,8 +212,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isComplexNumber(value)")
-        boolean doGeneral(VirtualFrame frame, Object value) {
-            return doC(getComplexNumberFromObject(frame, value));
+        boolean doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+            return doC(coerceToComplex.execute(frame, value));
         }
     }
 
@@ -283,7 +248,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    abstract static class PhaseNode extends CmathUnaryBuiltinNode {
+    abstract static class PhaseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         double doL(long value) {
@@ -301,8 +266,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isComplexNumber(value)")
-        double doGeneral(VirtualFrame frame, Object value) {
-            return doC(getComplexNumberFromObject(frame, value));
+        double doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+            return doC(coerceToComplex.execute(frame, value));
         }
     }
 
@@ -310,7 +275,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    abstract static class PolarNode extends CmathUnaryBuiltinNode {
+    abstract static class PolarNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         PTuple doL(long value) {
@@ -345,8 +310,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isComplexNumber(value)")
-        PTuple doGeneral(VirtualFrame frame, Object value) {
-            return doC(getComplexNumberFromObject(frame, value));
+        PTuple doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+            return doC(coerceToComplex.execute(frame, value));
         }
     }
 
