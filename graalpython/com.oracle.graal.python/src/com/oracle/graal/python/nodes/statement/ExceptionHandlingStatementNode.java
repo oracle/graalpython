@@ -56,14 +56,15 @@ import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private ExceptionStateNodes.SaveExceptionStateNode saveExceptionStateNode;
     @Child private ExceptionStateNodes.RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private PythonObjectFactory ofactory;
-    @CompilationFinal private ConditionProfile contextChainHandledProfile;
-    @CompilationFinal private ConditionProfile contextChainContextProfile;
+    @CompilationFinal private LoopConditionProfile contextChainHandledProfile;
+    @CompilationFinal private LoopConditionProfile contextChainContextProfile;
     @CompilationFinal private Boolean shouldCatchAllExceptions;
     @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> contextRef;
 
@@ -144,17 +145,17 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     private ConditionProfile getContextChainHandledProfile() {
-        if (contextChainContextProfile == null) {
+        if (contextChainHandledProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextChainContextProfile = ConditionProfile.createCountingProfile();
+            contextChainHandledProfile = LoopConditionProfile.createCountingProfile();
         }
-        return contextChainContextProfile;
+        return contextChainHandledProfile;
     }
 
     private ConditionProfile getContextChainContextProfile() {
         if (contextChainContextProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextChainContextProfile = ConditionProfile.createCountingProfile();
+            contextChainContextProfile = LoopConditionProfile.createCountingProfile();
         }
         return contextChainContextProfile;
     }
