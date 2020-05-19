@@ -181,7 +181,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return compute(value.getReal(), value.getImag());
         }
 
-        @Specialization(guards = "!isComplexNumber(value)")
+        @Specialization
         PComplex doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
@@ -211,7 +211,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return compute(value.getReal(), value.getImag());
         }
 
-        @Specialization(guards = "!isComplexNumber(value)")
+        @Specialization
         boolean doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
@@ -265,7 +265,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return Math.atan2(value.getImag(), value.getReal());
         }
 
-        @Specialization(guards = "!isComplexNumber(value)")
+        @Specialization
         double doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
@@ -309,7 +309,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{ r, Math.atan2(value.getImag(), value.getReal()) });
         }
 
-        @Specialization(guards = "!isComplexNumber(value)")
+        @Specialization
         PTuple doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }

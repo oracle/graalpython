@@ -78,12 +78,10 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
     }
 
     @Specialization
-    PComplex toComplex(PComplex x) {
-        return x;
-    }
-
-    @Specialization(guards = "!isComplexNumber(x)")
     PComplex toComplex(VirtualFrame frame, Object x) {
+        if (x instanceof PComplex) {
+            return (PComplex) x;
+        }
         //TODO taken from BuiltinConstructors, should probably be refactored somehow
         if (callComplexFunc == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
