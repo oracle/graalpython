@@ -44,3 +44,6 @@
 *NonexceptionalTestCase.testInlineGeneratorSyntax
 *NonexceptionalTestCase.testNestedSingleStatements
 *NonexceptionalTestCase.testUnboundGenerator
+testAssignmentToNoneError
+testAssignmentToTupleOnlyContainingNoneError
+testAssignmentToTupleContainingNoneError

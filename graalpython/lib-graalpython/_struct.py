@@ -41,6 +41,6 @@
 __graalpython__.import_current_as_named_module_with_delegate(
     module_name="_struct",
     delegate_name="_cpython_struct",
-    delegate_attributes=['Struct', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack', 'pack_into', 'unpack',
-                         'unpack_from'],
+    delegate_attributes=['Struct', 'StructError', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack',
+                         'pack_into', 'unpack', 'unpack_from'],
     owner_globals=globals())

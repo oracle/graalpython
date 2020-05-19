@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -64,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -105,7 +105,7 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.llvm.api.Toolchain;
 
-@CoreFunctions(defineModule = BuiltinNames.__GRAALPYTHON__)
+@CoreFunctions(defineModule = __GRAALPYTHON__)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public static final String LLVM_LANGUAGE = "llvm";
 
@@ -126,7 +126,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
         PythonContext context = core.getContext();
-        PythonModule mod = core.lookupBuiltinModule("__graalpython__");
+        PythonModule mod = core.lookupBuiltinModule(__GRAALPYTHON__);
         if (!ImageInfo.inImageBuildtimeCode()) {
             mod.setAttribute("home", context.getLanguage().getHome());
         }

@@ -93,8 +93,43 @@ def lazy_attributes_from_delegate(delegate_name, attributes, owner_module):
 
 
 @builtin
+def auto_wrap_methods(delegate_name, delegate_attributes, owner_globals):
+    func_type = type(import_current_as_named_module)
+
+    new_globals = dict(**owner_globals)
+
+    for attr in owner_globals:
+        if attr.startswith("__"):
+            continue
+        elif not isinstance(owner_globals[attr], func_type):
+            continue
+        elif attr not in delegate_attributes:
+            raise AttributeError("attribute '{}' not allowed in module '{}', permitted values are: '{}'".format(
+                attr, __name__, delegate_attributes
+            ))
+
+        if attr in delegate_attributes:
+            def make_wrapper(attribute, method):
+                @__graalpython__.builtin
+                def wrapper(*args, **kwargs):
+                    try:
+                        return method(*args, **kwargs)
+                    except NotImplementedError:
+                        delegate_module = __import__(delegate_name)
+                        return getattr(delegate_module, attribute)(*args, **kwargs)
+                return wrapper
+
+            new_globals[attr] = make_wrapper(attr, owner_globals[attr])
+
+    return new_globals
+
+
+@builtin
 def import_current_as_named_module_with_delegate(module_name, delegate_name, delegate_attributes=None,
-                                                 owner_globals=None):
+                                                 owner_globals=None, wrap_methods=True):
     owner_module = import_current_as_named_module(module_name, owner_globals=owner_globals)
+    if wrap_methods and owner_globals:
+        wrapped_globals = auto_wrap_methods(delegate_name, delegate_attributes, owner_globals)
+        owner_module.__dict__.update(**wrapped_globals)
     if delegate_attributes:
         lazy_attributes_from_delegate(delegate_name, delegate_attributes, owner_module)

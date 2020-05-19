@@ -45,6 +45,8 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -83,6 +85,30 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
+    static class IsSame {
+        @Specialization
+        static boolean dd(Double receiver, double other) {
+            return Double.compare(receiver, other) == 0;
+        }
+
+        @Specialization
+        static boolean dF(Double receiver, PFloat other,
+                        @Cached IsBuiltinClassProfile isFloat) {
+            if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
+                return dd(receiver, other.getValue());
+            } else {
+                return false;
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean dO(Double receiver, Object other) {
+            return false;
+        }
+    }
+
+    @ExportMessage
     static class EqualsInternal {
         @Specialization
         static int db(Double receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
@@ -104,7 +130,7 @@ final class DefaultPythonDoubleExports {
             if (receiver % 1 == 0) {
                 return other.compareTo(receiver.longValue()) == 0 ? 1 : 0;
             } else {
-                return 1;
+                return 0;
             }
         }
 

@@ -206,14 +206,25 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    @SuppressWarnings("unused")
-    static int equalsInternal(Object receiver, Object other, ThreadState threadState) {
-        return receiver == other ? 1 : -1;
+    static boolean isSame(Object receiver, Object other,
+                    @CachedLibrary("receiver") InteropLibrary receiverLib,
+                    @CachedLibrary(limit = "3") InteropLibrary otherLib) {
+        return receiverLib.isIdentical(receiver, other, otherLib);
     }
 
     @ExportMessage
-    static boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary oLib, ThreadState state) {
-        return receiver == other || oLib.equalsInternal(receiver, other, state) == 1;
+    @SuppressWarnings("unused")
+    static int equalsInternal(Object receiver, Object other, ThreadState threadState,
+                    @CachedLibrary("receiver") InteropLibrary receiverLib,
+                    @CachedLibrary(limit = "3") InteropLibrary otherLib) {
+        return receiverLib.isIdentical(receiver, other, otherLib) ? 1 : 0;
+    }
+
+    @ExportMessage
+    static boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary oLib, ThreadState state,
+                    @CachedLibrary("receiver") InteropLibrary receiverLib,
+                    @CachedLibrary(limit = "3") InteropLibrary otherLib) {
+        return receiverLib.isIdentical(receiver, other, otherLib) || oLib.equalsInternal(receiver, other, state) == 1;
     }
 
     @ExportMessage

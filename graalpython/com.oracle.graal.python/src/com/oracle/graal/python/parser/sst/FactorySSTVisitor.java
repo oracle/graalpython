@@ -93,14 +93,19 @@ import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
+import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
+import com.oracle.graal.python.nodes.literal.DictLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
 import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
+import com.oracle.graal.python.nodes.literal.SetLiteralNode;
+import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
@@ -239,11 +244,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode[] lhs = new ExpressionNode[node.lhs.length];
         for (int i = 0; i < node.lhs.length; i++) {
             SSTNode sstLhs = node.lhs[i];
-            if (sstLhs instanceof StringLiteralSSTNode || sstLhs instanceof NumberLiteralSSTNode || sstLhs instanceof FloatLiteralSSTNode) {
-                errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "can't assign to literal");
-            } else if (sstLhs instanceof BooleanLiteralSSTNode) {
-                errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "can't assign to keyword");
-            }
             lhs[i] = (ExpressionNode) sstLhs.accept(this);
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
@@ -688,7 +688,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 }
             }
         } else {
-            target = nodeFactory.createObjectLiteral(targets);
+            target = nodeFactory.createTupleLiteral(targets);
         }
         StatementNode body = (StatementNode) node.body.accept(this);
         if (node.containsContinue) {
@@ -1275,7 +1275,25 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
         if (lhs instanceof ObjectLiteralNode) {
-            return createDestructuringAssignment((ExpressionNode[]) ((ObjectLiteralNode) lhs).getObject(), rhs);
+            if (((ObjectLiteralNode) lhs).getObject() == PEllipsis.INSTANCE) {
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to Ellipsis");
+            } else {
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to None");
+            }
+        } else if (lhs instanceof BooleanLiteralNode) {
+            if ((boolean) ((BooleanLiteralNode) lhs).getValue()) {
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to True");
+            } else {
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to False");
+            }
+        } else if (lhs instanceof SimpleLiteralNode) {
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to literal");
+        } else if (lhs instanceof DictLiteralNode) {
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to dict display");
+        } else if (lhs instanceof SetLiteralNode) {
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to set display");
+        } else if (lhs instanceof FormatStringLiteralNode) {
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to f-string expression");
         } else if (lhs instanceof TupleLiteralNode) {
             return createDestructuringAssignment(((TupleLiteralNode) lhs).getValues(), rhs);
         } else if (lhs instanceof ListLiteralNode) {

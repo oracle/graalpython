@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -165,36 +165,6 @@ public class AssignmentTests extends ParserTestBase {
         checkScopeAndTree(
                         "def _method(*args, **keywords):\n" +
                                         "    cls_or_self, *rest = args");
-    }
-
-    @Test
-    public void assignToLiteral01() throws Exception {
-        checkSyntaxErrorMessage("1 = 1", "SyntaxError: can't assign to literal");
-    }
-
-    @Test
-    public void assignToLiteral02() throws Exception {
-        checkSyntaxErrorMessage("1.1 = 1", "SyntaxError: can't assign to literal");
-    }
-
-    @Test
-    public void assignToLiteral03() throws Exception {
-        checkSyntaxErrorMessage("'' = 1", "SyntaxError: can't assign to literal");
-    }
-
-    @Test
-    public void assignToLiteral04() throws Exception {
-        checkSyntaxErrorMessage("f'' = 1", "SyntaxError: can't assign to literal");
-    }
-
-    @Test
-    public void assignToLiteral05() throws Exception {
-        checkSyntaxErrorMessage("'' f'' = 1", "SyntaxError: can't assign to literal");
-    }
-
-    @Test
-    public void assignToKeyword01() throws Exception {
-        checkSyntaxErrorMessage("True = 1", "SyntaxError: can't assign to keyword");
     }
 
     @Test

@@ -188,7 +188,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
 
     public int indexOfDouble(double value) {
         for (int i = 0; i < length; i++) {
-            if (values[i] == value) {
+            if (Double.compare(values[i], value) == 0) {
                 return i;
             }
         }
