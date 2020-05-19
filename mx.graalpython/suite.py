@@ -136,14 +136,6 @@ suite = {
             "source": [],
         },
 
-        "perf.benchmarks": {
-            "type": "python",
-            "path": 'graalpython/com.oracle.graal.python.benchmarks',
-            "source": [
-                "python"
-            ],
-        },
-
         "util.scripts": {
             "type": "python",
             "path": 'scripts',
