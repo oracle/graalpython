@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,10 +55,37 @@ class CDLL(object):
     pass
 
 
-class _SimpleCData:
+# Dummy classes:
+
+
+class _CData:
     pass
 
-# dummies
+
+class _Array(_CData):
+    pass
+
+
+
+class _SimpleCDataMetaCls(type):
+    """
+    Dummy implementation of the operators on _SimpleCDatan subclasses.
+
+    For example: ctypes.c_int * 3 gives dynamically created class representing
+    the type of the array.
+    """
+
+    def __mul__(self, other):
+        return type(self.__name__ + '_Array_' + str(other), (_Array, object,), {})
+
+    def __rmul__(self, other):
+        return type(self.__name__ + '_Array_' + str(other), (_Array, object,), {})
+
+
+class _SimpleCData(_CData, metaclass=_SimpleCDataMetaCls):
+    pass
+
+
 class c_void_p(_SimpleCData):
     _type_ = "P"
 
@@ -69,6 +96,30 @@ class c_double(_SimpleCData):
 
 class c_int(_SimpleCData):
     _type_ = "i"
+
+
+class c_int32(c_int):
+    pass
+
+
+class c_uint(_SimpleCData):
+    _type_ = "I"
+
+
+class c_uint32(c_uint):
+    pass
+
+
+class c_ulong(_SimpleCData):
+    _type_ = "L"
+
+
+class c_uint64(c_ulong):
+    pass
+
+
+class c_char(_SimpleCData):
+    _type_ = "c"
 
 
 class py_object(_SimpleCData):
