@@ -1,9 +1,8 @@
-
-diff --git a/src/_pytest/_code/code.py b/src/_pytest/_code/code.py
-index aa4dcff..029e659 100644
---- a/src/_pytest/_code/code.py
-+++ b/src/_pytest/_code/code.py
-@@ -211,15 +211,17 @@ class TracebackEntry:
+diff --git a/_pytest/_code/code.py b/_pytest/_code/code.py
+index 7d72234e7..1f0ca7f7e 100644
+--- a/_pytest/_code/code.py
++++ b/_pytest/_code/code.py
+@@ -222,15 +222,17 @@ class TracebackEntry:
              if key is not None:
                  astnode = astcache.get(key, None)
          start = self.getfirstlinesource()
@@ -30,11 +29,24 @@ index aa4dcff..029e659 100644
          return source[start:end]
 
      source = property(getsource)
-diff --git a/src/_pytest/python.py b/src/_pytest/python.py
-index 66d8530..8bb2ab6 100644
---- a/src/_pytest/python.py
-+++ b/src/_pytest/python.py
-@@ -494,8 +494,10 @@ class Module(nodes.File, PyCollector):
+diff --git a/_pytest/assertion/__init__.py b/_pytest/assertion/__init__.py
+index 126929b6a..8ece37d23 100644
+--- a/_pytest/assertion/__init__.py
++++ b/_pytest/assertion/__init__.py
+@@ -15,7 +15,7 @@ def pytest_addoption(parser):
+         action="store",
+         dest="assertmode",
+         choices=("rewrite", "plain"),
+-        default="rewrite",
++        default="plain",
+         metavar="MODE",
+         help="""Control assertion debugging tools.  'plain'
+                             performs no assertion debugging.  'rewrite'
+diff --git a/_pytest/python.py b/_pytest/python.py
+index 913a93bc0..0b6d75dd8 100644
+--- a/_pytest/python.py
++++ b/_pytest/python.py
+@@ -497,8 +497,10 @@ class Module(nodes.File, PyCollector):
      def _importtestmodule(self):
          # we assume we are only called once per module
          importmode = self.config.getoption("--import-mode")
@@ -45,7 +57,7 @@ index 66d8530..8bb2ab6 100644
          except SyntaxError:
              raise self.CollectError(
                  _pytest._code.ExceptionInfo.from_current().getrepr(style="short")
-@@ -538,6 +540,10 @@ class Module(nodes.File, PyCollector):
+@@ -541,6 +543,10 @@ class Module(nodes.File, PyCollector):
                  "or @pytest.mark.skipif decorators instead, and to skip a "
                  "module use `pytestmark = pytest.mark.{skip,skipif}."
              )
@@ -55,5 +67,4 @@ index 66d8530..8bb2ab6 100644
 +                raise self.CollectError("Module could not be imported, the test could be unsupported by GraalPython")
          self.config.pluginmanager.consider_module(mod)
          return mod
-
 

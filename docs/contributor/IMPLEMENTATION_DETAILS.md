@@ -144,3 +144,58 @@ as needed, we use the same mechanism to also pass the currently handled
 exception. Unlike CPython we do not use a stack of currently handled exceptions,
 instead we utilize the call stack of Java by always passing the current exception
 and holding on to the last (if any) in a local variable.
+
+## Patching of Packages
+
+Some PyPI packages contain code that is not compatible with GraalPython.
+To overcome this limitation and support such packages, GraalPython contains
+patches for some popular packages. The patches are applied to packages
+installed via GraalPython specific utility `ginstall` and also to packages
+installed via `pip`. This is achieved by patching `pip` code during the loading
+of the `pip` module in `pip_hook.py`.
+
+The patches are regular POSIX `patch` command compatible diffs located
+in `lib-graalpython/patches`. The directory structure is following:
+
+```
+patches
+├── atomicwrites
+│   └── sdist
+│       ├── atomicwrites.patch
+│       └── atomicwrites-5.3.1.patch
+└── pytest
+    └── whl
+        ├── pytest.dir
+        ├── pytest.patch
+        ├── pytest-5.dir
+        ├── pytest-5.patch
+        ├── pytest-5.2.dir
+        ├── pytest-5.2.patch
+        ├── pytest-5.2.3.dir
+        └── pytest-5.2.3.patch
+```
+
+The directory names are names of the Python packages.
+
+Patches in the `sdist` subdirectory apply to the source distribution tarballs,
+i.e., such patches may patch, for example, the `setup.py` file.
+
+Patches in the `whl` subdirectory apply to both the wheels binary distributions
+and to appropriate subdirectory of the source distributions. For example, in `pytest`
+the Python source files that are deployed into the top-level in the wheels binary
+archive are located in the `src` subdirectory inside the source distribution. To reuse
+one patch for both binary and source distributions, we need to also record the
+subdirectory where the sources live in the source distribution - path to that directory
+(relative to the root of the source distribution) is inside the `*.dir` files.
+
+All the `*.patch` and `*.dir` files may contain version string. The search for
+an appropriate `*.patch` file for a package `P` of version `X.Y.Z` happens in
+this order:
+
+* `P-X.Y.Z.patch`
+* `P-X.Y.patch`
+* `P-X.patch`
+* `P.patch`
+
+The same applies to `*.dir` files, and the search is independent of the search
+for the `*.patch` file, i.e., multiple versions of `*.patch` may share one `*.dir`.

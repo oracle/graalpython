@@ -49,17 +49,83 @@ class PipLoader:
 
     def exec_module(self, module):
         exec_module_result = self.real_spec.loader.exec_module(module)
+        if not hasattr(module, 'unpack_file'):
+            return exec_module_result
+
         old_unpack = module.unpack_file
+
         def unpack_file(filename, location, *args, **kwargs):
-            import os
             result = old_unpack(filename, location, *args, **kwargs)
-            package_name = os.path.basename(location)
-            potential_patch = os.path.join(__graalpython__.core_home, "patches", package_name + ".patch")
-            print("Looking for Graal Python patch for " + package_name + " in " + potential_patch)
-            if os.path.exists(potential_patch):
-                print("Patching package " + package_name)
-                os.system("patch -d %s -p1 < %s" % (location, potential_patch))
+
+            import os
+            import re
+            # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
+            # some packages may have only major.minor or just major version
+            archive_name = os.path.basename(filename)
+            name_ver_match = re.search("^([^-]+)-(\\d+)(.\\d+)?(.\\d+)?.*\\.(tar\\.gz|whl)$", archive_name)
+            if not name_ver_match:
+                print("Warning: could not parse package name, version, or format from '{}'.\n"
+                      "Could not determine if any GraalPython specific patches need to be applied.".format(archive_name))
+                return result
+
+            package_name = name_ver_match.group(1)
+            is_sdist = name_ver_match.group(5) == "tar.gz"
+            patches_base_dir = os.path.join(__graalpython__.core_home, "patches")
+
+            # NOTE: Following 3 functions are duplicated in ginstall.py:
+            # creates a search list of a versioned file:
+            # {name}-X.Y.Z.{suffix}, {name}-X.Y.{suffix}, {name}-X.{suffix}, {name}.{suffix}
+            # 'versions' is a result of re.search
+            def list_versioned(pkg_name, versions, dir, suffix):
+                acc = ""
+                res = []
+                for i in range(2,5):
+                    v = versions.group(i)
+                    if v is not None:
+                        acc = acc + v
+                        res.append(acc)
+                res.reverse()
+                res = [os.path.join(dir, pkg_name + "-" + ver + suffix) for ver in res]
+                res.append(os.path.join(dir, pkg_name + suffix))
+                return res
+
+            def first_existing(pkg_name, versions, dir, suffix):
+                for filename in list_versioned(pkg_name, versions, dir, suffix):
+                    if os.path.exists(filename):
+                        return filename
+
+            def read_first_existing(pkg_name, versions, dir, suffix):
+                filename = first_existing(pkg_name, versions, dir, suffix)
+                if filename:
+                    with open(filename, "r") as f:
+                        return f.read()
+
+            # end of code duplicated in ginstall.py
+
+            def apply_first_existing(dir, suffix, wd=None):
+                filename = first_existing(package_name, name_ver_match, dir, suffix)
+                if filename:
+                    print("Patching package " + package_name + " using " + filename)
+                    cwd = "" if wd is None else "cd " + wd + ";"
+                    patch_res = os.system(cwd + "patch -f -d %s -p1 < %s" % (location, filename))
+                    if patch_res != 0:
+                        print("Applying Graal Python patch failed for %s. The package may still work." % package_name)
+
+            print("Looking for Graal Python patches for " + package_name)
+
+            # patches intended for binary distribution:
+            # we may need to change wd if we are actually patching the source distribution
+            bdist_dir = os.path.join(patches_base_dir, package_name, "whl")
+            bdist_patch_wd = read_first_existing(package_name, name_ver_match, bdist_dir, ".dir") if is_sdist else None
+            apply_first_existing(bdist_dir, ".patch", bdist_patch_wd)
+
+            # patches intended for source distribution if applicable
+            if is_sdist:
+                sdist_dir = os.path.join(patches_base_dir, package_name, "sdist")
+                apply_first_existing(sdist_dir, ".patch")
+
             return result
+
         module.unpack_file = unpack_file
         return exec_module_result
 
@@ -67,13 +133,23 @@ class PipLoader:
 class PipImportHook:
     @staticmethod
     def find_spec(fullname, path, target=None):
-        if fullname == "pip._internal.utils.misc":
+        # We are patching function 'unpack_file',
+        # which may be in a different module depending on the PIP version.
+        # Older versions have it pip._internal.utils.misc, newer versions
+        # still have module pip._internal.utils.misc, but they moved
+        # 'unpack_file' to pip._internal.utils.unpacking
+        is_unpacking = fullname == "pip._internal.utils.unpacking"
+        is_misc_or_unpacking = is_unpacking or fullname == "pip._internal.utils.misc"
+        if is_misc_or_unpacking:
             for finder in sys.meta_path:
                 if finder is PipImportHook:
                     continue
                 real_spec = finder.find_spec(fullname, path, target=None)
                 if real_spec:
-                    sys.meta_path.remove(PipImportHook)
+                    if is_unpacking:
+                        # We cannot remove ourselves if the module was pip._internal.utils.misc,
+                        # because we still need to watch out for pip._internal.utils.unpacking
+                        sys.meta_path.remove(PipImportHook)
                     spec = _frozen_importlib.ModuleSpec(fullname, PipLoader(real_spec), is_package=False, origin=real_spec.origin)
                     spec.has_location = real_spec.has_location
                     return spec
