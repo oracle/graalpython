@@ -202,6 +202,6 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
 
     @TruffleBoundary
     private PBaseException getBaseException(Throwable e) {
-        return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{e});
+        return factory().createBaseException(PythonErrorType.SystemError, "%m", new Object[]{e});
     }
 }
