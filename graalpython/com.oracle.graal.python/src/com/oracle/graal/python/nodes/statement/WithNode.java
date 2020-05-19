@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtException
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class WithNode extends ExceptionHandlingStatementNode {
@@ -121,6 +122,15 @@ public class WithNode extends ExceptionHandlingStatementNode {
         } catch (PException exception) {
             gotException = true;
             handleException(frame, withObject, exitCallable, exception);
+        } catch (ControlFlowException e) {
+            throw e;
+        } catch (Exception | StackOverflowError | AssertionError e) {
+            if (shouldCatchAllExceptions()) {
+                gotException = true;
+                handleException(frame, withObject, exitCallable, wrapJavaException(e));
+            } else {
+                throw e;
+            }
         } finally {
             doLeave(frame, withObject, gotException, exitCallable);
         }
