@@ -84,7 +84,9 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = child1.accept(this)) != null) {
                 return result;
             }
-            return child2.accept(this);
+            if (child2 != null) {
+                return child2.accept(this);
+            }
         }
         return null;
     }
@@ -152,6 +154,12 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     @Override
     public SSTNodeWithScope visit(CallSSTNode node) {
         if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            for (SSTNode param : node.parameters.getArgs()) {
+                if ((result = param.accept(this)) != null) {
+                    return result;
+                }
+            }
             return node.target.accept(this);
         }
         return null;
@@ -433,10 +441,10 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.body.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.elseStatement.accept(this)) != null) {
+            if (node.elseStatement != null && (result = node.elseStatement.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.finallyStatement.accept(this)) != null) {
+            if (node.finallyStatement != null && (result = node.finallyStatement.accept(this)) != null) {
                 return result;
             }
             return visitNodes(node.exceptNodes);

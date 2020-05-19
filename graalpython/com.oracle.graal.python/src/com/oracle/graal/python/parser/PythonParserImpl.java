@@ -223,6 +223,11 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         return cachedLastAntlrResult.globalScope;
     }
 
+    // for test purposes.
+    public SSTNode getLastSST() {
+        return cachedLastAntlrResult.antlrResult;
+    }
+
     @Override
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         if (logFiles) {

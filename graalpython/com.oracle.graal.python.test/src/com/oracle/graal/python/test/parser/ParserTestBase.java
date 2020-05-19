@@ -43,6 +43,7 @@ package com.oracle.graal.python.test.parser;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.parser.ScopeInfo;
+import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -77,6 +78,7 @@ public class ParserTestBase {
     @Rule public TestName name = new TestName();
 
     private ScopeInfo lastGlobalScope;
+    private SSTNode lastSST;
 
     public ParserTestBase() {
         PythonTests.enterContext();
@@ -104,11 +106,16 @@ public class ParserTestBase {
         PythonParser parser = context.getCore().getParser();
         Node result = ((PythonParserImpl) parser).parseN(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
+        lastSST = ((PythonParserImpl) parser).getLastSST();
         return result;
     }
 
     protected ScopeInfo getLastGlobalScope() {
         return lastGlobalScope;
+    }
+
+    protected SSTNode getLastSST() {
+        return lastSST;
     }
 
     public void checkSyntaxError(String source) throws Exception {

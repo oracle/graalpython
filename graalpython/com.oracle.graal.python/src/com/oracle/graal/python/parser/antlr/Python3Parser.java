@@ -4184,7 +4184,7 @@ public class Python3Parser extends Parser {
 				_localctx.suite = suite();
 				setState(850);
 				_localctx.elif_stmt = elif_stmt();
-				 _localctx.result =  new IfSSTNode(_localctx.test.result, _localctx.suite.result, _localctx.elif_stmt.result, -1, -1); 
+				 _localctx.result =  new IfSSTNode(_localctx.test.result, _localctx.suite.result, _localctx.elif_stmt.result, getStartIndex(_localctx), getStopIndex((_localctx.elif_stmt!=null?(_localctx.elif_stmt.stop):null))); 
 				}
 				break;
 			case ELSE:
