@@ -1,42 +1,7 @@
-/*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/* Copyright (c) 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
- * The Universal Permissive License (UPL), Version 1.0
- *
- * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or
- * data (collectively the "Software"), free of charge and under any and all
- * copyright rights in the Software, and any and all patent rights owned or
- * freely licensable by each licensor hereunder covering either (i) the
- * unmodified Software as contributed to or provided by such licensor, or (ii)
- * the Larger Works (as defined below), to deal in both
- *
- * (a) the Software, and
- *
- * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- * one is included with the Software each a "Larger Work" to which the Software
- * is contributed by such licensors),
- *
- * without restriction, including without limitation the rights to copy, create
- * derivative works of, display, perform, and distribute the Software and make,
- * use, sell, offer for sale, import, export, have made, and have sold the
- * Software and the Larger Work(s), and to sublicense the foregoing rights on
- * either these or other terms.
- *
- * This license is subject to the following condition:
- *
- * The above copyright notice and either this complete permission notice or at a
- * minimum a reference to the UPL must be included in all copies or substantial
- * portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.builtins.modules;
 
@@ -306,7 +271,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                     throw raise(OverflowError, "absolute value too large");
                 }
             }
-            return factory().createTuple(new Object[]{ r, Math.atan2(value.getImag(), value.getReal()) });
+            return factory().createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
         }
 
         @Specialization
@@ -321,13 +286,13 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
         @CompilerDirectives.CompilationFinal(dimensions = 2)
         private static final ComplexConstant[][] SPECIAL_VALUES = {
-                { C(INF, -INF), C(0.0, -INF), C(0.0, -INF), C(0.0, INF), C(0.0, INF), C(INF, INF), C(NAN, INF) },
-                { C(INF, -INF), null,         null,         null,        null,        C(INF, INF), C(NAN, NAN) },
-                { C(INF, -INF), null,         C(0.0, -0.0), C(0.0, 0.0), null,        C(INF, INF), C(NAN, NAN) },
-                { C(INF, -INF), null,         C(0.0, -0.0), C(0.0, 0.0), null,        C(INF, INF), C(NAN, NAN) },
-                { C(INF, -INF), null,         null,         null,        null,        C(INF, INF), C(NAN, NAN) },
-                { C(INF, -INF), C(INF, -0.0), C(INF, -0.0), C(INF, 0.0), C(INF, 0.0), C(INF, INF), C(INF, NAN) },
-                { C(INF, -INF), C(NAN, NAN),  C(NAN, NAN),  C(NAN, NAN), C(NAN, NAN), C(INF, INF), C(NAN, NAN) },
+                {C(INF, -INF), C(0.0, -INF), C(0.0, -INF), C(0.0, INF), C(0.0, INF), C(INF, INF), C(NAN, INF)},
+                {C(INF, -INF), null,         null,         null,        null,        C(INF, INF), C(NAN, NAN)},
+                {C(INF, -INF), null,         C(0.0, -0.0), C(0.0, 0.0), null,        C(INF, INF), C(NAN, NAN)},
+                {C(INF, -INF), null,         C(0.0, -0.0), C(0.0, 0.0), null,        C(INF, INF), C(NAN, NAN)},
+                {C(INF, -INF), null,         null,         null,        null,        C(INF, INF), C(NAN, NAN)},
+                {C(INF, -INF), C(INF, -0.0), C(INF, -0.0), C(INF, 0.0), C(INF, 0.0), C(INF, INF), C(INF, NAN)},
+                {C(INF, -INF), C(NAN, NAN),  C(NAN, NAN),  C(NAN, NAN), C(NAN, NAN), C(INF, INF), C(NAN, NAN)},
         };
 
         @Override
@@ -345,18 +310,17 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
             double s;
             if (ax < Double.MIN_NORMAL && ay < Double.MIN_NORMAL && (ax > 0.0 || ay > 0.0)) {
-                final double SCALE_UP = 0x1.0p53;
-                final double SCALE_DOWN = 0x1.0p-27;
-                ax *= SCALE_UP;
-                s = Math.sqrt(ax + Math.hypot(ax, ay * SCALE_UP)) * SCALE_DOWN;
+                final double scaleUp = 0x1.0p53;
+                final double scaleDown = 0x1.0p-27;
+                ax *= scaleUp;
+                s = Math.sqrt(ax + Math.hypot(ax, ay * scaleUp)) * scaleDown;
             } else {
                 ax /= 8.0;
                 s = 2.0 * Math.sqrt(ax + Math.hypot(ax, ay / 8.0));
             }
             double d = ay / (2.0 * s);
 
-            if (real >= 0.0)
-            {
+            if (real >= 0.0) {
                 return factory().createComplex(s, Math.copySign(d, imag));
             }
             return factory().createComplex(d, Math.copySign(s, imag));
