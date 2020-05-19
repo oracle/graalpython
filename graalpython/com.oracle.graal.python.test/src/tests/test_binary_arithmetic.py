@@ -290,3 +290,8 @@ def test_lshift():
     assert 1 << 32 == 0x100000000
     assert 1 << 64 == 0x10000000000000000
     assert 1 << 128 == 0x100000000000000000000000000000000
+
+
+def test_pow():
+    # (0xffffffffffffffff >> 63) is used to produce a non-narrowed int
+    assert 2**(0xffffffffffffffff >> 63) == 2
