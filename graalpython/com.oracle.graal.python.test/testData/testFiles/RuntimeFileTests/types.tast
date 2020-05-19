@@ -1593,7 +1593,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Identifier: AttributeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           NoValueNode SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [5508,5597]`elif self.fget is No...`
                                         YesNodeGen SourceSection: None
                                           IsExpressionNodeGen SourceSection: [5513,5530]`self.fget is None`
                                             GetAttributeNodeGen SourceSection: [5513,5522]`self.fget`

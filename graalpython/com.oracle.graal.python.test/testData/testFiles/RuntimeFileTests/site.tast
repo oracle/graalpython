@@ -3478,7 +3478,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             ReadLocalVariableNode SourceSection: [16862,16867]`value`
                                               Frame: [11,value,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [16896,16967]`elif key == 'home':↵...`
                                         YesNodeGen SourceSection: None
                                           BinaryComparisonNodeGen SourceSection: [16901,16914]`key == 'home'`
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -4417,7 +4417,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20930,20933]`sys`
                                   Identifier: sys
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          IfNode SourceSection: None
+                          IfNode SourceSection: [20950,21111]`elif ENABLE_USER_SIT...`
                             YesNodeGen SourceSection: None
                               IsExpressionNodeGen SourceSection: [20955,20980]`ENABLE_USER_SITE is ...`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20955,20971]`ENABLE_USER_SITE`
@@ -4433,7 +4433,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20994,20997]`sys`
                                     Identifier: sys
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [21014,21111]`elif ENABLE_USER_SIT...`
                               YesNodeGen SourceSection: None
                                 IsExpressionNodeGen SourceSection: [21019,21043]`ENABLE_USER_SITE is ...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21019,21035]`ENABLE_USER_SITE`

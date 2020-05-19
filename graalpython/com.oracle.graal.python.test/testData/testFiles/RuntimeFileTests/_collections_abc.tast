@@ -9393,7 +9393,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [3,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [22057,22275]`elif hasattr(other, ...`
                                             YesNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [22062,22084]`hasattr(other, "keys...`
                                                 CallNodeGen SourceSection: None

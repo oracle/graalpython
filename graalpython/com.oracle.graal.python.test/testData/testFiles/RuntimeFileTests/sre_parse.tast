@@ -1332,7 +1332,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         Frame: [10,av,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [3915,4983]`elif op is BRANCH:↵ ...`
                                                 YesNodeGen SourceSection: None
                                                   IsExpressionNodeGen SourceSection: [3920,3932]`op is BRANCH`
                                                     ReadLocalVariableNode SourceSection: [3920,3922]`op`
@@ -1428,7 +1428,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             Identifier: enumerate
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     BlockNode SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [4127,4983]`elif op is GROUPREF_...`
                                                   YesNodeGen SourceSection: None
                                                     IsExpressionNodeGen SourceSection: [4132,4153]`op is GROUPREF_EXIST...`
                                                       ReadLocalVariableNode SourceSection: [4132,4134]`op`
@@ -1539,7 +1539,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 Frame: [9,item_no,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [4410,4983]`elif isinstance(av, ...`
                                                     YesNodeGen SourceSection: None
                                                       PythonCallNodeGen SourceSection: [4415,4439]`isinstance(av, seqty...`
                                                         CallNodeGen SourceSection: None
@@ -2411,7 +2411,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadLocalVariableNode SourceSection: [6003,6004]`j`
                                                     Frame: [4,j,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [6017,7036]`elif op is CALL:↵   ...`
                                               YesNodeGen SourceSection: None
                                                 IsExpressionNodeGen SourceSection: [6022,6032]`op is CALL`
                                                   ReadLocalVariableNode SourceSection: [6022,6024]`op`
@@ -2476,7 +2476,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     ReadLocalVariableNode SourceSection: [6125,6126]`j`
                                                       Frame: [4,j,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [6139,7036]`elif op is SUBPATTER...`
                                                 YesNodeGen SourceSection: None
                                                   IsExpressionNodeGen SourceSection: [6144,6160]`op is SUBPATTERN`
                                                     ReadLocalVariableNode SourceSection: [6144,6146]`op`
@@ -2544,7 +2544,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadLocalVariableNode SourceSection: [6257,6258]`j`
                                                         Frame: [4,j,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [6271,7036]`elif op in _REPEATCO...`
                                                   YesNodeGen SourceSection: None
                                                     ContainsNodeGen SourceSection: [6276,6294]`op in _REPEATCODES`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -2633,7 +2633,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [6405,6406]`1`
                                                               Value: 1
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [6420,7036]`elif op in _UNITCODE...`
                                                     YesNodeGen SourceSection: None
                                                       ContainsNodeGen SourceSection: [6425,6441]`op in _UNITCODES`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -2670,7 +2670,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [6497,6498]`1`
                                                             Value: 1
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [6511,7036]`elif op is GROUPREF:...`
                                                       YesNodeGen SourceSection: None
                                                         IsExpressionNodeGen SourceSection: [6516,6530]`op is GROUPREF`
                                                           ReadLocalVariableNode SourceSection: [6516,6518]`op`
@@ -2746,7 +2746,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             ReadLocalVariableNode SourceSection: [6638,6639]`j`
                                                               Frame: [4,j,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [6652,7036]`elif op is GROUPREF_...`
                                                         YesNodeGen SourceSection: None
                                                           IsExpressionNodeGen SourceSection: [6657,6678]`op is GROUPREF_EXIST...`
                                                             ReadLocalVariableNode SourceSection: [6657,6659]`op`
@@ -2893,7 +2893,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               ReadLocalVariableNode SourceSection: [6972,6973]`j`
                                                                 Frame: [4,j,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [6986,7036]`elif op is SUCCESS:↵...`
                                                           YesNodeGen SourceSection: None
                                                             IsExpressionNodeGen SourceSection: [6991,7004]`op is SUCCESS`
                                                               ReadLocalVariableNode SourceSection: [6991,6993]`op`
@@ -4302,7 +4302,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Identifier: int
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     PythonObjectFactoryNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [9839,10946]`elif c == "u" and so...`
                               YesNodeGen SourceSection: None
                                 AndNode SourceSection: [9844,9870]`c == "u" and source....`
                                   BinaryComparisonNodeGen SourceSection: [9844,9852]`c == "u"`
@@ -4407,7 +4407,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           Identifier: int
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [10145,10946]`elif c == "U" and so...`
                                 YesNodeGen SourceSection: None
                                   AndNode SourceSection: [10150,10176]`c == "U" and source....`
                                     BinaryComparisonNodeGen SourceSection: [10150,10158]`c == "U"`
@@ -4528,7 +4528,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           Frame: [3,c,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [10526,10946]`elif c in OCTDIGITS:...`
                                   YesNodeGen SourceSection: None
                                     ContainsNodeGen SourceSection: [10531,10545]`c in OCTDIGITS`
                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -4628,7 +4628,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             Frame: [3,c,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [10891,10946]`elif c in DIGITS:↵  ...`
                                     YesNodeGen SourceSection: None
                                       ContainsNodeGen SourceSection: [10896,10907]`c in DIGITS`
                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -4967,7 +4967,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Identifier: int
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     PythonObjectFactoryNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [11732,13779]`elif c == "u" and so...`
                               YesNodeGen SourceSection: None
                                 AndNode SourceSection: [11737,11763]`c == "u" and source....`
                                   BinaryComparisonNodeGen SourceSection: [11737,11745]`c == "u"`
@@ -5072,7 +5072,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           Identifier: int
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [12038,13779]`elif c == "U" and so...`
                                 YesNodeGen SourceSection: None
                                   AndNode SourceSection: [12043,12069]`c == "U" and source....`
                                     BinaryComparisonNodeGen SourceSection: [12043,12051]`c == "U"`
@@ -5193,7 +5193,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           Frame: [4,c,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [12419,13779]`elif c == "0":↵     ...`
                                   YesNodeGen SourceSection: None
                                     BinaryComparisonNodeGen SourceSection: [12424,12432]`c == "0"`
                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -5249,7 +5249,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Identifier: int
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [12568,13779]`elif c in DIGITS:↵  ...`
                                     YesNodeGen SourceSection: None
                                       ContainsNodeGen SourceSection: [12573,12584]`c in DIGITS`
                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -6008,7 +6008,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [14932,14933]`0`
                                               Value: 0
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [14947,15001]`elif item[0] != pref...`
                                           YesNodeGen SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [14952,14969]`item[0] != prefix`
                                               LookupAndCallBinaryNodeGen SourceSection: None
@@ -6148,7 +6148,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     ReadLocalVariableNode SourceSection: [15459,15462]`set`
                                       Frame: [11,set,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [15488,15593]`elif op is IN and av...`
                                 YesNodeGen SourceSection: None
                                   AndNode SourceSection: [15493,15528]`op is IN and av[0][0...`
                                     IsExpressionNodeGen SourceSection: [15493,15501]`op is IN`
@@ -6524,7 +6524,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [16763,16779]`subpatternappend`
                                         Frame: [6,subpatternappend,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [16795,31400]`elif this not in SPE...`
                                   NotNodeGen SourceSection: [16800,16825]`this not in SPECIAL_...`
                                     ContainsNodeGen SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -6555,7 +6555,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [16839,16855]`subpatternappend`
                                         Frame: [6,subpatternappend,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [16888,31400]`elif this == "[":↵  ...`
                                     YesNodeGen SourceSection: None
                                       BinaryComparisonNodeGen SourceSection: [16893,16904]`this == "["`
                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -6723,7 +6723,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     YesNodeGen SourceSection: None
                                                 BreakNode SourceSection: [17716,17721]`break`
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [17738,18508]`elif this[0] == "\\"...`
                                                   YesNodeGen SourceSection: None
                                                     BinaryComparisonNodeGen SourceSection: [17743,17758]`this[0] == "\\"`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -7427,7 +7427,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadLocalVariableNode SourceSection: [20795,20811]`subpatternappend`
                                                 Frame: [6,subpatternappend,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [20832,31400]`elif this in REPEAT_...`
                                       YesNodeGen SourceSection: None
                                         ContainsNodeGen SourceSection: [20837,20857]`this in REPEAT_CHARS...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
@@ -7488,7 +7488,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [48,<>temp48,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [20999,22478]`elif this == "*":↵  ...`
                                             YesNodeGen SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [21004,21015]`this == "*"`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -7527,7 +7527,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [50,<>temp50,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [21070,22478]`elif this == "+":↵  ...`
                                               YesNodeGen SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [21075,21086]`this == "+"`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
@@ -7566,7 +7566,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadLocalVariableNode SourceSection: None
                                                     Frame: [52,<>temp52,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [21140,22478]`elif this == "{":↵  ...`
                                                 YesNodeGen SourceSection: None
                                                   BinaryComparisonNodeGen SourceSection: [21145,21156]`this == "{"`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
@@ -8189,7 +8189,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                               PythonObjectFactoryNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [23302,31400]`elif this == ".":↵  ...`
                                         YesNodeGen SourceSection: None
                                           BinaryComparisonNodeGen SourceSection: [23307,23318]`this == "."`
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -8210,7 +8210,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             ReadLocalVariableNode SourceSection: [23332,23348]`subpatternappend`
                                               Frame: [6,subpatternappend,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [23371,31400]`elif this == "(":↵  ...`
                                           YesNodeGen SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [23376,23387]`this == "("`
                                               LookupAndCallBinaryNodeGen SourceSection: None
@@ -8366,7 +8366,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                             NoValueNode SourceSection: None
                                                         BlockNode SourceSection: None
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [24168,25396]`elif sourcematch("="...`
                                                       YesNodeGen SourceSection: None
                                                         PythonCallNodeGen SourceSection: [24173,24189]`sourcematch("=")`
                                                           CallNodeGen SourceSection: None
@@ -8610,7 +8610,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 Frame: [0,source,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                           NoValueNode SourceSection: None
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [25396,30390]`elif char == ":":↵  ...`
                                                     YesNodeGen SourceSection: None
                                                       BinaryComparisonNodeGen SourceSection: [25401,25412]`char == ":"`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -8624,7 +8624,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [27,group,Illegal]
                                                       ObjectLiteralNode SourceSection: [25484,25488]`None`
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [25505,30390]`elif char == "#":↵  ...`
                                                       YesNodeGen SourceSection: None
                                                         BinaryComparisonNodeGen SourceSection: [25510,25521]`char == "#"`
                                                           LookupAndCallBinaryNodeGen SourceSection: None
@@ -8689,7 +8689,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   BlockNode SourceSection: None
                                                           BlockNode SourceSection: None
                                                         ContinueNode SourceSection: [25886,25894]`continue`
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [25912,30390]`elif char in "=!<":↵...`
                                                         YesNodeGen SourceSection: None
                                                           ContainsNodeGen SourceSection: [25917,25930]`char in "=!<"`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -8950,7 +8950,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   Frame: [6,subpatternappend,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                           ContinueNode SourceSection: [27229,27237]`continue`
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [27255,30390]`elif char == "(":↵  ...`
                                                           YesNodeGen SourceSection: None
                                                             BinaryComparisonNodeGen SourceSection: [27260,27271]`char == "("`
                                                               LookupAndCallBinaryNodeGen SourceSection: None
@@ -9349,7 +9349,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   Frame: [6,subpatternappend,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                             ContinueNode SourceSection: [29227,29235]`continue`
-                                                          IfNode SourceSection: None
+                                                          IfNode SourceSection: [29253,30390]`elif char in FLAGS o...`
                                                             YesNodeGen SourceSection: None
                                                               OrNode SourceSection: [29258,29286]`char in FLAGS or cha...`
                                                                 ContainsNodeGen SourceSection: [29258,29271]`char in FLAGS`
@@ -9767,7 +9767,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [31056,31072]`subpatternappend`
                                                   Frame: [6,subpatternappend,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [31130,31400]`elif this == "^":↵  ...`
                                             YesNodeGen SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [31135,31146]`this == "^"`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -9790,7 +9790,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [31160,31176]`subpatternappend`
                                                   Frame: [6,subpatternappend,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [31206,31400]`elif this == "$":↵  ...`
                                               YesNodeGen SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [31211,31222]`this == "$"`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
@@ -10758,7 +10758,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34353,34369]`SRE_FLAG_UNICODE`
                                 Identifier: SRE_FLAG_UNICODE
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          IfNode SourceSection: None
+                          IfNode SourceSection: [34378,34486]`elif flags & SRE_FLA...`
                             YesNodeGen SourceSection: None
                               BinaryArithmeticExpression SourceSection: [34383,34407]`flags & SRE_FLAG_UNI...`
                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -11668,7 +11668,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadLocalVariableNode SourceSection: [37344,37352]`addgroup`
                                           Frame: [8,addgroup,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [37387,38583]`elif c == "0":↵     ...`
                                     YesNodeGen SourceSection: None
                                       BinaryComparisonNodeGen SourceSection: [37392,37400]`c == "0"`
                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -11778,7 +11778,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNode SourceSection: [37576,37583]`lappend`
                                             Frame: [7,lappend,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [37626,38583]`elif c in DIGITS:↵  ...`
                                       YesNodeGen SourceSection: None
                                         ContainsNodeGen SourceSection: [37631,37642]`c in DIGITS`
                                           LookupAndCallBinaryNodeGen SourceSection: None

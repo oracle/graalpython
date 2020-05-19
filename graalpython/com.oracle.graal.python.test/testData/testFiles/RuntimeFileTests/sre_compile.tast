@@ -729,7 +729,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ReadLocalVariableNode SourceSection: [3294,3298]`emit`
                                       Frame: [3,emit,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [3315,4170]`elif flags & SRE_FLA...`
                                 YesNodeGen SourceSection: None
                                   BinaryArithmeticExpression SourceSection: [3320,3343]`flags & SRE_FLAG_LOC...`
                                     LookupAndCallBinaryNodeGen SourceSection: None
@@ -763,7 +763,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadLocalVariableNode SourceSection: [3404,3408]`emit`
                                         Frame: [3,emit,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [3425,4170]`elif not iscased(av)...`
                                   NotNodeGen SourceSection: [3430,3445]`not iscased(av)`
                                     PythonCallNodeGen SourceSection: [3434,3445]`iscased(av)`
                                       CallNodeGen SourceSection: None
@@ -833,7 +833,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             ReadLocalVariableNode SourceSection: [3647,3651]`emit`
                                               Frame: [3,emit,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [3672,4170]`elif lo not in fixes...`
                                         NotNodeGen SourceSection: [3677,3692]`lo not in fixes`
                                           ContainsNodeGen SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -992,7 +992,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadLocalVariableNode SourceSection: [4157,4161]`skip`
                                                 Frame: [13,skip,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [4170,8912]`elif op is IN:↵     ...`
                               YesNodeGen SourceSection: None
                                 IsExpressionNodeGen SourceSection: [4175,4183]`op is IN`
                                   ReadLocalVariableNode SourceSection: [4175,4177]`op`
@@ -1073,7 +1073,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadLocalVariableNode SourceSection: [4352,4356]`emit`
                                         Frame: [3,emit,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [4384,4563]`elif not hascased:↵ ...`
                                     NotNodeGen SourceSection: [4389,4401]`not hascased`
                                       ReadLocalVariableNode SourceSection: [4393,4401]`hascased`
                                         Frame: [16,hascased,Illegal]
@@ -1087,7 +1087,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ReadLocalVariableNode SourceSection: [4419,4423]`emit`
                                           Frame: [3,emit,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [4440,4563]`elif not fixes:  # a...`
                                       NotNodeGen SourceSection: [4445,4454]`not fixes`
                                         ReadLocalVariableNode SourceSection: [4449,4454]`fixes`
                                           Frame: [11,fixes,Illegal]
@@ -1166,7 +1166,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ReadLocalVariableNode SourceSection: [4679,4683]`skip`
                                       Frame: [13,skip,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [4692,8912]`elif op is ANY:↵    ...`
                                 YesNodeGen SourceSection: None
                                   IsExpressionNodeGen SourceSection: [4697,4706]`op is ANY`
                                     ReadLocalVariableNode SourceSection: [4697,4699]`op`
@@ -1204,7 +1204,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadLocalVariableNode SourceSection: [4812,4816]`emit`
                                         Frame: [3,emit,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [4830,8912]`elif op in REPEATING...`
                                   YesNodeGen SourceSection: None
                                     ContainsNodeGen SourceSection: [4835,4856]`op in REPEATING_CODE...`
                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -1498,7 +1498,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadLocalVariableNode SourceSection: [5724,5728]`emit`
                                                 Frame: [3,emit,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [5748,8912]`elif op is SUBPATTER...`
                                     YesNodeGen SourceSection: None
                                       IsExpressionNodeGen SourceSection: [5753,5769]`op is SUBPATTERN`
                                         ReadLocalVariableNode SourceSection: [5753,5755]`op`
@@ -1657,7 +1657,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 Frame: [3,emit,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [6152,8912]`elif op in SUCCESS_C...`
                                       YesNodeGen SourceSection: None
                                         ContainsNodeGen SourceSection: [6157,6176]`op in SUCCESS_CODES`
                                           LookupAndCallBinaryNodeGen SourceSection: None
@@ -1678,7 +1678,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           ReadLocalVariableNode SourceSection: [6190,6194]`emit`
                                             Frame: [3,emit,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [6207,8912]`elif op in ASSERT_CO...`
                                         YesNodeGen SourceSection: None
                                           ContainsNodeGen SourceSection: [6212,6230]`op in ASSERT_CODES`
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -1851,7 +1851,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadLocalVariableNode SourceSection: [6665,6669]`skip`
                                                 Frame: [13,skip,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [6678,8912]`elif op is CALL:↵   ...`
                                           YesNodeGen SourceSection: None
                                             IsExpressionNodeGen SourceSection: [6683,6693]`op is CALL`
                                               ReadLocalVariableNode SourceSection: [6683,6685]`op`
@@ -1935,7 +1935,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 ReadLocalVariableNode SourceSection: [6857,6861]`skip`
                                                   Frame: [13,skip,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [6870,8912]`elif op is AT:↵     ...`
                                             YesNodeGen SourceSection: None
                                               IsExpressionNodeGen SourceSection: [6875,6883]`op is AT`
                                                 ReadLocalVariableNode SourceSection: [6875,6877]`op`
@@ -2009,7 +2009,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [7056,7065]`AT_LOCALE`
                                                         Identifier: AT_LOCALE
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [7090,7212]`elif (flags & SRE_FL...`
                                                   YesNodeGen SourceSection: None
                                                     AndNode SourceSection: [7095,7154]`(flags & SRE_FLAG_UN...`
                                                       BinaryArithmeticExpression SourceSection: [7096,7120]`flags & SRE_FLAG_UNI...`
@@ -2058,7 +2058,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   ReadLocalVariableNode SourceSection: [7212,7216]`emit`
                                                     Frame: [3,emit,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [7229,8912]`elif op is BRANCH:↵ ...`
                                               YesNodeGen SourceSection: None
                                                 IsExpressionNodeGen SourceSection: [7234,7246]`op is BRANCH`
                                                   ReadLocalVariableNode SourceSection: [7234,7236]`op`
@@ -2244,7 +2244,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Frame: [23,tail,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [7740,8912]`elif op is CATEGORY:...`
                                                 YesNodeGen SourceSection: None
                                                   IsExpressionNodeGen SourceSection: [7745,7759]`op is CATEGORY`
                                                     ReadLocalVariableNode SourceSection: [7745,7747]`op`
@@ -2285,7 +2285,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         ReadLocalVariableNode SourceSection: [7853,7855]`av`
                                                           Frame: [22,av,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [7869,7983]`elif (flags & SRE_FL...`
                                                       YesNodeGen SourceSection: None
                                                         AndNode SourceSection: [7874,7933]`(flags & SRE_FLAG_UN...`
                                                           BinaryArithmeticExpression SourceSection: [7875,7899]`flags & SRE_FLAG_UNI...`
@@ -2329,7 +2329,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       ReadLocalVariableNode SourceSection: [7983,7987]`emit`
                                                         Frame: [3,emit,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [8000,8912]`elif op is GROUPREF:...`
                                                   YesNodeGen SourceSection: None
                                                     IsExpressionNodeGen SourceSection: [8005,8019]`op is GROUPREF`
                                                       ReadLocalVariableNode SourceSection: [8005,8007]`op`
@@ -2359,7 +2359,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           ReadLocalVariableNode SourceSection: [8085,8089]`emit`
                                                             Frame: [3,emit,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [8106,8325]`elif flags & SRE_FLA...`
                                                         YesNodeGen SourceSection: None
                                                           BinaryArithmeticExpression SourceSection: [8111,8134]`flags & SRE_FLAG_LOC...`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -2379,7 +2379,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             ReadLocalVariableNode SourceSection: [8152,8156]`emit`
                                                               Frame: [3,emit,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [8190,8325]`elif not fixes:  # a...`
                                                           NotNodeGen SourceSection: [8195,8204]`not fixes`
                                                             ReadLocalVariableNode SourceSection: [8199,8204]`fixes`
                                                               Frame: [11,fixes,Illegal]
@@ -2416,7 +2416,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         ReadLocalVariableNode SourceSection: [8325,8329]`emit`
                                                           Frame: [3,emit,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [8344,8912]`elif op is GROUPREF_...`
                                                     YesNodeGen SourceSection: None
                                                       IsExpressionNodeGen SourceSection: [8349,8370]`op is GROUPREF_EXIST...`
                                                         ReadLocalVariableNode SourceSection: [8349,8351]`op`
@@ -2751,7 +2751,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [9093,9097]`pass`
                                 EmptyNode SourceSection: [9093,9097]`pass`
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [9106,9716]`elif op is LITERAL:↵...`
                                 YesNodeGen SourceSection: None
                                   IsExpressionNodeGen SourceSection: [9111,9124]`op is LITERAL`
                                     ReadLocalVariableNode SourceSection: [9111,9113]`op`
@@ -2769,7 +2769,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ReadLocalVariableNode SourceSection: [9138,9142]`emit`
                                       Frame: [3,emit,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [9155,9716]`elif op is RANGE or ...`
                                   YesNodeGen SourceSection: None
                                     OrNode SourceSection: [9160,9197]`op is RANGE or op is...`
                                       IsExpressionNodeGen SourceSection: [9160,9171]`op is RANGE`
@@ -2812,7 +2812,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ReadLocalVariableNode SourceSection: [9235,9239]`emit`
                                           Frame: [3,emit,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [9255,9716]`elif op is CHARSET:↵...`
                                     YesNodeGen SourceSection: None
                                       IsExpressionNodeGen SourceSection: [9260,9273]`op is CHARSET`
                                         ReadLocalVariableNode SourceSection: [9260,9262]`op`
@@ -2831,7 +2831,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           ReadLocalVariableNode SourceSection: [9287,9291]`code`
                                             Frame: [2,code,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [9311,9716]`elif op is BIGCHARSE...`
                                       YesNodeGen SourceSection: None
                                         IsExpressionNodeGen SourceSection: [9316,9332]`op is BIGCHARSET`
                                           ReadLocalVariableNode SourceSection: [9316,9318]`op`
@@ -2850,7 +2850,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             ReadLocalVariableNode SourceSection: [9346,9350]`code`
                                               Frame: [2,code,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [9370,9716]`elif op is CATEGORY:...`
                                         YesNodeGen SourceSection: None
                                           IsExpressionNodeGen SourceSection: [9375,9389]`op is CATEGORY`
                                             ReadLocalVariableNode SourceSection: [9375,9377]`op`
@@ -2883,7 +2883,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadLocalVariableNode SourceSection: [9447,9451]`emit`
                                                 Frame: [3,emit,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [9479,9633]`elif (flags & SRE_FL...`
                                             YesNodeGen SourceSection: None
                                               AndNode SourceSection: [9484,9543]`(flags & SRE_FLAG_UN...`
                                                 BinaryArithmeticExpression SourceSection: [9485,9509]`flags & SRE_FLAG_UNI...`
@@ -3195,7 +3195,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [10434,10435]`1`
                                                 Value: 1
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [10452,11323]`elif op is RANGE:↵  ...`
                                             YesNodeGen SourceSection: None
                                               IsExpressionNodeGen SourceSection: [10457,10468]`op is RANGE`
                                                 ReadLocalVariableNode SourceSection: [10457,10459]`op`
@@ -3394,7 +3394,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Frame: [10,r,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [11187,11323]`elif op is NEGATE:↵ ...`
                                               YesNodeGen SourceSection: None
                                                 IsExpressionNodeGen SourceSection: [11192,11204]`op is NEGATE`
                                                   ReadLocalVariableNode SourceSection: [11192,11194]`op`
@@ -4856,7 +4856,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,<return_val>,Illegal]
                           ObjectLiteralNode SourceSection: [16174,16178]`None`
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [16183,16326]`elif flags & SRE_FLA...`
                         YesNodeGen SourceSection: None
                           AndNode SourceSection: [16188,16243]`flags & SRE_FLAG_UNI...`
                             BinaryArithmeticExpression SourceSection: [16188,16212]`flags & SRE_FLAG_UNI...`
@@ -5046,7 +5046,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   ReadLocalVariableNode SourceSection: [16635,16647]`prefixappend`
                                     Frame: [3,prefixappend,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [16660,17317]`elif op is SUBPATTER...`
                               YesNodeGen SourceSection: None
                                 IsExpressionNodeGen SourceSection: [16665,16681]`op is SUBPATTERN`
                                   ReadLocalVariableNode SourceSection: [16665,16667]`op`
@@ -5217,7 +5217,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [17076,17079]`len`
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [17104,17208]`elif prefix_skip1 is...`
                                       NotNodeGen SourceSection: [17109,17133]`prefix_skip1 is not ...`
                                         IsExpressionNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [17109,17121]`prefix_skip1`
@@ -5566,7 +5566,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [17946,18736]`elif op is BRANCH:↵ ...`
                         YesNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [17951,17963]`op is BRANCH`
                             ReadLocalVariableNode SourceSection: [17951,17953]`op`
@@ -5706,7 +5706,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ReadLocalVariableNode SourceSection: [18290,18297]`charset`
                                 Frame: [8,charset,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [18302,18736]`elif op is IN:↵     ...`
                           YesNodeGen SourceSection: None
                             IsExpressionNodeGen SourceSection: [18307,18315]`op is IN`
                               ReadLocalVariableNode SourceSection: [18307,18309]`op`
@@ -5781,7 +5781,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               Frame: [11,<return_val>,Illegal]
                                             ObjectLiteralNode SourceSection: [18494,18498]`None`
                                         BlockNode SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [18515,18717]`elif op is RANGE:↵  ...`
                                         YesNodeGen SourceSection: None
                                           IsExpressionNodeGen SourceSection: [18520,18531]`op is RANGE`
                                             ReadLocalVariableNode SourceSection: [18520,18522]`op`
@@ -6205,7 +6205,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Identifier: SRE_INFO_LITERAL
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [19895,19952]`elif charset:↵      ...`
                         YesNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [19900,19907]`charset`
                             Frame: [7,charset,Illegal]
@@ -6369,7 +6369,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ReadLocalVariableNode SourceSection: [20363,20367]`code`
                                 Frame: [0,code,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [20412,20560]`elif charset:↵      ...`
                         YesNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [20417,20424]`charset`
                             Frame: [7,charset,Illegal]
@@ -7273,7 +7273,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 ReadLocalVariableNode SourceSection: [21868,21874]`print_`
                                                   Frame: [2,print_,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [21891,26234]`elif op in (LITERAL,...`
                                               YesNodeGen SourceSection: None
                                                 ContainsNodeGen SourceSection: [21896,22120]`op in (LITERAL, NOT_...`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
@@ -7358,7 +7358,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     ReadLocalVariableNode SourceSection: [22191,22197]`print_`
                                                       Frame: [2,print_,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [22246,26234]`elif op is AT:↵     ...`
                                                 YesNodeGen SourceSection: None
                                                   IsExpressionNodeGen SourceSection: [22251,22259]`op is AT`
                                                     ReadLocalVariableNode SourceSection: [22251,22253]`op`
@@ -7442,7 +7442,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       ReadLocalVariableNode SourceSection: [22410,22416]`print_`
                                                         Frame: [2,print_,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [22442,26234]`elif op is CATEGORY:...`
                                                   YesNodeGen SourceSection: None
                                                     IsExpressionNodeGen SourceSection: [22447,22461]`op is CATEGORY`
                                                       ReadLocalVariableNode SourceSection: [22447,22449]`op`
@@ -7526,7 +7526,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         ReadLocalVariableNode SourceSection: [22618,22624]`print_`
                                                           Frame: [2,print_,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [22650,26234]`elif op in (IN, IN_I...`
                                                     YesNodeGen SourceSection: None
                                                       ContainsNodeGen SourceSection: [22655,22706]`op in (IN, IN_IGNORE...`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -7625,7 +7625,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           ReadLocalVariableNode SourceSection: [22838,22842]`skip`
                                                             Frame: [7,skip,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [22855,26234]`elif op in (RANGE, R...`
                                                       YesNodeGen SourceSection: None
                                                         ContainsNodeGen SourceSection: [22860,22891]`op in (RANGE, RANGE_...`
                                                           LookupAndCallBinaryNodeGen SourceSection: None
@@ -7733,7 +7733,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             ReadLocalVariableNode SourceSection: [22970,22976]`print_`
                                                               Frame: [2,print_,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [23045,26234]`elif op is CHARSET:↵...`
                                                         YesNodeGen SourceSection: None
                                                           IsExpressionNodeGen SourceSection: [23050,23063]`op is CHARSET`
                                                             ReadLocalVariableNode SourceSection: [23050,23052]`op`
@@ -7799,7 +7799,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [23158,23167]`_CODEBITS`
                                                                   Identifier: _CODEBITS
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [23180,26234]`elif op is BIGCHARSE...`
                                                           YesNodeGen SourceSection: None
                                                             IsExpressionNodeGen SourceSection: [23185,23201]`op is BIGCHARSET`
                                                               ReadLocalVariableNode SourceSection: [23185,23187]`op`
@@ -8083,7 +8083,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadFromCellNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [23698,23699]`1`
                                                                   Value: 1
-                                                          IfNode SourceSection: None
+                                                          IfNode SourceSection: [23712,26234]`elif op in (MARK, GR...`
                                                             YesNodeGen SourceSection: None
                                                               ContainsNodeGen SourceSection: [23717,23822]`op in (MARK, GROUPRE...`
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -8145,7 +8145,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadLocalVariableNode SourceSection: [23893,23899]`print_`
                                                                     Frame: [2,print_,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                            IfNode SourceSection: None
+                                                            IfNode SourceSection: [23921,26234]`elif op is JUMP:↵   ...`
                                                               YesNodeGen SourceSection: None
                                                                 IsExpressionNodeGen SourceSection: [23926,23936]`op is JUMP`
                                                                   ReadLocalVariableNode SourceSection: [23926,23928]`op`
@@ -8204,7 +8204,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     IntegerLiteralNode SourceSection: [24034,24035]`1`
                                                                       Value: 1
-                                                              IfNode SourceSection: None
+                                                              IfNode SourceSection: [24048,26234]`elif op is BRANCH:↵ ...`
                                                                 YesNodeGen SourceSection: None
                                                                   IsExpressionNodeGen SourceSection: [24053,24065]`op is BRANCH`
                                                                     ReadLocalVariableNode SourceSection: [24053,24055]`op`
@@ -8367,7 +8367,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [24477,24478]`1`
                                                                         Value: 1
-                                                                IfNode SourceSection: None
+                                                                IfNode SourceSection: [24491,26234]`elif op in (REPEAT, ...`
                                                                   YesNodeGen SourceSection: None
                                                                     ContainsNodeGen SourceSection: [24496,24538]`op in (REPEAT, REPEA...`
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -8527,7 +8527,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         ReadLocalVariableNode SourceSection: [24770,24774]`skip`
                                                                           Frame: [7,skip,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                                  IfNode SourceSection: None
+                                                                  IfNode SourceSection: [24787,26234]`elif op is GROUPREF_...`
                                                                     YesNodeGen SourceSection: None
                                                                       IsExpressionNodeGen SourceSection: [24792,24813]`op is GROUPREF_EXIST...`
                                                                         ReadLocalVariableNode SourceSection: [24792,24794]`op`
@@ -8619,7 +8619,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                           IntegerLiteralNode SourceSection: [24926,24927]`2`
                                                                             Value: 2
-                                                                    IfNode SourceSection: None
+                                                                    IfNode SourceSection: [24940,26234]`elif op in (ASSERT, ...`
                                                                       YesNodeGen SourceSection: None
                                                                         ContainsNodeGen SourceSection: [24945,24971]`op in (ASSERT, ASSER...`
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
@@ -8745,7 +8745,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             ReadLocalVariableNode SourceSection: [25118,25122]`skip`
                                                                               Frame: [7,skip,Illegal]
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      IfNode SourceSection: None
+                                                                      IfNode SourceSection: [25135,26234]`elif op is INFO:↵   ...`
                                                                         YesNodeGen SourceSection: None
                                                                           IsExpressionNodeGen SourceSection: [25140,25150]`op is INFO`
                                                                             ReadLocalVariableNode SourceSection: [25140,25142]`op`

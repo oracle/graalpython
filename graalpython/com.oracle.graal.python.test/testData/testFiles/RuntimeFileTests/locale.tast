@@ -1390,7 +1390,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Identifier: _strip_padding
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [5965,6174]`elif percent[-1] in ...`
                         YesNodeGen SourceSection: None
                           ContainsNodeGen SourceSection: [5970,5990]`percent[-1] in 'diu'...`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -2384,7 +2384,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Frame: [6,s,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [9315,9318]`')'`
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [9323,9659]`elif sign_pos == 1:↵...`
                         YesNodeGen SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [9328,9341]`sign_pos == 1`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -2407,7 +2407,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: [9362,9363]`s`
                               Frame: [6,s,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [9368,9659]`elif sign_pos == 2:↵...`
                           YesNodeGen SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [9373,9386]`sign_pos == 2`
                               LookupAndCallBinaryNodeGen SourceSection: None
@@ -2430,7 +2430,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: [9404,9408]`sign`
                                 Frame: [11,sign,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          IfNode SourceSection: None
+                          IfNode SourceSection: [9413,9659]`elif sign_pos == 3:↵...`
                             YesNodeGen SourceSection: None
                               BinaryComparisonNodeGen SourceSection: [9418,9431]`sign_pos == 3`
                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -2454,7 +2454,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadLocalVariableNode SourceSection: [9445,9446]`s`
                                     Frame: [6,s,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [9470,9659]`elif sign_pos == 4:↵...`
                               YesNodeGen SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [9475,9488]`sign_pos == 4`
                                   LookupAndCallBinaryNodeGen SourceSection: None
@@ -4125,7 +4125,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16113,16118]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [16144,16192]`elif code == 'C':↵  ...`
                         YesNodeGen SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [16149,16160]`code == 'C'`
                             LookupAndCallBinaryNodeGen SourceSection: None

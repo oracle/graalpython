@@ -1681,7 +1681,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [4402,4403]`0`
                                             Value: 0
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [4413,4686]`elif 'dict' in kwarg...`
                                         YesNodeGen SourceSection: None
                                           ContainsNodeGen SourceSection: [4418,4434]`'dict' in kwargs`
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -2683,7 +2683,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadLocalVariableNode SourceSection: [6508,6516]`initlist`
                                             Frame: [1,initlist,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [6529,6679]`elif isinstance(init...`
                                           YesNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [6534,6564]`isinstance(initlist,...`
                                               CallNodeGen SourceSection: None
@@ -3624,7 +3624,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadLocalVariableNode SourceSection: [7505,7509]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [7552,7654]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [7557,7591]`isinstance(other, ty...`
                                             CallNodeGen SourceSection: None
@@ -3792,7 +3792,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadLocalVariableNode SourceSection: [7791,7795]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [7838,7940]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [7843,7877]`isinstance(other, ty...`
                                             CallNodeGen SourceSection: None
@@ -3952,7 +3952,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [8083,8088]`other`
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [8102,8233]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [8107,8141]`isinstance(other, ty...`
                                             CallNodeGen SourceSection: None
@@ -5029,7 +5029,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [9408,9411]`seq`
                                               Frame: [1,seq,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [9420,9541]`elif isinstance(seq,...`
                                             YesNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [9425,9452]`isinstance(seq, User...`
                                                 CallNodeGen SourceSection: None
@@ -6290,7 +6290,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNode SourceSection: [10990,10994]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [11037,11127]`elif isinstance(othe...`
                                             YesNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [11042,11064]`isinstance(other, st...`
                                                 CallNodeGen SourceSection: None

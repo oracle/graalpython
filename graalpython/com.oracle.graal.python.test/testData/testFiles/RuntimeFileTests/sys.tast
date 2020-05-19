@@ -1191,7 +1191,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [5,hookname,Illegal]
                             StringLiteralNode SourceSection: [5980,5995]`'pdb.set_trace'`
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [6000,6046]`elif hookname == '0'...`
                           YesNodeGen SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [6005,6020]`hookname == '0'`
                               LookupAndCallBinaryNodeGen SourceSection: None

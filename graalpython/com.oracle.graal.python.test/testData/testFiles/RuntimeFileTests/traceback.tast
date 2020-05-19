@@ -5287,7 +5287,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                               GeneratorAccessNode SourceSection: None
-                                            GeneratorIfNode SourceSection: None
+                                            GeneratorIfNode SourceSection: [22719,22917]`elif (self.__context...`
                                               GeneratorAccessNode SourceSection: None
                                               YesNodeGen SourceSection: None
                                                 AndNode SourceSection: [22725,22803]`self.__context__ is ...`

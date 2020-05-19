@@ -9805,7 +9805,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [36432,36433]`0`
                                             Value: 0
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [36443,36716]`elif 'dict' in kwarg...`
                                         YesNodeGen SourceSection: None
                                           ContainsNodeGen SourceSection: [36448,36464]`'dict' in kwargs`
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -10807,7 +10807,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadLocalVariableNode SourceSection: [38538,38546]`initlist`
                                             Frame: [1,initlist,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [38559,38709]`elif isinstance(init...`
                                           YesNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [38564,38594]`isinstance(initlist,...`
                                               CallNodeGen SourceSection: None
@@ -11748,7 +11748,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadLocalVariableNode SourceSection: [39535,39539]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [39582,39684]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [39587,39621]`isinstance(other, ty...`
                                             CallNodeGen SourceSection: None
@@ -11916,7 +11916,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadLocalVariableNode SourceSection: [39821,39825]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [39868,39970]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [39873,39907]`isinstance(other, ty...`
                                             CallNodeGen SourceSection: None
@@ -12076,7 +12076,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadLocalVariableNode SourceSection: [40113,40118]`other`
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [40132,40263]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [40137,40171]`isinstance(other, ty...`
                                             CallNodeGen SourceSection: None
@@ -13153,7 +13153,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadLocalVariableNode SourceSection: [41438,41441]`seq`
                                               Frame: [1,seq,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [41450,41571]`elif isinstance(seq,...`
                                             YesNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [41455,41482]`isinstance(seq, User...`
                                                 CallNodeGen SourceSection: None
@@ -14414,7 +14414,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadLocalVariableNode SourceSection: [43020,43024]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [43067,43157]`elif isinstance(othe...`
                                             YesNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [43072,43094]`isinstance(other, st...`
                                                 CallNodeGen SourceSection: None

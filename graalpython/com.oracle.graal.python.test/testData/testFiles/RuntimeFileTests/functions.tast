@@ -1026,7 +1026,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4033]`__getframe__`
                                   Identifier: __getframe__
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [4050,4134]`elif len(obj) != 1:↵...`
                           YesNodeGen SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [4055,4068]`len(obj) != 1`
                               LookupAndCallBinaryNodeGen SourceSection: None

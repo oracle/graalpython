@@ -894,7 +894,7 @@ elif_stmt returns [SSTNode result]
 :
 	'elif' test ':' suite
 	elif_stmt
-	{ $result = new IfSSTNode($test.result, $suite.result, $elif_stmt.result, getStartIndex($ctx), getStopIndex($elif_stmt.stop)); }
+	{ $result = new IfSSTNode($test.result, $suite.result, $elif_stmt.result, getStartIndex($ctx), getStopIndex(_localctx.elif_stmt.stop)); }
 	|
 	'else' ':' suite
 	{ $result = $suite.result; }

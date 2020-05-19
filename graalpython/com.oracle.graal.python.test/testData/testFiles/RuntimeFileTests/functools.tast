@@ -3502,7 +3502,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [4,kwds,Illegal]
                                         DictLiteralNodeGen SourceSection: [11512,11514]`{}`
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [11523,11631]`elif type(kwds) is n...`
                                         NotNodeGen SourceSection: [11528,11550]`type(kwds) is not di...`
                                           IsExpressionNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [11528,11538]`type(kwds)`
@@ -5125,7 +5125,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Frame: [5,tuple,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [16735,16811]`elif len(key) == 1 a...`
                         YesNodeGen SourceSection: None
                           AndNode SourceSection: [16740,16783]`len(key) == 1 and ty...`
                             BinaryComparisonNodeGen SourceSection: [16740,16753]`len(key) == 1`
@@ -5704,7 +5704,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [19387,22710]`elif maxsize is None...`
                         YesNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [19392,19407]`maxsize is None`
                             ReadLocalCellNodeGen SourceSection: [19392,19399]`maxsize`
@@ -6206,7 +6206,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [21038,21042]`pass`
                                               EmptyNode SourceSection: [21038,21042]`pass`
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [21059,22667]`elif full:↵         ...`
                                               YesNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [21064,21068]`full`
                                                   ReadLocalVariableNode SourceSection: None
