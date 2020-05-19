@@ -49,6 +49,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorControlNode {
@@ -90,6 +91,17 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             catchExceptionInGeneratorFirstTime(frame, exception);
             reset(frame);
             return;
+        } catch (ControlFlowException e) {
+            throw e;
+        } catch (Exception | StackOverflowError | AssertionError e) {
+            if (shouldCatchAllExceptions()) {
+                gen.setActive(frame, exceptFlag, true);
+                catchExceptionInGeneratorFirstTime(frame, wrapJavaException(e));
+                reset(frame);
+                return;
+            } else {
+                throw e;
+            }
         }
 
         gen.setActive(frame, elseFlag, true);
