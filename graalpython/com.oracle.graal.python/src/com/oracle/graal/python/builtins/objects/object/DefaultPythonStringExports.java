@@ -102,6 +102,20 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
+    static class IsSame {
+        @Specialization
+        static boolean ss(String receiver, String other) {
+            return receiver == other;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean sO(String receiver, Object other) {
+            return false;
+        }
+    }
+
+    @ExportMessage
     static class EqualsInternal {
         @Specialization
         static int ss(String receiver, String other, @SuppressWarnings("unused") ThreadState threadState) {

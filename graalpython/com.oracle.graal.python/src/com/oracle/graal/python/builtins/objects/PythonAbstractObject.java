@@ -110,7 +110,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -793,10 +793,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean isSame(Object other,
+                    @Shared("isNode") @Cached IsNode isNode) {
+        return isNode.execute(this, other);
+    }
+
+    @ExportMessage
     public int equalsInternal(Object other, ThreadState state,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                    @Cached IsExpressionNode.IsNode isNode,
+                    @Shared("isNode") @Cached IsNode isNode,
                     @Exclusive @Cached CallBinaryMethodNode callNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupEqAttrNode) {
         Object eqAttr = lookupEqAttrNode.execute(this, __EQ__);

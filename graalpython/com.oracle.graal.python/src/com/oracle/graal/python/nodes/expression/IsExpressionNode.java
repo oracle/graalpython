@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.RootCallTarget;
@@ -74,7 +75,11 @@ public abstract class IsExpressionNode extends BinaryOpNode {
     @GenerateUncached
     public abstract static class IsNode extends Node {
 
-        public abstract boolean execute(Object left, Object right);
+        protected abstract boolean executeInternal(Object left, Object right);
+
+        public final boolean execute(Object left, Object right) {
+            return left == right || executeInternal(left, right);
+        }
 
         @Specialization
         boolean doBB(boolean left, boolean right) {
@@ -234,6 +239,10 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Fallback
         boolean doGeneric(Object left, Object right) {
             return left == right;
+        }
+
+        public static IsNode create() {
+            return IsNodeGen.create();
         }
     }
 }

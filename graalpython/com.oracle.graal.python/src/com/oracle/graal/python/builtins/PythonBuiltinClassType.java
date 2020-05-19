@@ -40,6 +40,8 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -515,14 +517,28 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     }
 
     @ExportMessage
-    static int equalsInternal(PythonBuiltinClassType self, Object other, @SuppressWarnings("unused") ThreadState state) {
-        if (self == other) {
-            return 1;
-        } else if (other instanceof PythonBuiltinClass) {
-            return self == ((PythonBuiltinClass) other).getType() ? 1 : 0;
-        } else {
-            return 0;
+    static class IsSame {
+        @Specialization
+        static boolean tt(PythonBuiltinClassType receiver, PythonBuiltinClassType other) {
+            return receiver == other;
         }
+
+        @Specialization
+        static boolean tc(PythonBuiltinClassType receiver, PythonBuiltinClass other) {
+            return receiver == other.getType();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean tO(PythonBuiltinClassType receiver, Object other) {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    static int equalsInternal(PythonBuiltinClassType self, Object other, @SuppressWarnings("unused") ThreadState state,
+                    @CachedLibrary("self") PythonObjectLibrary selfLib) {
+        return selfLib.isSame(self, other) ? 1 : 0;
     }
 
     @ExportMessage

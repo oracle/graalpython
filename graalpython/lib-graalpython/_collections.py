@@ -198,7 +198,7 @@ class deque(object):
             n -= 1
             assert b is not None
             item = b.data[index]
-            if item == v:
+            if item is v or item == v:
                 count += 1
 
             self._checklock(lock)
@@ -296,7 +296,7 @@ class deque(object):
             if self.len != n:
                 raise IndexError("deque mutated during remove().")
 
-            if item == x:
+            if item is x or item == x:
                 self.delitem(i)
                 return
             # Advance the block/index pair
@@ -390,7 +390,7 @@ class deque(object):
                     return x2 is None
                 assert False, "bad value for op"
 
-            if not x1 == x2:
+            if not (x1 is x2 or x1 == x2):
                 if op == 'eq':
                     return False
                 if op == 'ne':
@@ -415,7 +415,7 @@ class deque(object):
             n -= 1
             assert b is not None
             item = b.data[index]
-            if item == v:
+            if item is v or item == v:
                 return True
 
             self._checklock(lock)
@@ -470,7 +470,7 @@ class deque(object):
             n -= 1
             assert b is not None
             item = b.data[index]
-            if item == v:
+            if item is v or item == v:
                 return stop - n - 1
 
             self._checklock(lock)
