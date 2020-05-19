@@ -468,54 +468,22 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double doDL(double left, long right, long mod) {
-            return Math.pow(left, right) % mod;
+        double doDL(long left, double right, @SuppressWarnings("unused") PNone none) {
+            return Math.pow(left, right);
         }
 
         @Specialization
-        double doDPi(double left, PInt right, long mod) {
-            return Math.pow(left, right.doubleValue()) % mod;
+        double doDPi(PInt left, double right, @SuppressWarnings("unused") PNone none) {
+            return Math.pow(left.doubleValue(), right);
         }
 
-        @Specialization
-        double doDD(double left, double right, long mod) {
-            return Math.pow(left, right) % mod;
-        }
-
-        @Specialization
-        double doDL(double left, long right, PInt mod) {
-            return Math.pow(left, right) % mod.doubleValue();
-        }
-
-        @Specialization
-        double doDPi(double left, PInt right, PInt mod) {
-            return Math.pow(left, right.doubleValue()) % mod.doubleValue();
-        }
-
-        @Specialization
-        double doDD(double left, double right, PInt mod) {
-            return Math.pow(left, right) % mod.doubleValue();
-        }
-
-        @Specialization
-        double doDL(double left, long right, double mod) {
-            return Math.pow(left, right) % mod;
-        }
-
-        @Specialization
-        double doDPi(double left, PInt right, double mod) {
-            return Math.pow(left, right.doubleValue()) % mod;
-        }
-
-        @Specialization
-        double doDD(double left, double right, double mod) {
-            return Math.pow(left, right) % mod;
-        }
-
-        @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right, Object none) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        Object doGeneric(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right, Object mod) {
+            if (mod instanceof PNone) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            } else {
+                throw raise(PythonBuiltinClassType.TypeError, "pow() 3rd argument not allowed unless all arguments are integers");
+            }
         }
     }
 

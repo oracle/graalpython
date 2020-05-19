@@ -74,8 +74,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -101,6 +99,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -665,54 +664,11 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @ReportPolymorphism
     abstract static class PowNode extends PythonTernaryBuiltinNode {
-
-        protected static PowNode create() {
-            return null;
-        }
-
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        static int doIntegerFast(int left, int right, @SuppressWarnings("unused") PNone none) {
-            int result = 1;
-            int exponent = right;
-            int base = left;
-            while (exponent != 0) {
-                if ((exponent & 1) != 0) {
-                    result = Math.multiplyExact(result, base);
-                }
-                exponent >>= 1;
-                base = Math.multiplyExact(base, base);
-            }
-            return result;
-        }
-
-        @Specialization(guards = "right >= 0", replaces = "doIntegerFast", rewriteOn = ArithmeticException.class)
-        static long doInteger(int left, int right, PNone none) {
-            return doLongFast((long) left, (long) right, none);
-        }
-
-        @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        static long doLongFast(long left, int right, PNone none) {
-            return doLongFast(left, (long) right, none);
-        }
-
-        @Specialization(guards = "right >= 0")
-        PInt doLong(long left, int right, PNone none) {
-            return doLong(left, (long) right, none);
-        }
-
-        @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        static long doLongFast(int left, long right, PNone none) {
-            return doLongFast((long) left, right, none);
-        }
-
-        @Specialization(guards = "right >= 0")
-        PInt doLong(int left, long right, PNone none) {
-            return doLong((long) left, right, none);
-        }
-
-        @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        static long doLongFast(long left, long right, @SuppressWarnings("unused") PNone none) {
+        static long doLLFast(long left, long right, @SuppressWarnings("unused") PNone none) {
             long result = 1;
             long exponent = right;
             long base = left;
@@ -726,97 +682,156 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "right >= 0", replaces = "doLongFast")
-        PInt doLong(long left, long right, @SuppressWarnings("unused") PNone none) {
+        @Specialization(guards = "right >= 0", replaces = "doLLFast")
+        PInt doLLPos(long left, long right, @SuppressWarnings("unused") PNone none) {
             return factory().createInt(op(PInt.longToBigInteger(left), right));
         }
 
         @Specialization(guards = "right < 0")
-        static double doInt(long left, long right, @SuppressWarnings("unused") PNone none) {
-            return Math.pow(left, right);
-        }
-
-        @Specialization
-        static double doInt(long left, double right, @SuppressWarnings("unused") PNone none) {
+        static double doLLNeg(long left, long right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static Object doLongPIntNarrow(long left, PInt right, PNone none) {
+        static Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none) {
             long lright = right.longValueExact();
             if (lright >= 0) {
-                return doLongFast(left, lright, none);
+                return doLLFast(left, lright, none);
             }
-            return doInt(left, lright, none);
+            return doLLNeg(left, lright, none);
         }
 
-        @Specialization(replaces = "doLongPIntNarrow")
-        PInt doLongPInt(long left, PInt right, @SuppressWarnings("unused") PNone none) {
-            try {
-                return factory().createInt(op(PInt.longToBigInteger(left), right.longValueExact()));
-            } catch (ArithmeticException e) {
-                // fall through to normal computation
+        @Specialization(replaces = "doLPNarrow")
+        Object doLP(long left, PInt right, @SuppressWarnings("unused") PNone none) {
+            Object result = op(PInt.longToBigInteger(left), right.getValue());
+            if (result instanceof BigInteger) {
+                return factory().createInt((BigInteger) result);
+            } else {
+                return result;
             }
-            double value = Math.pow(left, right.doubleValue());
-            return factory().createInt((long) value);
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doPIntLongNarrow(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+        long doPLNarrow(PInt left, long right, @SuppressWarnings("unused") PNone none) {
             return PInt.longValueExact(op(left.getValue(), right));
         }
 
-        @Specialization(guards = "right >= 0", replaces = "doPIntLongNarrow")
-        PInt doPIntLongPositive(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+        @Specialization(guards = "right >= 0", replaces = "doPLNarrow")
+        PInt doPLPos(PInt left, long right, @SuppressWarnings("unused") PNone none) {
             return factory().createInt(op(left.getValue(), right));
         }
 
         @Specialization(guards = "right < 0")
-        double doPIntLongNegative(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+        double doPLNeg(PInt left, long right, @SuppressWarnings("unused") PNone none) {
             return TrueDivNode.op(BigInteger.ONE, op(left.getValue(), -right));
         }
 
         @Specialization
-        PInt doPInt(PInt left, PInt right, @SuppressWarnings("unused") PNone none) {
+        Object doPP(PInt left, PInt right, @SuppressWarnings("unused") PNone none) {
+            Object result = op(left.getValue(), right.getValue());
+            if (result instanceof BigInteger) {
+                return factory().createInt((BigInteger) result);
+            } else {
+                return result;
+            }
+        }
+
+        @Specialization(guards = "right >= 0")
+        long doLLLPos(long left, long right, long mod) {
             try {
-                return factory().createInt(op(left.getValue(), right.longValueExact()));
+                return PInt.longValueExact(op(left, right, mod));
             } catch (ArithmeticException e) {
-                // fall through to normal computation
+                // cannot happen since we took modulo long
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException();
             }
-            double value = Math.pow(left.doubleValue(), right.doubleValue());
-            return factory().createInt((long) value);
         }
 
-        @Specialization
-        Object powModulo(VirtualFrame frame, Object x, Object y, long z,
-                        @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
-                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
-            Object result = powNode.execute(frame, x, y, PNone.NO_VALUE);
-            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+        @Specialization(guards = "right < 0")
+        double doLLLNeg(long left, long right, long mod) {
+            return PInt.doubleValue(op(left, right, mod));
+        }
+
+        // see cpython://Objects/longobject.c#long_pow
+        @Specialization(replaces = "doPP")
+        Object powModulo(Object x, Object y, Object z) {
+            if (!(MathGuards.isInteger(x) && MathGuards.isInteger(y))) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            Object result;
+            if (z instanceof PNone) {
+                result = objectOp(x, y);
+            } else if (MathGuards.isInteger(z)) {
+                result = objectOp(x, y, z);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            if (result instanceof BigInteger) {
+                return factory().createInt((BigInteger) result);
+            } else {
                 return result;
             }
-            return modNode.executeObject(frame, result, z);
         }
 
-        @Specialization
-        Object powModuloPInt(VirtualFrame frame, Object x, Object y, PInt z,
-                        @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
-                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
-            Object result = powNode.execute(frame, x, y, PNone.NO_VALUE);
-            if (result == PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
+        @TruffleBoundary
+        private Object objectOp(Object left, Object right) {
+            BigInteger bigLeft = integerToBigInteger(left);
+            BigInteger bigRight = integerToBigInteger(right);
+            return op(bigLeft, bigRight);
+        }
+
+        @TruffleBoundary
+        private static Object objectOp(Object left, Object right, Object mod) {
+            BigInteger bigLeft = integerToBigInteger(left);
+            BigInteger bigRight = integerToBigInteger(right);
+            BigInteger bigMod = integerToBigInteger(mod);
+            try {
+                return bigLeft.modPow(bigRight, bigMod);
+            } catch (ArithmeticException e) {
+                return Math.pow(bigLeft.doubleValue(), bigRight.doubleValue()) % bigMod.doubleValue();
             }
-            return modNode.executeObject(frame, result, z);
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doFallback(Object x, Object y, Object z) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        private static BigInteger integerToBigInteger(Object value) {
+            if (value instanceof Boolean) {
+                return ((boolean) value) ? BigInteger.ONE : BigInteger.ZERO;
+            } else if (value instanceof Integer) {
+                return BigInteger.valueOf((Integer) value);
+            } else if (value instanceof Long) {
+                return BigInteger.valueOf((long) value);
+            } else if (value instanceof PInt) {
+                return ((PInt) value).getValue();
+            } else {
+                throw new IllegalStateException("never reached");
+            }
+        }
+
+        @TruffleBoundary
+        private static BigInteger op(long left, long right, long mod) {
+            return BigInteger.valueOf(left).modPow(BigInteger.valueOf(right), BigInteger.valueOf(mod));
+        }
+
+        @TruffleBoundary
+        private Object op(BigInteger left, BigInteger right) {
+            if (right.signum() >= 0) {
+                try {
+                    return op(left, right.longValueExact());
+                } catch (ArithmeticException e) {
+                    // we'll raise unless left is one of the shortcut values
+                    return op(left, Long.MAX_VALUE);
+                }
+            } else {
+                try {
+                    return Math.pow(left.longValueExact(), right.longValueExact());
+                } catch (ArithmeticException e) {
+                    return Math.pow(left.doubleValue(), right.doubleValue());
+                }
+            }
         }
 
         @TruffleBoundary
         private BigInteger op(BigInteger a, long b) {
+            assert b >= 0;
             try {
                 // handle shortcut cases:
                 int value = a.intValueExact();
