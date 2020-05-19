@@ -130,7 +130,7 @@ final class DefaultPythonDoubleExports {
             if (receiver % 1 == 0) {
                 return other.compareTo(receiver.longValue()) == 0 ? 1 : 0;
             } else {
-                return 1;
+                return 0;
             }
         }
 
