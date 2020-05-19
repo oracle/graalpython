@@ -187,13 +187,12 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     protected PException wrapJavaException(Throwable e) {
         PException pe = PException.fromObject(getBaseException(e), this);
         // Re-attach truffle stacktrace
-        ExceptionHandlingStatementNode.moveTruffleStacktTrace(e, pe);
+        moveTruffleStackTrace(e, pe);
         return pe;
     }
 
-
     @TruffleBoundary
-    private static void moveTruffleStacktTrace(Throwable e, PException pe) {
+    private static void moveTruffleStackTrace(Throwable e, PException pe) {
         pe.initCause(e.getCause());
         // Host exceptions have their stacktrace already filled in, call this to set
         // the cutoff point to the catch site
