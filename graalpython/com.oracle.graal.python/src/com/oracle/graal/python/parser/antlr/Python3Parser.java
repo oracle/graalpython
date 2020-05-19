@@ -965,7 +965,7 @@ public class Python3Parser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			 ArgDefListBuilder args = new ArgDefListBuilder(); 
-			setState(247);
+			setState(245);
 			match(OPEN_PAREN);
 			setState(247);
 			_errHandler.sync(this);
@@ -1619,7 +1619,7 @@ public class Python3Parser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			 ArgDefListBuilder args = new ArgDefListBuilder(); 
-			setState(508);
+			setState(506);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,63,_ctx) ) {
 			case 1:
@@ -5074,7 +5074,7 @@ public class Python3Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(1006);
+			setState(1004);
 			_localctx.l = match(LAMBDA);
 			 ArgDefListBuilder args = null; 
 			setState(1009);
@@ -5140,7 +5140,7 @@ public class Python3Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(1019);
+			setState(1017);
 			_localctx.l = match(LAMBDA);
 			 ArgDefListBuilder args = null; 
 			setState(1022);
