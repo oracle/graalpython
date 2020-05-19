@@ -114,7 +114,7 @@ def auto_wrap_methods(delegate_name, delegate_attributes, owner_globals):
                 def wrapper(*args, **kwargs):
                     try:
                         return method(*args, **kwargs)
-                    except:
+                    except NotImplementedError:
                         delegate_module = __import__(delegate_name)
                         return getattr(delegate_module, attribute)(*args, **kwargs)
                 return wrapper
