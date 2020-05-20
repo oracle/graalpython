@@ -1225,7 +1225,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object maxSequence(VirtualFrame frame, PythonObject arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
+        Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
@@ -1236,7 +1236,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object minmaxSequenceWithKey(VirtualFrame frame, PythonObject arg1, @SuppressWarnings("unused") Object[] args, PythonObject keywordArg,
+        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
@@ -1291,7 +1291,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length != 0")
-        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, PythonObject keywordArg,
+        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached CallNode keyCall,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
@@ -1336,7 +1336,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        private static Object applyKeyFunction(VirtualFrame frame, PythonObject keywordArg, CallNode keyCall, Object currentValue) {
+        private static Object applyKeyFunction(VirtualFrame frame, Object keywordArg, CallNode keyCall, Object currentValue) {
             return keyCall == null ? currentValue : keyCall.execute(frame, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
         }
     }
