@@ -101,6 +101,7 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
             }
         }
         if (coerceToDouble == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             coerceToDouble = insert(CoerceToDoubleNode.create());
         }
         return factory().createComplex(coerceToDouble.execute(frame, x), 0);
