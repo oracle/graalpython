@@ -268,7 +268,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @TruffleBoundary
         protected String longToString(long x) {
-            return Long.toBinaryString(Math.abs(x));
+            return Long.toBinaryString(x);
         }
 
         @TruffleBoundary
@@ -277,8 +277,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        String doL(long x) {
-            return buildString(x < 0, longToString(x));
+        String doL(long x,
+                        @Cached ConditionProfile isMinLong) {
+            if (isMinLong.profile(x == Long.MIN_VALUE)) {
+                return buildString(true, bigToString(PInt.longToBigInteger(x)));
+            }
+            return buildString(x < 0, longToString(Math.abs(x)));
         }
 
         @Specialization
@@ -296,7 +300,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached ConditionProfile isMinLong,
                         @Cached IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached BranchProfile isInt,
@@ -306,10 +311,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
-                    return doL(lib.asSize(index));
+                    return doL(lib.asSize(index), isMinLong);
                 } else if (index instanceof Long) {
                     isLong.enter();
-                    return doL((long) index);
+                    return doL((long) index, isMinLong);
                 } else if (index instanceof PInt) {
                     isPInt.enter();
                     return doPI((PInt) index);
