@@ -162,6 +162,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -3114,25 +3115,31 @@ public abstract class CExtNodes {
 
         @Specialization(limit = "3", //
                         guards = {"cachedPointer == pointer", "cachedValue != null"}, //
-                        assumptions = {"singleContextAssumption()", "getHandleValidAssumption(cachedValue)"})
-        static PythonNativeWrapper doLongCachedSingleContext(@SuppressWarnings("unused") long pointer,
+                        assumptions = "singleContextAssumption()", //
+                        rewriteOn = InvalidAssumptionException.class)
+        static PythonNativeWrapper resolveLongCached(@SuppressWarnings("unused") long pointer,
                         @Cached("pointer") @SuppressWarnings("unused") long cachedPointer,
-                        @Cached("resolveHandleUncached(pointer)") PythonNativeWrapper cachedValue) {
+                        @Cached("resolveHandleUncached(pointer)") PythonNativeWrapper cachedValue,
+                        @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
+            associationValidAssumption.check();
             return cachedValue;
         }
 
         @Specialization(limit = "3", //
                         guards = {"isSame(referenceLibrary, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
-                        assumptions = {"singleContextAssumption()", "getHandleValidAssumption(cachedValue)"})
-        static PythonNativeWrapper doObjectCachedSingleContext(@SuppressWarnings("unused") Object pointerObject,
+                        assumptions = "singleContextAssumption()", //
+                        rewriteOn = InvalidAssumptionException.class)
+        static PythonNativeWrapper resolveObjectCached(@SuppressWarnings("unused") Object pointerObject,
                         @Cached("pointerObject") @SuppressWarnings("unused") Object cachedPointerObject,
                         @CachedLibrary("cachedPointerObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
-                        @Cached("resolveHandleUncached(pointerObject)") PythonNativeWrapper cachedValue) {
+                        @Cached("resolveHandleUncached(pointerObject)") PythonNativeWrapper cachedValue,
+                        @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
+            associationValidAssumption.check();
             return cachedValue;
         }
 
-        @Specialization(replaces = {"doObjectCachedSingleContext", "doLongCachedSingleContext"})
-        static Object doGeneric(Object pointerObject,
+        @Specialization(replaces = {"resolveLongCached", "resolveObjectCached"})
+        static Object resolveGeneric(Object pointerObject,
                         @Cached PCallCapiFunction callTruffleCannotBeHandleNode,
                         @Cached PCallCapiFunction callTruffleManagedFromHandleNode) {
             if (!((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbols.FUN_TRUFFLE_CANNOT_BE_HANDLE, pointerObject))) {
