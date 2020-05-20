@@ -329,7 +329,7 @@ public final class PInt extends PythonBuiltinObject {
         return intValueExact(value);
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
+    @TruffleBoundary
     private static int intValueExact(BigInteger value) {
         return value.intValueExact();
     }
@@ -347,7 +347,7 @@ public final class PInt extends PythonBuiltinObject {
         return longValueExact(value);
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
+    @TruffleBoundary
     static long longValueExact(BigInteger value) {
         return value.longValueExact();
     }
@@ -447,7 +447,7 @@ public final class PInt extends PythonBuiltinObject {
         return byteValueExact(value);
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
+    @TruffleBoundary
     private static byte byteValueExact(BigInteger value) {
         return value.byteValueExact();
     }
