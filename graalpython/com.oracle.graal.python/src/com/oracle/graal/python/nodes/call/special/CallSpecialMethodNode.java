@@ -91,8 +91,8 @@ abstract class CallSpecialMethodNode extends Node {
         if (builtinNodeFactory == null) {
             return null; // see for example MethodDescriptorRoot and subclasses
         }
-        assert builtinNodeFactory.getNodeClass().getAnnotation(Builtin.class) != null;
-        if (builtinNodeFactory.getNodeClass().getAnnotation(Builtin.class).needsFrame() && frame == null) {
+        assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0;
+        if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
             return null;
         }
         if (clazz.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
@@ -126,7 +126,7 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected static boolean frameIsUnused(PythonBuiltinBaseNode builtinNode) {
-        return builtinNode == null || !builtinNode.getClass().getAnnotation(GeneratedBy.class).value().getAnnotation(Builtin.class).needsFrame();
+        return builtinNode == null || !builtinNode.getClass().getAnnotation(GeneratedBy.class).value().getAnnotationsByType(Builtin.class)[0].needsFrame();
     }
 
     PythonUnaryBuiltinNode getUnary(VirtualFrame frame, Object func) {

@@ -25,10 +25,12 @@
  */
 package com.oracle.graal.python.builtins;
 
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(value = Builtins.class)
 public @interface Builtin {
 
     String name() default "";
