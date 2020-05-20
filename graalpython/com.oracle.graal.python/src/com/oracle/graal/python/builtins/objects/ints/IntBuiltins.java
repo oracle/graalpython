@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -98,6 +99,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -129,23 +131,24 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization
-        public int round(int arg, int n) {
+        @Specialization(guards = "isPNone(n) || isInteger(n)")
+        public int roundInt(int arg, Object n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        public long round(long arg, int n) {
+        @Specialization(guards = "isPNone(n) || isInteger(n)")
+        public long roundLong(long arg, Object n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        public PInt round(PInt arg, int n) {
+        @Specialization(guards = "isPNone(n) || isInteger(n)")
+        public PInt roundPInt(PInt arg, Object n) {
             return factory().createInt(arg.getValue());
         }
     }
