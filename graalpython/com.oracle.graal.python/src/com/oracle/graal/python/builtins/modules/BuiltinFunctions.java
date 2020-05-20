@@ -1616,8 +1616,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization
+        Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
+                        @Shared("callNode") @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, x, PNone.NONE);
+        }
+
+        @Specialization(guards = "!isNoValue(n)")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
+                        @Shared("callNode") @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, x, n);
         }
     }
