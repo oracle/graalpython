@@ -251,10 +251,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         public long doObject(VirtualFrame frame, Object data, Object value,
                         @Cached("create()") Crc32Node recursiveNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
             if (!lib.canBePInt(value)) {
                 throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", value);
             }
@@ -325,10 +325,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return computeAdler32(array, initValue) & 0xFFFFFFFFL;
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         public long doObject(VirtualFrame frame, Object data, Object value,
                         @Cached("create()") Adler32Node recursiveNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
             if (!lib.canBePInt(value)) {
                 throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", value);
             }
@@ -624,10 +624,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(decompress(array, (int) wbits, bufsize == 0 ? 1 : bufsize));
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, Object bufsize,
                         @Cached("create()") DecompressNode recursiveNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary("bufsize") PythonObjectLibrary lib) {
             if (!lib.canBePInt(bufsize)) {
                 throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", bufsize);
             }

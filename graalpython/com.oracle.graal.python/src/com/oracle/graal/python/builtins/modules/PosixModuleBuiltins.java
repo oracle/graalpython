@@ -1028,11 +1028,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
                         @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libFd,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libPos,
+                        @CachedLibrary("fd") PythonObjectLibrary libFd,
+                        @CachedLibrary("pos") PythonObjectLibrary libPos,
                         @Cached CastToJavaIntNode castHowNode) {
 
             return lseek(frame, libFd.asJavaLong(fd), libPos.asJavaLong(pos), castHowNode.execute(how), channelClassProfile);
@@ -1233,19 +1233,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(array);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libSize) {
+                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize) {
             return readLong(frame, fd, libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libSize,
+                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize,
                         @Cached CastToJavaIntNode castToIntNode) {
             return readLong(frame, castToIntNode.execute(fd), libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }

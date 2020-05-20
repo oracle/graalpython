@@ -2944,9 +2944,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_IsSequence extends PythonUnaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         boolean doGeneric(VirtualFrame frame, Object object,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
             Object state = IndirectCallContext.enter(frame, context, this);

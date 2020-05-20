@@ -235,7 +235,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public double asJavaDouble(
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached() ConditionProfile hasIndexFunc,
                     @Exclusive @Cached PRaiseNode raise) {

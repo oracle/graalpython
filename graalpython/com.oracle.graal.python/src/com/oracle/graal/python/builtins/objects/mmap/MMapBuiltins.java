@@ -243,11 +243,11 @@ public class MMapBuiltins extends PythonBuiltins {
 
         public abstract long executeLong(PMMap self, Object idxObj);
 
-        @Specialization(guards = "!isPSlice(idxObj)")
+        @Specialization(guards = "!isPSlice(idxObj)", limit = "1")
         int doSingle(PMMap self, Object idxObj,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libIdx) {
+                        @CachedLibrary("idxObj") PythonObjectLibrary libIdx) {
 
             try {
                 long i = libIdx.asJavaLong(idxObj);
@@ -299,11 +299,11 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetItemNode extends PythonTernaryBuiltinNode implements ByteWritingNode {
 
-        @Specialization(guards = "!isPSlice(idxObj)")
+        @Specialization(guards = "!isPSlice(idxObj)", limit = "1")
         PNone doSingle(PMMap self, Object idxObj, Object val,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") WriteByteToChannelNode writeByteNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libIdx,
+                        @CachedLibrary("idxObj") PythonObjectLibrary libIdx,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
                         @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {
 

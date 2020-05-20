@@ -349,9 +349,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         public PNone init(PZipImporter self, PythonObject path,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
             initZipImporter(self, lib.asPath(path));
             return PNone.NONE;
         }

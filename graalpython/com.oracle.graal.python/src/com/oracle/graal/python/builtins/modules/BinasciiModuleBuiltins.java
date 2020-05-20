@@ -267,9 +267,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, Object newline,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary("newline") PythonObjectLibrary lib) {
             return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }
 
@@ -289,9 +289,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PBytes b2aArray(VirtualFrame frame, PArray data, Object newline,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary("newline") PythonObjectLibrary lib) {
             return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }
 
@@ -320,9 +320,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return b2aMemory(frame, data, newline.isZero() ? 0 : 1, toBytesNode, isBytesProfile);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, Object newline,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary("newline") PythonObjectLibrary lib) {
             return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }
 

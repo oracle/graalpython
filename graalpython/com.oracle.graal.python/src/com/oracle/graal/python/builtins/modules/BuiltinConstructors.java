@@ -276,13 +276,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
         }
 
-        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
                         @Cached("create()") CastToByteNode castToByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary lib) {
 
             Object it = getIteratorNode.executeWith(frame, iterable);
             byte[] arr = new byte[16];
@@ -2960,10 +2960,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createMappingproxy(klass, getStorage.execute(obj));
         }
 
-        @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
+        @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"}, limit = "1")
         Object doMapping(VirtualFrame frame, LazyPythonClass klass, PythonObject obj,
                         @Cached("create()") HashingStorage.InitNode initNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
             return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
         }
 
@@ -2973,9 +2973,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, "mappingproxy() missing required argument 'mapping' (pos 1)");
         }
 
-        @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"})
+        @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"}, limit = "1")
         Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass klass, Object obj,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
             throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
         }
 
