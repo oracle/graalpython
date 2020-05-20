@@ -47,10 +47,12 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -78,8 +80,8 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
     }
 
     @Specialization
-    PComplex toComplex(VirtualFrame frame, Object x) {
-        if (x instanceof PComplex) {
+    PComplex toComplex(VirtualFrame frame, Object x, @Cached("createBinaryProfile") ConditionProfile complexProfile) {
+        if (complexProfile.profile(x instanceof PComplex)) {
             return (PComplex) x;
         }
         // TODO taken from BuiltinConstructors, should probably be refactored somehow
