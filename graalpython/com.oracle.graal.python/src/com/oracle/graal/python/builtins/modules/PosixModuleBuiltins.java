@@ -61,10 +61,7 @@ import java.nio.channels.Channel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -84,6 +81,9 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.ProcessProperties;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -420,8 +420,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(rewriteOn = Exception.class)
         @TruffleBoundary
         long getPid() throws Exception {
-            Path path = Paths.get("/proc/self/stat");
-            return Long.parseLong(new String(Files.readAllBytes(path)).trim().split(" ")[0]);
+            if (ImageInfo.inImageRuntimeCode()) {
+                return ProcessProperties.getProcessID();
+            }
+            TruffleFile statFile = getContext().getPublicTruffleFileRelaxed("/proc/self/stat");
+            return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
         }
 
         @Specialization
