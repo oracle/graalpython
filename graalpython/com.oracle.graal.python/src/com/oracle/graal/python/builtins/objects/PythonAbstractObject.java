@@ -272,13 +272,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean hasArrayElements(
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
         return (dataModelLibrary.isSequence(this) || dataModelLibrary.isIterable(this)) && !dataModelLibrary.isMapping(this);
     }
 
     @ExportMessage
     public Object readArrayElement(long key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
@@ -319,7 +319,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void writeArrayElement(long key, Object value,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
@@ -336,7 +336,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void removeArrayElement(long key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
@@ -494,7 +494,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isExecutable(
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
         return dataModelLibrary.isCallable(this);
     }
 
