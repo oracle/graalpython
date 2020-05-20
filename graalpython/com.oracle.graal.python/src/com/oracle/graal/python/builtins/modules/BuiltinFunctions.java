@@ -150,6 +150,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -1405,30 +1406,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public int ord(VirtualFrame frame, PIBytesLike chr,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
+        public long ord(VirtualFrame frame, PIBytesLike chr,
+                        @Cached CastToJavaLongExactNode castNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             int len = lenNode.execute(chr.getSequenceStorage());
             if (len != 1) {
                 throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
-
-            Object element = getItemNode.execute(frame, chr.getSequenceStorage(), 0);
-            if (element instanceof Long) {
-                long e = (long) element;
-                if (e >= Byte.MIN_VALUE && e <= Byte.MAX_VALUE) {
-                    return (int) e;
-                }
-            } else if (element instanceof Integer) {
-                int e = (int) element;
-                if (e >= Byte.MIN_VALUE && e <= Byte.MAX_VALUE) {
-                    return e;
-                }
-            } else if (element instanceof Byte) {
-                return (byte) element;
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("got a bytes-like with non-byte elements");
+            return castNode.execute(getItemNode.execute(frame, chr.getSequenceStorage(), 0));
         }
     }
 
