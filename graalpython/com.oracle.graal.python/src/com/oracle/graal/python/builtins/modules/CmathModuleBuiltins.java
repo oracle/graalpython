@@ -116,8 +116,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         /**
-         * Creates an instance of ComplexConstant. The name of this factory method is intentionally short to allow
-         * subclassess compact definition of their tables of special values.
+         * Creates an instance of ComplexConstant. The name of this factory method is intentionally
+         * short to allow subclassess compact definition of their tables of special values.
+         *
          * @param real the real part of the complex constant
          * @param imag the imaginary part of the complex constant
          * @return a new instance of ComplexConstant representing the complex number real + i * imag
@@ -254,8 +255,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doC(PComplex value) {
-            //TODO: the implementation of abs(z) should be shared with ComplexBuiltins.AbsNode, but it currently does
-            //not pass the overflow test
+            // TODO: the implementation of abs(z) should be shared with ComplexBuiltins.AbsNode, but
+            // it currently does not pass the overflow test
             double r;
             if (!Double.isFinite(value.getReal()) || !Double.isFinite(value.getImag())) {
                 if (Double.isInfinite(value.getReal())) {
@@ -284,6 +285,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SqrtNode extends CmathComplexUnaryBuiltinNode {
 
+        // @formatter:off
         @CompilerDirectives.CompilationFinal(dimensions = 2)
         private static final ComplexConstant[][] SPECIAL_VALUES = {
                 {C(INF, -INF), C(0.0, -INF), C(0.0, -INF), C(0.0, INF), C(0.0, INF), C(INF, INF), C(NAN, INF)},
@@ -294,6 +296,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                 {C(INF, -INF), C(INF, -0.0), C(INF, -0.0), C(INF, 0.0), C(INF, 0.0), C(INF, INF), C(INF, NAN)},
                 {C(INF, -INF), C(NAN, NAN),  C(NAN, NAN),  C(NAN, NAN), C(NAN, NAN), C(INF, INF), C(NAN, NAN)},
         };
+        // @formatter:on
 
         @Override
         PComplex compute(double real, double imag) {

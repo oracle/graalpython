@@ -82,7 +82,7 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
         if (x instanceof PComplex) {
             return (PComplex) x;
         }
-        //TODO taken from BuiltinConstructors, should probably be refactored somehow
+        // TODO taken from BuiltinConstructors, should probably be refactored somehow
         if (callComplexFunc == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callComplexFunc = insert(LookupAndCallUnaryNode.create(__COMPLEX__));
