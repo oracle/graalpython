@@ -70,11 +70,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
 import java.math.BigInteger;
-import java.nio.CharBuffer;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1795,46 +1791,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 value = add.executeObject(frame, value, nextValue);
             }
-        }
-    }
-
-    @Builtin(name = "input", parameterNames = {"prompt"})
-    @GenerateNodeFactory
-    abstract static class InputNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        String input(@SuppressWarnings("unused") PNone prompt) {
-            CharBuffer buf = CharBuffer.allocate(1000);
-            try {
-                InputStream stdin = getContext().getStandardIn();
-                int read = stdin.read();
-                while (read != -1 && read != '\n') {
-                    if (buf.remaining() == 0) {
-                        CharBuffer newBuf = CharBuffer.allocate(buf.capacity() * 2);
-                        newBuf.put(buf);
-                        buf = newBuf;
-                    }
-                    buf.put((char) read);
-                    read = stdin.read();
-                }
-                buf.limit(buf.position());
-                buf.rewind();
-                return buf.toString();
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.EOFError, e);
-            }
-        }
-
-        @Specialization
-        String inputPrompt(PString prompt) {
-            return inputPrompt(prompt.getValue());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        String inputPrompt(String prompt) {
-            new PrintStream(getContext().getStandardOut()).println(prompt);
-            return input(null);
         }
     }
 
