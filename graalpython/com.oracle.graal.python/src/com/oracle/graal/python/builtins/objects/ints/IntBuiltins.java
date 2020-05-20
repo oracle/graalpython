@@ -756,7 +756,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        int doIntegerFast(int left, int right, @SuppressWarnings("unused") PNone none) {
+        static int doIntegerFast(int left, int right, @SuppressWarnings("unused") PNone none) {
             int result = 1;
             int exponent = right;
             int base = left;
@@ -770,13 +770,13 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "right >= 0")
-        PInt doInteger(int left, int right, @SuppressWarnings("unused") PNone none) {
-            return factory().createInt(op(PInt.longToBigInteger(left), right));
+        @Specialization(guards = "right >= 0", replaces = "doIntegerFast", rewriteOn = ArithmeticException.class)
+        static long doInteger(int left, int right, PNone none) {
+            return doLongFast((long) left, (long) right, none);
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doLongFast(long left, int right, PNone none) {
+        static long doLongFast(long left, int right, PNone none) {
             return doLongFast(left, (long) right, none);
         }
 
@@ -786,7 +786,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doLongFast(int left, long right, PNone none) {
+        static long doLongFast(int left, long right, PNone none) {
             return doLongFast((long) left, right, none);
         }
 
@@ -796,7 +796,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doLongFast(long left, long right, @SuppressWarnings("unused") PNone none) {
+        static long doLongFast(long left, long right, @SuppressWarnings("unused") PNone none) {
             long result = 1;
             long exponent = right;
             long base = left;
@@ -810,19 +810,54 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "right >= 0")
+        @Specialization(guards = "right >= 0", replaces = "doLongFast")
         PInt doLong(long left, long right, @SuppressWarnings("unused") PNone none) {
             return factory().createInt(op(PInt.longToBigInteger(left), right));
         }
 
-        @Specialization
-        double doInt(long left, long right, @SuppressWarnings("unused") PNone none) {
+        @Specialization(guards = "right < 0")
+        static double doInt(long left, long right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right);
         }
 
         @Specialization
-        double doInt(long left, double right, @SuppressWarnings("unused") PNone none) {
+        static double doInt(long left, double right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right);
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static Object doLongPIntNarrow(long left, PInt right, PNone none) {
+            long lright = right.longValueExact();
+            if (lright >= 0) {
+                return doLongFast(left, lright, none);
+            }
+            return doInt(left, lright, none);
+        }
+
+        @Specialization(replaces = "doLongPIntNarrow")
+        PInt doLongPInt(long left, PInt right, @SuppressWarnings("unused") PNone none) {
+            try {
+                return factory().createInt(op(PInt.longToBigInteger(left), right.longValueExact()));
+            } catch (ArithmeticException e) {
+                // fall through to normal computation
+            }
+            double value = Math.pow(left, right.doubleValue());
+            return factory().createInt((long) value);
+        }
+
+        @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
+        long doPIntLongNarrow(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+            return PInt.longValueExact(op(left.getValue(), right));
+        }
+
+        @Specialization(guards = "right >= 0", replaces = "doPIntLongNarrow")
+        PInt doPIntLongPositive(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+            return factory().createInt(op(left.getValue(), right));
+        }
+
+        @Specialization(guards = "right < 0")
+        double doPIntLongNegative(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+            return TrueDivNode.op(BigInteger.ONE, op(left.getValue(), -right));
         }
 
         @Specialization
