@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -480,7 +481,12 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if (addLen != 2 && addLen != 4) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
-            String address = castAddress.execute(getItem.execute(frame, addr, 0));
+            String address;
+            try {
+                address = castAddress.execute(getItem.execute(frame, addr, 0));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, "getnameinfo(): illegal sockaddr argument");
+            }
             int port = castPort.execute(getItem.execute(frame, addr, 1));
 
             if ((flags & PSocket.NI_NUMERICHOST) != PSocket.NI_NUMERICHOST) {

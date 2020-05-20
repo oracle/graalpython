@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -186,7 +187,7 @@ public abstract class CodeNodes {
             long outerName = System.nanoTime();
             funcdef.append("def outer").append(outerName).append("():\n");
             for (Object freevar : freevars) {
-                funcdef.append(indent).append(CastToJavaStringNode.getUncached().execute(freevar)).append(" = None\n");
+                funcdef.append(indent).append(castToString(freevar)).append(" = None\n");
             }
 
             boolean isLambda = (flags & PCode.FLAG_LAMBDA) != 0;
@@ -197,20 +198,20 @@ public abstract class CodeNodes {
             }
             int varnameIdx = 0;
             for (; varnameIdx < argcount; varnameIdx++) {
-                funcdef.append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx])).append(",");
+                funcdef.append(castToString(varnames[varnameIdx])).append(",");
             }
             if ((flags & PCode.FLAG_VAR_ARGS) != 0) {
                 // vararg name is after kwargs names
-                funcdef.append("*").append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx + kwonlyargcount])).append(",");
+                funcdef.append("*").append(castToString(varnames[varnameIdx + kwonlyargcount])).append(",");
             }
             for (; varnameIdx < kwonlyargcount; varnameIdx++) {
-                funcdef.append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx])).append("=None,");
+                funcdef.append(castToString(varnames[varnameIdx])).append("=None,");
             }
             if ((flags & PCode.FLAG_VAR_KW_ARGS) != 0) {
                 if ((flags & PCode.FLAG_VAR_ARGS) != 0) {
                     varnameIdx++;
                 }
-                funcdef.append("**").append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx])).append(",");
+                funcdef.append("**").append(castToString(varnames[varnameIdx])).append(",");
             }
 
             if (isLambda) {
@@ -236,7 +237,7 @@ public abstract class CodeNodes {
                     }
                 }
                 for (Object freevar : freevars) {
-                    funcdef.append(indent).append(functionIndent).append(firstLineIndent).append("nonlocal ").append(CastToJavaStringNode.getUncached().execute(freevar)).append("\n");
+                    funcdef.append(indent).append(functionIndent).append(firstLineIndent).append("nonlocal ").append(castToString(freevar)).append("\n");
                 }
                 for (String line : lines) {
                     funcdef.append(indent).append(functionIndent).append(line).append("\n");
@@ -246,6 +247,14 @@ public abstract class CodeNodes {
 
             funcdef.append("outer").append(outerName).append("()");
             return funcdef.toString();
+        }
+
+        private static String castToString(Object obj) {
+            try {
+                return CastToJavaStringNode.getUncached().execute(obj);
+            } catch (CannotCastException e) {
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "non-string found in code slot");
+            }
         }
 
         private static Signature createSignature(int flags, int argcount, int posonlyargcount, int kwonlyargcount, Object[] varnames) {

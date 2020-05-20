@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -128,12 +129,16 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, "host access is not allowed");
             }
-            for (Object arg : args) {
-                String entry = castToString.execute(arg);
+            for (int i = 0; i < args.length; i++) {
+                Object arg = args[i];
+                String entry = null;
                 try {
+                    entry = castToString.execute(arg);
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly
                     env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, ".jar"));
+                } catch (CannotCastException e) {
+                    throw raise(PythonBuiltinClassType.TypeError, "classpath argument %d must be string, not %p", i + 1, arg);
                 } catch (SecurityException e) {
                     throw raise(TypeError, "invalid or unreadable classpath: '%s' - %m", entry, e);
                 }

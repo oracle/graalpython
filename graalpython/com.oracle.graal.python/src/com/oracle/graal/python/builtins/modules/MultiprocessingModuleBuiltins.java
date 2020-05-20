@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -98,7 +99,12 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                                                         // on posix
             Semaphore semaphore = newSemaphore(value);
             int unlink = castUnlinkToIntNode.execute(unlinkObj);
-            String name = castNameNode.execute(nameObj);
+            String name;
+            try {
+                name = castNameNode.execute(nameObj);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, "argument 4 must be str, not %p", nameObj);
+            }
             if (unlink == 0) {
                 // CPython creates a named semaphore, and if unlink != 0 unlinks
                 // it directly so it cannot be access by other processes. We

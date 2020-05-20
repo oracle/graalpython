@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -214,13 +215,14 @@ public abstract class StringNodes {
         @Specialization
         static String doConvert(Object self, String errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached BranchProfile errorBranch,
                         @Cached PRaiseNode raiseNode) {
-            String result = castToJavaStringNode.execute(self);
-            if (errorProfile.profile(result == null)) {
+            try {
+                return castToJavaStringNode.execute(self);
+            } catch (CannotCastException e) {
+                errorBranch.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
-            return result;
         }
     }
 
@@ -328,10 +330,9 @@ public abstract class StringNodes {
         }
 
         private static String checkItem(Object item, int pos, CastToJavaStringNode castNode, PRaiseNode raise) {
-            String result = castNode.execute(item);
-            if (result != null) {
-                return result;
-            } else {
+            try {
+                return castNode.execute(item);
+            } catch (CannotCastException e) {
                 throw raise.raise(TypeError, INVALID_SEQ_ITEM, pos, item);
             }
         }
@@ -433,11 +434,12 @@ public abstract class StringNodes {
                 return doPInt(translatedChars, i, (PInt) translated, raise, ovf);
             }
 
-            String translatedStr = castToJavaStringNode.execute(translated);
-            if (translated != null) {
+            try {
+                String translatedStr = castToJavaStringNode.execute(translated);
                 return doString(translatedChars, i, translatedStr);
+            } catch (CannotCastException e) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, "character mapping must return integer, None or str");
             }
-            throw raise.raise(PythonBuiltinClassType.TypeError, "character mapping must return integer, None or str");
         }
 
         private static PException raiseError(PRaiseNode raise) {

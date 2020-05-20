@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -459,10 +460,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         castStrNode = insert(CastToJavaStringNode.create());
                     }
                     Object value = values[i];
-                    String strValue = castStrNode.execute(value);
-                    if (strValue != null) {
+                    try {
+                        String strValue = castStrNode.execute(value);
                         interned[i] = new InternedString(strValue);
-                    } else {
+                    } catch (CannotCastException e) {
                         interned[i] = value;
                     }
                 }

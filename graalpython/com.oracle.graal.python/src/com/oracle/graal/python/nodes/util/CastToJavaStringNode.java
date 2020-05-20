@@ -57,9 +57,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
 /**
- * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails, the
- * node will return {@code null}. It does deliberately not throw an error and leaves error handling
- * up to the user.
+ * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails,
+ * because the object is not a Python string, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
 @ImportStatic(PGuards.class)
@@ -97,12 +96,12 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
             return (String) result;
         }
         // the object's type is not a subclass of 'str'
-        return null;
+        throw CannotCastException.INSTANCE;
     }
 
     @Specialization(guards = "!isString(x)")
     static String doUnsupported(@SuppressWarnings("unused") Object x) {
-        return null;
+        throw CannotCastException.INSTANCE;
     }
 
     static boolean isMaterialized(PString x) {

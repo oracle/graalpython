@@ -48,9 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -60,6 +58,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -69,6 +69,7 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
@@ -99,6 +100,8 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -116,6 +119,7 @@ import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
@@ -131,6 +135,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -143,11 +148,13 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@ImportStatic(SpecialMethodNames.class)
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
@@ -742,7 +749,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
             try {
                 return castToBoolean.execute(result);
-            } catch (CastToJavaBooleanNode.CannotCastException e) {
+            } catch (CannotCastException e) {
                 // cast node will act as a branch profile already for the compiler
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "__bool__ should return bool, returned %p", result);
             }
@@ -787,7 +794,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         // hash call is always a plain long, forcibly and lossy read from memory.
         try {
             return castToLong.execute(result);
-        } catch (CastToJavaLongNode.CannotCastException e) {
+        } catch (CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
         }
     }
@@ -890,11 +897,101 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } else {
             pathObject = callNode.executeObject(PArguments.frameForCall(state), func, this);
         }
-        String path = castToJavaStringNode.execute(pathObject);
-        if (path == null) {
+        try {
+            return castToJavaStringNode.execute(pathObject);
+        } catch (CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, "expected %p.__fspath__() to return str or bytes, not %p", this, pathObject);
         }
-        return path;
+    }
+
+    @ExportMessage
+    public Object asPStringWithState(ThreadState state,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached ConditionProfile gotState) {
+        return asPString(this, lookup, gotState, state, callNode, isSubtypeNode, lib, raise);
+    }
+
+    @Ignore
+    public static Object asPString(Object receiver, LookupInheritedAttributeNode.Dynamic lookup, ConditionProfile gotState, ThreadState state, CallUnaryMethodNode callNode,
+                    IsSubtypeNode isSubtypeNode, PythonObjectLibrary lib, PRaiseNode raise) throws PException {
+        Object func = lookup.execute(receiver, __STR__);
+
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.executeObject(func, receiver);
+        } else {
+            result = callNode.executeObject(PArguments.frameForCall(state), func, receiver);
+        }
+
+        if (!isSubtypeNode.execute(lib.getLazyPythonClass(result), PythonBuiltinClassType.PString)) {
+            throw raise.raise(TypeError, "__str__ returned non-string (type %p)", result);
+        }
+        return result;
+    }
+
+    @ExportMessage
+    public int asFileDescriptorWithState(ThreadState state,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached CallNode callFileNoNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached BranchProfile noFilenoMethodProfile,
+                    @Exclusive @Cached GetLazyClassNode getClassNode,
+                    @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode,
+                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
+
+        Object filenoFunc = lib.lookupAttribute(this, FILENO);
+        if (filenoFunc == PNone.NO_VALUE) {
+            noFilenoMethodProfile.enter();
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, "argument must be an int, or have a fileno() method.");
+        }
+
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callFileNoNode.execute(filenoFunc);
+        } else {
+            result = callFileNoNode.execute(PArguments.frameForCall(state), filenoFunc);
+        }
+
+        if (isIntProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
+            try {
+                return castToJavaIntNode.execute(result);
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.TypeError, isAttrError);
+                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+            }
+        } else {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, "fileno() returned a non-integer");
+        }
+    }
+
+    @ExportMessage
+    public Object lookupAttribute(String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached ConditionProfile isInheritedOnly,
+                    @Exclusive @Cached ConditionProfile noValue,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
+        if (isInheritedOnly.profile(inheritedOnly)) {
+            return lookup.execute(this, name);
+        } else {
+            Object getAttrFunc = lookup.execute(this, __GETATTRIBUTE__);
+            try {
+                return callNode.execute(getAttrFunc, this, name);
+            } catch (PException pe) {
+                pe.expect(AttributeError, isAttrError);
+                getAttrFunc = lookup.execute(this, __GETATTR__);
+                if (noValue.profile(getAttrFunc == PNone.NO_VALUE)) {
+                    return PNone.NO_VALUE;
+                }
+                return callNode.execute(getAttrFunc, this, name);
+            }
+        }
     }
 
     @ExportMessage
@@ -908,7 +1005,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         long longResult;
         try {
             longResult = castToLong.execute(result); // this is a lossy cast
-        } catch (CastToJavaLongNode.CannotCastException e) {
+        } catch (CannotCastException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
         }
@@ -1768,11 +1865,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             } else {
                 names = BuiltinNames.STR;
             }
+
             String result = null;
             PythonModule builtins = context.getBuiltins();
             if (toStringUsed.profile(builtins != null)) {
                 toStrAttr = readStr.execute(builtins, names);
-                result = castStr.execute(callNode.execute(toStrAttr, receiver));
+                try {
+                    result = castStr.execute(callNode.execute(toStrAttr, receiver));
+                } catch (CannotCastException e) {
+                    // do nothing
+                }
             }
             if (toStringUsed.profile(result != null)) {
                 return result;

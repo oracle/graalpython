@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -249,7 +250,11 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             if (cwd instanceof PNone) {
                 actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
             } else {
-                actualCwd = castCwd.execute(cwd);
+                try {
+                    actualCwd = castCwd.execute(cwd);
+                } catch (CannotCastException e) {
+                    throw raise(PythonBuiltinClassType.TypeError, "expected bytes, %p found", cwd);
+                }
             }
 
             PList actualEnv;

@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -126,12 +127,13 @@ final class DefaultPythonStringExports {
         static int sP(String receiver, PString other, @SuppressWarnings("unused") ThreadState threadState,
                         @Cached CastToJavaStringNode castNode) {
             // n.b.: subclassing is ignored in this direction in CPython
-            String otherString = castNode.execute(other);
-            if (otherString == null) {
+            String otherString = null;
+            try {
+                otherString = castNode.execute(other);
+            } catch (CannotCastException e) {
                 return -1;
-            } else {
-                return ss(receiver, otherString, threadState);
             }
+            return ss(receiver, otherString, threadState);
         }
 
         @Fallback
@@ -144,5 +146,10 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static String asPath(String value) {
         return value;
+    }
+
+    @ExportMessage
+    static String asPString(String receiver) {
+        return receiver;
     }
 }

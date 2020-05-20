@@ -48,8 +48,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -130,7 +132,13 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         String doBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached CastToJavaStringNode castToStringNode) {
-            String name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
+            String name;
+            try {
+                name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
             return doMethod(name, self.getSelf());
         }
 
@@ -138,7 +146,14 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         String doBuiltinMethod(VirtualFrame frame, PMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached CastToJavaStringNode castToStringNode) {
-            return doMethod(castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction())), self.getSelf());
+            String name;
+            try {
+                name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
+            return doMethod(name, self.getSelf());
         }
 
         private String doMethod(String name, Object owner) {

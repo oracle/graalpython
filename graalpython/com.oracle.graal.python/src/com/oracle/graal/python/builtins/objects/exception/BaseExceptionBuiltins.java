@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -218,7 +219,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
             try {
                 self.setSuppressContext(castToJavaBooleanNode.execute(value));
-            } catch (CastToJavaBooleanNode.CannotCastException e) {
+            } catch (CannotCastException e) {
                 raise(TypeError, "attribute value type must be bool");
             }
             return PNone.NONE;

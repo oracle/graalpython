@@ -153,9 +153,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CoerceToStringNode;
-import com.oracle.graal.python.nodes.util.CoerceToStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1466,28 +1465,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode readStdout;
         @Child private GetAttributeNode getWrite = GetAttributeNode.create("write", null);
         @Child private CallNode callWrite = CallNode.create();
-        @Child private CoerceToStringNode toString = CoerceToStringNodeGen.create();
         @Child private LookupAndCallUnaryNode callFlushNode;
         @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
         PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
-                        @SuppressWarnings("unused") PNone flush) {
+                        @SuppressWarnings("unused") PNone flush,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
-        PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush) {
+        PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             int lastValue = values.length - 1;
             Object write = getWrite.executeObject(frame, file);
             for (int i = 0; i < lastValue; i++) {
-                callWrite.execute(frame, write, toString.execute(frame, values[i]));
+                callWrite.execute(frame, write, lib.asPString(values[i]));
                 callWrite.execute(frame, write, sep);
             }
             if (lastValue >= 0) {
-                callWrite.execute(frame, write, toString.execute(frame, values[lastValue]));
+                callWrite.execute(frame, write, lib.asPString(values[lastValue]));
             }
             callWrite.execute(frame, write, end);
             if (flush) {
@@ -1505,14 +1505,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castSep,
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
-                        @Cached PRaiseNode raiseNode) {
-            String sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
-            if (sep == null) {
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            String sep;
+            try {
+                sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
+            } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "sep must be None or a string, not %p", sepIn);
             }
 
-            String end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
-            if (end == null) {
+            String end;
+            try {
+                end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
+            } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "end must be None or a string, not %p", sepIn);
             }
 
@@ -1528,7 +1533,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush);
+            return printAllGiven(frame, values, sep, end, file, flush, lib);
         }
 
         private Object getStdout() {
@@ -1587,8 +1592,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "isString(obj)")
         public Object asciiString(Object obj,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            String str = castToJavaStringNode.execute(obj);
-            return doAsciiString(str);
+            try {
+                String str = castToJavaStringNode.execute(obj);
+                return doAsciiString(str);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
         }
 
         @TruffleBoundary

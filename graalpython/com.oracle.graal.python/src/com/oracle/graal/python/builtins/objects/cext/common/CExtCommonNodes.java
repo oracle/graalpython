@@ -60,12 +60,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -73,7 +73,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -176,26 +175,18 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
 
-        public abstract PBytes execute(Charset charset, Object string, String errors);
+        public abstract PBytes execute(Charset charset, PString string, String errors);
 
         @Specialization
-        static PBytes doJavaString(Charset charset, String s, String errors,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static PBytes doJavaString(Charset charset, PString s, String errors,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode) {
             try {
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode);
-                return factory.createBytes(doEncode(charset, s, action));
+                return factory.createBytes(doEncode(charset, s.getValue(), action));
             } catch (CharacterCodingException e) {
                 throw raiseNode.raise(UnicodeEncodeError, "%m", e);
             }
-        }
-
-        @Specialization(replaces = "doJavaString")
-        static PBytes doGeneric(Charset charset, Object stringObj, String errors,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            return doJavaString(charset, castToJavaStringNode.execute(stringObj), errors, factory, raiseNode);
         }
 
         @TruffleBoundary

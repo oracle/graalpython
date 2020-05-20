@@ -228,7 +228,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
     static boolean isForeignObject(Object receiver,
                     @CachedLibrary("receiver") InteropLibrary lib) {
         try {
@@ -238,5 +237,20 @@ final class DefaultPythonObjectExports {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException(e);
         }
+    }
+
+    @ExportMessage
+    static Object asPString(Object receiver,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Cached.Exclusive @Cached PRaiseNode raise) {
+        if (lib.isString(receiver)) {
+            try {
+                return lib.asString(receiver);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(e);
+            }
+        }
+        throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
     }
 }
