@@ -125,8 +125,9 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -785,7 +786,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached CastToJavaLongExactNode castToLong,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
         Object result;
@@ -946,7 +947,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached GetLazyClassNode getClassNode,
                     @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode,
+                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
 
         Object filenoFunc = lib.lookupAttribute(this, FILENO);
@@ -1052,7 +1053,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToLong) {
+                    @Exclusive @Cached CastToJavaLongLossyNode castToLong) {
         Object result = lib.asIndexWithState(this, state);
         long longResult;
         try {
@@ -1132,7 +1133,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("asJavaLongLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached CastToJavaLongExactNode castToLong,
                     @Exclusive @Cached PRaiseNode raise) {
 
         assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
@@ -1205,7 +1206,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public LocalDate asDate(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
@@ -1267,7 +1268,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public LocalTime asTime(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
@@ -1360,7 +1361,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public ZoneId asTimeZone(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {

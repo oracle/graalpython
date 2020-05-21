@@ -92,7 +92,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -621,7 +621,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(VirtualFrame frame, PMMap primary, PIBytesLike sub, Object starting, Object ending,
-                        @Shared("castLong") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castLong,
+                        @Shared("castLong") @Cached CastToJavaLongLossyNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
@@ -664,7 +664,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(PMMap primary, int sub, Object starting, @SuppressWarnings("unused") Object ending,
-                        @Shared("castLong") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castLong,
+                        @Shared("castLong") @Cached CastToJavaLongLossyNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
@@ -691,7 +691,7 @@ public class MMapBuiltins extends PythonBuiltins {
             }
         }
 
-        private static long castToLong(CastToJavaLongNode castLong, Object obj, long defaultVal) {
+        private static long castToLong(CastToJavaLongLossyNode castLong, Object obj, long defaultVal) {
             try {
                 return castLong.execute(obj);
             } catch (CannotCastException e) {

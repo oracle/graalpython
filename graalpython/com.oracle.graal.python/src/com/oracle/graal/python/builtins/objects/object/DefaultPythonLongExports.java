@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -265,7 +265,7 @@ final class DefaultPythonLongExports {
     @ExportMessage
     static int asFileDescriptor(Long x,
                     @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode,
+                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile errorProfile) {
         try {
             return castToJavaIntNode.execute(x);

@@ -127,7 +127,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -2950,7 +2950,7 @@ public abstract class CExtNodes {
                         limit = "1")
         static Object doNativeObjectByMember(Object object, long value,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @CachedLibrary("object") InteropLibrary lib) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, CannotCastException {
             CApiContext cApiContext = context.getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
@@ -3066,7 +3066,7 @@ public abstract class CExtNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
-                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
             if (!lib.isNull(ptrObject)) {
                 CApiContext cApiContext = context.getCApiContext();
                 if (cApiContext != null) {
@@ -3090,7 +3090,7 @@ public abstract class CExtNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
-                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode) {
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) {
             if (!lib.isNull(ptrObject)) {
                 CApiContext cApiContext = context.getCApiContext();
                 if (cApiContext != null) {

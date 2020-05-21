@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -657,7 +657,7 @@ public abstract class PythonObjectLibrary extends Library {
         if (threadState == null) {
             // this will very likely always raise an integer interpretation error in
             // asIndexWithState
-            long result = CastToJavaLongNode.getLossyUncached().execute(asIndexWithState(receiver, null));
+            long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, null));
             int intResult = (int) result;
             if (intResult == result) {
                 return intResult;

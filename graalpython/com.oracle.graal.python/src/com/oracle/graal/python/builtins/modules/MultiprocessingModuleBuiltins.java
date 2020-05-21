@@ -55,7 +55,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -85,10 +85,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         PSemLock construct(LazyPythonClass cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
                         @Cached CastToJavaStringNode castNameNode,
-                        @Cached CastToJavaIntNode castKindToIntNode,
-                        @Cached CastToJavaIntNode castValueToIntNode,
-                        @Cached CastToJavaIntNode castMaxvalueToIntNode,
-                        @Cached CastToJavaIntNode castUnlinkToIntNode,
+                        @Cached CastToJavaIntExactNode castKindToIntNode,
+                        @Cached CastToJavaIntExactNode castValueToIntNode,
+                        @Cached CastToJavaIntExactNode castMaxvalueToIntNode,
+                        @Cached CastToJavaIntExactNode castUnlinkToIntNode,
                         @CachedLanguage PythonLanguage lang) {
             int kind = castKindToIntNode.execute(kindObj);
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {

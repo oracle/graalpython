@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -492,7 +492,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, long maxLen,
-                        @Cached CastToJavaIntNode castInt) {
+                        @Cached CastToJavaIntExactNode castInt) {
             return decompress(frame, stream, pb, castInt.execute(maxLen));
         }
 

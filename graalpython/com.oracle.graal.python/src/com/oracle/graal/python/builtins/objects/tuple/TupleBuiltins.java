@@ -74,7 +74,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -289,7 +289,7 @@ public class TupleBuiltins extends PythonBuiltins {
                         @Cached PCallCapiFunction callSizeNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached CastToJavaIntNode castToInt) {
+                        @Cached CastToJavaIntExactNode castToInt) {
             return castToInt.execute(lib.asJavaLong(callSizeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self))));
         }
     }

@@ -134,7 +134,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1166,7 +1166,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(F_LINENO, key)")
         static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntLossyNode castToJavaIntNode) {
             try {
                 int lineno = castToJavaIntNode.execute(value);
                 object.setLine(lineno);

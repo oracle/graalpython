@@ -48,7 +48,7 @@ import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -75,7 +75,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
 
     @ExportMessage
     Object execute(Object[] arguments,
-                    @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
+                    @Cached CastToJavaLongLossyNode castToJavaLongNode,
                     @Cached GetCurrentFrameRef getCurrentFrameRef,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                     @Cached GenericInvokeNode invokeNode,

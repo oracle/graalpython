@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,52 +40,27 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@ImportStatic(PGuards.class)
-abstract class CastToJavaLongNode extends PNodeWithContext {
+/**
+ * Casts a Python integer to a Java long, lossy and without coercion. <b>ATTENTION:</b> If the cast
+ * isn't possible, the node will throw a {@link CannotCastException}.
+ */
+@GenerateUncached
+public abstract class CastToJavaLongLossyNode extends CastToJavaLongNode {
 
-    public abstract long execute(Object x) throws CannotCastException;
+    public static CastToJavaLongLossyNode create() {
+        return CastToJavaLongLossyNodeGen.create();
+    }
 
-    @Specialization
-    long doLong(boolean x) {
-        return x ? 1 : 0;
+    public static CastToJavaLongLossyNode getUncached() {
+        return CastToJavaLongLossyNodeGen.getUncached();
     }
 
     @Specialization
-    long doLong(int x) {
-        return x;
-    }
-
-    @Specialization
-    long doLong(long x) {
-        return x;
-    }
-
-    @Specialization
-    static long doNativeObject(PythonNativeObject x,
-                    @Cached GetLazyClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
-        }
-        // the object's type is not a subclass of 'int'
-        throw CannotCastException.INSTANCE;
-    }
-
-    @Fallback
-    static long doUnsupported(@SuppressWarnings("unused") Object x) {
-        throw CannotCastException.INSTANCE;
+    protected long toLong(PInt x) {
+        return x.longValue();
     }
 }

@@ -36,9 +36,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -219,7 +219,7 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public int asFileDescriptor(
                     @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode) {
+                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
         try {
             return castToJavaIntNode.execute(this);
         } catch (PException e) {
@@ -253,7 +253,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asJavaLong(
-                    @Cached CastToJavaLongNode castToLong) {
+                    @Cached CastToJavaLongLossyNode castToLong) {
         return castToLong.execute(this);
     }
 

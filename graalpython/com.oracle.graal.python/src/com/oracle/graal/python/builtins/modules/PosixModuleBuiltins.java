@@ -124,7 +124,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -879,7 +879,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "dupInt")
         int dupGeneric(Object fd,
-                        @Cached CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
             return getResources().dup(castToJavaIntNode.execute(fd));
         }
     }
@@ -1033,7 +1033,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @CachedLibrary("fd") PythonObjectLibrary libFd,
                         @CachedLibrary("pos") PythonObjectLibrary libPos,
-                        @Cached CastToJavaIntNode castHowNode) {
+                        @Cached CastToJavaIntExactNode castHowNode) {
 
             return lseek(frame, libFd.asJavaLong(fd), libPos.asJavaLong(pos), castHowNode.execute(how), channelClassProfile);
         }
@@ -1246,7 +1246,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
                         @CachedLibrary("requestedSize") PythonObjectLibrary libSize,
-                        @Cached CastToJavaIntNode castToIntNode) {
+                        @Cached CastToJavaIntExactNode castToIntNode) {
             return readLong(frame, castToIntNode.execute(fd), libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
     }

@@ -102,7 +102,7 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -1188,7 +1188,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = {"doString", "doStringKeepends"})
         PList doGeneric(Object self, Object keepends,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "splitlines", self);
             boolean bKeepends = !PGuards.isPNone(keepends) && castToJavaIntNode.execute(keepends) != 0;
             return doStringKeepends(selfStr, bKeepends);

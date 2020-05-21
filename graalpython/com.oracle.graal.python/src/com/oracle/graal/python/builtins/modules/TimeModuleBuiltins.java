@@ -54,7 +54,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -375,7 +375,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", obj);
         }
 
-        private int getIntValue(Object oValue, int min, int max, String errorMessage, CastToJavaIntNode toJavaIntExact) {
+        private int getIntValue(Object oValue, int min, int max, String errorMessage, CastToJavaIntExactNode toJavaIntExact) {
             long value;
             try {
                 value = toJavaIntExact.execute(oValue);
@@ -411,7 +411,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return padInt(i, 2, '0');
         }
 
-        private int[] checkStructtime(PTuple time, PythonObjectLibrary asPIntLib, CastToJavaIntNode toJavaIntExact) {
+        private int[] checkStructtime(PTuple time, PythonObjectLibrary asPIntLib, CastToJavaIntExactNode toJavaIntExact) {
             CompilerAsserts.neverPartOfCompilation();
             Object[] date = GetObjectArrayNodeGen.getUncached().execute(time);
             if (date.length < 9) {
@@ -489,7 +489,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // This taken from JPython + some switches were corrected to provide the
         // same result as CPython
         @TruffleBoundary
-        private String format(String format, PTuple date, PythonObjectLibrary asPIntLib, CastToJavaIntNode toJavaIntExact) {
+        private String format(String format, PTuple date, PythonObjectLibrary asPIntLib, CastToJavaIntExactNode toJavaIntExact) {
 
             int[] items = checkStructtime(date, asPIntLib, toJavaIntExact);
 
@@ -686,14 +686,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public String formatTime(String format, @SuppressWarnings("unused") PNone time,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached CastToJavaIntNode castToInt) {
+                        @Cached CastToJavaIntExactNode castToInt) {
             return format(format, factory().createTuple(getTimeStruct(timeSeconds(), true)), lib, castToInt);
         }
 
         @Specialization
         public String formatTime(String format, PTuple time,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached CastToJavaIntNode castToInt) {
+                        @Cached CastToJavaIntExactNode castToInt) {
             return format(format, time, lib, castToInt);
         }
 

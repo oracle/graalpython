@@ -179,7 +179,7 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
@@ -2106,7 +2106,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private SetAttributeNode.Dynamic writeAttrNode;
         @Child private GetAnyAttributeNode getAttrNode;
-        @Child private CastToJavaIntNode castToInt;
+        @Child private CastToJavaIntExactNode castToInt;
         @Child private CastToListNode castToList;
         @Child private CastToJavaStringNode castToStringNode;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
@@ -2572,10 +2572,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return writeAttrNode;
         }
 
-        private CastToJavaIntNode ensureCastToIntNode() {
+        private CastToJavaIntExactNode ensureCastToIntNode() {
             if (castToInt == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToInt = insert(CastToJavaIntNode.create());
+                castToInt = insert(CastToJavaIntExactNode.create());
             }
             return castToInt;
         }

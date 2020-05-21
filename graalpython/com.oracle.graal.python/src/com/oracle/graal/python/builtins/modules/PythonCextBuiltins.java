@@ -227,7 +227,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -3567,7 +3567,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static int doNativeWrapper(Object ptr, Object sizeObject,
-                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {

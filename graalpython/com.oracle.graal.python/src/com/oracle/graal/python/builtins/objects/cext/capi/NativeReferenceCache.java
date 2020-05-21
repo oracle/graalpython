@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetRefCntN
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -140,7 +140,7 @@ public final class NativeReferenceCache implements TruffleObject {
 
         @Specialization(guards = {"!isResolved(pointerObject)", "!isNoRefCnt(refCnt)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
         static Object doGenericIntWithRefCnt(Object pointerObject, Object refCnt, boolean steal,
-                        @Shared("castToJavaLongNode") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
+                        @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
                         @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
@@ -173,7 +173,7 @@ public final class NativeReferenceCache implements TruffleObject {
         @Specialization(guards = "!isResolved(pointerObject)", replaces = {"doCachedPointer", "doGenericIntWithRefCnt", "doGenericInt"})
         static Object doGeneric(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
-                        @Shared("castToJavaLongNode") @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaLongNode castToJavaLongNode,
+                        @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
                         @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
@@ -219,7 +219,7 @@ public final class NativeReferenceCache implements TruffleObject {
                 if (isNoRefCnt(refCnt)) {
                     idx = CApiContext.idFromRefCnt(GetRefCntNodeGen.getUncached().execute(pointerObject));
                 } else {
-                    idx = CApiContext.idFromRefCnt(CastToJavaLongNode.getLossyUncached().execute(refCnt));
+                    idx = CApiContext.idFromRefCnt(CastToJavaLongLossyNode.getUncached().execute(refCnt));
                 }
                 return cApiContext.lookupNativeObjectReference(idx);
             }
