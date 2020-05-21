@@ -8,6 +8,7 @@ package com.oracle.graal.python.builtins.modules;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -26,8 +27,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 import java.util.List;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 @CoreFunctions(defineModule = "cmath")
 public class CmathModuleBuiltins extends PythonBuiltins {
@@ -255,30 +254,19 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PTuple doC(PComplex value) {
-            // TODO: the implementation of abs(z) should be shared with ComplexBuiltins.AbsNode, but
-            // it currently does not pass the overflow test
-            double r;
-            if (!Double.isFinite(value.getReal()) || !Double.isFinite(value.getImag())) {
-                if (Double.isInfinite(value.getReal())) {
-                    r = Math.abs(value.getReal());
-                } else if (Double.isInfinite(value.getImag())) {
-                    r = Math.abs(value.getImag());
-                } else {
-                    r = Double.NaN;
-                }
-            } else {
-                r = Math.hypot(value.getReal(), value.getImag());
-                if (Double.isInfinite(r)) {
-                    throw raise(OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
-                }
-            }
-            return factory().createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
+        PTuple doC(PComplex value, @Cached ComplexBuiltins.AbsNode absNode) {
+            return toPolar(value, absNode);
         }
 
         @Specialization
-        PTuple doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
-            return doC(coerceToComplex.execute(frame, value));
+        PTuple doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex,
+                        @Cached ComplexBuiltins.AbsNode absNode) {
+            return toPolar(coerceToComplex.execute(frame, value), absNode);
+        }
+
+        private PTuple toPolar(PComplex value, ComplexBuiltins.AbsNode absNode) {
+            double r = absNode.executeDouble(value);
+            return factory().createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
         }
     }
 
