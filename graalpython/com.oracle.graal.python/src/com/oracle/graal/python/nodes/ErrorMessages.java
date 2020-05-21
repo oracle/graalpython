@@ -113,6 +113,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_CALL_TARGET = "cannot create a call target from the code object: %p";
     public static final String CANNOT_CREATE_INSTANCES = "cannot create '%s' instances";
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
+    public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s'";
@@ -372,6 +373,7 @@ public abstract class ErrorMessages {
     public static final String RAW_FORMAT_NOT_SUPPORTED = "RAW format unsupported";
     public static final String READ_BYTE_OUT_OF_RANGE = "read byte out of range";
     public static final String READ_WRITE_BYTELIKE_OBJ = "read-write bytes-like object";
+    public static final String READONLY_ATTRIBUTE = "readonly attribute";
     public static final String REQUIRES_CODE_OBJ = "%s() requires a code object with %d free vars, not %d";
     public static final String REQUIRES_INT_OR_CHAR = "%%%c requires int or char";
     public static final String REQUIRES_OBJ_THAT_IMPLEMENTS_S = " %%r requires an object that implements %s";

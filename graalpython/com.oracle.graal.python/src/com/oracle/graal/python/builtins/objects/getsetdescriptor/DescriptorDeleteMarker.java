@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,57 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-import com.oracle.graal.python.builtins.BoundBuiltinCallable;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+public class DescriptorDeleteMarker {
+    public static final DescriptorDeleteMarker INSTANCE = new DescriptorDeleteMarker();
 
-public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
-    private final Object get;
-    private final Object set;
-    private final String name;
-    private final boolean allowsDelete;
-    private final LazyPythonClass type;
-
-    public GetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {
-        this(get, set, name, type, false);
-    }
-
-    public GetSetDescriptor(Object get, Object set, String name, LazyPythonClass type, boolean allowsDelete) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
-        this.get = get;
-        this.set = set;
-        this.name = name;
-        this.type = type;
-        this.allowsDelete = allowsDelete;
-    }
-
-    public Object getGet() {
-        return get;
-    }
-
-    public Object getSet() {
-        return set;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public LazyPythonClass getType() {
-        return type;
-    }
-
-    public boolean allowsDelete() {
-        return allowsDelete;
-    }
-
-    public GetSetDescriptor boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
-        if (klass == type) {
-            return this;
-        } else {
-            return factory.createGetSetDescriptor(get, set, name, klass);
-        }
+    private DescriptorDeleteMarker() {
     }
 }
