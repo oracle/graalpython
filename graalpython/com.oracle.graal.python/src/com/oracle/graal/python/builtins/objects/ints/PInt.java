@@ -218,8 +218,8 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public int asFileDescriptor(
-                    @Cached PRaiseNode raiseNode,
-                    @Cached.Exclusive @Cached CastToJavaIntNode castToJavaIntNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode) {
         try {
             return castToJavaIntNode.execute(this);
         } catch (PException e) {
