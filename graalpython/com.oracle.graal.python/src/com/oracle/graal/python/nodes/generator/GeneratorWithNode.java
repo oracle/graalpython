@@ -96,12 +96,12 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected void doLeave(VirtualFrame frame, Object withObject, boolean gotException, Object exitCallable) {
+    protected void doLeave(VirtualFrame frame, Object withObject, Object exitCallable) {
         if (gen.isActive(frame, yieldSlot)) {
             gen.setActive(frame, yieldSlot, false);
         } else {
             reset(frame);
-            super.doLeave(frame, withObject, gotException, exitCallable);
+            super.doLeave(frame, withObject, exitCallable);
         }
     }
 

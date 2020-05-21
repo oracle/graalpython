@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
@@ -184,9 +186,25 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return shouldCatchAllExceptions;
     }
 
-    protected PException wrapJavaException(Throwable e) {
+    private PException wrapJavaException(Throwable e) {
         PException pe = PException.fromObject(getBaseException(e), this);
         // Re-attach truffle stacktrace
+        moveTruffleStackTrace(e, pe);
+        return pe;
+    }
+
+    protected PException wrapJavaExceptionIfApplicable(Throwable e) {
+        if (e instanceof StackOverflowError) {
+            return createRecursionError(e);
+        }
+        if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
+            return wrapJavaException(e);
+        }
+        return null;
+    }
+
+    private PException createRecursionError(Throwable e) {
+        PException pe = PException.fromObject(factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}), this);
         moveTruffleStackTrace(e, pe);
         return pe;
     }
