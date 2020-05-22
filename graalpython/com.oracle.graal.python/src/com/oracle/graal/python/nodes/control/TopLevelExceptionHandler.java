@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -160,7 +159,7 @@ public class TopLevelExceptionHandler extends RootNode {
         }
 
         PBaseException value = pythonException;
-        PythonAbstractClass type = value.getPythonClass();
+        Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(value);
         PTraceback execute = ensureGetTracebackNode().execute(frame, value);
         Object tb = execute != null ? execute : PNone.NONE;
 

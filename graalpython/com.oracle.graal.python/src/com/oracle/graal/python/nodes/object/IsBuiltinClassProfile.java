@@ -42,8 +42,6 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -88,7 +86,7 @@ public final class IsBuiltinClassProfile {
 
     }
 
-    public boolean profileIsAnyBuiltinClass(LazyPythonClass clazz) {
+    public boolean profileIsAnyBuiltinClass(Object clazz) {
         if (clazz instanceof PythonBuiltinClassType) {
             if (!isBuiltinType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -111,7 +109,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileIsOtherBuiltinClass(LazyPythonClass clazz, PythonBuiltinClassType type) {
+    public boolean profileIsOtherBuiltinClass(Object clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClassType) {
             if (!isBuiltinType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -158,7 +156,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileClass(LazyPythonClass clazz, PythonBuiltinClassType type) {
+    public boolean profileClass(Object clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClassType) {
             if (!isBuiltinType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -205,34 +203,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileClass(PythonAbstractClass clazz, PythonBuiltinClassType type) {
-        if (clazz instanceof PythonBuiltinClass) {
-            if (!isBuiltinClass) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isBuiltinClass = true;
-            }
-            if (((PythonBuiltinClass) clazz).getType() == type) {
-                if (!match) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    match = true;
-                }
-                return true;
-            } else {
-                if (!noMatch) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    noMatch = true;
-                }
-                return false;
-            }
-        }
-        if (!isOtherClass) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isOtherClass = true;
-        }
-        return false;
-    }
-
-    public static boolean profileClassSlowPath(LazyPythonClass clazz, PythonBuiltinClassType type) {
+    public static boolean profileClassSlowPath(Object clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClassType) {
             return clazz == type;
         } else {

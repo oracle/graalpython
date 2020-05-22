@@ -542,6 +542,12 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isLazyPythonClass() {
+        return true;
+    }
+
+    @ExportMessage
     static boolean isMetaObject(@SuppressWarnings("unused") PythonBuiltinClassType self) {
         return true;
     }

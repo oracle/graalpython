@@ -74,6 +74,12 @@ public final class PythonBuiltinClass extends PythonManagedClass {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public boolean isLazyPythonClass() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMetaObject() {
         return true;
     }

@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -468,11 +467,11 @@ public abstract class PGuards {
      * Tests if the class of a Python object is a builtin class, i.e., any magic methods cannot be
      * overridden.
      */
-    public static boolean cannotBeOverridden(LazyPythonClass clazz) {
+    public static boolean cannotBeOverridden(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
-    public static boolean isKindOfBuiltinClass(LazyPythonClass clazz) {
+    public static boolean isKindOfBuiltinClass(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 }

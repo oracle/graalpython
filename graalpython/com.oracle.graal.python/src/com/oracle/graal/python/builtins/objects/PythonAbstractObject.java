@@ -589,7 +589,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public LazyPythonClass getLazyPythonClass() {
+    public Object getLazyPythonClass() {
         CompilerDirectives.bailout("Abstract method");
         throw new AbstractMethodError(getClass().getCanonicalName());
     }

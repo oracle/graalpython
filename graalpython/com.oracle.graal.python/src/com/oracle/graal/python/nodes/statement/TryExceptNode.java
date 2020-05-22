@@ -249,7 +249,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 for (String c : caughtClasses) {
                     Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
                     if (cls instanceof LazyPythonClass) {
-                        if (isSubtype.execute(lib.getLazyPythonClass(exception), (LazyPythonClass) cls)) {
+                        if (isSubtype.execute(lib.getLazyPythonClass(exception), cls)) {
                             return true;
                         }
                     }

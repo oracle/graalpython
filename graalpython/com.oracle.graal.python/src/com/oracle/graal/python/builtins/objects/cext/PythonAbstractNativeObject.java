@@ -307,6 +307,13 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isLazyPythonClass(
+                    @Cached TypeNodes.IsTypeNode isType) {
+        return isType.execute(this);
+    }
+
+    @ExportMessage
     boolean isMetaObject(
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType) {
         return isType.execute(this);

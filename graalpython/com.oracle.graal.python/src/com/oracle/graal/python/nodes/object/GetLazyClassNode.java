@@ -169,8 +169,8 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     protected static LazyPythonClass getPythonClassCachedSingle(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
-        return klass;
+                    @Cached("object.getLazyPythonClass()") Object klass) {
+        return (LazyPythonClass) klass;
     }
 
     protected static boolean isBuiltinType(Shape shape) {
@@ -181,8 +181,8 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     @Specialization(guards = {"object.getStorage().getShape() == cachedShape", "isBuiltinType(cachedShape)"}, limit = "4")
     protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
-                    @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
-        return klass;
+                    @Cached("object.getLazyPythonClass()") Object klass) {
+        return (LazyPythonClass) klass;
     }
 
     // n.b.: only remove the specializations relating to PythonAbstractObjects
@@ -199,7 +199,7 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     })
     protected static LazyPythonClass getPythonClassGeneric(PythonAbstractObject object,
                     @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
-        return lib.getLazyPythonClass(object);
+        return (LazyPythonClass) lib.getLazyPythonClass(object);
     }
 
     @Specialization(guards = "plib.isForeignObject(object) || plib.isRefelectedObject(object, object)", limit = "3")
