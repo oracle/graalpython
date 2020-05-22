@@ -8,6 +8,7 @@ package com.oracle.graal.python.builtins.modules;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -39,6 +40,13 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     // Constants used for the definition of special values tables in node classes
     static final double INF = Double.POSITIVE_INFINITY;
     static final double NAN = Double.NaN;
+    static final double P = Math.PI;
+    static final double P14 = 0.25 * Math.PI;
+    static final double P12 = 0.5 * Math.PI;
+    static final double P34 = 0.75 * Math.PI;
+
+    static final double largeDouble = Double.MAX_VALUE / 4.0;       // used to avoid overflow
+    static final double ln2 = 0.6931471805599453094;    // natural log of 2
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -343,6 +351,83 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                 return specialValue(factory(), SPECIAL_VALUES, r, phi);
             }
             return factory().createComplex(r * Math.cos(phi), r * Math.sin(phi));
+        }
+    }
+
+    @Builtin(name = "log", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    abstract static class LogNode extends PythonBinaryBuiltinNode {
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(INF, -P34), C(INF, -P),   C(INF, -P),    C(INF, P),    C(INF, P),   C(INF, P34), C(INF, NAN)},
+                {C(INF, -P12), null,         null,          null,         null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         C(-INF, -P),   C(-INF, P),   null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         C(-INF, -0.0), C(-INF, 0.0), null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         null,          null,         null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P14), C(INF, -0.0), C(INF, -0.0),  C(INF, 0.0),  C(INF, 0.0), C(INF, P14), C(INF, NAN)},
+                {C(INF, NAN),  C(NAN, NAN),  C(NAN, NAN),   C(NAN, NAN),  C(NAN, NAN), C(INF, NAN), C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Specialization(guards = "isNoValue(y)")
+        PComplex doComplexNone(PComplex x, @SuppressWarnings("unused") PNone y) {
+            return log(x);
+        }
+
+        @Specialization
+        PComplex doComplexComplex(VirtualFrame frame, PComplex x, PComplex y, @Cached ComplexBuiltins.DivNode divNode) {
+            return divNode.executeComplex(frame, log(x), log(y));
+        }
+
+        @Specialization(guards = "isNoValue(yObj)")
+        PComplex doGeneral(VirtualFrame frame, Object xObj, @SuppressWarnings("unused") PNone yObj,
+                        @Cached CoerceToComplexNode coerceXToComplex) {
+            return log(coerceXToComplex.execute(frame, xObj));
+        }
+
+        @Specialization(guards = "!isNoValue(yObj)")
+        PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj, @Cached CoerceToComplexNode coerceXToComplex,
+                        @Cached CoerceToComplexNode coerceYToComplex, @Cached ComplexBuiltins.DivNode divNode) {
+            PComplex x = log(coerceXToComplex.execute(frame, xObj));
+            PComplex y = log(coerceYToComplex.execute(frame, yObj));
+            return divNode.executeComplex(frame, x, y);
+        }
+
+        private PComplex log(PComplex z) {
+            PComplex r = specialValue(factory(), SPECIAL_VALUES, z.getReal(), z.getImag());
+            if (r != null) {
+                return r;
+            }
+            double real = computeRealPart(z.getReal(), z.getImag());
+            double imag = Math.atan2(z.getImag(), z.getReal());
+            return factory().createComplex(real, imag);
+        }
+
+        private double computeRealPart(double real, double imag) {
+            double ax = Math.abs(real);
+            double ay = Math.abs(imag);
+
+            if (ax > largeDouble || ay > largeDouble) {
+                return Math.log(Math.hypot(ax / 2.0, ay / 2.0)) + ln2;
+            }
+            if (ax < Double.MIN_NORMAL && ay < Double.MIN_NORMAL) {
+                if (ax > 0.0 || ay > 0.0) {
+                    final double scaleUp = 0x1.0p53;
+                    return Math.log(Math.hypot(ax * scaleUp, ay * scaleUp)) - 53 * ln2;
+                }
+                throw raise(ValueError, "math domain error");
+            }
+            double h = Math.hypot(ax, ay);
+            if (0.71 <= h && h <= 1.73) {
+                double am = Math.max(ax, ay);
+                double an = Math.min(ax, ay);
+                return Math.log1p((am - 1) * (am + 1) + an * an) / 2.0;
+            }
+            return Math.log(h);
         }
     }
 

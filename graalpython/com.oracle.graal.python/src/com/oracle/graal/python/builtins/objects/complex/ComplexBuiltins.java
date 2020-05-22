@@ -88,6 +88,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PComplex)
@@ -166,7 +167,14 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class DivNode extends PythonBinaryBuiltinNode {
+    public abstract static class DivNode extends PythonBinaryBuiltinNode {
+
+        public abstract PComplex executeComplex(VirtualFrame frame, Object left, Object right);
+
+        public static DivNode create() {
+            return ComplexBuiltinsFactory.DivNodeFactory.create();
+        }
+
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
             double opNormSq = right * right;
