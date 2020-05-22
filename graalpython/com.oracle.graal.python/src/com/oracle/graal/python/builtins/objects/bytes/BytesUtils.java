@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -43,10 +44,10 @@ public final class BytesUtils {
 
     public static byte[] fromSize(PythonCore core, int size) {
         if (size < 0) {
-            throw core.raise(ValueError, "negative count");
+            throw core.raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
         } else if (size >= Integer.MAX_VALUE) {
             // TODO: fix me, in python the array can take long sizes, we are bound to ints for now
-            throw core.raise(OverflowError, "byte string is too large");
+            throw core.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
         }
         return new byte[size];
     }
@@ -60,7 +61,7 @@ public final class BytesUtils {
         try {
             return source.getBytes(encoding);
         } catch (UnsupportedEncodingException e) {
-            throw core.raise(LookupError, "unknown encoding: %s", encoding);
+            throw core.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
         }
     }
 
@@ -115,7 +116,7 @@ public final class BytesUtils {
 
             i++;
             if (i >= length) {
-                throw errors.raise(ValueError, "Trailing \\ in string");
+                throw errors.raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
             }
 
             chr = string.charAt(i);
@@ -200,7 +201,7 @@ public final class BytesUtils {
                             // fall through
                         }
                     }
-                    throw errors.raise(ValueError, "invalid \\x escape at position %d", i);
+                    throw errors.raise(ValueError, ErrorMessages.INVALID_ESCAPE_AT, "\\x", i);
                 default:
                     if (regexMode) {
                         if (chr == 'g' || (chr >= '0' && chr <= '9')) {
@@ -209,7 +210,7 @@ public final class BytesUtils {
                             charList.append('\\');
                             charList.append(chr);
                         } else {
-                            throw errors.raise(ValueError, "invalid escape sequence '\\%s' at position %d", chr, i);
+                            throw errors.raise(ValueError, ErrorMessages.INVALID_ESCAPE_SEQ_AT, chr, i);
                         }
                     } else {
                         charList.append('\\');

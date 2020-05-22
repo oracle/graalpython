@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -237,7 +238,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
             } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", fileno);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, fileno);
             }
         }
 
@@ -247,7 +248,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
             } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
             }
         }
 
@@ -257,7 +258,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
             } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
             }
         }
 
@@ -267,7 +268,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
             } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
             }
         }
 
@@ -277,7 +278,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
             } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
             }
         }
 
@@ -288,7 +289,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 newSocket.setFileno(fd);
                 return newSocket;
             } else {
-                throw raise(PythonErrorType.RuntimeError, "creating sockets not allowed");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.CREATING_SOCKETS_NOT_ALLOWED);
             }
         }
 
@@ -308,7 +309,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 getContext().getResources().reopenSocket(newSocket, fileno);
                 return newSocket;
             } else {
-                throw raise(PythonErrorType.RuntimeError, "creating sockets not allowed");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.CREATING_SOCKETS_NOT_ALLOWED);
             }
         }
     }
@@ -395,7 +396,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 return IDN.toASCII(name);
             } catch (IllegalArgumentException e) {
-                throw raise(PythonBuiltinClassType.UnicodeError, "IDN encoding failed: %s", e.getMessage());
+                throw raise(PythonBuiltinClassType.UnicodeError, ErrorMessages.IDN_ENC_FAILED, e.getMessage());
             }
         }
     }
@@ -481,7 +482,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if (service != null) {
                 return service;
             }
-            throw raise(PythonBuiltinClassType.OSError, "port/proto not found");
+            throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PORT_PROTO_NOT_FOUND);
         }
     }
 
@@ -505,7 +506,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 address = castAddress.execute(getItem.execute(frame, addr, 0));
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, "getnameinfo(): illegal sockaddr argument");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
             }
             int port = castPort.execute(getItem.execute(frame, addr, 1));
 
@@ -521,7 +522,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if ((flags & PSocket.NI_NUMERICSERV) != PSocket.NI_NUMERICSERV) {
                 portServ = searchServicesForPort(getContext().getEnv(), port, null);
                 if (portServ == null) {
-                    throw raise(PythonBuiltinClassType.OSError, "port/proto not found");
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PORT_PROTO_NOT_FOUND);
                 }
             }
 
@@ -661,7 +662,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object close(VirtualFrame frame, int fd) {
             if (fd < 0) {
-                throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
             }
 
             PSocket socket = getContext().getResources().getSocket(fd);
@@ -736,11 +737,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         PBytes doError(Object obj) {
-            throw raise(PythonBuiltinClassType.TypeError, "inet_aton() argument 1 must be str, not %p", obj);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "inet_aton()", 1, "str", obj);
         }
 
         private PException raiseIllegalAddr() {
-            throw raise(PythonBuiltinClassType.OSError, "illegal IP address string passed to inet_aton");
+            throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_IP_STRING_PASSED_TO, "inet_aton");
         }
 
         private static long parseUnsigned(String valueIn) throws NumberFormatException {
@@ -771,7 +772,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 return InetAddress.getByAddress(bytes).toString();
             } catch (UnknownHostException e) {
                 // the exception will only be thrown if 'bytes' has the wrong length
-                throw raise(PythonBuiltinClassType.OSError, "packed IP wrong length for inet_ntoa");
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
             }
         }
 
@@ -794,7 +795,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         private byte[] aton(int addrFamily, String s) {
             try {
                 if (addrFamily != AF_INET && addrFamily != AF_INET6) {
-                    throw raise(PythonBuiltinClassType.ValueError, "unknown address family %d", addrFamily);
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
                 }
 
                 byte[] bytes = InetAddress.getByName(s).getAddress();
@@ -809,12 +810,12 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             } catch (UnknownHostException e) {
                 // fall through
             }
-            throw raise(PythonBuiltinClassType.OSError, "illegal IP address string passed to inet_pton");
+            throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_IP_STRING_PASSED_TO, "inet_pton");
         }
 
         @Fallback
         PBytes doError(@SuppressWarnings("unused") Object addrFamily, Object obj) {
-            throw raise(PythonBuiltinClassType.TypeError, "inet_aton() argument 1 must be str, not %p", obj);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "inet_aton()", 1, "str", obj);
         }
     }
 
@@ -830,14 +831,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private String ntoa(int addrFamily, byte[] bytes) {
             if (addrFamily != AF_INET && addrFamily != AF_INET6) {
-                throw raise(PythonBuiltinClassType.ValueError, "unknown address family %d", addrFamily);
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
             }
             // we also need to check the size otherwise one could convert an IPv4 address even if
             // he specified AF_INET6 (and vice versa)
             int ip4Len = Inet4Address.getLoopbackAddress().getAddress().length;
             int ip6Len = Inet6Address.getLoopbackAddress().getAddress().length;
             if (addrFamily == AF_INET && bytes.length != ip4Len || addrFamily == AF_INET6 && bytes.length != ip6Len) {
-                throw raise(PythonBuiltinClassType.OSError, "packed IP wrong length for inet_ntoa");
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PACKET_IP_WRONG_LENGTH_FOR, "inet_ntoa");
             }
             try {
                 return InetAddress.getByAddress(bytes).toString();

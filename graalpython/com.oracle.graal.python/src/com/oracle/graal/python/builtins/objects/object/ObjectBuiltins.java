@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
@@ -162,7 +163,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 Object otherSlots = getLookupSlotsInOther().execute(value);
                 if (otherSlots == PNone.NO_VALUE || !slotsLib.equals(selfSlots, otherSlots, slotsLib)) {
                     errorSlotsBranch.enter();
-                    throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", getTypeName(value), getTypeName(lazyClass));
+                    throw raise(TypeError, ErrorMessages.CLASS_ASIGMENT_D_LAYOUT_DIFFERS_FROM_S, getTypeName(value), getTypeName(lazyClass));
                 }
             }
             lib.setLazyPythonClass(self, value);
@@ -192,7 +193,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         LazyPythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
-            throw raise(TypeError, "__class__ must be set to a class, not '%p' object", value);
+            throw raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
         }
 
         private String getTypeName(LazyPythonClass clazz) {
@@ -373,7 +374,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter();
-            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
+            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
         private Object readAttribute(Object object, Object key) {
@@ -454,9 +455,9 @@ public class ObjectBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, "attribute %s is read-only", key);
+                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raise(AttributeError, "%s has no attribute %s", object, key);
+                throw raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
             }
         }
     }
@@ -490,9 +491,9 @@ public class ObjectBuiltins extends PythonBuiltins {
                 }
             }
             if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, "attribute %s is read-only", key);
+                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raise(AttributeError, "%s object has no attribute '%s'", object, key);
+                throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
             }
         }
     }
@@ -554,7 +555,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         Object raise(Object self, @SuppressWarnings("unused") Object dict) {
-            throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
+            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, "__dict__");
         }
 
     }
@@ -570,7 +571,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         Object formatFail(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object formatSpec) {
-            throw raise(TypeError, "format_spec must be a string");
+            throw raise(TypeError, ErrorMessages.FORMAT_SPEC_MUST_BE_STRING);
         }
     }
 

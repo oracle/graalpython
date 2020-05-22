@@ -10,6 +10,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -269,7 +270,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             } else {
                 r = Math.hypot(value.getReal(), value.getImag());
                 if (Double.isInfinite(r)) {
-                    throw raise(OverflowError, "absolute value too large");
+                    throw raise(OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
                 }
             }
             return factory().createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});

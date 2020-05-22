@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -134,7 +135,7 @@ public class ImportStarNode extends AbstractImportNode {
                     } catch (CannotCastException e) {
                         // TODO(fa): this error should be raised by the ReadAttributeFromObjectNode;
                         // but that needs some refactoring first.
-                        throw raise(PythonBuiltinClassType.TypeError, "attribute name must be string, not '%p'", attrNameObj);
+                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrNameObj);
                     }
                     Object attr = readAttribute(frame, importedModule, attrName);
                     writeAttribute(frame, globals, attrName, attr);

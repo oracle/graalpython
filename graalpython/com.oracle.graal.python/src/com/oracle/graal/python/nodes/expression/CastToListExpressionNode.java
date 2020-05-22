@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -179,7 +180,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                 return constructListNode.execute(v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
-                throw raise.raise(TypeError, "%s is not iterable", v);
+                throw raise.raise(TypeError, ErrorMessages.IS_NOT_ITERABLE, v);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

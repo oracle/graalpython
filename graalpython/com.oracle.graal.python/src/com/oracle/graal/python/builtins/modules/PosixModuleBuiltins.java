@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
@@ -338,7 +339,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object doExecuteInternal(PythonModule thisModule, String path, PSequence args) throws IOException {
             int size = args.getSequenceStorage().length();
             if (size == 0) {
-                throw raise(ValueError, "arg 2 must not be empty");
+                throw raise(ValueError, ErrorMessages.ARG_D_MUST_NOT_BE_EMPTY);
             }
             String[] cmd = new String[size];
             // We don't need the path variable because it's already in the array
@@ -1391,7 +1392,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isPNone(ns)"})
         Object utimeWrongNs(VirtualFrame frame, Object path, PTuple times, Object ns, Object dir_fd, Object follow_symlinks) {
-            throw raise(ValueError, "utime: you may specify either 'times' or 'ns' but not both");
+            throw raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
         }
 
         @SuppressWarnings("unused")
@@ -1424,13 +1425,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw tupleError(argname);
             }
             if (mtime < 0) {
-                throw raise(ValueError, "time cannot be negative");
+                throw raise(ValueError, ErrorMessages.CANNOT_BE_NEGATIVE, "time");
             }
             return mtime;
         }
 
         private PException tupleError(String argname) {
-            return raise(TypeError, "utime: '%s' must be either a tuple of two ints or None", argname);
+            return raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", argname, "a tuple of two ints", "None");
         }
 
         private void setMtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
@@ -1841,7 +1842,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PTuple getTerminalSize(VirtualFrame frame, long fd) {
             if (getOverflowProfile().profile(Integer.MIN_VALUE > fd || fd > Integer.MAX_VALUE)) {
-                raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
             if (getErrorProfile().profile(getContext().getResources().getFileChannel((int) fd) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
@@ -1858,7 +1859,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     throw raiseOSError(frame, OSErrorEnum.EBADF);
                 }
             } catch (ArithmeticException e) {
-                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
             return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
@@ -1875,7 +1876,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object getTerminalSize(VirtualFrame frame, Object fd) {
             PythonObjectLibrary lib = getAsPIntLibrary();
             if (!lib.canBePInt(fd)) {
-                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", fd);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, fd);
             }
             Object value = lib.asPInt(fd);
             if (recursiveNode == null) {

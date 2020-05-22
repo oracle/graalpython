@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltinsFactory.MakeMethodNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -127,7 +128,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
             Object callable = self.getCallable();
             if (callable == null) {
                 uninitialized.enter();
-                throw raise(PythonBuiltinClassType.RuntimeError, "uninitialized classmethod object");
+                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return makeMethod.execute(type, callable);
         }

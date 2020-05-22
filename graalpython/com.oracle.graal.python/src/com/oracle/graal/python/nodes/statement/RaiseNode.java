@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -72,7 +73,7 @@ public abstract class RaiseNode extends StatementNode {
                         @Cached PRaiseNode raise) {
             if (!validException.execute(frame, causeClass)) {
                 baseCheckFailedProfile.enter();
-                throw raise.raise(PythonBuiltinClassType.TypeError, "exception causes must derive from BaseException");
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
             Object cause = callConstructor.execute(causeClass);
             if (cause instanceof PBaseException) {
@@ -97,7 +98,7 @@ public abstract class RaiseNode extends StatementNode {
         @Specialization(guards = "!isValidCause(cause)")
         void setCause(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PBaseException exception, @SuppressWarnings("unused") Object cause,
                         @Cached PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "exception causes must derive from BaseException");
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
         }
 
         protected static boolean isValidCause(Object object) {
@@ -113,7 +114,7 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
         PException caughtException = getCaughtExceptionNode.execute(frame);
         if (hasCurrentException.profile(caughtException == null)) {
-            throw raise.raise(RuntimeError, "No active exception to reraise");
+            throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
         }
         throw caughtException.getExceptionForReraise();
     }
@@ -194,7 +195,7 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     private static PException raiseNoException(PRaiseNode raise) {
-        throw raise.raise(TypeError, "exceptions must derive from BaseException");
+        throw raise.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
     }
 
     public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {

@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -310,7 +311,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             target = targets[0];
             if (!(target instanceof ReadNode || target instanceof TupleLiteralNode || target instanceof ListLiteralNode)) {
                 if (target instanceof StarredExpressionNode) {
-                    throw errors.raise(SyntaxError, "starred assignment target must be in a list or tuple");
+                    throw errors.raise(SyntaxError, ErrorMessages.STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE);
                 } else {
                     // TODO handle this???
                     // String text = ctx.getText();
@@ -318,7 +319,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                     // throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\"
                     // found", text);
                     // }
-                    throw errors.raise(SyntaxError, "Cannot assign to %s", target);
+                    throw errors.raise(SyntaxError, ErrorMessages.CANNOT_ASSIGN_TO, target);
                 }
             }
         } else {

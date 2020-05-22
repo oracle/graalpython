@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -647,7 +648,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 len = lib.asSizeWithState(lenResult, state);
             }
             if (ltZero.profile(len < 0)) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "__len__() should return >= 0");
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
             } else {
                 return len;
             }
@@ -756,7 +757,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 return castToBoolean.execute(result);
             } catch (CannotCastException e) {
                 // cast node will act as a branch profile already for the compiler
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "__bool__ should return bool, returned %p", result);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
             }
         } else {
             Object lenAttr = lookupAttrs.execute(this, __LEN__);
@@ -800,7 +801,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         try {
             return castToLong.execute(result);
         } catch (CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
         }
     }
 
@@ -844,7 +845,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     private Object getHashAttr(LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode, PRaiseNode raise, PythonObjectLibrary lib) {
         Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
         if (!lib.isCallable(hashAttr)) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "unhashable type: '%p'", this);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
         }
         return hashAttr;
     }
@@ -880,7 +881,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
 
         if (resultProfile.profile(!isSubtype.execute(lib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
         }
         return result;
     }
@@ -894,7 +895,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached ConditionProfile gotState) {
         Object func = lookup.execute(this, __FSPATH__);
         if (func == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", this);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
         }
         Object pathObject;
         if (gotState.profile(state == null)) {
@@ -905,7 +906,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         try {
             return castToJavaStringNode.execute(pathObject);
         } catch (CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "expected %p.__fspath__() to return str or bytes, not %p", this, pathObject);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
         }
     }
 
@@ -933,7 +934,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
 
         if (!isSubtypeNode.execute(lib.getLazyPythonClass(result), PythonBuiltinClassType.PString)) {
-            throw raise.raise(TypeError, "__str__ returned non-string (type %p)", result);
+            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__str__", result);
         }
         return result;
     }
@@ -953,7 +954,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         Object filenoFunc = lib.lookupAttribute(this, FILENO);
         if (filenoFunc == PNone.NO_VALUE) {
             noFilenoMethodProfile.enter();
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, "argument must be an int, or have a fileno() method.");
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
         }
 
         Object result;
@@ -968,10 +969,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 return castToJavaIntNode.execute(result);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, isAttrError);
-                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
             }
         } else {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, "fileno() returned a non-integer");
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
         }
     }
 
@@ -1038,11 +1039,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 }
             }
             if (result == PNone.NO_VALUE) {
-                throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", this);
+                throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, this);
             }
         }
         if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise.raise(TypeError, "__index__ returned non-int (type %p)", result);
+            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
         }
         return result;
     }
@@ -1110,7 +1111,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 try {
                     return castToDouble.execute(result);
                 } catch (CannotCastException e) {
-                    throw raise.raise(TypeError, "%p.__float__ returned non-float (type %p)", this, result);
+                    throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, this, "__float__", result);
                 }
             }
         }
@@ -1119,7 +1120,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             return castToDouble.execute(lib.asIndex(this));
         }
 
-        throw raise.raise(TypeError, "must be real number, not %p", this);
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
     }
 
     @ExportMessage
@@ -1140,7 +1141,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         Object func = lookup.execute(this, __INT__);
         if (func == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, "must be numeric, not %p", this);
+            throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
         }
         Object result;
         if (gotState.profile(state == null)) {
@@ -1151,7 +1152,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         try {
             return castToLong.execute(result);
         } catch (CannotCastException e) {
-            throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", this, result);
+            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
         }
     }
 
@@ -1175,7 +1176,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             return (LazyPythonClass) type;
         } else {
             CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "patched datetime class: %r", type);
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.PATCHED_DATETIME_CLASS, type);
         }
     }
 
@@ -1644,7 +1645,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             Object attrGetItem = lookupGetItemNode.execute(primary, __GETITEM__);
             if (profile.profile(attrGetItem == PNone.NO_VALUE)) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "'%p' object is not subscriptable", primary);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, primary);
             }
             return callGetItemNode.execute(null, attrGetItem, primary, index);
         }

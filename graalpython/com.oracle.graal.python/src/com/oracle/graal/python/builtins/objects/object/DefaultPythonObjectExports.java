@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -253,7 +254,7 @@ final class DefaultPythonObjectExports {
                 throw new IllegalStateException(e);
             }
         }
-        throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
+        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
     }
 
     @ExportMessage
@@ -275,7 +276,7 @@ final class DefaultPythonObjectExports {
                 throw new IllegalStateException(ex);
             }
         }
-        throw raise.raise(TypeError, "must be real number, not %p", receiver);
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
 
     }
 
@@ -303,7 +304,7 @@ final class DefaultPythonObjectExports {
                 throw new IllegalStateException(ex);
             }
         }
-        throw raise.raise(TypeError, "must be real number, not %p", receiver);
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
     }
 
     @ExportMessage
@@ -325,7 +326,7 @@ final class DefaultPythonObjectExports {
                 throw new IllegalStateException(ex);
             }
         }
-        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", receiver);
+        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }
 
 }

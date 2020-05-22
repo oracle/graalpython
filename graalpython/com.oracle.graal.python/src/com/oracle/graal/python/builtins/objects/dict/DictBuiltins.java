@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -128,7 +129,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "args.length > 1")
         Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            throw raise(TypeError, "dict expected at most 1 arguments, got %d", args.length);
+            throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "dict", 1, args.length);
         }
     }
 
@@ -217,7 +218,7 @@ public final class DictBuiltins extends PythonBuiltins {
             for (DictEntry entry : lib.entries(dict.getDictStorage())) {
                 return factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
             }
-            throw raise(KeyError, "popitem(): dictionary is empty");
+            throw raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
         }
     }
 
@@ -303,7 +304,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode specialNode) {
             Object name = specialNode.executeObject(frame, key);
             if (!PGuards.isString(name)) {
-                throw raise(TypeError, "__repr__ returned non-string (type %p)", name);
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", name);
             }
             throw raise(KeyError, "%s", name);
         }
@@ -507,7 +508,7 @@ public final class DictBuiltins extends PythonBuiltins {
                     keyReprString = castStr.execute(keyRepr);
                 } catch (CannotCastException e) {
                     nullKey.enter();
-                    throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", keyRepr);
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", keyRepr);
                 }
 
                 Object value = lib.getItem(s.dictStorage, key);
@@ -517,7 +518,7 @@ public final class DictBuiltins extends PythonBuiltins {
                     valueReprString = castStr.execute(valueRepr);
                 } catch (CannotCastException e) {
                     nullValue.enter();
-                    throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", valueRepr);
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", valueRepr);
                 }
 
                 // assuming '{' is inserted already

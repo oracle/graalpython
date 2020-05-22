@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -176,7 +177,7 @@ public abstract class CodeNodes {
             PArguments.setGlobals(args, globals);
             Object returnValue = InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
             if (!(returnValue instanceof PFunction)) {
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.GOT_INVALID_CODESTRING);
             }
             return (PFunction) returnValue;
         }
@@ -253,7 +254,7 @@ public abstract class CodeNodes {
             try {
                 return CastToJavaStringNode.getUncached().execute(obj);
             } catch (CannotCastException e) {
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "non-string found in code slot");
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.NON_STRING_IN_CODE_SLOT);
             }
         }
 

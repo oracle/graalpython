@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -193,7 +194,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                 ((CoverageTracker) currentTracker).close();
                 return PNone.NONE;
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, "coverage tracker not running");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.COVERAGE_TRACKER_NOT_RUNNING);
             }
         }
     }
@@ -213,7 +214,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             if (currentTracker instanceof CoverageTracker) {
                 tracker = (CoverageTracker) currentTracker;
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, "coverage tracker not running");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.COVERAGE_TRACKER_NOT_RUNNING);
             }
             SourceCoverage[] coverage = getCoverage(tracker);
             // callers -> not supported

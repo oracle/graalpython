@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleCodeData;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleInfo;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -194,7 +195,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @CompilerDirectives.TruffleBoundary
         private void initZipImporter(PZipImporter self, String path) {
             if (path == null || path.isEmpty()) {
-                throw raise(PythonErrorType.ZipImportError, "archive path is empty");
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.IS_EMPTY, "archive path");
             }
 
             TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(path);
@@ -239,7 +240,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                         locis.findFirstEntryPosition(); // find location of the first zip entry
                         if (locis.positions.isEmpty()) {
                             // no PK\003\004 found -> not a correct zip file
-                            throw raise(PythonErrorType.ZipImportError, "not a Zip file: '%s'", archive);
+                            throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
                         }
                         zis = new ZipInputStream(locis); // and create new ZipInput stream from this
                                                          // location
@@ -261,7 +262,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                                     zipEntryPos = locis.positions.remove(0);
                                 }
                             } else {
-                                throw raise(PythonErrorType.ZipImportError, "cannot handle Zip file: '%s'", archive);
+                                throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANNOT_HANDLE_ZIP_FILE, archive);
                             }
 
                             PTuple tuple = factory().createTuple(new Object[]{
@@ -286,9 +287,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                             }
                         }
                     } catch (IOException ex) {
-                        throw raise(PythonErrorType.ZipImportError, "not a Zip file: '%s'", archive);
+                        throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
                     } catch (SecurityException ex) {
-                        throw raise(PythonErrorType.ZipImportError, "security exception while reading: '%s'", archive);
+                        throw raise(PythonErrorType.ZipImportError, ErrorMessages.SECURITY_EX_WHILE_READING, archive);
                     } finally {
                         if (zis != null) {
                             try {
@@ -314,7 +315,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 self.setFiles((PDict) files);
 
             } else {
-                throw raise(PythonErrorType.ZipImportError, "not a Zip file: '%s'", archive);
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
             }
 
         }
@@ -358,7 +359,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Fallback
         public PNone notPossibleInit(@SuppressWarnings("unused") Object self, Object path) {
-            throw raise(PythonErrorType.TypeError, "expected str, bytes or os.PathLike object, not %p", path);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, path);
         }
 
     }
@@ -442,7 +443,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
             if (canNotFind.profile(md == null)) {
-                throw raise(PythonErrorType.ZipImportError, " can't find module '%s'", fullname);
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANT_FIND_MODULE, fullname);
             }
             PCode code = compileNode.execute(frame, md.code, md.path, "exec", 0, false, -1);
             return code;
@@ -481,7 +482,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             Object[] tocEntries = GetObjectArrayNodeGen.getUncached().execute(tocEntry);
             long fileSize = (long) tocEntries[3];
             if (fileSize < 0) {
-                throw raise(PythonErrorType.ZipImportError, "negative data size");
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.NEGATIVE_DATA_SIZE);
             }
             long streamPosition = (long) tocEntries[6];
             ZipInputStream zis = null;
@@ -492,11 +493,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 zis = new ZipInputStream(in);
                 ZipEntry entry = zis.getNextEntry();
                 if (entry == null || !entry.getName().equals(key)) {
-                    throw raise(PythonErrorType.ZipImportError, "zipimport: wrong cached file position");
+                    throw raise(PythonErrorType.ZipImportError, ErrorMessages.ZIPIMPORT_WRONG_CACHED_FILE_POS);
                 }
                 int byteSize = (int) fileSize;
                 if (byteSize != fileSize) {
-                    throw raise(PythonErrorType.ZipImportError, "zipimport: cannot read archive members large than 2GB");
+                    throw raise(PythonErrorType.ZipImportError, ErrorMessages.ZIPIMPORT_CANNOT_REWAD_ARCH_MEMBERS);
                 }
                 byte[] bytes = new byte[byteSize];
                 int bytesRead = 0;
@@ -506,7 +507,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 zis.close();
                 return factory().createBytes(bytes);
             } catch (IOException e) {
-                throw raise(PythonErrorType.ZipImportError, "zipimport: can't read data");
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.ZIPIMPORT_CANT_READ_DATA);
             } finally {
                 if (zis != null) {
                     try {
@@ -538,7 +539,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
             if (canNotFind.profile(moduleCodeData == null)) {
-                throw raise(PythonErrorType.ZipImportError, " can't find module '%s'", fullname);
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANT_FIND_MODULE, fullname);
             }
             return moduleCodeData.path;
         }
@@ -564,7 +565,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
             if (canNotFind.profile(md == null)) {
-                throw raise(PythonErrorType.ZipImportError, "can't find module '%s'", fullname);
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANT_FIND_MODULE, fullname);
             }
             return md.code;
         }
@@ -585,7 +586,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
             ModuleInfo moduleInfo = self.getModuleInfo(fullname);
             if (canNotFind.profile(moduleInfo == ModuleInfo.NOT_FOUND)) {
-                throw raise(PythonErrorType.ZipImportError, "can't find module '%s'", fullname);
+                throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANT_FIND_MODULE, fullname);
             }
             return moduleInfo == ModuleInfo.PACKAGE;
         }

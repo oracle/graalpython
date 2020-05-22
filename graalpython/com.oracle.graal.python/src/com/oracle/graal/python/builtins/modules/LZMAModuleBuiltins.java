@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -205,7 +206,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         // corresponds to 'lzma_filter_converter' in '_lzmamodule.c'
         private FilterOptions convertLZMAFilter(VirtualFrame frame, Object spec, PythonObjectLibrary library) {
             if (!isSequence(frame, getContextRef(), spec, library)) {
-                throw raise(PythonBuiltinClassType.TypeError, "Filter specifier must be a dict or dict-like object");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FILTER_SPEC_MUST_BE_DICT);
             }
 
             Object idObj = PNone.NONE;
@@ -213,14 +214,14 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 idObj = getItem(frame, spec, "id");
             } catch (PException e) {
                 if (ensureKeyErrorProfile().profileException(e, PythonBuiltinClassType.KeyError)) {
-                    throw raise(ValueError, "Filter specifier must have an \"id\" entry");
+                    throw raise(ValueError, ErrorMessages.FILTER_SPECIFIER_MUST_HAVE);
                 }
             }
 
             int id = asInt(frame, idObj);
             FilterOptions options = createFilterById(id);
             if (options == null) {
-                throw raise(ValueError, "Invalid filter ID: %d", id);
+                throw raise(ValueError, ErrorMessages.INVALID_FILTER, id);
             }
             return options;
         }
@@ -315,10 +316,10 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             }
 
             if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
-                throw raise(ValueError, "Integrity checks are only supported by FORMAT_XZ");
+                throw raise(ValueError, ErrorMessages.INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
             }
             if (!isNoneOrNoValue(presetObj) && !isNoneOrNoValue(filters)) {
-                throw raise(ValueError, "Cannot specify both preset and filter chain");
+                throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
             }
 
             if (!isNoneOrNoValue(presetObj)) {
@@ -351,7 +352,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         } else {
                             FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
-                                throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
+                                throw raise(ValueError, ErrorMessages.INVALID_FILTER_CHAIN_FOR_FORMAT);
                             }
                             lzmaOutputStream = createLZMAOutputStream(bos, optionsChain);
                         }
@@ -364,14 +365,14 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         } else {
                             FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
-                                throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
+                                throw raise(ValueError, ErrorMessages.INVALID_FILTER_CHAIN_FOR_FORMAT);
                             }
                             lzmaOutputStream = createRawLZMAOutputStream(bos, optionsChain);
                         }
                         return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
 
                     default:
-                        throw raise(ValueError, "Invalid container format: %d", format);
+                        throw raise(ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
                 }
             } catch (IOException e) {
                 throw raise(LZMAError, "%m", e);
@@ -426,15 +427,15 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
             if (!isNoneOrNoValue(memlimitObj)) {
                 if (format == FORMAT_RAW) {
-                    throw raise(ValueError, "Cannot specify memory limit with FORMAT_RAW");
+                    throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_MEM_LIMIT);
                 }
                 memlimit = lib.asSizeWithState(memlimitObj, PArguments.getThreadState(frame));
             }
 
             if (format == FORMAT_RAW && isNoneOrNoValue(filters)) {
-                throw raise(ValueError, "Must specify filters for FORMAT_RAW");
+                throw raise(ValueError, ErrorMessages.MUST_SPECIFY_FILTERS);
             } else if (format != FORMAT_RAW && !isNoneOrNoValue(filters)) {
-                throw raise(ValueError, "Cannot specify filters except with FORMAT_RAW");
+                throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_FILTERS);
             }
 
             // this switch is just to validate the 'format' argument
@@ -445,10 +446,10 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                     return factory().createLZMADecompressor(cls, format, memlimit);
 
                 case FORMAT_RAW:
-                    throw raise(ValueError, "RAW format unsupported");
+                    throw raise(ValueError, ErrorMessages.RAW_FORMAT_NOT_SUPPORTED);
 
                 default:
-                    throw raise(ValueError, "Invalid container format: %d", format);
+                    throw raise(ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
             }
         }
     }

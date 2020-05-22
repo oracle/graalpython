@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -126,7 +127,7 @@ public abstract class PythonObjectLibrary extends Library {
      * objects.
      */
     public void setLazyPythonClass(Object receiver, LazyPythonClass cls) {
-        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'", receiver);
+        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES, receiver);
     }
 
     /**
@@ -501,7 +502,7 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public String asPathWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
         }
         return asPath(receiver);
     }
@@ -542,7 +543,7 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public int asFileDescriptorWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "argument must be an int, or have a fileno() method.");
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
         }
         return asFileDescriptor(receiver);
     }

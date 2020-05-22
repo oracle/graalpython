@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeNodeGen;
@@ -144,7 +145,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             setItemNode.execute(null, ((PHashingCollection) d), key, value);
             return true;
         } else {
-            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
     }
 
@@ -153,7 +154,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile,
                     @Exclusive @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
+        throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
     }
 
     protected static boolean isErrorCase(IsBuiltinClassProfile exactBuiltinInstanceProfile, PythonObjectLibrary lib, Object object, Object key) {
@@ -213,7 +214,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         Object dict) {
             Object setItemCallable = getSetItem.execute(dict, SpecialMethodNames.__SETITEM__);
             if (setItemCallable == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' dict of '%p' object has no attribute '__setitem__'", dict, object);
+                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.DICT_OF_P_OBJECTS_HAS_NO_ATTR, dict, object);
             } else {
                 callSetItem.execute(null, setItemCallable, object, key, value);
                 return true;

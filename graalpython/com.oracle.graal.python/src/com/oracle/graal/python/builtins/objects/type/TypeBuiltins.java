@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -185,7 +186,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isClass(object, iLib)", limit = "3")
         Object doit(Object object,
                         @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary iLib) {
-            throw raise(TypeError, "descriptor 'mro' requires a 'type' object but received an '%p'", object);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "mro", "type", object);
         }
     }
 
@@ -258,7 +259,7 @@ public class TypeBuiltins extends PythonBuiltins {
             } else if (PGuards.isClass(self, lib)) {
                 return doItUnboxedUser(frame, noSelf, arguments, keywords, self, lib);
             } else {
-                throw raise(TypeError, "descriptor '__call__' requires a 'type' object but received a '%p'", self);
+                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__call__", "type", self);
             }
         }
 
@@ -339,14 +340,14 @@ public class TypeBuiltins extends PythonBuiltins {
                             }
                             Object initResult = dispatchInit.execute(frame, initMethod, initArgs, keywords);
                             if (initResult != PNone.NONE && initResult != PNone.NO_VALUE) {
-                                throw raise(TypeError, "__init__() should return None");
+                                throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE);
                             }
                         }
                     }
                 }
                 return newInstance;
             } else {
-                throw raise(TypeError, "cannot create '%s' instances", getTypeName(self));
+                throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, getTypeName(self));
             }
         }
 
@@ -445,7 +446,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter();
-            throw raise(AttributeError, "type object '%s' has no attribute %s", getTypeName(object), key);
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, getTypeName(object), key);
         }
 
         private Object readAttribute(LazyPythonClass object, Object key) {
@@ -610,7 +611,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Fallback
         boolean isInstance(VirtualFrame frame, Object cls, Object instance) {
             if (typeErrorProfile.profile(getBasesNode.execute(frame, cls) == null)) {
-                throw raise(TypeError, "isinstance() arg 2 must be a type or tuple of types (was: %s)", instance);
+                throw raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
             }
 
             PythonObject instanceClass = getInstanceClassAttr(frame, instance);
@@ -647,10 +648,10 @@ public class TypeBuiltins extends PythonBuiltins {
                 return isSubtypeNode.execute(frame, derived, cls);
             }
             if (!checkClass(frame, derived)) {
-                throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 1 must be a class");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
             }
             if (!checkClass(frame, cls)) {
-                throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_CLSS_WAS);
             }
             return false;
         }
@@ -723,12 +724,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -747,7 +748,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
 
         @TruffleBoundary
@@ -802,7 +803,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
 
         @TruffleBoundary
@@ -835,7 +836,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -854,7 +855,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
 
         @TruffleBoundary
@@ -889,12 +890,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setDictoffsetType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setDictoffsetBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -911,7 +912,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
     }
 
@@ -938,12 +939,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setItemsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setItemsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -960,7 +961,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
     }
 
@@ -986,12 +987,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setBasicsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setBasicsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -1008,7 +1009,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
     }
 

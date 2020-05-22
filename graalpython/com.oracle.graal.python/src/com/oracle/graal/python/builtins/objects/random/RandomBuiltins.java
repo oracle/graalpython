@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -117,7 +118,7 @@ public class RandomBuiltins extends PythonBuiltins {
                 ((PRandom) random).setSeed(hash);
                 return PNone.NONE;
             } else {
-                throw raise(PythonErrorType.TypeError, "descriptor 'seed' requires a '_random.Random' object but received a '%p'", random);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "seed", "_random.Random", random);
             }
         }
     }
@@ -138,7 +139,7 @@ public class RandomBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            throw raise(PythonErrorType.SystemError, "state vector invalid.");
+            throw raise(PythonErrorType.SystemError, ErrorMessages.STATE_VECTOR_INVALID);
         }
     }
 

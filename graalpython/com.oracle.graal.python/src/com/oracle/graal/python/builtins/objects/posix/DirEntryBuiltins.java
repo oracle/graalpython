@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -134,7 +135,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
             if (self instanceof PDirEntry) {
                 return testBool((PDirEntry) self, lib.isTrueWithState(followSymlinks, PArguments.getThreadState(frame)));
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, "descriptor 'is_dir' requires a 'posix.DirEntry' object but received a '%p'", self);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "is_dir", "posix.DirEntry", self);
             }
         }
     }

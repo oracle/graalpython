@@ -29,6 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -95,7 +96,7 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                 // PEP 479 - StopIteration raised from generator body needs to be wrapped in
                 // RuntimeError
                 pe.expectStopIteration(getErrorProfile());
-                throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame), "generator raised StopIteration");
+                throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame), ErrorMessages.GENERATOR_RAISED_STOPITER);
             }
             fallthroughProfile.enter();
             throw raise.raise(StopIteration);

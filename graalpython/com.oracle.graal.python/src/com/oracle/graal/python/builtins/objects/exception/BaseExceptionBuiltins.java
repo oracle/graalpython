@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
@@ -173,7 +174,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isBaseExceptionOrNone(value)")
         public Object cause(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
                         @Cached("create()") PRaiseNode raise) {
-            throw raise.raise(TypeError, "exception cause must be None or derive from BaseException");
+            throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
 
@@ -201,7 +202,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isBaseExceptionOrNone(value)")
         public Object context(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
                         @Cached("create()") PRaiseNode raise) {
-            throw raise.raise(TypeError, "exception context must be None or derive from BaseException");
+            throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
 
@@ -225,7 +226,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             try {
                 self.setSuppressContext(castToJavaBooleanNode.execute(value));
             } catch (CannotCastException e) {
-                raise(TypeError, "attribute value type must be bool");
+                raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
             return PNone.NONE;
         }
@@ -256,7 +257,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object tb) {
-            throw raise(PythonErrorType.TypeError, "__traceback__ must be a traceback or None");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.MUST_BE_S_OR_S, "__traceback__", "a traceback", "None");
         }
     }
 

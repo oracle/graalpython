@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -191,7 +192,7 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static long asJavaLong(Double receiver,
                     @Exclusive @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, "must be numeric, not %p", receiver);
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, receiver);
     }
 
     @ExportMessage
@@ -202,7 +203,7 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static int asPInt(Double receiver,
                     @Exclusive @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", receiver);
+        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }
 
     @ExportMessage

@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -122,13 +123,13 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
                 self.setHash(hash);
                 return hash;
             } else {
-                throw raise(PythonErrorType.TypeError, "weak object has gone away");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.WEAK_OBJ_GONE_AWAY);
             }
         }
 
         @Fallback
         int hashWrong(@SuppressWarnings("unused") Object self) {
-            throw raise(PythonErrorType.TypeError, "descriptor '__hash__' requires a 'weakref' object but received a '%p'", self);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__hash__", "weakref", self);
         }
     }
 

@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -123,7 +124,7 @@ public abstract class CallNode extends PNodeWithContext {
 
     private static Object callCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords, PRaiseNode raise, CallVarargsMethodNode callCallNode, Object call) {
         if (call == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
         }
         return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments), keywords);
     }

@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongT
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -240,7 +241,7 @@ public abstract class TypeNodes {
                 // call 'PyType_Ready' on the type
                 int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TYPE_READY, ToSulongNode.getUncached().execute(obj));
                 if (res < 0) {
-                    throw raise.raise(PythonBuiltinClassType.SystemError, "lazy initialization of type %s failed", GetNameNode.getUncached().execute(obj));
+                    throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.getUncached().execute(obj));
                 }
 
                 tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
@@ -253,7 +254,7 @@ public abstract class TypeNodes {
                     return (MroSequenceStorage) sequenceStorage;
                 }
             }
-            throw raise.raise(PythonBuiltinClassType.SystemError, "invalid mro object");
+            throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
         }
 
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
@@ -271,7 +272,7 @@ public abstract class TypeNodes {
                         return (MroSequenceStorage) sequenceStorage;
                     }
                 }
-                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "invalid mro object");
+                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -356,7 +357,7 @@ public abstract class TypeNodes {
                 return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), result);
+            throw raise.raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
         }
     }
 
@@ -514,10 +515,10 @@ public abstract class TypeNodes {
                 try {
                     return cast(values);
                 } catch (ClassCastException e) {
-                    throw raise.raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases'");
+                    throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
                 }
             }
-            throw raise.raise(PythonBuiltinClassType.SystemError, "type does not provide bases");
+            throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.TYPE_DOES_NOT_PROVIDE_BASES);
         }
 
         // TODO: get rid of this
@@ -575,7 +576,7 @@ public abstract class TypeNodes {
                 return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), result);
+            throw raise.raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
         }
     }
 
@@ -899,7 +900,7 @@ public abstract class TypeNodes {
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
         Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz,
                         @Cached PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
+            throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }
 
         public static GetInstanceShape create() {

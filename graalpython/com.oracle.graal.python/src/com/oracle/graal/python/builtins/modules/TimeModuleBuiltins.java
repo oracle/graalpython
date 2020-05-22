@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -372,7 +373,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             if (asPIntLib.canBePInt(obj)) {
                 return asPIntLib.asPInt(obj);
             }
-            throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", obj);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
         }
 
         private int getIntValue(Object oValue, int min, int max, String errorMessage, CastToJavaIntExactNode toJavaIntExact) {
@@ -415,7 +416,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             CompilerAsserts.neverPartOfCompilation();
             Object[] date = GetObjectArrayNodeGen.getUncached().execute(time);
             if (date.length < 9) {
-                throw raise(PythonBuiltinClassType.TypeError, "function takes at least 9 arguments (%d given)", date.length);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_AT_LEAST_D_ARGS, 9, date.length);
             }
             int year = getIntValue(castToPInt(date[0], asPIntLib), Integer.MIN_VALUE, Integer.MAX_VALUE, "year", toJavaIntExact);
             int mon = getIntValue(castToPInt(date[1], asPIntLib), 0, 12, "month out of range", toJavaIntExact);
@@ -699,12 +700,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public String formatTime(@SuppressWarnings("unused") String format, @SuppressWarnings("unused") Object time) {
-            throw raise(PythonBuiltinClassType.TypeError, "Tuple or struct_time argument required");
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
 
         @Fallback
         public String formatTime(Object format, @SuppressWarnings("unused") Object time) {
-            throw raise(PythonBuiltinClassType.TypeError, "strftime() argument 1 must be str, not %p", format);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "strftime()", 1, "str", format);
         }
     }
 
@@ -725,7 +726,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] items = getObjectArrayNode.execute(tuple);
             if (items.length != 9) {
-                throw raise(PythonBuiltinClassType.TypeError, "function takes exactly 9 arguments (%d given)", items.length);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, items.length);
             }
             ThreadState threadState = null;
             if (hasFrame.profile(frame != null)) {

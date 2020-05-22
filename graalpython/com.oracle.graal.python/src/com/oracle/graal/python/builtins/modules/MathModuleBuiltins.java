@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -95,13 +96,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public void checkMathRangeError(boolean con) {
             if (con) {
-                throw raise(OverflowError, "math range error");
+                throw raise(OverflowError, ErrorMessages.MATH_RAGE_ERROR);
             }
         }
 
         public void checkMathDomainError(boolean con) {
             if (con) {
-                throw raise(ValueError, "math domain error");
+                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
         }
     }
@@ -113,7 +114,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public abstract double executeObject(VirtualFrame frame, Object value);
 
         public double count(@SuppressWarnings("unused") double value) {
-            throw raise(NotImplementedError, "count function in Math");
+            throw raise(NotImplementedError, ErrorMessages.COUNT_FUNC_MATH);
         }
 
         @Specialization
@@ -366,7 +367,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeInt(@SuppressWarnings("unused") int value) {
-            throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -381,7 +382,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeLong(@SuppressWarnings("unused") long value) {
-            throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -396,12 +397,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNegative(value)")
         public Object factorialPINegative(@SuppressWarnings("unused") PInt value) {
-            throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "isOvf(value)")
         public Object factorialPIOvf(@SuppressWarnings("unused") PInt value) {
-            throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
+            throw raise(PythonErrorType.OverflowError, ErrorMessages.ARG_SHOULD_NOT_EXCEED, "factorial()", Long.MAX_VALUE);
         }
 
         @Specialization(guards = {"!isOvf(value)", "!isNegative(value)"})
@@ -416,27 +417,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNaN(value)"})
         public long factorialDoubleNaN(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float NaN", "integer");
         }
 
         @Specialization(guards = {"isInfinite(value)"})
         public long factorialDoubleInfinite(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, "cannot convert float infinity to integer");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float infinity", "integer");
         }
 
         @Specialization(guards = "isNegative(value)")
         public PInt factorialDoubleNegative(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "!isInteger(value)")
         public PInt factorialDoubleNotInteger(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, "factorial() only accepts integral values");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.ONLY_ACCEPTS_INTEGRAL_VALUES, "factorial()");
         }
 
         @Specialization(guards = "isOvf(value)")
         public PInt factorialDoubleOvf(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
+            throw raise(PythonErrorType.OverflowError, ErrorMessages.ARG_SHOULD_NOT_EXCEED, "factorial()", Long.MAX_VALUE);
         }
 
         @Specialization(guards = {"!isNaN(value)", "!isInfinite(value)",
@@ -450,27 +451,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNaN(value.getValue())"})
         public long factorialPFLNaN(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float NaN", "integer");
         }
 
         @Specialization(guards = {"isInfinite(value.getValue())"})
         public long factorialPFLInfinite(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, "cannot convert float infinity to integer");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float infinity", "integer");
         }
 
         @Specialization(guards = "isNegative(value.getValue())")
         public PInt factorialPFLNegative(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "!isInteger(value.getValue())")
         public PInt factorialPFLNotInteger(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, "factorial() only accepts integral values");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.ONLY_ACCEPTS_INTEGRAL_VALUES, "factorial()");
         }
 
         @Specialization(guards = "isOvf(value.getValue())")
         public PInt factorialPFLOvf(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
+            throw raise(PythonErrorType.OverflowError, ErrorMessages.ARG_SHOULD_NOT_EXCEED, "factorial()", Long.MAX_VALUE);
         }
 
         @Specialization(guards = {"!isNaN(value.getValue())", "!isInfinite(value.getValue())",
@@ -682,7 +683,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         protected void raiseMathDomainError(boolean con) {
             if (con) {
-                throw raise(PythonErrorType.ValueError, "math domain error");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
         }
 
@@ -754,7 +755,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             PTuple result = frexpD(value.doubleValue());
             if (Double.isInfinite((double) getItemNode.execute(frame, result.getSequenceStorage(), 0))) {
-                throw raise(OverflowError, "int too large to convert to float");
+                throw raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
             }
             return result;
         }
@@ -805,7 +806,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             double diff;
 
             if (rel_tol < 0.0 || abs_tol < 0.0) {
-                throw raise(ValueError, "tolerances must be non-negative");
+                throw raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
             }
 
             if (a == b) {
@@ -916,7 +917,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private double exceptInfinity(double result, double arg) {
             if (Double.isInfinite(result) && !Double.isInfinite(arg)) {
-                throw raise(OverflowError, "math range error");
+                throw raise(OverflowError, ErrorMessages.MATH_RAGE_ERROR);
             } else {
                 return result;
             }
@@ -1091,7 +1092,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                          * as a result of a nan or inf in the summands
                          */
                         if (Double.isFinite(xsave)) {
-                            throw raise(OverflowError, "intermediate overflow in fsum");
+                            throw raise(OverflowError, ErrorMessages.INTERMEDIATE_OVERFLOW_IN, "fsum");
                         }
                         if (Double.isInfinite(xsave)) {
                             inf_sum += xsave;
@@ -1110,7 +1111,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
             if (special_sum != 0.0) {
                 if (Double.isNaN(inf_sum)) {
-                    throw raise(ValueError, "-inf + inf in fsum");
+                    throw raise(ValueError, ErrorMessages.NEG_INF_PLUS_INF_IN);
                 } else {
                     sum = special_sum;
                     return sum;
@@ -1199,27 +1200,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") double y) {
-            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
         int gcd(@SuppressWarnings("unused") long x, @SuppressWarnings("unused") double y) {
-            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
         int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") long y) {
-            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
         int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") PInt y) {
-            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
         int gcd(@SuppressWarnings("unused") PInt x, @SuppressWarnings("unused") double y) {
-            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
@@ -1471,7 +1472,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private double countBase(double base, ConditionProfile divByZero) {
             double logBase = Math.log(base);
             if (divByZero.profile(logBase == 0)) {
-                throw raise(ZeroDivisionError, "float division by zero");
+                throw raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
             }
             return logBase;
         }
@@ -1479,7 +1480,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private double countBase(BigInteger base, ConditionProfile divByZero) {
             double logBase = logBigInteger(base);
             if (divByZero.profile(logBase == 0)) {
-                throw raise(ZeroDivisionError, "float division by zero");
+                throw raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
             }
             return logBase;
         }
@@ -1621,7 +1622,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private void raiseMathError(ConditionProfile doNotFit, boolean con) {
             if (doNotFit.profile(con)) {
-                throw raise(ValueError, "math domain error");
+                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
         }
 
@@ -1814,7 +1815,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     } else if (right < 0 && Math.abs(left) < 1) {
                         result = -right;
                         if (left == 0) {
-                            throw raise(ValueError, "math domain error");
+                            throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                         }
                     } else {
                         result = 0;
@@ -1824,12 +1825,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 result = Math.pow(left, right);
                 if (!Double.isFinite(result)) {
                     if (Double.isNaN(result)) {
-                        throw raise(ValueError, "math domain error");
+                        throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                     } else if (Double.isInfinite(result)) {
                         if (left == 0) {
-                            throw raise(ValueError, "math domain error");
+                            throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                         } else {
-                            throw raise(OverflowError, "math range error");
+                            throw raise(OverflowError, ErrorMessages.MATH_RAGE_ERROR);
                         }
                     }
                 }
@@ -1854,7 +1855,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTrunc) {
             Object result = callTrunc.executeObject(frame, obj);
             if (result == PNone.NO_VALUE) {
-                raise(TypeError, "type %p doesn't define __trunc__ method", obj);
+                raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, obj, "__trunc__");
             }
             return result;
         }
@@ -1957,7 +1958,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonObjectLibrary xLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary yLib) {
             if (keywords.length != 0) {
-                throw raise(PythonBuiltinClassType.TypeError, "hypot() takes no keyword arguments");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_NO_KEYWORD_ARGS, "hypot()");
             }
             double x = xLib.asJavaDouble(arguments[0]);
             double y = yLib.asJavaDouble(arguments[1]);
@@ -1968,7 +1969,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public double hypotGeneric(@SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             if (keywords.length != 0) {
-                throw raise(PythonBuiltinClassType.TypeError, "hypot() takes no keyword arguments");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_NO_KEYWORD_ARGS, "hypot()");
             }
             double max = 0.0;
             boolean foundNan = false;

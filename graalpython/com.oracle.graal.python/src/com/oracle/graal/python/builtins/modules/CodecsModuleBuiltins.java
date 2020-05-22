@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -284,7 +285,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object encode(Object str, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, "unicode_escape_encode() argument 1 must be str, not %p", str);
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "unicode_escape_encode()", 1, "str", "%p", str);
         }
     }
 
@@ -371,7 +372,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, "Can't convert '%p' object to str implicitly", str);
+            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_EXPLICITELY, str);
         }
 
         @TruffleBoundary
@@ -379,7 +380,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = getCharset(encoding);
             if (charset == null) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
+                throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             try {
                 ByteBuffer encoded = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
@@ -491,7 +492,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData) {
-            throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, bytes);
         }
 
         @TruffleBoundary
@@ -504,7 +505,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = getCharset(encoding);
             if (charset == null) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
+                throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             CharBuffer decoded = CharBuffer.allocate(byteBuffer.capacity());
             CoderResult result = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(byteBuffer, decoded, finalData);

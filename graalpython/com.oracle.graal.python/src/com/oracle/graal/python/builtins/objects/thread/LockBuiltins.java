@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -115,13 +116,13 @@ public class LockBuiltins extends PythonBuiltins {
 
                 if (timeoutSeconds != UNSET_TIMEOUT) {
                     if (!isBlocking) {
-                        throw raise(ValueError, "can't specify a timeout for a non-blocking call");
+                        throw raise(ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
                     }
 
                     if (timeoutSeconds < 0) {
-                        throw raise(ValueError, "timeout value must be positive");
+                        throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
                     } else if (timeoutSeconds > TIMEOUT_MAX) {
-                        throw raise(OverflowError, "timeout value is too large");
+                        throw raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
                     }
                 }
             }

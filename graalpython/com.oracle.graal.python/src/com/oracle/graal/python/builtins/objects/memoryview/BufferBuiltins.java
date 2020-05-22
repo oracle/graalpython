@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -134,9 +135,9 @@ public class BufferBuiltins extends PythonBuiltins {
         @Fallback
         protected Object doGeneric(Object self, Object idx) {
             if (!PGuards.isInteger(idx)) {
-                throw raise(TypeError, "buffer indices must be integers, not %p", idx);
+                throw raise(TypeError, ErrorMessages.BUFFER_INDICES_MUST_BE_INTS, idx);
             }
-            throw raise(TypeError, "descriptor '__getitem__' requires a 'buffer' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__getitem__", "buffer", self);
         }
     }
 

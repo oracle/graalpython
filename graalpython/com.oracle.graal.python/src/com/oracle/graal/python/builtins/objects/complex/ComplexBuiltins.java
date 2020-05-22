@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -301,7 +302,7 @@ public class ComplexBuiltins extends PythonBuiltins {
             if (topConditionProfile.profile(absRightReal >= absRightImag)) {
                 /* divide tops and bottom by right.real */
                 if (zeroDivisionProfile.profile(absRightReal == 0.0)) {
-                    throw raise(PythonErrorType.ZeroDivisionError, "complex division by zero");
+                    throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
                 } else {
                     double ratio = right.getImag() / right.getReal();
                     double denom = right.getReal() + right.getImag() * ratio;
@@ -368,7 +369,7 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PComplex doComplexDouble(Object right, Object left) {
-            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
         }
     }
 

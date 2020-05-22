@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -184,7 +185,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached("form") String cachedForm,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
             if (cachedNormForm == null) {
-                throw raise(ValueError, "invalid normalization form");
+                throw raise(ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
             }
             return Normalizer.normalize(unistr, cachedNormForm);
         }
