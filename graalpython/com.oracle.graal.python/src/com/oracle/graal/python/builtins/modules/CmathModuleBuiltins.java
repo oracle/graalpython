@@ -47,6 +47,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
     static final double largeDouble = Double.MAX_VALUE / 4.0;       // used to avoid overflow
     static final double ln2 = 0.6931471805599453094;    // natural log of 2
+    static final double ln10 = 2.302585092994045684;    // natural log of 10
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -360,6 +361,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LogNode extends PythonBinaryBuiltinNode {
 
+        abstract PComplex executeComplex(VirtualFrame frame, Object x, Object y);
+
         // @formatter:off
         @CompilerDirectives.CompilationFinal(dimensions = 2)
         private static final ComplexConstant[][] SPECIAL_VALUES = {
@@ -372,6 +375,10 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                 {C(INF, NAN),  C(NAN, NAN),  C(NAN, NAN),   C(NAN, NAN),  C(NAN, NAN), C(INF, NAN), C(NAN, NAN)},
         };
         // @formatter:on
+
+        static LogNode create() {
+            return CmathModuleBuiltinsFactory.LogNodeFactory.create();
+        }
 
         @Specialization(guards = "isNoValue(y)")
         PComplex doComplexNone(PComplex x, @SuppressWarnings("unused") PNone y) {
@@ -428,6 +435,25 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                 return Math.log1p((am - 1) * (am + 1) + an * an) / 2.0;
             }
             return Math.log(h);
+        }
+    }
+
+    @Builtin(name = "log10", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    abstract static class Log10Node extends PythonUnaryBuiltinNode {
+        @Child LogNode logNode = LogNode.create();
+
+        @Specialization
+        PComplex doComplex(VirtualFrame frame, PComplex z) {
+            PComplex r = logNode.executeComplex(frame, z, PNone.NO_VALUE);
+            return factory().createComplex(r.getReal() / ln10, r.getImag() / ln10);
+        }
+
+        @Specialization
+        PComplex doGeneral(VirtualFrame frame, Object zObj, @Cached CoerceToComplexNode coerceXToComplex) {
+            return doComplex(frame, coerceXToComplex.execute(frame, zObj));
         }
     }
 
