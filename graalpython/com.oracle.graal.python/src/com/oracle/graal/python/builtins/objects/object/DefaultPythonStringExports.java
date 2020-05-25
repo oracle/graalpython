@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -48,6 +49,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -151,5 +153,11 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static String asPString(String receiver) {
         return receiver;
+    }
+
+    @ExportMessage
+    public static Object lookupAttribute(String x, String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        return lookup.execute(x, name, inheritedOnly);
     }
 }

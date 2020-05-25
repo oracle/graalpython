@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -275,4 +276,9 @@ final class DefaultPythonLongExports {
         }
     }
 
+    @ExportMessage
+    public static Object lookupAttribute(Long x, String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        return lookup.execute(x, name, inheritedOnly);
+    }
 }

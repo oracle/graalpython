@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -100,7 +102,7 @@ final class DefaultPythonDoubleExports {
 
         @Specialization
         static boolean dF(Double receiver, PFloat other,
-                        @Cached IsBuiltinClassProfile isFloat) {
+                        @Cached.Exclusive @Cached IsBuiltinClassProfile isFloat) {
             if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
                 return dd(receiver, other.getValue());
             } else {
@@ -167,5 +169,11 @@ final class DefaultPythonDoubleExports {
                     @Cached.Exclusive @Cached PRaiseNode raise,
                     @Cached.Exclusive @Cached ConditionProfile gotState) {
         return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
+    }
+
+    @ExportMessage
+    public static Object lookupAttribute(Double x, String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        return lookup.execute(x, name, inheritedOnly);
     }
 }

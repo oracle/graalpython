@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -252,5 +253,10 @@ final class DefaultPythonObjectExports {
             }
         }
         throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
+    }
+
+    @ExportMessage
+    public static Object lookupAttribute(@SuppressWarnings("unused") Object x, @SuppressWarnings("unused") String name, @SuppressWarnings("unused") boolean inheritedOnly) {
+        return PNone.NO_VALUE;
     }
 }
