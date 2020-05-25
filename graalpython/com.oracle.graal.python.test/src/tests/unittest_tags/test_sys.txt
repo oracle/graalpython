@@ -3,3 +3,14 @@
 *SysModuleTest.test_43581
 *SysModuleTest.test__enablelegacywindowsfsencoding
 *SysModuleTest.test_clear_type_cache
+*SysModuleTest.test_debugmallocstats
+*SysModuleTest.test_dlopenflags
+*SysModuleTest.test_getallocatedblocks
+*SysModuleTest.test_getandroidapilevel
+*SysModuleTest.test_getdefaultencoding
+*SysModuleTest.test_getframe
+*SysModuleTest.test_getwindowsversion
+*SysModuleTest.test_no_duplicates_in_meta_path
+*SysModuleTest.test_refcount
+*SysModuleTest.test_setrecursionlimit_recursion_depth
+*SysModuleTest.test_sys_getwindowsversion_no_instantiation

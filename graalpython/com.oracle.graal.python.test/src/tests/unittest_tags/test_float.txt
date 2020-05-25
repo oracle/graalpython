@@ -4,6 +4,7 @@
 *FormatTestCase.test_format_testfile
 *FormatTestCase.test_issue35560
 *FormatTestCase.test_issue5864
+*GeneralFloatCases.test_float_containment
 *GeneralFloatCases.test_floatasratio
 *GeneralFloatCases.test_keyword_args
 *HexFloatTestCase.test_ends

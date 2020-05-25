@@ -14,6 +14,9 @@
 *ExceptionalTestCase.testSingleResource
 *ExitSwallowsExceptionTestCase.testExitFalseDoesntSwallowException
 *ExitSwallowsExceptionTestCase.testExitTrueSwallowsException
+*FailureTestCase.testAssignmentToNoneError
+*FailureTestCase.testAssignmentToTupleContainingNoneError
+*FailureTestCase.testAssignmentToTupleOnlyContainingNoneError
 *FailureTestCase.testEnterAttributeError1
 *FailureTestCase.testEnterAttributeError2
 *FailureTestCase.testEnterThrows
@@ -45,5 +48,5 @@
 *NonexceptionalTestCase.testNestedSingleStatements
 *NonexceptionalTestCase.testUnboundGenerator
 testAssignmentToNoneError
-testAssignmentToTupleOnlyContainingNoneError
 testAssignmentToTupleContainingNoneError
+testAssignmentToTupleOnlyContainingNoneError
