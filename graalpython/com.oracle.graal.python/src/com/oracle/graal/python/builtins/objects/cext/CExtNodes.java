@@ -141,6 +141,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -3034,8 +3035,9 @@ public abstract class CExtNodes {
                         @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
-            if (hasHandleValidAssumptionProfile.profile(nativeWrapper.getHandleValidAssumption() != null)) {
-                nativeWrapper.getHandleValidAssumption().invalidate("releasing handle for native wrapper");
+            Assumption handleValidAssumption = nativeWrapper.getHandleValidAssumption();
+            if (hasHandleValidAssumptionProfile.profile(handleValidAssumption != null)) {
+                invalidate(handleValidAssumption);
             }
         }
 
@@ -3054,6 +3056,11 @@ public abstract class CExtNodes {
         static void doOther(@SuppressWarnings("unused") Object delegate, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper) {
             assert !isPrimitiveNativeWrapper(nativeWrapper);
             // ignore
+        }
+
+        @TruffleBoundary
+        private static void invalidate(Assumption assumption) {
+            assumption.invalidate("releasing handle for native wrapper");
         }
 
         static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {
