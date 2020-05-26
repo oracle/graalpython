@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -48,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -69,6 +67,7 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
@@ -101,6 +100,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -972,24 +972,35 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public Object lookupAttribute(String name, boolean inheritedOnly,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                    @Exclusive @Cached ConditionProfile isInheritedOnly,
-                    @Exclusive @Cached ConditionProfile noValue,
-                    @Exclusive @Cached CallNode callNode,
-                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
-        if (isInheritedOnly.profile(inheritedOnly)) {
-            return lookup.execute(this, name);
-        } else {
-            Object getAttrFunc = lookup.execute(this, __GETATTRIBUTE__);
-            try {
-                return callNode.execute(getAttrFunc, this, name);
-            } catch (PException pe) {
-                pe.expect(AttributeError, isAttrError);
-                getAttrFunc = lookup.execute(this, __GETATTR__);
-                if (noValue.profile(getAttrFunc == PNone.NO_VALUE)) {
-                    return PNone.NO_VALUE;
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        return lookup.execute(this, name, inheritedOnly);
+    }
+
+    @GenerateUncached
+    public abstract static class LookupAttributeNode extends Node {
+        public abstract Object execute(Object receiver, String name, boolean inheritedOnly);
+
+        @Specialization
+        public static Object lookupAttributeImpl(Object receiver, String name, boolean inheritedOnly,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Cached ConditionProfile isInheritedOnlyProfile,
+                        @Cached ConditionProfile noValueProfile,
+                        @Cached CallNode callNode,
+                        @Cached IsBuiltinClassProfile isAttrErrorProfile) {
+            if (isInheritedOnlyProfile.profile(inheritedOnly)) {
+                return lookup.execute(receiver, name);
+            } else {
+                Object getAttrFunc = lookup.execute(receiver, __GETATTRIBUTE__);
+                try {
+                    return callNode.execute(getAttrFunc, receiver, name);
+                } catch (PException pe) {
+                    pe.expect(AttributeError, isAttrErrorProfile);
+                    getAttrFunc = lookup.execute(receiver, __GETATTR__);
+                    if (noValueProfile.profile(getAttrFunc == PNone.NO_VALUE)) {
+                        return PNone.NO_VALUE;
+                    }
+                    return callNode.execute(getAttrFunc, receiver, name);
                 }
-                return callNode.execute(getAttrFunc, this, name);
             }
         }
     }
