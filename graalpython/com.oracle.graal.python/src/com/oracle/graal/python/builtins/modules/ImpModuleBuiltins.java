@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -379,9 +378,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
-            } else if (isWithinContext() && hasFrame.profile(frame != null) && hasKeyLib.hasKeyWithState(getStorage(), name, PArguments.getThreadState(frame))) {
-                return -1;
-            } else if (isWithinContext() && hasKeyLib.hasKey(getStorage(), name)) {
+            } else if (isWithinContext() && hasKeyLib.hasKeyWithFrame(getStorage(), name, hasFrame, frame)) {
                 return -1;
             } else {
                 return 0;

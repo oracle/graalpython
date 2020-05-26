@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -527,18 +526,10 @@ public abstract class MaterializeFrameNode extends Node {
                         HashingStorage storage = localsDict.getDictStorage();
                         Object key = slot.getIdentifier();
                         HashingStorage newStore = null;
-                        boolean hasKey; // TODO: FIXME: this might call __hash__ twice
-                        if (hasFrame.profile(frame != null)) {
-                            ThreadState state = PArguments.getThreadState(frame);
-                            hasKey = lib.hasKeyWithState(storage, key, state);
-                            if (hasKey) {
-                                newStore = lib.delItemWithState(storage, key, state);
-                            }
-                        } else {
-                            hasKey = lib.hasKey(storage, key);
-                            if (hasKey) {
-                                newStore = lib.delItem(storage, key);
-                            }
+                        // TODO: FIXME: this might call __hash__ twice
+                        boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+                        if (hasKey) {
+                            newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
                         }
 
                         if (hasKey) {
@@ -578,18 +569,10 @@ public abstract class MaterializeFrameNode extends Node {
                         HashingStorage storage = localsDict.getDictStorage();
                         Object key = slot.getIdentifier();
                         HashingStorage newStore = null;
-                        boolean hasKey; // TODO: FIXME: this might call __hash__ twice
-                        if (hasFrame.profile(frame != null)) {
-                            ThreadState state = PArguments.getThreadState(frame);
-                            hasKey = lib.hasKeyWithState(storage, key, state);
-                            if (hasKey) {
-                                newStore = lib.delItemWithState(storage, key, state);
-                            }
-                        } else {
-                            hasKey = lib.hasKey(storage, key);
-                            if (hasKey) {
-                                newStore = lib.delItem(storage, key);
-                            }
+                        // TODO: FIXME: this might call __hash__ twice
+                        boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+                        if (hasKey) {
+                            newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
                         }
 
                         if (hasKey) {

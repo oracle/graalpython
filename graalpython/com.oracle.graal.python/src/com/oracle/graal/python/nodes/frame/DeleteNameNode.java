@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
@@ -93,18 +92,10 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
         HashingStorage storage = frameLocals.getDictStorage();
         Object key = attributeId;
         HashingStorage newStore = null;
-        boolean hasKey; // TODO: FIXME: this might call __hash__ twice
-        if (hasFrame.profile(frame != null)) {
-            ThreadState state = PArguments.getThreadState(frame);
-            hasKey = lib.hasKeyWithState(storage, key, state);
-            if (hasKey) {
-                newStore = lib.delItemWithState(storage, key, state);
-            }
-        } else {
-            hasKey = lib.hasKey(storage, key);
-            if (hasKey) {
-                newStore = lib.delItem(storage, key);
-            }
+        // TODO: FIXME: this might call __hash__ twice
+        boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+        if (hasKey) {
+            newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
         }
 
         if (hasKey) {

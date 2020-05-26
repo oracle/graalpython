@@ -44,8 +44,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -1240,15 +1238,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create()") GcdNode recursiveNode) {
-            Object xValue, yValue;
-            if (hasFrame.profile(frame != null)) {
-                ThreadState threadState = PArguments.getThreadState(frame);
-                xValue = lib.asIndexWithState(x, threadState);
-                yValue = lib.asIndexWithState(y, threadState);
-            } else {
-                xValue = lib.asIndex(x);
-                yValue = lib.asIndex(y);
-            }
+            Object xValue = lib.asIndexWithFrame(x, hasFrame, frame);
+            Object yValue = lib.asIndexWithFrame(y, hasFrame, frame);
             return recursiveNode.execute(frame, xValue, yValue);
         }
 

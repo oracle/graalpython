@@ -133,12 +133,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         public Object doWithDefault(VirtualFrame frame, PMappingproxy self, Object key, Object defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            final Object value;
-            if (profile.profile(frame != null)) {
-                value = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                value = hlib.getItem(self.getDictStorage(), key);
-            }
+            final Object value = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             return value != null ? value : defaultValue;
         }
 
@@ -146,12 +141,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         public Object doNoDefault(VirtualFrame frame, PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            final Object value;
-            if (profile.profile(frame != null)) {
-                value = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                value = hlib.getItem(self.getDictStorage(), key);
-            }
+            final Object value = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             return value != null ? value : PNone.NONE;
         }
 
@@ -164,12 +154,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         Object getItem(VirtualFrame frame, PMappingproxy self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            final Object result;
-            if (profile.profile(frame != null)) {
-                result = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                result = hlib.getItem(self.getDictStorage(), key);
-            }
+            final Object result = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             if (result == null) {
                 throw raise(KeyError, "%s", key);
             }
@@ -195,11 +180,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         boolean run(VirtualFrame frame, PMappingproxy self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.hasKeyWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                return lib.hasKey(self.getDictStorage(), key);
-            }
+            return lib.hasKeyWithFrame(self.getDictStorage(), key, hasFrame, frame);
         }
     }
 

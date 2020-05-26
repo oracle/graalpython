@@ -414,12 +414,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("d.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_DICT, version, buffer);
-            int len;
-            if (hasFrame.profile(frame != null)) {
-                len = lib.lengthWithState(d.getDictStorage(), PArguments.getThreadState(frame));
-            } else {
-                len = lib.length(d.getDictStorage());
-            }
+            int len = lib.lengthWithFrame(d.getDictStorage(), hasFrame, frame);
             writeInt(len, version, buffer);
             for (DictEntry entry : d.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
