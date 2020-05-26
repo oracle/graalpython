@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.NoValueNode;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -244,6 +245,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode[] lhs = new ExpressionNode[node.lhs.length];
         for (int i = 0; i < node.lhs.length; i++) {
             SSTNode sstLhs = node.lhs[i];
+            checkCannotAssignTo(sstLhs);
             lhs[i] = (ExpressionNode) sstLhs.accept(this);
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
@@ -268,6 +270,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AugAssignmentSSTNode node) {
+        checkCannotAssignTo(node.lhs);
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
         if (!(lhs instanceof ReadNode)) {
             throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "illegal expression for augmented assignment");
@@ -278,6 +281,36 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode result = ((ReadNode) duplicate).makeWriteNode(binOp);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
+    }
+
+    private void checkCannotAssignTo(SSTNode lhs) throws RuntimeException {
+        if (lhs instanceof ForComprehensionSSTNode) {
+            String calleeName;
+            switch (((ForComprehensionSSTNode) lhs).resultType) {
+                case PList:
+                    calleeName = BuiltinNames.LIST;
+                    break;
+                case PSet:
+                    calleeName = BuiltinNames.SET;
+                    break;
+                case PDict:
+                    calleeName = BuiltinNames.DICT;
+                    break;
+                default:
+                    calleeName = null;
+            }
+            if (calleeName == null) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), "cannot assign to comprehension");
+            } else {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), "cannot assign to %s comprehension", calleeName);
+            }
+        } else if (lhs instanceof CallSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), "cannot assign to function call");
+        } else if (lhs instanceof CollectionSSTNode) {
+            for (SSTNode n : ((CollectionSSTNode) lhs).getValues()) {
+                checkCannotAssignTo(n);
+            }
+        }
     }
 
     @Override
