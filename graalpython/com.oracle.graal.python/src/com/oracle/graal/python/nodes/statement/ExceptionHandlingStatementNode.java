@@ -40,22 +40,33 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private ExceptionStateNodes.SaveExceptionStateNode saveExceptionStateNode;
     @Child private ExceptionStateNodes.RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
-    @CompilationFinal private ConditionProfile contextChainHandledProfile;
-    @CompilationFinal private ConditionProfile contextChainContextProfile;
+    @Child private PythonObjectFactory ofactory;
+    @CompilationFinal private LoopConditionProfile contextChainHandledProfile;
+    @CompilationFinal private LoopConditionProfile contextChainContextProfile;
+    @CompilationFinal private Boolean shouldCatchAllExceptions;
+    @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> contextRef;
 
     protected void tryChainExceptionFromHandler(PException handlerException, TruffleException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
@@ -134,18 +145,62 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     private ConditionProfile getContextChainHandledProfile() {
-        if (contextChainContextProfile == null) {
+        if (contextChainHandledProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextChainContextProfile = ConditionProfile.createCountingProfile();
+            contextChainHandledProfile = LoopConditionProfile.createCountingProfile();
         }
-        return contextChainContextProfile;
+        return contextChainHandledProfile;
     }
 
     private ConditionProfile getContextChainContextProfile() {
         if (contextChainContextProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextChainContextProfile = ConditionProfile.createCountingProfile();
+            contextChainContextProfile = LoopConditionProfile.createCountingProfile();
         }
         return contextChainContextProfile;
+    }
+
+    protected PythonContext getContext() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
+        return contextRef.get();
+    }
+
+    protected PythonObjectFactory factory() {
+        if (ofactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            ofactory = insert(PythonObjectFactory.create());
+        }
+        return ofactory;
+    }
+
+    protected boolean shouldCatchAllExceptions() {
+        if (shouldCatchAllExceptions == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            shouldCatchAllExceptions = getContext().getOption(PythonOptions.CatchAllExceptions);
+        }
+        return shouldCatchAllExceptions;
+    }
+
+    protected PException wrapJavaException(Throwable e) {
+        PException pe = PException.fromObject(getBaseException(e), this);
+        // Re-attach truffle stacktrace
+        moveTruffleStackTrace(e, pe);
+        return pe;
+    }
+
+    @TruffleBoundary
+    private static void moveTruffleStackTrace(Throwable e, PException pe) {
+        pe.initCause(e.getCause());
+        // Host exceptions have their stacktrace already filled in, call this to set
+        // the cutoff point to the catch site
+        pe.getTruffleStackTrace();
+    }
+
+    @TruffleBoundary
+    private PBaseException getBaseException(Throwable e) {
+        return factory().createBaseException(PythonErrorType.SystemError, "%m", new Object[]{e});
     }
 }

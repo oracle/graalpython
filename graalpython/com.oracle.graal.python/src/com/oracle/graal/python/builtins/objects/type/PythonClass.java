@@ -29,6 +29,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -70,11 +71,11 @@ public final class PythonClass extends PythonManagedClass {
         // n.b.: we're reading directly from the storage here, because this
         // method must not have side-effects, so even if there's a __dict__, we
         // cannot call its __getitem__
-        String result = castStr.execute(getName.execute(getStorage(), SpecialAttributeNames.__NAME__));
-        if (result == null) {
+        try {
+            return castStr.execute(getName.execute(getStorage(), SpecialAttributeNames.__NAME__));
+        } catch (CannotCastException e) {
             return "unnamed-class";
-        } else {
-            return result;
+
         }
     }
 
@@ -85,11 +86,10 @@ public final class PythonClass extends PythonManagedClass {
         // n.b.: we're reading directly from the storage here, because this
         // method must not have side-effects, so even if there's a __dict__, we
         // cannot call its __getitem__
-        String result = castStr.execute(getName.execute(getStorage(), SpecialAttributeNames.__QUALNAME__));
-        if (result == null) {
+        try {
+            return castStr.execute(getName.execute(getStorage(), SpecialAttributeNames.__QUALNAME__));
+        } catch (CannotCastException e) {
             return "unnamed-class";
-        } else {
-            return result;
         }
     }
 

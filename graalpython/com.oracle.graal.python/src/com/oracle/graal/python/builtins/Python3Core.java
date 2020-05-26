@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
@@ -357,6 +358,7 @@ public final class Python3Core implements PythonCore {
                         new TimeModuleBuiltins(),
                         new ModuleBuiltins(),
                         new MathModuleBuiltins(),
+                        new CmathModuleBuiltins(),
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),

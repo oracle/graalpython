@@ -262,6 +262,18 @@ if sys.implementation.name == "graalpython":
         assert not polyglot.__key_info__(builtinObj, "__len__", "removable")
         assert not polyglot.__key_info__(builtinObj, "__len__", "insertable")
 
+    def test_java_classpath():
+        import java
+        try:
+            java.add_to_classpath(1)
+        except TypeError as e:
+            assert "classpath argument 1 must be string, not int" in str(e)
+            
+        try:
+            java.add_to_classpath('a', 1)
+        except TypeError as e:
+            assert "classpath argument 2 must be string, not int" in str(e)
+        
     def test_host_lookup():
         import java
         try:

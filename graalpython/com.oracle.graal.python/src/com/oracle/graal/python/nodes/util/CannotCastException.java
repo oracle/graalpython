@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,38 +38,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 
-/**
- * Specialization guards for Math module.
- */
-public class MathGuards {
-
-    public static boolean fitLong(double value) {
-        return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
-    }
-
-    public static boolean fitInt(double value) {
-        return Integer.MIN_VALUE <= value && value <= Integer.MAX_VALUE;
-    }
-
-    public static boolean isNumber(Object value) {
-        return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
-    }
-
-    public static boolean isComplexNumber(Object value) {
-        return isNumber(value) || value instanceof PComplex;
-    }
-
-    public static boolean isInteger(Object value) {
-        return value instanceof Integer || value instanceof Long || value instanceof PInt || value instanceof Boolean;
-    }
-
-    public static boolean isFloat(Object value) {
-        return value instanceof Double || value instanceof PFloat;
-    }
+public class CannotCastException extends ControlFlowException {
+    private static final long serialVersionUID = 1L;
+    static final CannotCastException INSTANCE = new CannotCastException();
 }

@@ -37,32 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import unittest
-
-import socket
-
-
-def test_inet_aton():
-    assert socket.inet_aton('127.255.1.2') == bytes([127, 255, 1, 2])
-    assert socket.inet_aton('127.0Xff.1.2') == bytes([127, 255, 1, 2])
-    assert socket.inet_aton('127.260') == bytes([127, 0, 1, 4])
-    assert socket.inet_aton('127.127.260') == bytes([127, 127, 1, 4])
-    assert socket.inet_aton('0x7fff0201') == bytes([0x7f, 0xff, 2, 1])
-    # the same number as above, but in decimal
-    assert socket.inet_aton('2147418625') == bytes([0x7f, 0xff, 2, 1])
-
-
-class TestInetAtonErrors(unittest.TestCase):
-    def test_inet_aton_errs(self):
-        self.assertRaises(OSError, lambda : socket.inet_aton('oracle.com'))
-        self.assertRaises(OSError, lambda : socket.inet_aton('0x7000000000000000'))
-        self.assertRaises(OSError, lambda : socket.inet_aton('255.255.256.1'))
-        self.assertRaises(TypeError, lambda : socket.inet_aton(255))
-
-def test_get_name_info():    
-    import socket
+def test_SemLock_raises_on_non_string_name():    
+    from _multiprocessing import SemLock
     try :
-        socket.getnameinfo((1, 0, 0, 0), 0)
+        SemLock(kind=1, value=1, name={1:2}, maxvalue=1, unlink=1)
     except TypeError:
         raised = True
     assert raised

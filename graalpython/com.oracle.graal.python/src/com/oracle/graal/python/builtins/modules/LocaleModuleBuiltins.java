@@ -48,6 +48,8 @@ import java.util.Currency;
 import java.util.List;
 import java.util.Locale;
 
+import org.graalvm.collections.EconomicMap;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -61,8 +63,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-
-import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_locale")
 public class LocaleModuleBuiltins extends PythonBuiltins {
@@ -80,6 +80,10 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         // 2 lower _ 2 UPPER .
         if (posixLocaleId == null) {
             return null;
+        }
+        if (posixLocaleId.isEmpty()) {
+            // per Python docs: empty string -> default locale
+            return Locale.getDefault();
         }
 
         String language;

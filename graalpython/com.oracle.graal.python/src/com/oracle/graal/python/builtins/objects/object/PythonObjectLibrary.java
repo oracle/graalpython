@@ -480,6 +480,66 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Coerces the receiver into an Python string just like {@code PyObject_Str}.
+     * 
+     * Return a Python string from the receiver. Raise TypeError if the result is not a string.
+     */
+    public Object asPStringWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asPString(receiver);
+    }
+
+    /**
+     * @see #asPStringWithState
+     */
+    public Object asPString(Object receiver) {
+        return asPStringWithState(receiver, null);
+    }
+
+    /**
+     * Coerces a given primitive or object to a file descriptor (i.e. Java {@code int}) just like
+     * {@code PyObject_AsFileDescriptor} does.
+     * 
+     * Converted to int if possible, or if the object defines __fileno__(), then return the result
+     * of that method. Raise TypeError otherwise.
+     */
+    public int asFileDescriptorWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "argument must be an int, or have a fileno() method.");
+        }
+        return asFileDescriptor(receiver);
+    }
+
+    /**
+     * @see #asFileDescriptorWithState
+     */
+    public int asFileDescriptor(Object receiver) {
+        return asFileDescriptorWithState(receiver, null);
+    }
+
+    /**
+     * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
+     * 
+     * @param receiver
+     * @param name attribute name
+     * @param inheritedOnly determines whether the lookup should start on the class or on the object
+     */
+    public Object lookupAttribute(Object receiver, String name, boolean inheritedOnly) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
+
+    /**
+     * @see #lookupAttribute
+     */
+    public final Object lookupAttribute(Object receiver, String name) {
+        return lookupAttribute(receiver, name, false);
+    }
+
+    /**
      * Coerces the receiver into an index-sized integer, using the same mechanism as
      * {@code PyNumber_AsSsize_t}:
      * <ol>

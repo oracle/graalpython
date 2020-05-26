@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -442,29 +443,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             SourceSection sourceSection = c.getRootNode().getSourceSection();
             return sourceSection.getCharacters().toString();
         }
-
-        // private PTuple internStrings(Object[] values) {
-        // Object[] interned;
-        // if (values == null) {
-        // interned = new Object[0];
-        // } else {
-        // interned = new Object[values.length];
-        // for (int i = 0; i < interned.length; i++) {
-        // if (castStrNode == null) {
-        // CompilerDirectives.transferToInterpreterAndInvalidate();
-        // castStrNode = insert(CastToJavaStringNode.create());
-        // }
-        // Object value = values[i];
-        // String strValue = castStrNode.execute(value);
-        // if (strValue != null) {
-        // interned[i] = new InternedString(strValue);
-        // } else {
-        // interned[i] = value;
-        // }
-        // }
-        // }
-        // return factory().createTuple(interned);
-        // }
 
         @Specialization(limit = "1")
         void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,

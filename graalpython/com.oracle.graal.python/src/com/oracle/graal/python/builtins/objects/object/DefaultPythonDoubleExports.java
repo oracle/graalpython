@@ -41,17 +41,24 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Double.class)
 final class DefaultPythonDoubleExports {
@@ -149,5 +156,16 @@ final class DefaultPythonDoubleExports {
         static int dO(Double receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
             return -1;
         }
+    }
+
+    @ExportMessage
+    static Object asPString(Double receiver,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Cached.Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Cached.Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Cached.Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @Cached.Exclusive @Cached ConditionProfile gotState) {
+        return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
     }
 }

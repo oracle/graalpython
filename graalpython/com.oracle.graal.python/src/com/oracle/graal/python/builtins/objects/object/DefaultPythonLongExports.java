@@ -47,8 +47,12 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -83,7 +87,7 @@ final class DefaultPythonLongExports {
 
         @Specialization(replaces = "noOverflow")
         static int withOverflow(Long self, LazyPythonClass type,
-                        @Cached PRaiseNode raise) {
+                        @Exclusive @Cached PRaiseNode raise) {
             try {
                 return PInt.intValueExact(self);
             } catch (ArithmeticException e) {
@@ -250,4 +254,25 @@ final class DefaultPythonLongExports {
             }
         }
     }
+
+    @ExportMessage
+    @TruffleBoundary
+    static String asPString(Long x) {
+        return Long.toString(x);
+    }
+
+    @ExportMessage
+    static int asFileDescriptor(Long x,
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode,
+                    @Exclusive @Cached IsBuiltinClassProfile errorProfile) {
+        try {
+            return castToJavaIntNode.execute(x);
+        } catch (PException e) {
+            e.expect(PythonBuiltinClassType.TypeError, errorProfile);
+            // we need to convert the TypeError to an OverflowError
+            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+        }
+    }
+
 }

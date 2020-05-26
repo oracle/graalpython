@@ -40,18 +40,13 @@ import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -72,13 +67,10 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
-    @Child private PythonObjectFactory ofactory;
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
 
-    @CompilationFinal private Boolean shouldCatchAll = null;
     @CompilationFinal private Boolean shouldCatchJavaExceptions = null;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     @CompilationFinal private CatchesFunction catchesFunction;
 
@@ -87,22 +79,6 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
         this.orelse = orelse;
-    }
-
-    protected PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
-    }
-
-    protected PythonObjectFactory factory() {
-        if (ofactory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            ofactory = insert(PythonObjectFactory.create());
-        }
-        return ofactory;
     }
 
     @Override
@@ -131,14 +107,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                     return;
                 }
             }
-            if (shouldCatchAll == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchAll = getContext().getOption(PythonOptions.CatchAllExceptions);
-            }
-            if (shouldCatchAll) {
-                PException pe = PException.fromObject(getBaseException(e), this);
-                // Re-attach truffle stacktrace
-                moveTruffleStacktTrace(e, pe);
+            if (shouldCatchAllExceptions()) {
+                PException pe = wrapJavaException(e);
                 boolean handled = catchException(frame, pe);
                 if (handled) {
                     return;
@@ -149,19 +119,6 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             throw e;
         }
         orelse.executeVoid(frame);
-    }
-
-    @TruffleBoundary
-    private static void moveTruffleStacktTrace(Throwable e, PException pe) {
-        pe.initCause(e.getCause());
-        // Host exceptions have their stacktrace already filled in, call this to set
-        // the cutoff point to the catch site
-        pe.getTruffleStackTrace();
-    }
-
-    @TruffleBoundary
-    private PBaseException getBaseException(Throwable e) {
-        return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{e});
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)

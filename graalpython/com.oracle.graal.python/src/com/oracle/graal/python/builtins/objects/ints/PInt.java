@@ -28,12 +28,17 @@ package com.oracle.graal.python.builtins.objects.ints;
 import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -203,6 +208,17 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
         return this;
+    }
+
+    @ExportMessage
+    public int asFileDescriptor(
+                    @Cached PRaiseNode raiseNode,
+                    @Cached.Exclusive @Cached CastToJavaIntNode castToJavaIntNode) {
+        try {
+            return castToJavaIntNode.execute(this);
+        } catch (PException e) {
+            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+        }
     }
 
     @Override

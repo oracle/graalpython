@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -322,7 +323,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isString(str)")
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr) {
-            String profiledStr = castStr.execute(str);
+            String profiledStr = cast(castStr, str);
             PBytes bytes = encodeString(profiledStr, "utf-8", "strict");
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
@@ -331,8 +332,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object encode(Object str, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding) {
-            String profiledStr = castStr.execute(str);
-            String profiledEncoding = castEncoding.execute(encoding);
+            String profiledStr = cast(castStr, str);
+            String profiledEncoding = cast(castEncoding, encoding);
             PBytes bytes = encodeString(profiledStr, profiledEncoding, "strict");
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
@@ -341,8 +342,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, Object errors,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
-            String profiledStr = castStr.execute(str);
-            String profiledErrors = castErrors.execute(errors);
+            String profiledStr = cast(castStr, str);
+            String profiledErrors = cast(castErrors, errors);
             PBytes bytes = encodeString(profiledStr, "utf-8", profiledErrors);
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
@@ -352,11 +353,20 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding,
                         @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
-            String profiledStr = castStr.execute(str);
-            String profiledEncoding = castEncoding.execute(encoding);
-            String profiledErrors = castErrors.execute(errors);
+            String profiledStr = cast(castStr, str);
+            String profiledEncoding = cast(castEncoding, encoding);
+            String profiledErrors = cast(castErrors, errors);
             PBytes bytes = encodeString(profiledStr, profiledEncoding, profiledErrors);
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
+        }
+
+        private static String cast(CastToJavaStringNode cast, Object obj) {
+            try {
+                return cast.execute(obj);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
         }
 
         @Fallback
@@ -517,7 +527,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castEncodingToStringNode = insert(CastToJavaStringNodeGen.create());
             }
-            return castEncodingToStringNode.execute(encodingObj);
+            try {
+                return castEncodingToStringNode.execute(encodingObj);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
         }
 
         private boolean castToBoolean(VirtualFrame frame, Object object) {
@@ -546,7 +561,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isString(errors)"})
         Object decode(PIBytesLike bytes, Object errors,
                         @Cached CastToJavaStringNode castStr) {
-            String profiledErrors = castStr.execute(errors);
+            String profiledErrors;
+            try {
+                profiledErrors = castStr.execute(errors);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
             String string = decodeBytes(getBytesBuffer(bytes), profiledErrors);
             return factory().createTuple(new Object[]{string, string.length()});
         }

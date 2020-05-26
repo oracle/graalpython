@@ -47,8 +47,8 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -92,7 +92,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         try {
             objectSize = castToJavaLongNode.execute(sizeObject);
         } catch (CannotCastException e) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
         }
 

@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -121,8 +122,10 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             Object[] ignoreMods = toArray.execute(getStore.execute(ignoremods));
             Env env = context.getEnv();
             for (Object moduleName : ignoreMods) {
-                String modStr = castStr.execute(moduleName);
-                if (modStr == null) {
+                String modStr;
+                try {
+                    modStr = castStr.execute(moduleName);
+                } catch (CannotCastException e) {
                     continue;
                 }
                 String fileNameSeparator = env.getFileNameSeparator();
@@ -137,8 +140,10 @@ public class TraceModuleBuiltins extends PythonBuiltins {
 
             Object[] ignoreDirs = toArray.execute(getStore.execute(ignoredirs));
             for (Object dir : ignoreDirs) {
-                String dirStr = castStr.execute(dir);
-                if (dirStr == null) {
+                String dirStr;
+                try {
+                    dirStr = castStr.execute(dir);
+                } catch (CannotCastException e) {
                     continue;
                 }
                 String absDir;

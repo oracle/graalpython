@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -324,11 +325,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 castToStringNode = insert(CastToJavaStringNodeGen.create());
             }
             Object attrNameValue = getNameAttributeNode.executeObject(frame, o);
-            String methodName = castToStringNode.execute(attrNameValue);
-            if (methodName == null) {
+            try {
+                return castToStringNode.execute(attrNameValue);
+            } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, "method name must be string, not %p", attrNameValue);
             }
-            return methodName;
         }
 
         protected static boolean isModule(Object o) {
