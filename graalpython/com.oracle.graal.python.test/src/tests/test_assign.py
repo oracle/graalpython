@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -117,3 +118,30 @@ def test_assigning_hidden_keys():
         id(a) # id is stored in a HiddenKey
 
     return
+
+class IllegaAssigmentTest(unittest.TestCase):
+    def test_illegal_assignment(self):
+        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+            compile("a() = 1", "<test>", "exec")
+
+        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+            compile("a() += 1", "<test>", "exec")
+
+        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+            str = "def set() :\n\tprint(42)\n\nset() = 5"
+            compile(str, "<test>", "exec")
+
+        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+            compile("a(), b, c = (1, 2, 3)", "<test>", "exec")
+
+        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+            compile("a, b(), c = (1, 2, 3)", "<test>", "exec")
+
+        with self.assertRaisesRegex(SyntaxError, "assign to dict comprehension"):
+            compile("{s:s for s in [1]}, b, c = (1, 2, 3)", "<test>", "exec")
+
+        with self.assertRaisesRegex(SyntaxError, "assign to set comprehension"):
+            compile("{s for s in [1]}, b, c = (1, 2, 3)", "<test>", "exec")
+
+        with self.assertRaisesRegex(SyntaxError, "assign to list comprehension"):
+            compile("[s for s in [1]], b, c = (1, 2, 3)", "<test>", "exec")
