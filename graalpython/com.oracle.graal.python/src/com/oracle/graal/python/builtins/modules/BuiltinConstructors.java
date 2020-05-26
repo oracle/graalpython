@@ -2924,9 +2924,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, isPublic = true, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonBuiltinNode {
-        @Specialization
-        Object callGeneric(LazyPythonClass cls, Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return factory().createBaseException(cls, factory().createTuple(varargs));
+        @Specialization(guards = "args.length == 0")
+        Object initNoArgs(LazyPythonClass cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            return factory().createBaseException(cls);
+        }
+
+        @Specialization(guards = "args.length != 0")
+        Object initArgs(LazyPythonClass cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            return factory().createBaseException(cls, factory().createTuple(args));
         }
     }
 
