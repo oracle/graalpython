@@ -31,7 +31,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -188,11 +188,11 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 // find function RootNode
                 final Node[] fromVisitor = new Node[1];
                 result.accept((Node node) -> {
-                    if (node instanceof FunctionDefinitionNode) {
-                        fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();
+                    if (node instanceof GeneratorFunctionDefinitionNode) {
+                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.getContext());
                         return false;
-                    } else if (node instanceof GeneratorFunctionRootNode) {
-                        fromVisitor[0] = ((GeneratorFunctionRootNode) node).getFunctionRootNode();
+                    } else if (node instanceof FunctionDefinitionNode) {
+                        fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();
                         return false;
                     }
                     return true;

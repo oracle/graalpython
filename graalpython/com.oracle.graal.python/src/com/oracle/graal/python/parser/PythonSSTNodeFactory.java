@@ -62,6 +62,7 @@ import com.oracle.graal.python.parser.sst.CollectionSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
+import com.oracle.graal.python.parser.sst.FunctionDefSSTNode;
 import com.oracle.graal.python.parser.sst.GeneratorFactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
@@ -253,6 +254,13 @@ public final class PythonSSTNodeFactory {
             isGen = true;
             scopeEnvironment.setCurrentScope(new ScopeInfo("evalgen", ScopeKind.Generator, useFrame.getFrameDescriptor(), scopeEnvironment.getGlobalScope()));
         } else {
+            if (mode == PythonParser.ParserMode.Deserialization && parserSSTResult instanceof FunctionDefSSTNode) {
+                // we need to chek, if the deserialized function is not generator
+                FunctionDefSSTNode fDef = (FunctionDefSSTNode) parserSSTResult;
+                if (fDef.getScope().getScopeKind() == ScopeKind.Generator) {
+                    isGen = true;
+                }
+            }
             scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         }
         scopeEnvironment.setFreeVarsInRootScope(useFrame);
