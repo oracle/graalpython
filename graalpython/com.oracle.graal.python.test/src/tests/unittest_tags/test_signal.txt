@@ -1,4 +1,5 @@
 *GenericTests.test_enums
+*PosixTests.test_setting_signal_handler_to_none_raises_error
 *WakeupSignalTests.test_pending
 *WakeupSignalTests.test_signum
 *WakeupSignalTests.test_wakeup_fd_during

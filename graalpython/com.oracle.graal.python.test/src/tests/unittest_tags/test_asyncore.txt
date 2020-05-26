@@ -6,5 +6,6 @@
 *DispatcherTests.test_unhandled
 *HelperFunctionTests.test_closeall
 *HelperFunctionTests.test_closeall_default
+*HelperFunctionTests.test_compact_traceback
 *HelperFunctionTests.test_readwrite
 *HelperFunctionTests.test_readwriteexc

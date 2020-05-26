@@ -1,1 +1,2 @@
+*PowTest.test_bug643260
 *PowTest.test_bug705231

@@ -21,4 +21,5 @@
 *UncompressedZipImportTestCase.testImport_WithStuff
 *UncompressedZipImportTestCase.testLargestPossibleComment
 *UncompressedZipImportTestCase.testPy
+*UncompressedZipImportTestCase.testTraceback
 *UncompressedZipImportTestCase.testUnencodable

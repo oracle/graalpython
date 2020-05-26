@@ -24,6 +24,7 @@
 *StrptimeTests.test_offset
 *StrptimeTests.test_percent
 *StrptimeTests.test_second
+*StrptimeTests.test_strptime_exception_context
 *StrptimeTests.test_time
 *StrptimeTests.test_unconverteddata
 *StrptimeTests.test_year

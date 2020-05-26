@@ -82,6 +82,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.ProcessProperties;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -414,11 +417,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getpid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
+        @Specialization(rewriteOn = Exception.class)
+        @TruffleBoundary
+        long getPid() throws Exception {
+            if (ImageInfo.inImageRuntimeCode()) {
+                return ProcessProperties.getProcessID();
+            }
+            TruffleFile statFile = getContext().getPublicTruffleFileRelaxed("/proc/self/stat");
+            return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
+        }
+
         @Specialization
-        int getPid() {
-            // TODO: this needs to be implemented properly at some point (consider managed execution
-            // as well)
-            return System.identityHashCode(getContext());
+        @TruffleBoundary
+        long getPidFallback() {
+            String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+            return Long.parseLong(info.split("@")[0]);
         }
     }
 

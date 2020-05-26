@@ -10,10 +10,12 @@
 *GeneralModuleTests.testInvalidInterfaceIndexToName
 *GeneralModuleTests.testInvalidInterfaceNameToIndex
 *GeneralModuleTests.testNewAttributes
+*GeneralModuleTests.testNtoHErrors
 *GeneralModuleTests.testRefCountGetNameInfo
 *GeneralModuleTests.testSendAfterClose
 *GeneralModuleTests.testSetSockOpt
 *GeneralModuleTests.testSockName
+*GeneralModuleTests.testSocketError
 *GeneralModuleTests.testStringToIPv6
 *GeneralModuleTests.testWindowsSpecificConstants
 *GeneralModuleTests.test_SocketType_is_socketobject
@@ -29,6 +31,7 @@
 *GeneralModuleTests.test_host_resolution
 *GeneralModuleTests.test_host_resolution_bad_address
 *GeneralModuleTests.test_listen_backlog
+*GeneralModuleTests.test_listen_backlog_overflow
 *GeneralModuleTests.test_makefile_invalid_mode
 *GeneralModuleTests.test_makefile_mode
 *GeneralModuleTests.test_pickle
