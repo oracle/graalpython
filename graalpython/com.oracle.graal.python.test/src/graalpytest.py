@@ -152,18 +152,24 @@ class TestCase(object):
             pass
         else:
             def do_run():
+                start = time.monotonic()
                 r = self.run_safely(func)
+                end = time.monotonic() - start
                 with print_lock:
-                    self.success() if r else self.failure()
+                    self.success(end) if r else self.failure(end)
             ThreadPool.start(do_run)
 
-    def success(self):
+    def success(self, time):
         self.passed += 1
+        if verbose:
+            print("[%.3fs]" % time, end=" ")
         print(".", end="", flush=True)
 
-    def failure(self):
+    def failure(self, time):
         self.failed += 1
         fail_msg = FAIL + BOLD + "F" + ENDC if verbose else "F"
+        if verbose:
+            print("[%.3fs]" % time, end=" ")
         print(fail_msg, end="", flush=True)
 
     def assertIsInstance(self, value, cls):
