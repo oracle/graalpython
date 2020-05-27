@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -127,9 +128,9 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         int len = lenNode.execute(sequenceStorage);
         if (len > slots.length) {
             CompilerDirectives.transferToInterpreter();
-            throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", slots.length);
+            throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, slots.length);
         } else if (len < slots.length) {
-            throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
+            throw ensureRaiseNode().raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, slots.length, len);
         } else {
             for (int i = 0; i < slots.length; i++) {
                 Object value = getItemNode.execute(frame, sequenceStorage, i);
@@ -223,7 +224,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
             CompilerAsserts.partialEvaluationConstant(slots);
             CompilerAsserts.partialEvaluationConstant(starredIndex);
             if (cachedLength < slots.length - 1) {
-                throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, cachedLength);
+                throw ensureRaiseNode().raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, slots.length, cachedLength);
             } else {
                 writeSlots(frame, storage, getItemNode, slots, starredIndex);
                 final int starredLength = cachedLength - (slots.length - 1);
@@ -243,7 +244,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
             CompilerAsserts.partialEvaluationConstant(starredIndex);
             int len = lenNode.execute(storage);
             if (len < slots.length - 1) {
-                throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
+                throw ensureRaiseNode().raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, slots.length, len);
             } else {
                 writeSlots(frame, storage, getItemNode, slots, starredIndex);
                 final int starredLength = len - (slots.length - 1);

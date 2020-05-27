@@ -29,6 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -56,7 +57,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
-            throw PythonLanguage.getCore().raise(TypeError, "can't set attributes of built-in/extension type '%s'", this);
+            throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
         }
     }
 

@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -127,7 +128,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public int execute(Channel channel) {
-                    throw raise.raise(PythonBuiltinClassType.ValueError, "read byte out of range");
+                    throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.READ_BYTE_OUT_OF_RANGE);
                 }
             });
         }
@@ -137,7 +138,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public int execute(Channel channel) {
-                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise.raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
             });
 
@@ -151,7 +152,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public void execute(Channel channel, byte b) {
-                    throw raise.raise(PythonBuiltinClassType.ValueError, "write byte out of range");
+                    throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.WRITE_BYTE_OUT_OF_RANGE);
                 }
             });
         }
@@ -161,7 +162,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public void execute(Channel channel, byte b) {
-                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise.raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
             });
 
@@ -314,7 +315,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long idx = i < 0 ? i + len : i;
 
                 if (outOfRangeProfile.profile(idx < 0 || idx >= len)) {
-                    throw raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
 
                 // save current position
@@ -345,7 +346,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 SeekableByteChannel channel = self.getChannel();
 
                 if (invalidStepProfile.profile(info.step != 1)) {
-                    throw raise(PythonBuiltinClassType.SystemError, "step != 1 not supported");
+                    throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.STEP_1_NOT_SUPPORTED);
                 }
 
                 // save current position
@@ -409,7 +410,7 @@ public class MMapBuiltins extends PythonBuiltins {
             try {
                 close(self);
             } catch (IOException e) {
-                throw raiseNode.raise(PythonErrorType.BufferError, "cannot close exported pointers exist");
+                throw raiseNode.raise(PythonErrorType.BufferError, ErrorMessages.CANNOT_CLOSE_EXPORTED_PTRS_EXIST);
             }
             return PNone.NONE;
         }
@@ -595,11 +596,11 @@ public class MMapBuiltins extends PythonBuiltins {
                         break;
                     default:
                         errorProfile.enter();
-                        throw raise(PythonBuiltinClassType.ValueError, "unknown seek type");
+                        throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_S_TYPE, "seek");
                 }
                 if (where > size || where < 0) {
                     errorProfile.enter();
-                    throw raise(PythonBuiltinClassType.ValueError, "seek out of range");
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SEEK_OUT_OF_RANGE);
                 }
                 PMMap.position(channel, where);
                 return PNone.NONE;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -170,11 +171,11 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         }
 
         private static PException notIterable(PRaiseNode raiseNode, Object value) {
-            throw raiseNode.raise(TypeError, "'%p' object is not iterable", value);
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
         }
 
         private static PException nonIterator(PRaiseNode raiseNode, Object value) {
-            throw raiseNode.raise(TypeError, "iter() returned non-iterator of type '%p'", value);
+            throw raiseNode.raise(TypeError, ErrorMessages.ITER_RETURNED_NON_ITERABLE, value);
         }
 
         public static GetIteratorNode create() {

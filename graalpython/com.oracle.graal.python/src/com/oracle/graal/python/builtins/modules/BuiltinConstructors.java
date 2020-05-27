@@ -148,6 +148,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -255,7 +256,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(encoding)", "isNoValue(errors)"})
         @SuppressWarnings("unused")
         public Object fromString(LazyPythonClass cls, String source, PNone encoding, PNone errors) {
-            throw raise(TypeError, "string argument without an encoding");
+            throw raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
         }
 
         protected boolean isSimpleBytes(PBytes iterable) {
@@ -511,7 +512,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         PComplex complexFromString(LazyPythonClass cls, String real, Object imaginary) {
             if (imaginary != PNone.NO_VALUE) {
-                throw raise(TypeError, "complex() can't take second arg if first is a string");
+                throw raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
             }
             return convertStringToComplex(real, cls);
         }
@@ -541,11 +542,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PException raiseFirstArgError(Object x) {
-            throw raise(PythonBuiltinClassType.TypeError, "complex() first argument must be a string or a number, not '%p'", x);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "complex() first", x);
         }
 
         private PException raiseSecondArgError(Object x) {
-            throw raise(PythonBuiltinClassType.TypeError, "complex() second argument must be a number, not '%p'", x);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_NUMBER, "complex() second", x);
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
@@ -562,7 +563,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         // and may be removed in a future version of Python.
                         return (PComplex) result;
                     } else {
-                        throw raise(TypeError, "__complex__ should return a complex object");
+                        throw raise(TypeError, ErrorMessages.COMPLEX_SHOULD_RETURN_COMPLEX);
                     }
                 }
                 if (object instanceof PComplex) {
@@ -576,7 +577,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object complexGeneric(Object cls, Object realObj, Object imaginaryObj) {
-            throw raise(TypeError, "complex.__new__(X): X is not a type object (%p)", cls);
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "complex.__new__(X): X", cls);
         }
 
         // Taken from Jython PyString's __complex__() method
@@ -595,7 +596,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             if (s == n) {
-                throw raise(ValueError, "empty string for complex()");
+                throw raise(ValueError, ErrorMessages.EMPTY_STR_FOR_COMPLEX);
             }
 
             double z = -1.0;
@@ -740,7 +741,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             if (swError) {
-                throw raise(ValueError, "malformed string for complex() %s", str.substring(s));
+                throw raise(ValueError, ErrorMessages.MALFORMED_STR_FOR_COMPLEX, str.substring(s));
             }
 
             return createComplex(cls, x, y);
@@ -811,7 +812,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isInteger(start)")
         public void enumerate(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") Object iterable, Object start) {
-            raise(TypeError, "%p object cannot be interpreted as an integer", start);
+            raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
         }
     }
 
@@ -870,12 +871,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
                 Object getItem = getItemNode.execute(sequenceKlass);
                 if (noGetItemProfile.profile(getItem == PNone.NO_VALUE)) {
-                    throw raise(TypeError, "'%p' object is not reversible", sequence);
+                    throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
                     try {
                         return factory().createSequenceReverseIterator(cls, sequence, lenNode.executeInt(frame, sequence));
                     } catch (UnexpectedResultException e) {
-                        throw raise(TypeError, "%p object cannot be interpreted as an integer", e.getResult());
+                        throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, e.getResult());
                     }
                 }
             } else {
@@ -928,7 +929,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object floatFromPInt(LazyPythonClass cls, PInt arg) {
             double value = arg.doubleValue();
             if (Double.isInfinite(value)) {
-                throw raise(OverflowError, "int too large to convert to float");
+                throw raise(OverflowError, ErrorMessages.TOO_LARGE_TO_CONVERT_TO, "int", "float");
             }
             if (isPrimitiveFloat(cls)) {
                 return value;
@@ -981,7 +982,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             for (int i = 0; i < n; i++) {
                 char ch = str.charAt(i);
                 if (ch == '\u0000') {
-                    throw raise(ValueError, "empty string for complex()");
+                    throw raise(ValueError, ErrorMessages.EMPTY_STR_FOR_COMPLEX);
                 }
                 if (Character.isDigit(ch)) {
                     if (s == null) {
@@ -1008,7 +1009,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return Double.valueOf(sval).doubleValue();
             } catch (NumberFormatException exc) {
                 // throw Py.ValueError("invalid literal for __float__: " + str);
-                throw raise(ValueError, "could not convert string to float: %s", str);
+                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, str);
             }
         }
 
@@ -1035,7 +1036,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (lib.canBeJavaDouble(obj)) {
                 return lib.asJavaDouble(obj);
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, "float() argument must be a string or a number, not '%p'", obj);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
             }
         }
 
@@ -1060,7 +1061,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         @TruffleBoundary
         Object floatFromObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            throw raise(TypeError, "can't convert %s to float", arg.getClass().getSimpleName());
+            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_FLOAT, arg.getClass().getSimpleName());
         }
 
         protected static boolean isSubtypeOfFloat(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {
@@ -1177,7 +1178,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object value = stringToIntInternal(number, base);
             if (value == null) {
                 invalidValueProfile.enter();
-                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
+                throw raise(ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, number);
             }
             return createInt(cls, value);
         }
@@ -1207,7 +1208,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private void checkBase(int base) {
             if (invalidBase.profile((base < 2 || base > 32) && base != 0)) {
-                throw raise(ValueError, "base is out of range for int()");
+                throw raise(ValueError, ErrorMessages.BASE_OUT_OF_RANGE_FOR_INT);
             }
         }
 
@@ -1516,7 +1517,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isString(arg)", "!isNoValue(base)"})
         Object fail(LazyPythonClass cls, Object arg, Object base) {
-            throw raise(TypeError, "int() can't convert non-string with explicit base");
+            throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_EITH_EXPL_BASE);
         }
 
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
@@ -1527,15 +1528,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (result == PNone.NO_VALUE) {
                     result = callTrunc(frame, obj);
                     if (result == PNone.NO_VALUE) {
-                        throw raise(TypeError, "int() argument must be a string, a bytes-like object or a number, not %p", obj);
+                        throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
                     } else if (!isIntegerType(result)) {
-                        throw raise(TypeError, " __trunc__ returned non-int (type %p)", result);
+                        throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__trunc__", result);
                     }
                 } else if (!isIntegerType(result)) {
-                    throw raise(TypeError, " __index__ returned non-int (type %p)", result);
+                    throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
                 }
             } else if (!isIntegerType(result)) {
-                throw raise(TypeError, " __int__ returned non-int (type %p)", result);
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__int__", result);
             }
             return createInt(cls, result);
         }
@@ -1621,7 +1622,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         public PList listObject(Object cls, Object[] arguments, PKeyword[] keywords) {
-            throw raise(TypeError, "'cls' is not a type object (%p)", cls);
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -1811,14 +1812,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
 
-            throw raise(TypeError, "range does not support %s, %s, %s", start, stop, step);
+            throw raise(TypeError, ErrorMessages.RAGE_DOES_NOT_SUPPORT, start, stop, step);
         }
 
         @TruffleBoundary
         @Specialization(guards = "!isNumber(stop)")
         public PSequence rangeError(Object cls, Object start, Object stop, Object step) {
             CompilerDirectives.transferToInterpreter();
-            throw raise(TypeError, "range does not support %s, %s, %s", start, stop, step);
+            throw raise(TypeError, ErrorMessages.RAGE_DOES_NOT_SUPPORT, start, stop, step);
         }
 
         public static boolean isNumber(Object value) {
@@ -1852,7 +1853,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         public PSet listObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            throw raise(TypeError, "set does not support iterable object %s", arg);
+            throw raise(TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, arg);
         }
     }
 
@@ -1902,7 +1903,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // fall through
                 }
             }
-            throw raise(TypeError, "decoding to str: need a bytes-like object, %p found", obj);
+            throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
         }
 
         private Object decodeBytes(VirtualFrame frame, LazyPythonClass strClass, PBytes obj, Object encoding, Object errors) {
@@ -1912,7 +1913,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else if (getIsPStringProfile().profile(result instanceof PString)) {
                 return result;
             }
-            throw raise(TypeError, "%p.decode returned non-string (type %p)", obj, result);
+            throw raise(TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, obj, "decode", result);
         }
 
         /**
@@ -1992,7 +1993,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         public PTuple tupleObject(Object cls, @SuppressWarnings("unused") Object arg) {
-            throw raise(TypeError, "'cls' is not a type object (%p)", cls);
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -2071,7 +2072,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         public PFunction function(Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure) {
-            throw raise(TypeError, "function construction not supported for (%p, %p, %p, %p, %p, %p)", cls, code, globals, name, defaultArgs, closure);
+            throw raise(TypeError, ErrorMessages.FUNC_CONSTRUCTION_NOT_SUPPORTED, cls, code, globals, name, defaultArgs, closure);
         }
 
         private String getTypeName(Object typeObj) {
@@ -2090,7 +2091,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         public PFunction function(Object cls, Object method_def, Object def, Object name, Object module) {
-            throw raise(TypeError, "cannot create 'method_descriptor' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'method_descriptor'");
         }
     }
 
@@ -2187,7 +2188,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
-                        raise(TypeError, "__classcell__ must be a cell");
+                        raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
                     if (nslib.hasKey(namespace.getDictStorage(), __CLASSCELL__)) {
                         HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __CLASSCELL__);
@@ -2245,7 +2246,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             assert metaclass != null;
 
             if (name.indexOf('\0') != -1) {
-                throw raise(ValueError, "type name must not contain null characters");
+                throw raise(ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
             }
             PythonClass pythonClass = factory().createPythonClass(metaclass, name, basesArray);
 
@@ -2305,12 +2306,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (element instanceof String) {
                         slotName = (String) element;
                     } else {
-                        throw raise(TypeError, "__slots__ items must be strings, not '%p'", element);
+                        throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
                     if (__DICT__.equals(slotName)) {
                         // check that the native base does not already have tp_dictoffset
                         if (addDictIfNative(frame, pythonClass)) {
-                            throw raise(TypeError, "__dict__ slot disallowed: we already got one");
+                            throw raise(TypeError, ErrorMessages.SLOT_DISALLOWED_WE_GOT_ONE, "__dict__");
                         }
                         addDict = true;
                     } else {
@@ -2366,7 +2367,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
                 if (nslib.hasKey(namespace.getDictStorage(), slotName)) {
-                    throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }
                 j++;
             }
@@ -2407,7 +2408,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             plen -= ipriv;
 
             if ((long) plen + nlen >= Integer.MAX_VALUE) {
-                throw raise(OverflowError, "private identifier too large to be mangled");
+                throw raise(OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
             }
 
             /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
@@ -2503,7 +2504,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             LazyPythonClass winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
                 if (!ensureIsAcceptableBaseNode().execute(base)) {
-                    throw raise(TypeError, "type '%p' is not an acceptable base type", base);
+                    throw raise(TypeError, ErrorMessages.TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE, base);
                 }
                 LazyPythonClass typ = getMetaclassNode.execute(base);
                 if (isSubType(frame, winner, typ)) {
@@ -2512,8 +2513,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     winner = typ;
                     continue;
                 }
-                throw raise(TypeError, "metaclass conflict: the metaclass of a derived class must be " +
-                                "a (non-strict) subclass of the metaclasses of all its bases");
+                throw raise(TypeError, ErrorMessages.METACLASS_CONFLICT);
             }
             return winner;
         }
@@ -2534,13 +2534,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Cached("create()") TypeNode nextTypeNode) {
             if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
-                throw raise(TypeError, "type() takes 1 or 3 arguments");
+                throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
             } else if (!(name instanceof String || name instanceof PString)) {
-                throw raise(TypeError, "type() argument 1 must be string, not %p", name);
+                throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 1", name);
             } else if (!(bases instanceof PTuple)) {
-                throw raise(TypeError, "type() argument 2 must be tuple, not %p", name);
+                throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 2", bases);
             } else if (!(dict instanceof PDict)) {
-                throw raise(TypeError, "type() argument 3 must be dict, not %p", name);
+                throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 3", dict);
             } else if (!(cls instanceof LazyPythonClass)) {
                 // TODO: this is actually allowed, deal with it
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
@@ -2645,7 +2645,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PNotImplemented module(Object cls) {
             if (cls != getNotImplementedClass()) {
-                throw raise(TypeError, "'NotImplementedType' object is not callable");
+                throw raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, "NotImplementedType");
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -2672,7 +2672,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PNone module(Object cls) {
             if (cls != getNoneClass()) {
-                throw raise(TypeError, "NoneType.__new__(%s) is not a subtype of NoneType", cls);
+                throw raise(TypeError, ErrorMessages.IS_NOT_SUBTYPE_OF, "NoneType.__new__", cls, "NoneType");
             } else {
                 return PNone.NONE;
             }
@@ -2685,7 +2685,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'dict_keys' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_keys'");
         }
     }
 
@@ -2695,7 +2695,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'dict_keysiterator' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_keysiterator'");
         }
     }
 
@@ -2705,7 +2705,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'dict_values' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_values'");
         }
     }
 
@@ -2715,7 +2715,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'dict_valuesiterator' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_valuesiterator'");
         }
     }
 
@@ -2725,7 +2725,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'dict_items' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_items'");
         }
     }
 
@@ -2735,7 +2735,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'dict_itemsiterator' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_itemsiterator'");
         }
     }
 
@@ -2745,7 +2745,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object iterator(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'iterator' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'iterator'");
         }
     }
 
@@ -2755,7 +2755,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object iterator(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'callable_iterator' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'callable_iterator'");
         }
     }
 
@@ -2765,7 +2765,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object iterator(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'foreign_iterator' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'foreign_iterator'");
         }
     }
 
@@ -2775,7 +2775,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object generator(Object args, Object kwargs) {
-            throw raise(TypeError, "cannot create 'generator' instances");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'generator'");
         }
     }
 
@@ -2801,7 +2801,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (dataModelLibrary.isCallable(func)) {
                     return factory().createMethod(self, func);
                 } else {
-                    throw raise(TypeError, "first argument must be callable");
+                    throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
                 }
             } finally {
                 IndirectCallContext.exit(frame, context, state);
@@ -2823,7 +2823,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FrameTypeNode extends PythonBuiltinNode {
         @Specialization
         Object call() {
-            throw raise(RuntimeError, "cannot call constructor of frame type");
+            throw raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "frame type");
         }
     }
 
@@ -2832,7 +2832,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
         @Specialization
         Object call() {
-            throw raise(RuntimeError, "cannot call constructor of traceback type");
+            throw raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "traceback type");
         }
     }
 
@@ -2909,7 +2909,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object varnames, Object filename, Object name,
                         Object firstlineno, Object lnotab,
                         Object freevars, Object cellvars) {
-            throw raise(SystemError, "bad argument to internal function");
+            throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
         }
 
         private String getStringArg(Object arg) {
@@ -2918,7 +2918,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else if (arg instanceof PString) {
                 return ((PString) arg).getValue();
             } else {
-                throw raise(SystemError, "bad argument to internal function");
+                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
         }
 
@@ -2933,7 +2933,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CellTypeNode extends PythonBuiltinNode {
         @Specialization
         Object call() {
-            throw raise(RuntimeError, "cannot call constructor of cell type");
+            throw raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "cell type");
         }
     }
 
@@ -2970,13 +2970,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         @SuppressWarnings("unused")
         Object doMissing(LazyPythonClass klass, PNone none) {
-            throw raise(TypeError, "mappingproxy() missing required argument 'mapping' (pos 1)");
+            throw raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
         }
 
         @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"}, limit = "1")
         Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass klass, Object obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
-            throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
+            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
         protected boolean isBuiltinMapping(Object o) {
@@ -3000,7 +3000,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         private void denyInstantiationAfterInitialization() {
             if (getCore().isInitialized()) {
-                throw raise(TypeError, "cannot create 'getset_descriptor' instances");
+                throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'getset_descriptor'");
             }
         }
 
@@ -3086,7 +3086,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         public PBuffer doGeneric(@SuppressWarnings("unused") Object cls, Object delegate, @SuppressWarnings("unused") Object readOnly) {
-            throw raise(TypeError, "cannot create buffer for object %s", delegate);
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_BUFFER_FOR, delegate);
         }
 
         public boolean hasSetItem(Object object) {

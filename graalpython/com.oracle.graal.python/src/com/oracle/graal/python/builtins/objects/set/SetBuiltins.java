@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -225,7 +226,7 @@ public final class SetBuiltins extends PythonBuiltins {
                 removeItem(frame, self, next, lib, hasFrame, updatedStorage);
                 return next;
             }
-            throw raise(PythonErrorType.KeyError, "pop from an emtpy set");
+            throw raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
     }
 

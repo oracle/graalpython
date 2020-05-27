@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -173,7 +174,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             try {
                 return a2b(self, bufferLib.getBufferBytes(buffer));
             } catch (UnsupportedMessageException e) {
-                throw raise(SystemError, "bad argument to internal function");
+                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
         }
 
@@ -203,11 +204,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         private PException oddLengthError(PythonModule self) {
-            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), "Odd-length string");
+            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), ErrorMessages.ODD_LENGTH_STRING);
         }
 
         private PException nonHexError(PythonModule self) {
-            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), "Non-hexadecimal digit found");
+            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), ErrorMessages.NON_HEX_DIGIT_FOUND);
         }
 
         private ReadAttributeFromObjectNode getAttrNode() {
@@ -310,7 +311,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 return b2aBytesLike((PBytes) bytesObj, newline);
             }
-            throw raise(SystemError, "could not get bytes of memoryview");
+            throw raise(SystemError, ErrorMessages.COULD_NOT_GET_BYTES_OF_MEMORYVIEW);
         }
 
         @Specialization
@@ -328,14 +329,14 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         PBytes b2sGeneral(Object data, @SuppressWarnings("unused") Object newline) {
-            throw raise(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'", data);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
         }
 
         private Object asPInt(Object obj, PythonObjectLibrary lib) {
             if (lib.canBePInt(obj)) {
                 return lib.asPInt(obj);
             }
-            throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", obj);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
         }
     }
 
@@ -352,7 +353,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             try {
                 return b2a(bufferLib.getBufferBytes(buffer));
             } catch (UnsupportedMessageException e) {
-                throw raise(SystemError, "bad argument to internal function");
+                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
         }
 

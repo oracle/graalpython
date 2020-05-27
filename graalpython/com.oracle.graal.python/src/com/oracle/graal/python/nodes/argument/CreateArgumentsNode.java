@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -363,7 +364,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             String forgotSelfMsg = forgotSelf ? ". Did you forget 'self' in the function definition?" : "";
             if (ndefaults > 0) {
                 if (kwonly_given == 0) {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, "%s() takes from %d to %d positional argument%s but %d %s given%s",
+                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
                                     getName(callable),
                                     co_argcount - ndefaults,
                                     co_argcount,
@@ -372,7 +373,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     avail == 1 ? "was" : "were",
                                     forgotSelfMsg);
                 } else {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, "%s() takes from %d to %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s",
+                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_POS_ARG_S,
                                     getName(callable),
                                     co_argcount - ndefaults,
                                     co_argcount,
@@ -385,7 +386,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             } else {
                 if (kwonly_given == 0) {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, "%s() takes %d positional argument%s but %d %s given%s",
+                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_GIVEN_S,
                                     getName(callable),
                                     co_argcount - ndefaults,
                                     co_argcount == 1 ? "" : "s",
@@ -393,7 +394,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     avail == 1 ? "was" : "were",
                                     forgotSelfMsg);
                 } else {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s",
+                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S,
                                     getName(callable),
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
@@ -496,11 +497,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         if (unusedKeywords != null) {
                             unusedKeywords[k++] = kwArg;
                         } else {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), name);
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
                         }
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
@@ -544,10 +545,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
                 if (kwIdx != -1) {
                     if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), name);
                     }
                     if (PArguments.getArgument(arguments, kwIdx) != null) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
+                        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
                     }
                     PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                 } else if (takesVarKwds) {
@@ -563,9 +564,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword, PRaiseNode raise) {
             if (tooManyKeywords == 1) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got an unexpected keyword argument '%s'", CreateArgumentsNode.getName(callee), lastWrongKeyword);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got %d unexpected keyword arguments", CreateArgumentsNode.getName(callee), tooManyKeywords);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), tooManyKeywords);
             } else if (unusedKeywords != null) {
                 PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
             }
@@ -611,7 +612,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     protected abstract static class FillBaseNode extends PNodeWithContext {
 
         protected PException raiseMissing(Object callable, String[] missingNames, int missingCnt, String type, PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() missing %d required %s argument%s: '%s'",
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_S,
                             getName(callable),
                             missingCnt,
                             type,

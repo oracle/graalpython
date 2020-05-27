@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -256,7 +257,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") Crc32Node recursiveNode,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
             if (!lib.canBePInt(value)) {
-                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", value);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
             }
             return (long) recursiveNode.execute(frame, data, lib.asPInt(value));
         }
@@ -330,7 +331,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") Adler32Node recursiveNode,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
             if (!lib.canBePInt(value)) {
-                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", value);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
             }
             return (long) recursiveNode.execute(frame, data, lib.asPInt(value));
         }
@@ -363,13 +364,13 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             }
 
             if (method != DEFLATED) {
-                throw raise(PythonBuiltinClassType.ValueError, "only DEFLATED (%d) allowed as method, got %d", DEFLATED, method);
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
             }
             deflater.setStrategy(strategy);
             if (zdict instanceof String) {
                 deflater.setDictionary(((String) zdict).getBytes());
             } else if (!(zdict instanceof PNone)) {
-                throw raise(PythonBuiltinClassType.ValueError, "zdict must be a str, not %p", zdict);
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "zdict", zdict);
             }
             return new DeflaterWrapper(deflater);
         }
@@ -554,7 +555,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public PBytes doitLong(PIBytesLike data, long level,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
-                throw raise(ZLibError, "Bad compression level");
+                throw raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
             }
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, (int) level));
@@ -592,12 +593,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 while (!decompresser.finished()) {
                     int howmany = decompresser.inflate(resultArray);
                     if (howmany == 0 && decompresser.needsInput()) {
-                        throw raise(ZLibError, "Error -5 while decompressing data: incomplete or truncated stream");
+                        throw raise(ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
                     }
                     baos.write(resultArray, 0, howmany);
                 }
             } catch (DataFormatException e) {
-                throw raise(ZLibError, "while preparing to decompress data");
+                throw raise(ZLibError, ErrorMessages.WHILE_PREPARING_TO_DECOMPRESS_DATA);
             }
             decompresser.end();
             return baos.toByteArray();
@@ -618,7 +619,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public PBytes decompress(PIBytesLike data, long wbits, int bufsize) {
             // checking bufsize
             if (bufSizeProfile.profile(bufsize < 0)) {
-                throw raise(ZLibError, "bufsize must be non-negative");
+                throw raise(ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
             }
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(decompress(array, (int) wbits, bufsize == 0 ? 1 : bufsize));
@@ -629,7 +630,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") DecompressNode recursiveNode,
                         @CachedLibrary("bufsize") PythonObjectLibrary lib) {
             if (!lib.canBePInt(bufsize)) {
-                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", bufsize);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, bufsize);
             }
             Object bufferLen = lib.asPInt(bufsize);
             return (PBytes) recursiveNode.execute(frame, data, wbits, bufferLen);

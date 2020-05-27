@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -88,7 +89,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         private Object get(String name) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, "host lookup is not allowed");
+                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
             }
             Object hostValue;
             try {
@@ -97,7 +98,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
                 hostValue = null;
             }
             if (hostValue == null) {
-                throw raise(PythonErrorType.KeyError, "host symbol %s is not defined or access has been denied", name);
+                throw raise(PythonErrorType.KeyError, ErrorMessages.HOST_SYM_NOT_DEFINED, name);
             } else {
                 return hostValue;
             }
@@ -115,7 +116,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doError(Object object) {
-            throw raise(PythonBuiltinClassType.TypeError, "unsupported operand '%p'", object);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
         }
     }
 
@@ -127,7 +128,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToString) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, "host access is not allowed");
+                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
             }
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
@@ -138,9 +139,9 @@ public class JavaModuleBuiltins extends PythonBuiltins {
                     // implicitly
                     env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, ".jar"));
                 } catch (CannotCastException e) {
-                    throw raise(PythonBuiltinClassType.TypeError, "classpath argument %d must be string, not %p", i + 1, arg);
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
                 } catch (SecurityException e) {
-                    throw raise(TypeError, "invalid or unreadable classpath: '%s' - %m", entry, e);
+                    throw raise(TypeError, ErrorMessages.INVALD_OR_UNREADABLE_CLASSPATH, entry, e);
                 }
             }
             return PNone.NONE;
@@ -191,7 +192,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
                     return ((Class<?>) hostKlass).isInstance(object);
                 }
             } catch (ClassCastException cce) {
-                throw raise(ValueError, "klass argument '%p' is not a host object", klass);
+                throw raise(ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
             }
             return false;
         }
@@ -208,14 +209,14 @@ public class JavaModuleBuiltins extends PythonBuiltins {
                     return ((Class<?>) hostKlass).isInstance(hostObject);
                 }
             } catch (ClassCastException cce) {
-                throw raise(ValueError, "the object '%p' or klass '%p' arguments is not a host object", object, klass);
+                throw raise(ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
             }
             return false;
         }
 
         @Fallback
         boolean fallback(Object object, Object klass) {
-            throw raise(TypeError, "unsupported instanceof(%p, %p)", object, klass);
+            throw raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
         }
     }
 }

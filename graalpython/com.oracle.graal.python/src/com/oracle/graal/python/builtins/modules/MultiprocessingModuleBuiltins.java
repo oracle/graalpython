@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -92,7 +93,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @CachedLanguage PythonLanguage lang) {
             int kind = castKindToIntNode.execute(kindObj);
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
-                throw raise(PythonBuiltinClassType.ValueError, "unrecognized kind");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
             }
             int value = castValueToIntNode.execute(valueObj);
             castMaxvalueToIntNode.execute(maxvalueObj); // executed for the side-effect, but ignored
@@ -103,7 +104,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             try {
                 name = castNameNode.execute(nameObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, "argument 4 must be str, not %p", nameObj);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, 4, "str", nameObj);
             }
             if (unlink == 0) {
                 // CPython creates a named semaphore, and if unlink != 0 unlinks
@@ -112,7 +113,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 // must. CPython always uses O_CREAT | O_EXCL for creating named
                 // semaphores, so a conflict raises.
                 if (semaphoreExists(lang, name)) {
-                    throw raise(PythonBuiltinClassType.FileExistsError, "Semaphore name taken: '%s'", name);
+                    throw raise(PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
                 } else {
                     semaphorePut(lang, semaphore, name);
                 }
@@ -144,7 +145,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @CachedLanguage PythonLanguage lang) {
             Semaphore prev = semaphoreRemove(name, lang);
             if (prev == null) {
-                throw raise(PythonBuiltinClassType.FileNotFoundError, "No such file or directory: 'semaphores:/%s'", name);
+                throw raise(PythonBuiltinClassType.FileNotFoundError, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
             }
             return PNone.NONE;
         }

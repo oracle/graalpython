@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -214,7 +215,7 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             raiseNode = insert(PRaiseNode.create());
         }
-        throw raiseNode.raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
+        throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
     }
 
     @Specialization(guards = "isClass(clause, lib)", limit = "3")

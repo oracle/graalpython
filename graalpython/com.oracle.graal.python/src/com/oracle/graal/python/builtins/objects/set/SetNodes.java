@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -121,7 +122,7 @@ public abstract class SetNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raise = insert(PRaiseNode.create());
             }
-            throw raise.raise(TypeError, "'%p' object is not iterable", value);
+            throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
         }
 
         private SetItemNode getSetItemNode() {

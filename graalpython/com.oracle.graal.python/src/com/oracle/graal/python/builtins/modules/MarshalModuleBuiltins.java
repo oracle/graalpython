@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -122,7 +123,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 return getByteArrayFromStream(baos, buffer);
             } catch (IOException e) {
-                throw raise(ValueError, "Was not possible to marshal %p", o);
+                throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, o);
             }
         }
 
@@ -243,7 +244,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void handleIOException(Object v) {
-            throw raise(ValueError, "Was not possible to marshal %p", v);
+            throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
         }
 
         public void resetRecursionDepth() {
@@ -267,7 +268,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 buffer.write(bytes);
             } catch (IOException e) {
-                throw raise(ValueError, "Was not possible to marshal");
+                throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL);
             }
         }
 
@@ -512,7 +513,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Fallback
         void writeObject(Object v, int version, DataOutputStream buffer) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
-                throw raise(ValueError, "Maximum marshal stack depth");
+                throw raise(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
             } else if (v == null) {
                 writeByte(TYPE_NULL, version, buffer);
             } else if (v == PNone.NONE) {
@@ -659,13 +660,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private PList readList(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
-                throw raise(ValueError, "bad marshal data");
+                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             Object[] items = new Object[n];
             for (int i = 0; i < n; i++) {
                 Object item = readObject(depth + 1, lib);
                 if (item == null) {
-                    throw raise(ValueError, "bad marshal data");
+                    throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
                 }
                 items[i] = item;
             }
@@ -675,7 +676,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private PSet readSet(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
-                throw raise(ValueError, "bad marshal data");
+                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             HashingStorage newStorage = EconomicMapStorage.create(n);
             for (int i = 0; i < n; i++) {
@@ -691,7 +692,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private PFrozenSet readFrozenSet(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
-                throw raise(ValueError, "bad marshal data");
+                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             HashingStorage newStorage = EconomicMapStorage.create(n);
             for (int i = 0; i < n; i++) {
@@ -713,7 +714,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private Object readObject(int depth, HashingStorageLibrary lib) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
-                throw raise(ValueError, "Maximum marshal stack depth");
+                throw raise(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
             }
             int type = readByte();
             switch (type) {
@@ -750,7 +751,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_TUPLE: {
                     int n = readInt();
                     if (n < 0) {
-                        throw raise(ValueError, "bad marshal data");
+                        throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
                     }
                     Object[] items = new Object[n];
                     for (int i = 0; i < n; i++) {
@@ -769,7 +770,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_CODE:
                     return readCode(depth, lib);
                 default:
-                    throw raise(ValueError, "bad marshal data");
+                    throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
         }
 

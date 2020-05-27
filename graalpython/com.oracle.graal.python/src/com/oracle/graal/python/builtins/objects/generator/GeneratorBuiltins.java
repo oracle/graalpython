@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -194,7 +195,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             @Specialization(guards = "!isPNone(value)")
             PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
                             @Cached PRaiseNode raise) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "instance exception may not have a separate value");
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
             }
 
             @Specialization
@@ -219,7 +220,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;
                 } else {
-                    throw raise().raise(TypeError, "exceptions must derive from BaseException");
+                    throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
                 }
             }
 
@@ -236,7 +237,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;
                 } else {
-                    throw raise().raise(TypeError, "exceptions must derive from BaseException");
+                    throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
                 }
             }
 
@@ -248,13 +249,13 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;
                 } else {
-                    throw raise().raise(TypeError, "exceptions must derive from BaseException");
+                    throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
                 }
             }
 
             @Fallback
             PBaseException doError(Object type, @SuppressWarnings("unused") Object value) {
-                throw raise().raise(TypeError, "exceptions must be classes or instances deriving from BaseException, not %p", type);
+                throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
             }
 
             private PRaiseNode raise() {
@@ -271,7 +272,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                     isSubtypeNode = insert(IsSubtypeNode.create());
                 }
                 if (!isSubtypeNode.execute(type, PythonBuiltinClassType.PBaseException)) {
-                    throw raise().raise(TypeError, "exceptions must be classes or instances deriving from BaseException, not %p", type);
+                    throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
                 }
             }
         }
@@ -321,7 +322,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPNone(tb)", "!isPTraceback(tb)"})
         @SuppressWarnings("unused")
         Object doError(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb) {
-            throw raise(TypeError, "throw() third argument must be a traceback object");
+            throw raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
         }
 
         private MaterializeFrameNode ensureMaterializeFrameNode() {

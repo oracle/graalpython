@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -153,23 +154,23 @@ public class SocketBuiltins extends PythonBuiltins {
         Object close(PSocket socket) {
             if (socket.getSocket() != null) {
                 if (!socket.getSocket().isOpen()) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
 
                 try {
                     socket.getSocket().close();
                 } catch (IOException e) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
             } else if (socket.getServerSocket() != null) {
                 if (!socket.getServerSocket().isOpen()) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
 
                 try {
                     socket.getServerSocket().close();
                 } catch (IOException e) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
             }
             getContext().getResources().close(socket.getFileno());
@@ -210,7 +211,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object get(PSocket socket) {
             if (socket.getSocket() == null) {
-                throw raise(PythonBuiltinClassType.OSError, "[Errno 57] Socket is not connected");
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR57_SOCKET_CANNOT_BE_CONNECTED);
             }
 
             try {

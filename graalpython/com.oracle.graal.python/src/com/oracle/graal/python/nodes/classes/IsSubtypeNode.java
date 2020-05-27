@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -259,11 +260,11 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @Cached("createBinaryProfile()") ConditionProfile exceptionClsProfile,
                     @Cached PRaiseNode raise) {
         if (exceptionDerivedProfile.profile(getBasesNode.execute(frame, derived) == null)) {
-            throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 1 must be a class");
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
         }
 
         if (exceptionClsProfile.profile(getBasesNode.execute(frame, cls) == null)) {
-            throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
         }
 
         return abstractIsSubclassNode.execute(frame, derived, cls);

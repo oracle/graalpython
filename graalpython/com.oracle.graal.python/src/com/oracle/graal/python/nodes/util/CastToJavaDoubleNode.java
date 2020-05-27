@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -88,7 +89,7 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
                     @Cached PRaiseNode raise) {
         double value = x.doubleValue();
         if (Double.isInfinite(value)) {
-            throw raise.raise(OverflowError, "int too large to convert to float");
+            throw raise.raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
         }
         return value;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -80,7 +81,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
         Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self) {
-            throw raise(PythonErrorType.AttributeError, "'builtin_function_or_method' object has no attribute '__objclass__'");
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")

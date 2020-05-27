@@ -195,6 +195,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -353,7 +354,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Fallback
         Object run(VirtualFrame frame, Object o) {
-            return raiseNative(frame, PNone.NO_VALUE, PythonErrorType.SystemError, "Cannot convert object of type %p to C string.", o, o.getClass().getName());
+            return raiseNative(frame, PNone.NO_VALUE, PythonErrorType.SystemError, ErrorMessages.CANNOT_CONVERT_OBJ_TO_C_STRING, o, o.getClass().getName());
         }
     }
 
@@ -435,7 +436,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 Object self = selfAsPythonObjectNode.execute(selfWrapper);
                 if (!PGuards.isPTuple(self) || selfWrapper.getRefCount() != 1) {
-                    throw raiseNode.raise(SystemError, "bad argument to internal function 'PTuple_SetItem'");
+                    throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_P, "PTuple_SetItem");
                 }
                 PTuple tuple = (PTuple) self;
                 Object element = elementAsPythonObjectNode.execute(elementWrapper);
@@ -927,14 +928,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // consume exception
                 context.setCurrentException(null);
                 if (!errOccurred && !isPrimitiveResult) {
-                    throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
+                    throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR, name);
                 } else {
                     throw currentException.getExceptionForReraise();
                 }
             } else if (errOccurred) {
                 // consume exception
                 context.setCurrentException(null);
-                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
+                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
                 throw PException.fromObject(sysExc, this);
             }
@@ -990,7 +991,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         protected Object raiseBadArgument(VirtualFrame frame, Object errorMarker) {
-            return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "bad argument type for built-in operation");
+            return raiseNative(frame, errorMarker, PythonErrorType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1219,11 +1220,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         private int raiseTooLarge(VirtualFrame frame, long targetTypeSize) {
-            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
+            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
         private Integer raiseUnsupportedSize(VirtualFrame frame, long targetTypeSize) {
-            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
         private PRaiseNativeNode ensureRaiseNativeNode() {
@@ -1383,7 +1384,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return raiseNative(frame, errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
             } catch (IllegalArgumentException e) {
                 String csName = Charsets.getUTF32Name(byteorder);
-                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
+                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ENCODING, csName);
             } catch (InteropException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
             }
@@ -1486,7 +1487,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (wchars != null) {
                     return wchars;
                 } else {
-                    return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported wchar size; was: %d", elementSize);
+                    return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.UNSUPPORTED_SIZE_WAS, "wchar", elementSize);
                 }
             } catch (IllegalArgumentException e) {
                 // TODO
@@ -1499,7 +1500,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return doUnicode(frame, s, elementSize.longValueExact(), -1, errorMarker);
             } catch (ArithmeticException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
+                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
             }
         }
 
@@ -1508,7 +1509,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return doUnicode(frame, s, elementSize.longValueExact(), elements.longValueExact(), errorMarker);
             } catch (ArithmeticException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
+                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
             }
         }
     }
@@ -1528,7 +1529,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doUnicode(VirtualFrame frame, Object o, Object errorMarker) {
-            return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "expected bytes, %p found", o);
+            return raiseNative(frame, errorMarker, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", o);
         }
     }
 
@@ -2617,7 +2618,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Fallback
         Object doPTuple(Object tuple, @SuppressWarnings("unused") Object key) {
             // TODO(fa) To be absolutely correct, we need to do a 'isinstance' check on the object.
-            throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", tuple, tuple);
+            throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, tuple, tuple);
         }
     }
 
@@ -2795,7 +2796,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isAnySet(self)")
         int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, "expected a set object, not %p", self);
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a set object", self);
         }
     }
 
@@ -2824,7 +2825,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isBytes(self)")
         int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, "expected a set object, not %p", self);
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a set object", self);
         }
 
     }
@@ -2980,7 +2981,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     // ignore
                 }
             }
-            return raiseNative(frame, getNativeNullNode.execute(module), PythonBuiltinClassType.ValueError, "could not convert string to float: %s", source);
+            return raiseNative(frame, getNativeNullNode.execute(module), PythonBuiltinClassType.ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, source);
         }
 
         @TruffleBoundary
@@ -3084,7 +3085,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 decode(resultBuffer, inputBuffer, encoding, errors);
                 return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
             } catch (IllegalArgumentException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.LookupError, "unknown encoding: " + encoding);
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             } catch (InteropException e) {
                 return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }
@@ -3659,7 +3660,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
                 if (!PGuards.isList(delegate)) {
-                    throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", delegate, delegate);
+                    throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, delegate, delegate);
                 }
                 PList list = (PList) delegate;
                 Object element = elementAsPythonObjectNode.execute(elementWrapper);
@@ -3693,7 +3694,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
                 Object attrGetItem = lookupGetItemNode.execute(delegate, __GETITEM__);
                 if (attrGetItem == PNone.NO_VALUE) {
-                    throw raise(TypeError, "'%s' object does not support indexing", delegate);
+                    throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, delegate);
                 }
                 Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
                 return toNewRefNode.execute(item);
@@ -3720,7 +3721,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
                 Object attrGetItem = lookupGetItemNode.execute(delegate, __GETITEM__);
                 if (attrGetItem == PNone.NO_VALUE) {
-                    throw raise(TypeError, "'%s' object is not subscriptable", delegate);
+                    throw raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, delegate);
                 }
                 Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
                 return toNewRefNode.execute(item);

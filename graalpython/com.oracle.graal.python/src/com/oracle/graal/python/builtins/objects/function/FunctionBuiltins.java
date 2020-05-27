@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
@@ -129,12 +130,12 @@ public class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.AttributeError, "attribute '__name__' of builtin function is not writable");
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
         }
 
         @Fallback
         Object setName(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, "__name__ must be set to a string object");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__name__");
         }
     }
 
@@ -186,7 +187,7 @@ public class FunctionBuiltins extends PythonBuiltins {
             ArrayList<PKeyword> keywords = new ArrayList<>();
             for (HashingStorage.DictEntry e : arg.entries()) {
                 if (!(e.getKey() instanceof String)) {
-                    throw raise(PythonBuiltinClassType.TypeError, "keyword names must be str, get %p", e.getKey());
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, e.getKey());
                 }
                 keywords.add(new PKeyword((String) e.getKey(), e.getValue()));
             }
@@ -200,7 +201,7 @@ public class FunctionBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object obj) {
-            throw raise(TypeError, "can't pickle function objects");
+            throw raise(TypeError, ErrorMessages.CANT_PICKLE_FUNC_OBJS);
         }
     }
 
@@ -230,7 +231,7 @@ public class FunctionBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doGeneric(Object object) {
-            throw raise(TypeError, "getting the source is not supported for '%p'", object);
+            throw raise(TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
         }
     }
 
@@ -249,7 +250,7 @@ public class FunctionBuiltins extends PythonBuiltins {
             int closureLength = self.getClosure() == null ? 0 : self.getClosure().length;
             int freeVarsLength = code.getFreeVars().length;
             if (closureLength != freeVarsLength) {
-                throw raise(PythonBuiltinClassType.ValueError, "%s() requires a code object with %d free vars, not %d", self.getName(), closureLength, freeVarsLength);
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.REQUIRES_CODE_OBJ, self.getName(), closureLength, freeVarsLength);
             }
             self.setCode(code);
             return PNone.NONE;

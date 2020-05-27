@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -168,7 +169,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object run(PMappingproxy self, Object key, Object value) {
-            throw raise(TypeError, "'mappingproxy' object does not support item assignment");
+            throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, "mappingproxy");
         }
     }
 

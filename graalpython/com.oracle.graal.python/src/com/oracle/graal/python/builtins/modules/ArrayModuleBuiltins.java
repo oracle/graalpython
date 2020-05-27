@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -181,7 +182,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 if (nextValue instanceof Integer) {
                     intArray[i++] = (int) nextValue;
                 } else {
-                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
+                    throw raise(ValueError, ErrorMessages.ARG_EXPECTED_GOT, "Integer", nextValue);
                 }
             }
 
@@ -210,7 +211,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 if (nextValue instanceof Number) {
                     longArray[i++] = longValue((Number) nextValue);
                 } else {
-                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
+                    throw raise(ValueError, ErrorMessages.ARG_EXPECTED_GOT, "Integer", nextValue);
                 }
             }
 
@@ -241,7 +242,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 } else if (nextValue instanceof Double) {
                     doubleArray[i++] = (double) nextValue;
                 } else {
-                    throw raise(ValueError, "double value expected");
+                    throw raise(ValueError, ErrorMessages.VALUE_EXPECTED, "double");
                 }
             }
 
@@ -253,14 +254,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
             if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode) || isCharArray(typeCode))) {
                 // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
-                throw raise(ValueError, "bad typecode (must be i, d, b, B, or l)");
+                throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
             throw new RuntimeException("Unsupported initializer " + initializer);
         }
 
         @Specialization(guards = "!isString(typeCode)")
         PArray noArray(@SuppressWarnings("unused") LazyPythonClass cls, Object typeCode, @SuppressWarnings("unused") Object initializer) {
-            throw raise(TypeError, "array() argument 1 must be a unicode character, not %p", typeCode);
+            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_UNICODE, "array()", 1, typeCode);
         }
 
         @TruffleBoundary
@@ -286,14 +287,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         protected CastToByteNode createCast() {
             return CastToByteNode.create(val -> {
-                throw raise(OverflowError, "signed char is greater than maximum");
+                throw raise(OverflowError, ErrorMessages.SIGNED_CHAR_GREATER_THAN_MAX);
             }, null);
 
         }
 
         @TruffleBoundary
         private void typeError(String typeCode, Object initializer) {
-            throw raise(TypeError, "cannot use a %p to initialize an array with typecode '%s'", initializer, typeCode);
+            throw raise(TypeError, ErrorMessages.CANNOT_USE_TO_INITIALIZE_ARRAY, initializer, typeCode);
         }
     }
 }

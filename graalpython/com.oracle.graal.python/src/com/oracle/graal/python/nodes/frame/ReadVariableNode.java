@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundLocalError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -71,7 +72,7 @@ public abstract class ReadVariableNode extends FrameSlotNode implements ReadLoca
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     raise = insert(PRaiseNode.create());
                 }
-                throw raise.raise(UnboundLocalError, "local variable '%s' referenced before assignment", frameSlot.getIdentifier());
+                throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, frameSlot.getIdentifier());
             }
         }
         return value;

@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -133,7 +134,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Fallback
         PBytes doError(@SuppressWarnings("unused") Object self, Object obj, @SuppressWarnings("unused") Object maxLength) {
-            throw raise(TypeError, "a bytes-like object is required, not '%p'", obj);
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, obj);
         }
 
         @TruffleBoundary

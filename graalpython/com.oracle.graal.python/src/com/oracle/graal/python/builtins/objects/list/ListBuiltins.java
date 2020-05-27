@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -161,7 +162,7 @@ public class ListBuiltins extends PythonBuiltins {
                     }
                     sbAppend(result, (String) reprString);
                 } else {
-                    raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", reprString);
+                    raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprString);
                 }
             }
             return toString(sbAppend(result, "]"));
@@ -296,7 +297,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         protected Object doGeneric(Object self, @SuppressWarnings("unused") Object objectIdx) {
-            throw raise(TypeError, "descriptor '__delitem__' requires a 'list' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__delitem__", "list", self);
         }
     }
 
@@ -322,7 +323,7 @@ public class ListBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         protected Object doGeneric(Object self, Object objectIdx) {
-            throw raise(TypeError, "descriptor '__getitem__' requires a 'list' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__getitem__", "list", self);
         }
     }
 
@@ -342,7 +343,7 @@ public class ListBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         protected Object doGeneric(Object self, Object objectIdx, Object value) {
-            throw raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__setitem__", "list", self);
         }
 
         private void updateStorage(PList primary, SequenceStorage newStorage) {
@@ -406,7 +407,7 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = "insert", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class ListInsertNode extends PythonBuiltinNode {
-        protected static final String ERROR_MSG = "'%p' object cannot be interpreted as an integer";
+        protected static final String ERROR_MSG = ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
 
         @Child private SequenceStorageNodes.LenNode lenNode;
 
@@ -589,7 +590,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object doError(@SuppressWarnings("unused") Object list, Object arg) {
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", arg);
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
         }
 
         private SequenceStorageNodes.GetItemNode getGetItemNode() {
@@ -651,7 +652,7 @@ public class ListBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raise(PythonErrorType.ValueError, "x not in list");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_LIST);
         }
 
         @Specialization
@@ -833,7 +834,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isList(right)")
         Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, "can only concatenate list (not \"%p\") to list", right);
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
         }
 
         protected static SequenceStorageNodes.ConcatNode createConcat() {

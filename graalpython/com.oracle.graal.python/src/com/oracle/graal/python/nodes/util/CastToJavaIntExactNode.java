@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -68,7 +69,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
             return PInt.intValueExact(x);
         } catch (ArithmeticException e) {
             CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, "value too large to fit into index-sized integer");
+            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
         }
     }
 
@@ -78,7 +79,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
             return x.intValueExact();
         } catch (ArithmeticException e) {
             CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as int (type %p)", x, x);
+            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x, x);
         }
     }
 }

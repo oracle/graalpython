@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -982,7 +983,7 @@ public abstract class CExtNodes {
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.SystemError, "invalid object from native: %s", obj);
+            throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.INVALID_OBJ_FROM_NATIVE, obj);
         }
 
         protected static boolean isFallback(Object obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
@@ -1685,7 +1686,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, "invalid arguments for fastcall method (expected 3 but got %s)", args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_FASTCALL_METHOD, args.length - argsOffset);
         }
 
         public static FastCallArgsToSulongNode create() {
@@ -1712,7 +1713,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 4)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, "invalid arguments for fastcall_with_keywords method (expected 4 but got %s)", args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_FASTCALL_W_KEYWORDS_METHOD, args.length - argsOffset);
         }
 
         public static FastCallWithKeywordsArgsToSulongNode create() {
@@ -1736,7 +1737,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 2)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, "invalid arguments for allocfunc (expected 2 but got %s)", args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_ALLOCFUNC, args.length - argsOffset);
         }
 
         public static BinaryFirstToSulongNode create() {
@@ -1762,7 +1763,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, args.length - argsOffset);
         }
 
         public static TernaryFirstThirdToSulongNode create() {
@@ -1787,7 +1788,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, args.length - argsOffset);
         }
 
         public static TernaryFirstSecondToSulongNode create() {
@@ -2012,7 +2013,7 @@ public abstract class CExtNodes {
             // subclasses
             // of PComplex
             if (result == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonErrorType.TypeError, "__complex__ returned non-complex (type %p)", value);
+                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
             } else if (result instanceof PComplex) {
                 return (PComplex) result;
             }
@@ -2161,7 +2162,7 @@ public abstract class CExtNodes {
             if (classProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PFloat)) {
                 return castToJavaDoubleNode.execute(result);
             }
-            throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_FLOAT, value, __FLOAT__, result);
         }
     }
 
@@ -2304,14 +2305,14 @@ public abstract class CExtNodes {
         @SuppressWarnings("unused")
         static int doIntToOther(int obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+            throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
         @SuppressWarnings("unused")
         static int doLongToInt32(long obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
@@ -2330,7 +2331,7 @@ public abstract class CExtNodes {
         @SuppressWarnings("unused")
         static int doPInt(long obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+            throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
         @Specialization(guards = {"exact", "targetTypeSize == 4"})
@@ -2347,7 +2348,7 @@ public abstract class CExtNodes {
                 return obj.intValue();
             }
             errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
         @Specialization(guards = {"exact", "targetTypeSize == 8"})
@@ -2364,7 +2365,7 @@ public abstract class CExtNodes {
                 return obj.longValue();
             }
             errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
         @Specialization(guards = {"!exact", "targetTypeSize == 4"})
@@ -2383,7 +2384,7 @@ public abstract class CExtNodes {
         @SuppressWarnings("unused")
         static int doError(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+            throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
         @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32", "doPIntToInt64"})
@@ -2399,13 +2400,13 @@ public abstract class CExtNodes {
                 result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
                 if (result == PNone.NO_VALUE) {
                     noIntProfile.enter();
-                    throw raiseNode.raise(PythonErrorType.TypeError, "an integer is required (got type %p)", result);
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, result);
                 }
             }
             // n.b. this check is important to avoid endless recursions; it will ensure that
             // 'doGeneric' is not triggered in the recursive node
             if (!(isIntegerType(result))) {
-                throw raiseNode.raise(PythonErrorType.TypeError, "__index__ returned non-int (type %p)", result);
+                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
             }
             return recursive.execute(result, signed, targetTypeSize, exact);
         }
@@ -2439,7 +2440,7 @@ public abstract class CExtNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
                 profile.enter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "C API symbol %s is not callable", name);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
             }
         }
 

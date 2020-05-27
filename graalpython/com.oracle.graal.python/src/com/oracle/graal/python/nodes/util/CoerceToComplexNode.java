@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -100,7 +101,7 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
                 // and may be removed in a future version of Python.
                 return (PComplex) result;
             } else {
-                throw raise(TypeError, "__complex__ should return a complex object");
+                throw raise(TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
         }
         if (toDoubleLib == null) {

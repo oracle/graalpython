@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -132,7 +133,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 }
             }
             errorBranch.enter();
-            throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, getTypeName(descrType), getTypeName(type));
+            throw raise(TypeError, ErrorMessages.DESC_S_FOR_S_DOESNT_APPLY_TO_S, name, getTypeName(descrType), getTypeName(type));
         }
 
         private LazyPythonClass getLazyClass(Object obj) {
@@ -184,7 +185,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 return callNode.executeObject(frame, descr.getGet(), obj);
             } else {
                 branchProfile.enter();
-                throw raise(AttributeError, "attribute '%s' of '%s' objects is not readable", descr.getName(), getTypeName(descr.getType()));
+                throw raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getTypeName(descr.getType()));
             }
         }
 
@@ -218,7 +219,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 return callNode.executeObject(frame, descr.getSet(), obj, value);
             } else {
                 branchProfile.enter();
-                throw raise(AttributeError, "attribute '%s' of '%s' object is not writable", descr.getName(), getTypeName(descr.getType()));
+                throw raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getTypeName(descr.getType()));
             }
         }
 

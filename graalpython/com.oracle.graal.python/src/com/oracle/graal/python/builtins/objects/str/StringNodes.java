@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -196,7 +197,7 @@ public abstract class StringNodes {
                 return intValue((Number) result);
             }
             // the object's type is not a subclass of 'str'
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, "bad argument type for built-in operation");
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @TruffleBoundary
@@ -325,7 +326,7 @@ public abstract class StringNodes {
                 }
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
-                throw raise.raise(PythonBuiltinClassType.TypeError, "can only join an iterable");
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
         }
 
@@ -438,12 +439,12 @@ public abstract class StringNodes {
                 String translatedStr = castToJavaStringNode.execute(translated);
                 return doString(translatedChars, i, translatedStr);
             } catch (CannotCastException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "character mapping must return integer, None or str");
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
             }
         }
 
         private static PException raiseError(PRaiseNode raise) {
-            return raise.raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
+            return raise.raise(ValueError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, Integer.toHexString(Character.MAX_CODE_POINT + 1));
         }
 
     }

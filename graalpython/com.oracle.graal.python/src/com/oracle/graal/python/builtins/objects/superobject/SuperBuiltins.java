@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -166,7 +167,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Override
         public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (keywords.length != 0) {
-                throw raise(PythonErrorType.RuntimeError, "super(): unexpected keyword arguments");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.UNEXPECTED_KEYWORD_ARGS, "super()");
             }
             if (arguments.length == 1) {
                 return execute(frame, arguments[0], PNone.NO_VALUE, PNone.NO_VALUE);
@@ -175,14 +176,14 @@ public final class SuperBuiltins extends PythonBuiltins {
             } else if (arguments.length == 3) {
                 return execute(frame, arguments[0], arguments[1], arguments[2]);
             } else {
-                throw raise(PythonErrorType.RuntimeError, "super(): invalid number of arguments");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.INVALID_NUMBER_OF_ARGUMENTS, "super()");
             }
         }
 
         @Override
         public final Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
             if (keywords.length != 0) {
-                throw raise(PythonErrorType.RuntimeError, "super(): unexpected keyword arguments");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.UNEXPECTED_KEYWORD_ARGS, "super()");
             }
             if (arguments.length == 0) {
                 return execute(frame, self, PNone.NO_VALUE, PNone.NO_VALUE);
@@ -191,7 +192,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             } else if (arguments.length == 2) {
                 return execute(frame, self, arguments[0], arguments[1]);
             } else {
-                throw raise(PythonErrorType.RuntimeError, "super(): too many arguments");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.TOO_MANY_ARG, "super()");
             }
         }
 
@@ -215,7 +216,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         protected ReadLocalVariableNode createRead(VirtualFrame frame) {
             FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
             if (slot == null) {
-                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.EMPTY_CLASS_CELL);
             }
             return ReadLocalVariableNode.create(slot);
         }
@@ -230,14 +231,14 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile isCellProfile) {
             Object obj = readArgument.execute(frame);
             if (obj == PNone.NONE) {
-                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
             Object cls = readClass.execute(frame);
             if (isCellProfile.profile(cls instanceof PCell)) {
                 cls = getGetRefNode().execute((PCell) cls);
             }
             if (cls == PNone.NONE) {
-                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.EMPTY_CLASS_CELL, "super()");
             }
             return init(frame, self, cls, obj);
         }
@@ -251,15 +252,15 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
             PFrame target = readCaller.executeWith(frame, 0);
             if (target == null) {
-                throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }
             Object[] arguments = target.getArguments();
             if (PArguments.getUserArgumentLength(arguments) == 0) {
-                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
             Object obj = PArguments.getArgument(arguments, 0);
             if (obj == PNone.NONE) {
-                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
 
             Object cls = getClassFromTarget(frame, target, hlib);
@@ -275,7 +276,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             if (cls instanceof PCell) {
                 cls = getGetRefNode().execute((PCell) cls);
                 if (cls == null) {
-                    throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+                    throw raise(PythonErrorType.RuntimeError, ErrorMessages.EMPTY_CLASS_CELL, "super()");
                 }
             }
             return cls != null ? cls : PNone.NONE;
@@ -292,7 +293,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         PNone initFallback(Object self, Object cls, Object obj) {
-            throw raise(PythonErrorType.RuntimeError, "super(): invalid arguments");
+            throw raise(PythonErrorType.RuntimeError, ErrorMessages.INVALID_ARGS, "super()");
         }
 
         private IsSubtypeNode getIsSubtype() {
@@ -371,7 +372,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                     // error is ignored
                 }
 
-                throw raise(PythonErrorType.TypeError, "super(type, obj): obj must be an instance or subtype of type");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE);
             }
         }
     }

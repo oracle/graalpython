@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -211,7 +212,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (SecurityException | IOException e) {
                 LOGGER.severe(() -> String.format("cannot load C extension '%s'", path));
                 logJavaException(e);
-                throw raise(ImportError, "cannot load %s: %m", path, e);
+                throw raise(ImportError, ErrorMessages.CANNOT_LOAD_M, path, e);
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
             }
@@ -219,7 +220,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, "PyInit_" + basename);
             } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-                throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
+                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "PyInit_", basename, path);
             }
             try {
                 Object nativeResult = interop.execute(pyinitFunc);
@@ -239,7 +240,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 e.printStackTrace();
-                throw raise(ImportError, "cannot initialize %s with PyInit_%s", path, basename);
+                throw raise(ImportError, ErrorMessages.CANNOT_INITIALIZE_WITH, "PyInit_", path, basename);
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
             }
@@ -343,9 +344,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
             Object[] args = new Object[]{path, sb.toString()};
             if (pythonCause != null) {
-                throw raise(ImportError, pythonCause, "cannot load %s: %s", args);
+                throw raise(ImportError, pythonCause, ErrorMessages.CANNOT_LOAD, args);
             } else {
-                throw raise(ImportError, "cannot load %s: %s", args);
+                throw raise(ImportError, ErrorMessages.CANNOT_LOAD, args);
             }
         }
     }

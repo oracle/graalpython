@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -249,7 +250,7 @@ public abstract class HashingStorage {
                     len = seqLenNode.execute(element);
 
                     if (lengthTwoProfile.profile(len != 2)) {
-                        throw raise.raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", arrayListSize(elements), len);
+                        throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, arrayListSize(elements), len);
                     }
 
                     // really check for Java String since PString can be subclassed
@@ -259,7 +260,7 @@ public abstract class HashingStorage {
                 }
             } catch (PException e) {
                 if (isTypeErrorProfile.profileException(e, TypeError)) {
-                    throw raise.raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", arrayListSize(elements));
+                    throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, arrayListSize(elements));
                 } else {
                     e.expectStopIteration(errorProfile);
                 }
@@ -453,7 +454,7 @@ public abstract class HashingStorage {
             }
             Object selfValue = lib.getItem(self, key);
             if (selfValue == null) {
-                throw raise.raise(PythonBuiltinClassType.RuntimeError, "dictionary changed during comparison operation");
+                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.DICT_CHANGED_DURING_COMPARISON);
             }
             if (hashLib.equals(selfValue, otherValue, hashLib)) {
                 return accumulator;

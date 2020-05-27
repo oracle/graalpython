@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -140,7 +141,7 @@ public class TupleBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raise(PythonErrorType.ValueError, "tuple.index(x): x not in tuple");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
 
         @Specialization
@@ -508,7 +509,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, "can only concatenate tuple (not \"%p\") to tuple", right);
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
         }
     }
 

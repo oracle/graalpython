@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -223,7 +224,7 @@ public final class PInt extends PythonBuiltinObject {
         try {
             return castToJavaIntNode.execute(this);
         } catch (PException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 
@@ -242,7 +243,7 @@ public final class PInt extends PythonBuiltinObject {
         if (hasIndexFunc.profile(lib.canBeIndex(this))) {
             return castToDouble.execute(lib.asIndex(this));
         }
-        throw raise.raise(TypeError, "must be real number, not %p", this);
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
     }
 
     @SuppressWarnings("static-method")

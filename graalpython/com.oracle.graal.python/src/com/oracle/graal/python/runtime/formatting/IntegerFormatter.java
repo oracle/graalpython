@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.runtime.formatting;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
@@ -234,7 +235,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         // Limit is 256 if we're formatting for byte output, unicode range otherwise.
         BigInteger limit = bytes ? LIMIT_BYTE : LIMIT_UNICODE;
         if (value.signum() < 0 || value.compareTo(limit) >= 0) {
-            throw errors.raise(OverflowError, "%c arg not in range(0x%s)", toHexString(limit));
+            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(limit));
         } else {
             result.appendCodePoint(value.intValue());
         }
@@ -417,7 +418,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         // Limit is 256 if we're formatting for byte output, unicode range otherwise.
         int limit = bytes ? 256 : LIMIT_UNICODE.intValue() + 1;
         if (value < 0 || value >= limit) {
-            throw errors.raise(OverflowError, "%c arg not in range(0x%x)", limit);
+            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, limit);
         } else {
             result.appendCodePoint(value);
         }
@@ -644,12 +645,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         @Override
         void format_c(BigInteger value) {
             if (value.signum() < 0) {
-                throw errors.raise(OverflowError, "unsigned byte integer is less than minimum");
+                throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_LESS_THAN_MIN);
             } else {
                 // Limit is 256 if we're formatting for byte output, unicode range otherwise.
                 BigInteger limit = bytes ? LIMIT_BYTE : LIMIT_UNICODE;
                 if (value.compareTo(limit) >= 0) {
-                    throw errors.raise(OverflowError, "unsigned byte integer is greater than maximum");
+                    throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_GREATER_THAN_MAX);
                 } else {
                     result.appendCodePoint(value.intValue());
                 }
@@ -687,12 +688,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         @Override
         void format_c(int value) {
             if (value < 0) {
-                throw errors.raise(OverflowError, "unsigned byte integer is less than minimum");
+                throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_LESS_THAN_MIN);
             } else {
                 // Limit is 256 if we're formatting for byte output, unicode range otherwise.
                 int limit = bytes ? 256 : LIMIT_UNICODE.intValue() + 1;
                 if (value >= limit) {
-                    throw errors.raise(OverflowError, "unsigned byte integer is greater than maximum");
+                    throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_GREATER_THAN_MAX);
                 } else {
                     result.appendCodePoint(value);
                 }

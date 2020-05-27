@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefN
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -97,7 +98,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, "descriptor '__eq__' requires a 'cell' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__eq__", "cell", self);
         }
     }
 
@@ -118,7 +119,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, "descriptor '__neq__' requires a 'cell' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__neq__", "cell", self);
         }
     }
 
@@ -144,7 +145,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, "descriptor '__repr__' requires a 'cell' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__repr__", "cell", self);
         }
     }
 
@@ -156,7 +157,7 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached("create()") GetRefNode getRef) {
             Object ref = getRef.execute(self);
             if (ref == null) {
-                throw raise(ValueError, "Cell is empty");
+                throw raise(ValueError, ErrorMessages.IS_EMPTY, "Cell");
             }
             return ref;
         }

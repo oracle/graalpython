@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -230,7 +231,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doGeneric(Object self, @SuppressWarnings("unused") Object idx) {
-            throw raise(PythonErrorType.TypeError, "descriptor '__getitem__' requires a 'array.array' object but received a '%p'", self);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__getitem__", "array.array", self);
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItem() {
@@ -251,7 +252,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doGeneric(Object self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, "descriptor '__setitem__' requires a 'array.array' object but received a '%p'", self);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__setitem__", "array.array", self);
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {

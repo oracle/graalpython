@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -272,7 +273,7 @@ final class DefaultPythonLongExports {
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
             // we need to convert the TypeError to an OverflowError
-            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 

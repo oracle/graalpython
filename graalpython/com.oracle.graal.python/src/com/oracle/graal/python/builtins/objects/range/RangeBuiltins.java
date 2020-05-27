@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -270,7 +271,7 @@ public class RangeBuiltins extends PythonBuiltins {
                     return normalized / self.getStep();
                 }
             }
-            throw raise(ValueError, "%d is not in range", elem);
+            throw raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
@@ -284,7 +285,7 @@ public class RangeBuiltins extends PythonBuiltins {
                     return doInt(self, lib.asSize(elem));
                 }
             } catch (PException e) {
-                throw raise(ValueError, "%s is not in range", elem);
+                throw raise(ValueError, ErrorMessages.IS_NOT_IN_RANGE, elem);
             }
         }
     }

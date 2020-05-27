@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.Bin
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -216,7 +217,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doAnd(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for &: '%p' and '%p'", self, other);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "&", self, other);
         }
     }
 
@@ -278,7 +279,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doOr(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for |: '%p' and '%p'", self, other);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "|", self, other);
         }
     }
 
@@ -340,7 +341,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doOr(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for ^: '%p' and '%p'", self, other);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "^", self, other);
         }
     }
 
@@ -366,7 +367,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doSub(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for -: %p and %p", self, other);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "-", self, other);
         }
     }
 
@@ -645,7 +646,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            throw raise(PythonErrorType.TypeError, "unorderable types: %p < %p", self, other);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.UNOPERABLE_TYPES_P_P, self, other);
         }
     }
 
@@ -687,7 +688,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            throw raise(PythonErrorType.TypeError, "unorderable types: %p > %p", self, other);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.UNOPERABLE_TYPES_P_P, self, other);
         }
     }
 

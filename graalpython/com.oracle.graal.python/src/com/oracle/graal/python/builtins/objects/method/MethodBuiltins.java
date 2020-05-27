@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
@@ -181,7 +182,7 @@ public class MethodBuiltins extends PythonBuiltins {
         Object doGeneric(@SuppressWarnings("unused") Object obj) {
             // TODO we should not override '__reduce__' but properly distinguish between heap/non
             // heap types
-            throw raise(TypeError, "can't pickle function objects");
+            throw raise(TypeError, ErrorMessages.CANT_PICKLE_FUNC_OBJS);
         }
     }
 

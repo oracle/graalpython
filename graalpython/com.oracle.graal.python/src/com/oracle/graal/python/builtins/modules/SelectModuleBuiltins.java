@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -143,7 +144,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             }
 
             if (timeoutMillis < 0) {
-                throw raise(PythonBuiltinClassType.ValueError, "timeout must be non-negative");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
             }
 
             try {

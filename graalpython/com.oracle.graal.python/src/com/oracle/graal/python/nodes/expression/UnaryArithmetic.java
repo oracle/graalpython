@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.util.Supplier;
@@ -68,7 +69,7 @@ public enum UnaryArithmetic {
 
             @Override
             public Object execute(Object receiver) {
-                throw raiseNode.raise(TypeError, "bad operand type for unary %s: '%p'", operator, receiver);
+                throw raiseNode.raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary ", operator, receiver);
             }
         };
     }

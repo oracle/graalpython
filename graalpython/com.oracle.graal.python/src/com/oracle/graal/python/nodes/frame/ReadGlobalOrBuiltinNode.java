@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -222,7 +223,7 @@ abstract class ReadBuiltinNode extends Node {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
-            throw raiseNode.raise(NameError, "name '%s' is not defined", attributeId);
+            throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
         }
     }
 

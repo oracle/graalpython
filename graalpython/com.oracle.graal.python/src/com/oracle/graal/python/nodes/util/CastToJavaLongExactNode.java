@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.util;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -68,7 +69,7 @@ public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
             return x.longValueExact();
         } catch (ArithmeticException e) {
             CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as long (type %p)", x, x);
+            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_BE_INTEPRETED_AS_LONG, x, x);
         }
     }
 }

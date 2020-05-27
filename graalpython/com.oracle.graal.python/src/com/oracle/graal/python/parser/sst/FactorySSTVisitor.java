@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.NoValueNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
@@ -273,7 +274,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         checkCannotAssignTo(node.lhs);
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
         if (!(lhs instanceof ReadNode)) {
-            throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "illegal expression for augmented assignment");
+            throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT);
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
         ExpressionNode binOp = nodeFactory.createInplaceOperation(node.operation, lhs, rhs);
@@ -659,7 +660,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 delTarget(blockList, targetValue);
             }
         } else {
-            throw errors.raiseInvalidSyntax(target.getSourceSection().getSource(), target.getSourceSection(), "can't delete '%s'", target.getSourceSection().getCharacters());
+            throw errors.raiseInvalidSyntax(target.getSourceSection().getSource(), target.getSourceSection(), ErrorMessages.CANT_DELETE, target.getSourceSection().getCharacters());
         }
     }
 
@@ -709,7 +710,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             target = targets[0];
             if (!(target instanceof ReadNode || target instanceof TupleLiteralNode || target instanceof ListLiteralNode)) {
                 if (target instanceof StarredExpressionNode) {
-                    throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "starred assignment target must be in a list or tuple");
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE);
                 } else {
                     // TODO handle this???
                     // String text = ctx.getText();
@@ -717,7 +718,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                     // throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\"
                     // found", text);
                     // }
-                    throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "Cannot assign to %s", target);
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.CANNOT_ASSIGN_TO, target);
                 }
             }
         } else {
@@ -895,7 +896,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         if (node.asNames == null) {
             // star import
             if (!scopeEnvironment.atModuleLevel()) {
-                throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "import * only allowed at module level");
+                throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.IMPORT_START_ONLY_ALLOWED_AT_MODULE_LEVEL);
             }
             result = nodeFactory.createImportStar(from, level);
         } else {
@@ -1090,7 +1091,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(ReturnSSTNode node) {
         if (!scopeEnvironment.isInFunctionScope()) {
-            errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "'return' outside function");
+            errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.RETURN_OUTSIDE_FUNC);
         }
         StatementNode result;
         if (node.value != null) {
@@ -1215,9 +1216,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode result = (PNode) scopeEnvironment.findVariable(node.name);
         if (result == null) {
             if (scopeEnvironment.isNonlocal(node.name)) {
-                throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "no binding for nonlocal variable \"%s\" found", node.name);
+                throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.NO_BINDING_FOR_NON_LOCAL, node.name);
             }
-            throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "Cannot assign to %s", node.name);
+            throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.CANNOT_ASSIGN_TO, node.name);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         // scopeEnvironment.setCurrentScope(oldScope);
@@ -1309,24 +1310,24 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
         if (lhs instanceof ObjectLiteralNode) {
             if (((ObjectLiteralNode) lhs).getObject() == PEllipsis.INSTANCE) {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to Ellipsis");
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "Ellipsis");
             } else {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to None");
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "None");
             }
         } else if (lhs instanceof BooleanLiteralNode) {
             if ((boolean) ((BooleanLiteralNode) lhs).getValue()) {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to True");
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "True");
             } else {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to False");
+                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "False");
             }
         } else if (lhs instanceof SimpleLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to literal");
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "literal");
         } else if (lhs instanceof DictLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to dict display");
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "dict display");
         } else if (lhs instanceof SetLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to set display");
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "set display");
         } else if (lhs instanceof FormatStringLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), "cannot assign to f-string expression");
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "f-string expression");
         } else if (lhs instanceof TupleLiteralNode) {
             return createDestructuringAssignment(((TupleLiteralNode) lhs).getValues(), rhs);
         } else if (lhs instanceof ListLiteralNode) {
@@ -1349,7 +1350,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                     if (section == null) {
                         section = ((StarredExpressionNode) leftHandSides[i]).getValue().getSourceSection();
                     }
-                    throw errors.raiseInvalidSyntax(source, section, "two starred expressions in assignment");
+                    throw errors.raiseInvalidSyntax(source, section, ErrorMessages.STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE);
                 }
                 starredIndex = i;
                 statements[i] = createAssignment(((StarredExpressionNode) leftHandSides[i]).getValue(), (ExpressionNode) tempRead);
