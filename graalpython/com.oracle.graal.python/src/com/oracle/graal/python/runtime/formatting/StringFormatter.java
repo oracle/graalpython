@@ -17,6 +17,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.util.BiFunction;
 
+import java.math.BigInteger;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -393,10 +395,10 @@ public class StringFormatter {
                         fi.format((Integer) argAsNumber);
                     } else if (argAsNumber instanceof Long) {
                         f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                        fi.format(((Long) argAsNumber).intValue());
+                        fi.format((BigInteger.valueOf((Long) argAsNumber)));
                     } else if (argAsNumber instanceof PInt) {
                         f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                        fi.format(((PInt) argAsNumber).intValue());
+                        fi.format(((PInt) argAsNumber).getValue());
                     } else if (arg instanceof String && ((String) arg).length() == 1) {
                         f = ft = new TextFormatter(core, buffer, spec);
                         ft.format((String) arg);
