@@ -247,6 +247,37 @@ final class DefaultPythonIntegerExports {
         return x;
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Integer receiver) {
+        return receiver.doubleValue();
+    }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static long asJavaLong(Integer receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static int asPInt(Integer receiver) {
+        return receiver;
+    }
+
     @ExportMessage
     public static Object lookupAttribute(Integer x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {

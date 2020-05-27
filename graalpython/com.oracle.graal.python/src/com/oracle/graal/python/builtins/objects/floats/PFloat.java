@@ -28,9 +28,12 @@ package com.oracle.graal.python.builtins.objects.floats;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -40,6 +43,7 @@ import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
     protected final double value;
@@ -177,5 +181,17 @@ public class PFloat extends PythonBuiltinObject {
     @ExportMessage
     boolean isHashable() {
         return true;
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean canBeJavaDouble() {
+        return true;
+    }
+
+    @ExportMessage
+    public double asJavaDouble(
+                    @Cached CastToJavaDoubleNode cast) {
+        return cast.execute(this);
     }
 }

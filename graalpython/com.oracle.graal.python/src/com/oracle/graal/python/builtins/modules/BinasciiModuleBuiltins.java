@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -226,7 +225,6 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class B2aBase64Node extends PythonBinaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArray;
-        @Child private CoerceToIntegerNode castToIntNode;
         @Child private B2aBase64Node recursiveNode;
 
         private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
@@ -235,16 +233,6 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
                 toByteArray = insert(ToByteArrayNodeGen.create());
             }
             return toByteArray;
-        }
-
-        private CoerceToIntegerNode getCastToIntNode() {
-            if (castToIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
-            }
-            return castToIntNode;
         }
 
         private B2aBase64Node getRecursiveNode() {
@@ -279,14 +267,16 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
         }
 
-        @Specialization
-        PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, Object newline) {
-            return (PBytes) getRecursiveNode().execute(frame, data, getCastToIntNode().execute(newline));
+        @Specialization(limit = "1")
+        PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, Object newline,
+                        @CachedLibrary("newline") PythonObjectLibrary lib) {
+            return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }
 
         @Specialization(guards = "isNoValue(newline)")
-        PBytes b2aArray(VirtualFrame frame, PArray data, @SuppressWarnings("unused") PNone newline) {
-            return b2aArray(frame, data, 1);
+        PBytes b2aArray(VirtualFrame frame, PArray data, @SuppressWarnings("unused") PNone newline,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            return b2aArray(frame, data, 1, lib);
         }
 
         @Specialization
@@ -299,9 +289,10 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
         }
 
-        @Specialization
-        PBytes b2aArray(VirtualFrame frame, PArray data, Object newline) {
-            return (PBytes) getRecursiveNode().execute(frame, data, getCastToIntNode().execute(newline));
+        @Specialization(limit = "1")
+        PBytes b2aArray(VirtualFrame frame, PArray data, Object newline,
+                        @CachedLibrary("newline") PythonObjectLibrary lib) {
+            return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }
 
         @Specialization(guards = "isNoValue(newline)")
@@ -329,14 +320,22 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return b2aMemory(frame, data, newline.isZero() ? 0 : 1, toBytesNode, isBytesProfile);
         }
 
-        @Specialization
-        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, Object newline) {
-            return (PBytes) getRecursiveNode().execute(frame, data, getCastToIntNode().execute(newline));
+        @Specialization(limit = "1")
+        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, Object newline,
+                        @CachedLibrary("newline") PythonObjectLibrary lib) {
+            return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }
 
         @Fallback
         PBytes b2sGeneral(Object data, @SuppressWarnings("unused") Object newline) {
             throw raise(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'", data);
+        }
+
+        private Object asPInt(Object obj, PythonObjectLibrary lib) {
+            if (lib.canBePInt(obj)) {
+                return lib.asPInt(obj);
+            }
+            throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", obj);
         }
     }
 

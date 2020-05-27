@@ -63,9 +63,9 @@ public class EmptyStorage extends HashingStorage {
         return 0;
     }
 
-    @ExportMessage
+    @ExportMessage(limit = "1")
     public Object getItemWithState(Object key, ThreadState state,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("key") PythonObjectLibrary lib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
         // must call __hash__ for potential side-effect
         getHashWithState(key, lib, state, gotState);
@@ -90,9 +90,9 @@ public class EmptyStorage extends HashingStorage {
         return newStore;
     }
 
-    @ExportMessage
+    @ExportMessage(limit = "1")
     public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("key") PythonObjectLibrary lib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
         // must call __hash__ for potential side-effect
         getHashWithState(key, lib, state, gotState);

@@ -46,7 +46,7 @@ import java.nio.channels.SeekableByteChannel;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -90,13 +90,13 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     int getBufferLength(
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode) {
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode) {
         return castToIntNode.execute(length);
     }
 
     @ExportMessage
     byte[] getBufferBytes(
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @Cached ReadFromChannelNode readNode) {
 
         try {

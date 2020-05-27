@@ -53,7 +53,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -356,19 +357,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StrfTimeNode extends PythonBuiltinNode {
         private static final int IMPOSSIBLE = -2;
-        @Child private CoerceToIntegerNode castIntNode;
 
         @CompilationFinal private ConditionProfile outOfRangeProfile;
-
-        private CoerceToIntegerNode getCastIntNode() {
-            if (castIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
-            }
-            return castIntNode;
-        }
 
         private ConditionProfile getOutOfRangeProfile() {
             if (outOfRangeProfile == null) {
@@ -378,16 +368,21 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return outOfRangeProfile;
         }
 
-        private int getIntValue(Object oValue, int min, int max, String errorMessage) {
-            Object iValue = getCastIntNode().execute(oValue);
-            long value = IMPOSSIBLE;
-            if (iValue instanceof Long) {
-                value = (long) iValue;
-            } else if (iValue instanceof Integer) {
-                value = (int) iValue;
-            } else if (iValue instanceof PInt) {
-                value = ((PInt) iValue).longValueExact();
+        private Object castToPInt(Object obj, PythonObjectLibrary asPIntLib) {
+            if (asPIntLib.canBePInt(obj)) {
+                return asPIntLib.asPInt(obj);
             }
+            throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", obj);
+        }
+
+        private int getIntValue(Object oValue, int min, int max, String errorMessage, CastToJavaIntExactNode toJavaIntExact) {
+            long value;
+            try {
+                value = toJavaIntExact.execute(oValue);
+            } catch (CannotCastException e) {
+                value = IMPOSSIBLE;
+            }
+
             if (getOutOfRangeProfile().profile(min > value || value > max)) {
                 throw raise(PythonBuiltinClassType.ValueError, errorMessage);
             }
@@ -416,36 +411,36 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return padInt(i, 2, '0');
         }
 
-        public int[] checkStructtime(PTuple time) {
+        private int[] checkStructtime(PTuple time, PythonObjectLibrary asPIntLib, CastToJavaIntExactNode toJavaIntExact) {
             CompilerAsserts.neverPartOfCompilation();
             Object[] date = GetObjectArrayNodeGen.getUncached().execute(time);
             if (date.length < 9) {
                 throw raise(PythonBuiltinClassType.TypeError, "function takes at least 9 arguments (%d given)", date.length);
             }
-            int year = getIntValue(getCastIntNode().execute(date[0]), Integer.MIN_VALUE, Integer.MAX_VALUE, "year");
-            int mon = getIntValue(getCastIntNode().execute(date[1]), 0, 12, "month out of range");
+            int year = getIntValue(castToPInt(date[0], asPIntLib), Integer.MIN_VALUE, Integer.MAX_VALUE, "year", toJavaIntExact);
+            int mon = getIntValue(castToPInt(date[1], asPIntLib), 0, 12, "month out of range", toJavaIntExact);
             if (mon == 0) {
                 mon = 1;
             }
-            int day = getIntValue(getCastIntNode().execute(date[2]), 0, 31, "day of month out of range");
+            int day = getIntValue(castToPInt(date[2], asPIntLib), 0, 31, "day of month out of range", toJavaIntExact);
             if (day == 0) {
                 day = 1;
             }
-            int hour = getIntValue(getCastIntNode().execute(date[3]), 0, 23, "hour out of range");
-            int min = getIntValue(getCastIntNode().execute(date[4]), 0, 59, "minute out of range");
-            int sec = getIntValue(getCastIntNode().execute(date[5]), 0, 61, "seconds out of range");
-            int wday = getIntValue(getCastIntNode().execute(date[6]), -1, Integer.MAX_VALUE,
-                            "1 when daylight savings time is in effect, and 0 when it is not. A value of -1 indicates that this is not known");
+            int hour = getIntValue(castToPInt(date[3], asPIntLib), 0, 23, "hour out of range", toJavaIntExact);
+            int min = getIntValue(castToPInt(date[4], asPIntLib), 0, 59, "minute out of range", toJavaIntExact);
+            int sec = getIntValue(castToPInt(date[5], asPIntLib), 0, 61, "seconds out of range", toJavaIntExact);
+            int wday = getIntValue(castToPInt(date[6], asPIntLib), -1, Integer.MAX_VALUE,
+                            "1 when daylight savings time is in effect, and 0 when it is not. A value of -1 indicates that this is not known", toJavaIntExact);
             if (wday == -1) {
                 wday = 6;
             } else if (wday > 6) {
                 wday = wday % 7;
             }
-            int yday = getIntValue(getCastIntNode().execute(date[7]), 0, 366, "day of year out of range");
+            int yday = getIntValue(castToPInt(date[7], asPIntLib), 0, 366, "day of year out of range", toJavaIntExact);
             if (yday == 0) {
                 yday = 1;
             }
-            int isdst = getIntValue(getCastIntNode().execute(date[7]), Integer.MIN_VALUE, Integer.MAX_VALUE, "daylight savings time out of range");
+            int isdst = getIntValue(castToPInt(date[7], asPIntLib), Integer.MIN_VALUE, Integer.MAX_VALUE, "daylight savings time out of range", toJavaIntExact);
             return new int[]{year, mon, day, hour, min, sec, wday, yday, isdst};
         }
 
@@ -494,9 +489,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // This taken from JPython + some switches were corrected to provide the
         // same result as CPython
         @TruffleBoundary
-        private String format(String format, PTuple date) {
+        private String format(String format, PTuple date, PythonObjectLibrary asPIntLib, CastToJavaIntExactNode toJavaIntExact) {
 
-            int[] items = checkStructtime(date);
+            int[] items = checkStructtime(date, asPIntLib, toJavaIntExact);
 
             String s = "";
             int lastc = 0;
@@ -689,13 +684,17 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String formatTime(String format, @SuppressWarnings("unused") PNone time) {
-            return format(format, factory().createTuple(getTimeStruct(timeSeconds(), true)));
+        public String formatTime(String format, @SuppressWarnings("unused") PNone time,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached CastToJavaIntExactNode castToInt) {
+            return format(format, factory().createTuple(getTimeStruct(timeSeconds(), true)), lib, castToInt);
         }
 
         @Specialization
-        public String formatTime(String format, PTuple time) {
-            return format(format, time);
+        public String formatTime(String format, PTuple time,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached CastToJavaIntExactNode castToInt) {
+            return format(format, time, lib, castToInt);
         }
 
         @Specialization

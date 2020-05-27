@@ -63,7 +63,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -216,7 +215,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToJavaLongNode) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary libItem) {
             PIBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
@@ -232,7 +231,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                 if (i + j < len) {
                     long shift = Byte.SIZE * j;
                     long mask = 0xFFL << shift;
-                    result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + j)) << shift) & mask;
+                    result |= (libItem.asJavaLong(getItemNode.execute(store, i + j)) << shift) & mask;
                 }
             }
             return result;
@@ -243,7 +242,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         static long doPMmapI64(PMMap mmap, long byteIdx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
                         @Exclusive @Cached CallNode callGetItemNode,
-                        @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToJavaLongNode) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary libItem) {
 
             long len = mmap.getLength();
             Object attrGetItem = lookupGetItemNode.execute(mmap, SpecialMethodNames.__GETITEM__);
@@ -254,7 +253,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                 if (i + j < len) {
                     long shift = Byte.SIZE * j;
                     long mask = 0xFFL << shift;
-                    result |= (castToJavaLongNode.execute(callGetItemNode.execute(attrGetItem, mmap, byteIdx)) << shift) & mask;
+                    result |= (libItem.asJavaLong(callGetItemNode.execute(attrGetItem, mmap, byteIdx)) << shift) & mask;
                 }
             }
             return result;

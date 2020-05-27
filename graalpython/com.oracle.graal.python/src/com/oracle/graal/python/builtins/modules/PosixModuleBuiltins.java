@@ -124,10 +124,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -881,7 +879,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "dupInt")
         int dupGeneric(Object fd,
-                        @Cached CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
             return getResources().dup(castToJavaIntNode.execute(fd));
         }
     }
@@ -1030,14 +1028,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
                         @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached CoerceToJavaLongNode castFdNode,
-                        @Cached CoerceToJavaLongNode castPosNode,
-                        @Cached CastToJavaIntNode castHowNode) {
+                        @CachedLibrary("fd") PythonObjectLibrary libFd,
+                        @CachedLibrary("pos") PythonObjectLibrary libPos,
+                        @Cached CastToJavaIntExactNode castHowNode) {
 
-            return lseek(frame, castFdNode.execute(fd), castPosNode.execute(pos), castHowNode.execute(how), channelClassProfile);
+            return lseek(frame, libFd.asJavaLong(fd), libPos.asJavaLong(pos), castHowNode.execute(how), channelClassProfile);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1235,21 +1233,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(array);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CoerceToJavaLongNode castToLongNode) {
-            return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize) {
+            return readLong(frame, fd, libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CoerceToJavaLongNode castToLongNode,
-                        @Cached CastToJavaIntNode castToIntNode) {
-            return readLong(frame, castToIntNode.execute(fd), castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize,
+                        @Cached CastToJavaIntExactNode castToIntNode) {
+            return readLong(frame, castToIntNode.execute(fd), libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
     }
 
@@ -1794,20 +1792,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
 
-        @Child private CoerceToIntegerNode castIntNode;
+        @Child private PythonObjectLibrary asPIntLib;
         @Child private GetTerminalSizeNode recursiveNode;
 
         @CompilationFinal private ConditionProfile errorProfile;
         @CompilationFinal private ConditionProfile overflowProfile;
 
-        private CoerceToIntegerNode getCastIntNode() {
-            if (castIntNode == null) {
+        private PythonObjectLibrary getAsPIntLibrary() {
+            if (asPIntLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
+                asPIntLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
             }
-            return castIntNode;
+            return asPIntLib;
         }
 
         private ConditionProfile getErrorProfile() {
@@ -1877,7 +1873,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object getTerminalSize(VirtualFrame frame, Object fd) {
-            Object value = getCastIntNode().execute(fd);
+            PythonObjectLibrary lib = getAsPIntLibrary();
+            if (!lib.canBePInt(fd)) {
+                throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", fd);
+            }
+            Object value = lib.asPInt(fd);
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = create();

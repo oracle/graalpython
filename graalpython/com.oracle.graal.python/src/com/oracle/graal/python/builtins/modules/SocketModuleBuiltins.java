@@ -78,7 +78,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -233,32 +233,52 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "!isNoValue(fileno)"})
         Object socket(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
-                        @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
+                        @Cached CastToJavaIntExactNode cast) {
+            try {
+                return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", fileno);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
+                        @Cached CastToJavaIntExactNode cast) {
+            try {
+                return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
+                        @Cached CastToJavaIntExactNode cast) {
+            try {
+                return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
+                        @Cached CastToJavaIntExactNode cast) {
+            try {
+                return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "!isNoValue(fileno)"})
         Object socket(VirtualFrame frame, LazyPythonClass cls, Object family, Object type, Object proto, Object fileno,
-                        @Cached CastToJavaIntNode cast) {
-            return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
+                        @Cached CastToJavaIntExactNode cast) {
+            try {
+                return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "an integer is required (got type %p)", family);
+            }
         }
 
         private Object createSocketInternal(LazyPythonClass cls, int family, int type, int proto) {
@@ -470,11 +490,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class GetNameInfoNode extends PythonBuiltinNode {
         @Specialization
         Object getNameInfo(VirtualFrame frame, PTuple sockaddr, Object flagArg,
-                        @Cached CastToJavaIntNode castFlags,
+                        @Cached CastToJavaIntExactNode castFlags,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached CastToJavaStringNode castAddress,
-                        @Cached CastToJavaIntNode castPort) {
+                        @Cached CastToJavaIntExactNode castPort) {
             int flags = castFlags.execute(flagArg);
             SequenceStorage addr = sockaddr.getSequenceStorage();
             int addLen = lenNode.execute(addr);
@@ -528,19 +548,19 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getAddrInfoPString(PString host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToJavaIntNode cast) {
+                        @Cached CastToJavaIntExactNode cast) {
             return getAddrInfoString(host.getValue(), port, family, type, proto, flags, cast);
         }
 
         @Specialization
         Object getAddrInfoNone(@SuppressWarnings("unused") PNone host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToJavaIntNode cast) {
+                        @Cached CastToJavaIntExactNode cast) {
             return getAddrInfoString("localhost", port, family, type, proto, flags, cast);
         }
 
         @Specialization
         Object getAddrInfoString(String host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToJavaIntNode cast) {
+                        @Cached CastToJavaIntExactNode cast) {
             InetAddress[] addresses;
             try {
                 addresses = getAllByName(host);
@@ -766,7 +786,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class InetPtoNNode extends PythonBinaryBuiltinNode {
         @Specialization
         PBytes doConvert(@SuppressWarnings("unused") VirtualFrame frame, Object addrFamily, String addr,
-                        @Cached CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
             return factory().createBytes(aton(castToJavaIntNode.execute(addrFamily), addr));
         }
 

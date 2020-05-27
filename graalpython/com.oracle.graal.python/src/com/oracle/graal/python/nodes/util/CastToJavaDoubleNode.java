@@ -40,50 +40,46 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
+/**
+ * Casts a Python "number" to a Java double without coercion. <b>ATTENTION:</b> If the cast fails,
+ * because the object is not a Python float, the node will throw a {@link CannotCastException}.
+ */
+@GenerateUncached
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CoerceToDoubleNode extends PNodeWithContext {
-    @Child private LookupAndCallUnaryNode callFloatNode;
-    @Child private LookupAndCallUnaryNode callIndexNode;
+public abstract class CastToJavaDoubleNode extends PNodeWithContext {
 
-    private final Function<Object, Double> typeErrorHandler;
+    public abstract double execute(Object x);
 
-    public CoerceToDoubleNode(Function<Object, Double> typeErrorHandler) {
-        this.typeErrorHandler = typeErrorHandler;
-    }
-
-    public abstract double execute(VirtualFrame frame, Object x);
-
-    public static CoerceToDoubleNode create() {
-        return CoerceToDoubleNodeGen.create(null);
-    }
-
-    public static CoerceToDoubleNode create(Function<Object, Double> trypeErrorHandler) {
-        return CoerceToDoubleNodeGen.create(trypeErrorHandler);
+    public static CastToJavaDoubleNode create() {
+        return CastToJavaDoubleNodeGen.create();
     }
 
     @Specialization
     public double toDouble(long x) {
+        return x;
+    }
+
+    @Specialization
+    public double toDouble(double x) {
         return x;
     }
 
@@ -98,49 +94,23 @@ public abstract class CoerceToDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    public double toDouble(double x) {
-        return x;
+    static double doNativeObject(PythonNativeObject x,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PFloat)) {
+            CompilerDirectives.transferToInterpreter();
+            throw new RuntimeException("casting a native float object to a Java double is not implemented yet");
+        }
+        // the object's type is not a subclass of 'float'
+        throw CannotCastException.INSTANCE;
     }
 
     @Specialization(guards = "!isNumber(x)")
-    public double toDouble(VirtualFrame frame, Object x,
-                    @Cached PRaiseNode raise) {
-        if (callFloatNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
-        }
-        Object result = callFloatNode.executeObject(frame, x);
-        if (result != PNone.NO_VALUE) {
-            if (result instanceof PFloat) {
-                return ((PFloat) result).getValue();
-            }
-            if (result instanceof Float || result instanceof Double) {
-                return (double) result;
-            }
-            throw raise.raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
-        }
+    static double doUnsupported(@SuppressWarnings("unused") Object x) {
+        throw CannotCastException.INSTANCE;
+    }
 
-        if (callIndexNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
-        }
-        result = callIndexNode.executeObject(frame, x);
-        if (result != PNone.NO_VALUE) {
-            if (result instanceof Integer) {
-                return ((Integer) result).doubleValue();
-            } else if (result instanceof Long) {
-                return ((Long) result).doubleValue();
-            } else if (result instanceof Boolean) {
-                return (Boolean) result ? 1.0 : 0.0;
-            } else if (result instanceof PInt) {
-                return toDouble((PInt) result, raise);
-            }
-            throw raise.raise(TypeError, " __index__ returned non-int (type %p)", result);
-        }
-        if (typeErrorHandler == null) {
-            throw raise.raise(TypeError, "must be real number, not %p", x);
-        } else {
-            return typeErrorHandler.apply(x);
-        }
+    public static CastToJavaDoubleNode getUncached() {
+        return CastToJavaDoubleNodeGen.getUncached();
     }
 }

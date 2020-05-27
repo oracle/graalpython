@@ -97,9 +97,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // read from the DynamicObject store
     @Specialization(guards = {
                     "!lib.hasDict(object) || isHiddenKey(key)"
-    })
+    }, limit = "1")
     protected Object readFromDynamicStorage(PythonObject object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
@@ -168,9 +168,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // read from a builtin dict
-    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib, isBuiltinDict, isBuiltinMappingproxy)"})
+    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib, isBuiltinDict, isBuiltinMappingproxy)"}, limit = "1")
     protected Object readFromBuiltinDict(PythonObject object, String key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
@@ -188,9 +188,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
-    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"})
+    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"}, limit = "1")
     protected Object readFromDict(PythonObject object, Object key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         Object value = hlib.getItem(getDictStorage.execute(lib.getDict(object)), key);

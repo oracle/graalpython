@@ -65,7 +65,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -283,7 +283,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
         static String doBytes(Object arr, Object elementSizeObj,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @CachedLibrary("arr") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {

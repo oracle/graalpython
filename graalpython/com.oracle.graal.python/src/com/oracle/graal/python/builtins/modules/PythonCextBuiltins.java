@@ -227,7 +227,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -2944,9 +2944,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_IsSequence extends PythonUnaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         boolean doGeneric(VirtualFrame frame, Object object,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
             Object state = IndirectCallContext.enter(frame, context, this);
@@ -3567,7 +3567,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static int doNativeWrapper(Object ptr, Object sizeObject,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {

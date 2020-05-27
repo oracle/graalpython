@@ -29,16 +29,21 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -47,6 +52,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
@@ -212,13 +218,54 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public int asFileDescriptor(
-                    @Cached PRaiseNode raiseNode,
-                    @Cached.Exclusive @Cached CastToJavaIntNode castToJavaIntNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
         try {
             return castToJavaIntNode.execute(this);
         } catch (PException e) {
             throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
         }
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean canBeJavaDouble() {
+        return true;
+    }
+
+    @ExportMessage
+    public double asJavaDouble(
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached CastToJavaDoubleNode castToDouble,
+                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
+                    @Exclusive @Cached PRaiseNode raise) {
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            return castToDouble.execute(lib.asIndex(this));
+        }
+        throw raise.raise(TypeError, "must be real number, not %p", this);
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean canBeJavaLong() {
+        return true;
+    }
+
+    @ExportMessage
+    public long asJavaLong(
+                    @Cached CastToJavaLongLossyNode castToLong) {
+        return castToLong.execute(this);
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean canBePInt() {
+        return true;
+    }
+
+    @ExportMessage
+    public PInt asPInt() {
+        return this;
     }
 
     @Override

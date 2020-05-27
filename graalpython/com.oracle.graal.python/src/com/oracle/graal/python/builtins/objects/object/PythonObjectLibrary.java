@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -574,6 +574,109 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Checks whether the receiver can be coerced to a Java double.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__index__</b>
+     * and <b>__float__</b> special methods. This is analogous to the checks made in
+     * {@code PyFloat_AsDouble} in {@code floatobject.c}
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a java double
+     */
+    @Abstract(ifExported = {"asJavaDoubleWithState", "asJavaDouble"})
+    public boolean canBeJavaDouble(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Java {@code double}. This method follows the
+     * semantics of CPython's function {@code PyFloat_AsDouble}.
+     */
+    public double asJavaDoubleWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asJavaDouble(receiver);
+    }
+
+    /**
+     * @see #asJavaDoubleWithState
+     */
+    public double asJavaDouble(Object receiver) {
+        return asJavaDoubleWithState(receiver, null);
+    }
+
+    /**
+     * Checks whether the receiver can be coerced to a Python int.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
+     * and <b>__index__</b> special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a Python int
+     */
+    @Abstract(ifExported = {"asPIntWithState", "asPInt"})
+    public boolean canBePInt(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Python {@code int}. This method follows the
+     * semantics of CPython's function {@code _PyLong_AsInt}.
+     */
+    public Object asPIntWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asPInt(receiver);
+    }
+
+    /**
+     * @see #asPIntWithState
+     */
+    public Object asPInt(Object receiver) {
+        return asPIntWithState(receiver, null);
+    }
+
+    /**
+     * Checks whether the receiver can be coerced to a Java long.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a java long
+     */
+    @Abstract(ifExported = {"asJavaLongWithState", "asJavaLong"})
+    public boolean canBeJavaLong(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Java {@code long}. This method follows the semantics
+     * of CPython's function {@code PyLong_AsLong}.
+     */
+    public long asJavaLongWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asJavaLong(receiver);
+    }
+
+    /**
+     * @see #asJavaLongWithState
+     */
+    public long asJavaLong(Object receiver) {
+        return asJavaLongWithState(receiver, null);
+    }
+
+    /**
      * Coerces the receiver into an index-sized integer, using the same mechanism as
      * {@code PyNumber_AsSsize_t}:
      * <ol>
@@ -588,7 +691,7 @@ public abstract class PythonObjectLibrary extends Library {
         if (threadState == null) {
             // this will very likely always raise an integer interpretation error in
             // asIndexWithState
-            long result = CastToJavaLongNode.getUncached().execute(asIndexWithState(receiver, null));
+            long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, null));
             int intResult = (int) result;
             if (intResult == result) {
                 return intResult;

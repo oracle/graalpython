@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
@@ -102,6 +104,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -121,8 +124,10 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -268,13 +273,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean hasArrayElements(
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
         return (dataModelLibrary.isSequence(this) || dataModelLibrary.isIterable(this)) && !dataModelLibrary.isMapping(this);
     }
 
     @ExportMessage
     public Object readArrayElement(long key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
@@ -315,7 +320,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void writeArrayElement(long key, Object value,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
@@ -332,7 +337,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void removeArrayElement(long key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
@@ -490,7 +495,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isExecutable(
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
         return dataModelLibrary.isCallable(this);
     }
 
@@ -781,7 +786,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached CastToJavaLongExactNode castToLong,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
         Object result;
@@ -845,8 +850,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex) {
-        return hasIndex.execute(this, __INDEX__);
+    public final boolean canBeIndex(@Shared("asIndexLookup") @Cached LookupInheritedAttributeNode.Dynamic lookupIndex) {
+        return lookupIndex.execute(this, __INDEX__) != PNone.NO_VALUE;
     }
 
     @ExportMessage
@@ -855,7 +860,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached IsSubtypeNode isSubtype,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @Shared("asIndexLookup") @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
@@ -942,7 +947,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached GetLazyClassNode getClassNode,
                     @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode,
+                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
 
         Object filenoFunc = lib.lookupAttribute(this, FILENO);
@@ -1006,12 +1011,49 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean canBePInt(@Shared("asPIntLookupAttr") @Cached LookupInheritedAttributeNode.Dynamic lookup) {
+        return lookup.execute(this, __INDEX__) != PNone.NO_VALUE || lookup.execute(this, __INT__) != PNone.NO_VALUE;
+    }
+
+    @ExportMessage
+    public Object asPIntWithState(ThreadState state,
+                    @Shared("asPIntLookupAttr") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
+                    @Exclusive @Cached() ConditionProfile hasIntFunc) {
+        Object result = PNone.NO_VALUE;
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            result = lib.asIndex(this);
+        }
+        if (result == PNone.NO_VALUE) {
+            Object func = lookup.execute(this, __INT__);
+            if (hasIntFunc.profile(func != PNone.NO_VALUE)) {
+                if (gotState.profile(state == null)) {
+                    result = callNode.executeObject(func, this);
+                } else {
+                    result = callNode.executeObject(PArguments.frameForCall(state), func, this);
+                }
+            }
+            if (result == PNone.NO_VALUE) {
+                throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", this);
+            }
+        }
+        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
+            throw raise.raise(TypeError, "__index__ returned non-int (type %p)", result);
+        }
+        return result;
+    }
+
+    @ExportMessage
     public int asSizeWithState(LazyPythonClass type, ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongNode castToLong) {
+                    @Exclusive @Cached CastToJavaLongLossyNode castToLong) {
         Object result = lib.asIndexWithState(this, state);
         long longResult;
         try {
@@ -1034,6 +1076,82 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return Integer.MAX_VALUE;
                 }
             }
+        }
+    }
+
+    @ExportMessage
+    public boolean canBeJavaDouble(@Shared("asJavaLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @CachedLibrary("this") PythonObjectLibrary lib) {
+        return lookup.execute(this, __FLOAT__) != PNone.NO_VALUE || lib.canBeIndex(this);
+    }
+
+    @ExportMessage
+    public double asJavaDoubleWithState(ThreadState state,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
+                    @Shared("asJavaLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @Exclusive @Cached CastToJavaDoubleNode castToDouble,
+                    @Exclusive @Cached() ConditionProfile hasFloatFunc,
+                    @Exclusive @Cached PRaiseNode raise) {
+
+        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
+
+        Object func = lookup.execute(this, __FLOAT__);
+        if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
+            Object result;
+            if (gotState.profile(state == null)) {
+                result = callNode.executeObject(func, this);
+            } else {
+                result = callNode.executeObject(PArguments.frameForCall(state), func, this);
+            }
+            if (result != PNone.NO_VALUE) {
+                try {
+                    return castToDouble.execute(result);
+                } catch (CannotCastException e) {
+                    throw raise.raise(TypeError, "%p.__float__ returned non-float (type %p)", this, result);
+                }
+            }
+        }
+
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            return castToDouble.execute(lib.asIndex(this));
+        }
+
+        throw raise.raise(TypeError, "must be real number, not %p", this);
+    }
+
+    @ExportMessage
+    public boolean canBeJavaLong(
+                    @Shared("asJavaLongLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup) {
+        return lookup.execute(this, __INT__) != PNone.NO_VALUE;
+    }
+
+    @ExportMessage
+    public long asJavaLongWithState(ThreadState state,
+                    @Shared("asJavaLongLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @Exclusive @Cached CastToJavaLongExactNode castToLong,
+                    @Exclusive @Cached PRaiseNode raise) {
+
+        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
+
+        Object func = lookup.execute(this, __INT__);
+        if (func == PNone.NO_VALUE) {
+            throw raise.raise(TypeError, "must be numeric, not %p", this);
+        }
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.executeObject(func, this);
+        } else {
+            result = callNode.executeObject(PArguments.frameForCall(state), func, this);
+        }
+        try {
+            return castToLong.execute(result);
+        } catch (CannotCastException e) {
+            throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", this, result);
         }
     }
 
@@ -1088,7 +1206,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public LocalDate asDate(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
@@ -1150,7 +1268,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public LocalTime asTime(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
@@ -1243,7 +1361,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public ZoneId asTimeZone(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {

@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -169,6 +170,39 @@ final class DefaultPythonDoubleExports {
                     @Cached.Exclusive @Cached PRaiseNode raise,
                     @Cached.Exclusive @Cached ConditionProfile gotState) {
         return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Double receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Double receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Double receiver) {
+        return false;
+    }
+
+    @ExportMessage
+    static long asJavaLong(Double receiver,
+                    @Exclusive @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "must be numeric, not %p", receiver);
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Double receiver) {
+        return false;
+    }
+
+    @ExportMessage
+    static int asPInt(Double receiver,
+                    @Exclusive @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", receiver);
     }
 
     @ExportMessage
