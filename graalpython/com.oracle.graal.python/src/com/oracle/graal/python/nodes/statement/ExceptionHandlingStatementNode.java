@@ -57,6 +57,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
@@ -195,7 +196,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
 
     protected PException wrapJavaExceptionIfApplicable(Throwable e) {
         if (e instanceof StackOverflowError) {
-            return createRecursionError(e);
+            return createRecursionError(e, factory(), this);
         }
         if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
             return wrapJavaException(e);
@@ -203,8 +204,8 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return null;
     }
 
-    private PException createRecursionError(Throwable e) {
-        PException pe = PException.fromObject(factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}), this);
+    public static PException createRecursionError(Throwable e, PythonObjectFactory factory, Node location) {
+        PException pe = PException.fromObject(factory.createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}), location);
         moveTruffleStackTrace(e, pe);
         return pe;
     }
