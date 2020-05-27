@@ -292,6 +292,17 @@ class BenchRunner(object):
                 else:
                     print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__,
                                                                       duration_str))
+                # a bit of fuzzy logic to avoid timing out on configurations
+                # that are slow, without having to rework our logic for getting
+                # default iterations
+                if os.environ.get("CI") and iteration >= 4 and duration > 20:
+                    import statistics
+                    v = durations[-4:]
+                    if statistics.stdev(v) / min(v) < 0.03:
+                        # with less than 3 percent variance across ~20s
+                        # iterations, we can safely stop here
+                        break
+
 
         print(_HRULE)
         print("### teardown ... ")
