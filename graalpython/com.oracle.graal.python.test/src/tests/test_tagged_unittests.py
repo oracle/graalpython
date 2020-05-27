@@ -208,6 +208,9 @@ if __name__ == "__main__":
                 break
 
             if p.returncode == 0:
+                if repeat == 0 and maxrepeats > 1:
+                    print(f"Suite succeeded with {len(passing_tests)} tests, retrying to confirm tags are correct")
+                    continue
                 print(f"Suite succeeded with {len(passing_tests)} tests")
                 break
             else:
