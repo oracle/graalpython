@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -565,7 +566,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private int readByte() {
-            return data[index++];
+            if (index < data.length) {
+                return data[index++];
+            } else {
+                throw raise(EOFError, "EOF read where not expected");
+            }
         }
 
         private int readInt() {
