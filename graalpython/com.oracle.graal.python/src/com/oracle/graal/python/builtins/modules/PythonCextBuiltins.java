@@ -71,8 +71,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.IntNodeFactory;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
@@ -243,6 +243,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1185,12 +1186,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return obj.intValueExact();
                 } else if (obj.bitCount() <= 32) {
                     return obj.intValue();
-                } else {
-                    throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseTooLarge(frame, targetTypeSize);
+                // fall through
             }
+            return raiseTooLarge(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
@@ -1200,12 +1200,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return obj.longValueExact();
                 } else if (obj.bitCount() <= 64) {
                     return obj.longValue();
-                } else {
-                    throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseTooLarge(frame, targetTypeSize);
+                // fall through
             }
+            return raiseTooLarge(frame, targetTypeSize);
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
@@ -2098,8 +2097,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return factory().createBytes(new byte[size]);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        PBytes doLong(long size) {
+        @Specialization(rewriteOn = OverflowException.class)
+        PBytes doLong(long size) throws OverflowException {
             return doInt(PInt.intValueExact(size));
         }
 
@@ -2108,7 +2107,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(PInt.intValueExact(size));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raiseNumberTooLarge(IndexError, size);
             }
         }

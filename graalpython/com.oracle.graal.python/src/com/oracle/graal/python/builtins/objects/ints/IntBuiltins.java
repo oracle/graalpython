@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -936,11 +937,11 @@ public class IntBuiltins extends PythonBuiltins {
             return arg;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int pos(int arg) {
+        @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
+        int pos(int arg) throws OverflowException {
             int result = Math.abs(arg);
             if (result < 0) {
-                throw new ArithmeticException();
+                throw OverflowException.INSTANCE;
             }
             return result;
         }
@@ -950,11 +951,11 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.abs((long) arg);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long pos(long arg) {
+        @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
+        long pos(long arg) throws OverflowException {
             long result = Math.abs(arg);
             if (result < 0) {
-                throw new ArithmeticException();
+                throw OverflowException.INSTANCE;
             }
             return result;
         }
@@ -1111,7 +1112,7 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LShiftNode extends PythonBinaryBuiltinNode {
 
-        private long leftShiftExact(long left, long right) {
+        private long leftShiftExact(long left, long right) throws OverflowException {
             if (right >= Long.SIZE || right < 0) {
                 shiftError(right);
             }
@@ -1119,13 +1120,13 @@ public class IntBuiltins extends PythonBuiltins {
             long result = left << right;
 
             if (left != result >> right) {
-                throw new ArithmeticException("integer overflow");
+                throw OverflowException.INSTANCE;
             }
 
             return result;
         }
 
-        private int leftShiftExact(int left, int right) {
+        private int leftShiftExact(int left, int right) throws OverflowException {
             if (right >= Integer.SIZE || right < 0) {
                 shiftError(right);
             }
@@ -1133,22 +1134,22 @@ public class IntBuiltins extends PythonBuiltins {
             int result = left << right;
 
             if (left != result >> right) {
-                throw new ArithmeticException("integer overflow");
+                throw OverflowException.INSTANCE;
             }
 
             return result;
         }
 
-        private void shiftError(long shiftCount) {
+        private void shiftError(long shiftCount) throws OverflowException {
             if (shiftCount >= Integer.SIZE) {
-                throw new ArithmeticException("integer overflow");
+                throw OverflowException.INSTANCE;
             } else if (shiftCount < 0) {
                 throw raise(ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doII(int left, int right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        int doII(int left, int right) throws OverflowException {
             raiseNegativeShiftCount(right < 0);
             return leftShiftExact(left, right);
         }
@@ -1158,13 +1159,13 @@ public class IntBuiltins extends PythonBuiltins {
             raiseNegativeShiftCount(right < 0);
             try {
                 return leftShiftExact(left, right);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return doGuardedBiI(PInt.longToBigInteger(left), right);
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long left, long right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doLL(long left, long right) throws OverflowException {
             raiseNegativeShiftCount(right < 0);
             return leftShiftExact(left, right);
         }
@@ -1174,7 +1175,7 @@ public class IntBuiltins extends PythonBuiltins {
             raiseNegativeShiftCount(right < 0);
             try {
                 return leftShiftExact(left, right);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 int rightI = (int) right;
                 if (rightI == right) {
                     return factory().createInt(op(PInt.longToBigInteger(left), rightI));
@@ -1188,7 +1189,7 @@ public class IntBuiltins extends PythonBuiltins {
         PInt doLPi(long left, PInt right) {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
             try {
-                return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
+                return factory().createInt(op(PInt.longToBigInteger(left), right.intValueExact()));
             } catch (ArithmeticException e) {
                 throw raise(PythonErrorType.OverflowError);
             }

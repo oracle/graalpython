@@ -47,10 +47,12 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -107,14 +109,24 @@ public abstract class PMutableSequence extends PSequence {
     @ExportMessage
     public void writeArrayElement(long index, Object value,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) {
-        setItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index), value);
+                    @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) throws InvalidArrayIndexException {
+        try {
+            setItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index), value);
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
     }
 
     @ExportMessage
     public void removeArrayElement(long index,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem) {
-        delItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+                    @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem) throws InvalidArrayIndexException {
+        try {
+            delItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
     }
 }

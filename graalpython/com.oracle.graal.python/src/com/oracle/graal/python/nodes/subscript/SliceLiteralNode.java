@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -157,7 +158,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         int doLong(long i, @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return PInt.intValueExact(i);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 indexErrorProfile.enter();
                 return overflowValue;
             }
