@@ -629,11 +629,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(Object errorMarker,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClassNode) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.getEscapedException();
-                return getClass.execute(exceptionObject);
+                // getClassNode acts as a branch profile
+                return getClassNode.execute(currentException.getExceptionObject());
             }
             return errorMarker;
         }
