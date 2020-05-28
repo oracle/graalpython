@@ -75,12 +75,26 @@ public interface PythonParser {
         Deserialization;
     }
 
+    enum ErrorType {
+        Generic,
+        Indentation,
+        Tab
+    }
+
     public interface ParserErrorCallback {
         RuntimeException raise(PythonBuiltinClassType type, String message, Object... args);
 
-        RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments);
+        default RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
+            return raiseInvalidSyntax(ErrorType.Generic, source, section, message, arguments);
+        }
 
-        RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments);
+        RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments);
+
+        default RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
+            return raiseInvalidSyntax(ErrorType.Generic, location, message, arguments);
+        }
+
+        RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments);
 
         default RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
             return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, new Object[0]);

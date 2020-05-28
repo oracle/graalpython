@@ -370,6 +370,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
         // from parser we are getting RuntimeExceptions
         String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
-        throw errors.raiseInvalidSyntax(source, section, message);
+        ErrorType errorType = PythonErrorStrategy.getErrorType(e);
+        throw errors.raiseInvalidSyntax(errorType, source, section, message);
     }
 }
