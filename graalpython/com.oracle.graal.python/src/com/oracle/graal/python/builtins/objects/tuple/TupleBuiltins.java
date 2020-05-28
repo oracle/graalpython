@@ -514,9 +514,10 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
 
         protected static boolean isSingleRepeat(PTuple left, PythonObjectLibrary tuplelib, Object right, PythonObjectLibrary lib) {
             return PGuards.isPythonBuiltinClassType(tuplelib.getLazyPythonClass(left)) && lib.canBeIndex(right) && lib.asSize(right) == 1;
@@ -537,11 +538,6 @@ public class TupleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), right));
         }
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)

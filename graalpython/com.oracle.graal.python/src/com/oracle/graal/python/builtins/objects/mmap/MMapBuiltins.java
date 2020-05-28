@@ -180,14 +180,10 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBinaryBuiltinNode {
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)

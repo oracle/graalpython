@@ -242,10 +242,11 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBuiltinNode {
+    abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
         PComplex doComplexLong(PComplex left, long right) {
             return factory().createComplex(left.getReal() + right, left.getImag());
@@ -274,14 +275,10 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateNodeFactory
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
-    abstract static class RAddNode extends AddNode {
-    }
-
-    @GenerateNodeFactory
+    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
     public abstract static class DivNode extends PythonBinaryBuiltinNode {
 
         public abstract PComplex executeComplex(VirtualFrame frame, Object left, Object right);
@@ -339,6 +336,31 @@ public class ComplexBuiltins extends PythonBuiltins {
             return factory().createComplex(real, imag);
         }
 
+        @Specialization
+        PComplex doComplexDouble(double left, PComplex right) {
+            double oprealSq = right.getReal() * right.getReal();
+            double opimagSq = right.getImag() * right.getImag();
+            double twice = 2 * right.getImag() * right.getReal();
+            double realPart = right.getReal() * left;
+            double imagPart = right.getImag() * left;
+            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
+        }
+
+        @Specialization
+        PComplex doComplexInt(long left, PComplex right) {
+            double oprealSq = right.getReal() * right.getReal();
+            double opimagSq = right.getImag() * right.getImag();
+            double twice = 2 * right.getImag() * right.getReal();
+            double realPart = right.getReal() * left;
+            double imagPart = right.getImag() * left;
+            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
+        }
+
+        @Specialization
+        PComplex doComplexPInt(PInt left, PComplex right) {
+            return doComplexDouble(right, left.doubleValue());
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doComplex(Object left, Object right) {
@@ -347,34 +369,8 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RDivNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        PComplex doComplexDouble(PComplex right, double left) {
-            double oprealSq = right.getReal() * right.getReal();
-            double opimagSq = right.getImag() * right.getImag();
-            double twice = 2 * right.getImag() * right.getReal();
-            double realPart = right.getReal() * left;
-            double imagPart = right.getImag() * left;
-            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
-        }
-
-        @Specialization
-        PComplex doComplexInt(PComplex right, long left) {
-            double oprealSq = right.getReal() * right.getReal();
-            double opimagSq = right.getImag() * right.getImag();
-            double twice = 2 * right.getImag() * right.getReal();
-            double realPart = right.getReal() * left;
-            double imagPart = right.getImag() * left;
-            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
-        }
-
-        @Specialization
-        PComplex doComplexPInt(PComplex right, PInt left) {
-            return doComplexDouble(right, left.doubleValue());
-        }
-
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doComplex(Object left, Object right) {
@@ -394,6 +390,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -427,11 +424,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    abstract static class RMulNode extends MulNode {
-    }
-
-    @GenerateNodeFactory
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -450,26 +443,20 @@ public class ComplexBuiltins extends PythonBuiltins {
             return factory().createComplex(left.getReal() - right, left.getImag());
         }
 
+        @Specialization
+        PComplex doComplexDouble(double left, PComplex right) {
+            return factory().createComplex(left - right.getReal(), -right.getImag());
+        }
+
+        @Specialization
+        PComplex doComplex(long left, PComplex right) {
+            return factory().createComplex(left - right.getReal(), -right.getImag());
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2)
-    abstract static class RSubNode extends SubNode {
-        @Override
-        @Specialization
-        PComplex doComplexDouble(PComplex left, double right) {
-            return factory().createComplex(right - left.getReal(), -left.getImag());
-        }
-
-        @Override
-        @Specialization
-        PComplex doComplex(PComplex left, long right) {
-            return factory().createComplex(right - left.getReal(), -left.getImag());
         }
     }
 

@@ -86,4 +86,13 @@ public @interface Builtin {
      * self argument, set this to true.
      */
     boolean declaresExplicitSelf() default false;
+
+    /**
+     * Declares that this builtin needs to reverse the first and second argument it receives. This
+     * implements the reverse operation wrappers from CPython. This only applies to binary and
+     * ternary nodes.
+     *
+     * @see com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode BuiltinFunctionRootNode
+     */
+    boolean reverseOperation() default false;
 }

@@ -61,6 +61,10 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+// cpython://Objects/abstract.c#binary_op1
+// Order operations are tried until either a valid result or error: w.op(v,w)[*], v.op(v,w), w.op(v,w)
+//
+//       [*] only when v->ob_type != w->ob_type && w->ob_type is a subclass of v->ob_type
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
@@ -297,6 +301,16 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
+        // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
+        // (the structure is modelled closely on it), as well as the additional logic in
+        // cpython://Objects/typeobject.c#SLOT1BINFULL. The latter has the addition that it swaps
+        // the arguments around. The swapping of arguments is undone when the call ends up in a
+        // builtin function using a wrapper in CPython. We implement this reversal in our
+        // BuiltinFunctionRootNode. This is opposite to what CPython does (and more in line with
+        // what PyPy does), in that CPython always dispatches with the same argument order and has
+        // slot wrappers for heap types __r*__ methods to swap the arguments, but we don't wrap heap
+        // types' methods and instead have our swapping for the builtin types.
+
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftClass = libLeft.getLazyPythonClass(left);
         Object leftCallable = getattr.execute(leftClass);

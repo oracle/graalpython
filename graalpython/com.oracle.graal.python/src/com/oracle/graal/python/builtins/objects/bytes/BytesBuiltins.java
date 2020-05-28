@@ -396,6 +396,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -433,11 +434,6 @@ public class BytesBuiltins extends PythonBuiltins {
         public Object mul(Object self, Object other) {
             throw raise(TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, other);
         }
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)

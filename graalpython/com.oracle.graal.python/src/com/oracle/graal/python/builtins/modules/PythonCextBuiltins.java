@@ -2359,17 +2359,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     case 1:
                         rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
-                                        true);
+                                        true, false);
                         break;
                     case 2:
                         rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
                                         new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
-                                        true);
+                                        true, false);
                         break;
                     case 3:
                         rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
                                         new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
-                                        true);
+                                        true, false);
                         break;
                     default:
                         break;
@@ -2378,7 +2378,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (rootNode == null) {
                 rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
                                 new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
-                                true);
+                                true, false);
             }
 
             return factory().createBuiltinFunction(func.getName(), null, 0, Truffle.getRuntime().createCallTarget(rootNode));

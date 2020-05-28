@@ -58,6 +58,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
+// cpython://Objects/abstract.c#ternary_op
+// Order operations are tried until either a valid result or error: v.op(v,w,z), w.op(v,w,z), z.op(v,w,z)
 @ImportStatic({SpecialMethodNames.class})
 public abstract class LookupAndCallTernaryNode extends Node {
     public abstract static class NotImplementedHandler extends PNodeWithContext {
@@ -159,6 +161,12 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("create()") IsSameTypeNode isSameTypeNode,
                     @Cached("create()") BranchProfile notImplementedBranch) {
+        // c.f. mostly slot_nb_power and wrap_ternaryfunc_r.  like
+        // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
+        // of this method is modeled after this. However, this method also merges the logic from
+        // slot_nb_power/wrap_ternaryfunc_r in that it swaps arguments around. The reversal is
+        // undone for builtin functions in BuiltinFunctionRootNode, just like it would be undone in
+        // CPython using its slot wrappers
         Object leftClass = getClass.execute(v);
         Object rightClass = getClassR.execute(w);
 
