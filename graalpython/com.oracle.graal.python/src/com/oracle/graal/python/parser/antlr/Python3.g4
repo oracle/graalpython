@@ -1756,8 +1756,8 @@ ASYNC : 'async';
 AWAIT : 'await';
 
 NEWLINE
- : ( // removed to speed up parsing:
-     // {atStartOfInput()}?   SPACES |
+ : (
+     {atStartOfInput()}?   SPACES |
      ( '\r'? '\n' | '\r' | '\f' ) SPACES?
    )
    {
