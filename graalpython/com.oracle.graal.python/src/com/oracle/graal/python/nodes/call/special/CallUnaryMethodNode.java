@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNodeGen;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
@@ -113,7 +112,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeInt(frame, receiver);
-   }
+    }
 
     @Specialization(guards = {"func == cachedFunc",
                     "builtinNode != null",
@@ -218,7 +217,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.execute(frame, func.getSelf(), arg);
     }
 
-    @Specialization(replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingleContext", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
+    @Specialization(replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingleContext",
+                    "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
     static Object call(VirtualFrame frame, Object func, Object receiver,
                     @Cached("create()") CallNode callNode) {
         return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);

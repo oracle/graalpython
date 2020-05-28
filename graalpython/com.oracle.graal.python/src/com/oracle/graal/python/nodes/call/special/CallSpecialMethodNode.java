@@ -78,8 +78,8 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 abstract class CallSpecialMethodNode extends Node {
 
     /**
-     * for interpreter performance: cache if we exceeded the max caller size. We never allow inlining
-     * in the uncached case.
+     * for interpreter performance: cache if we exceeded the max caller size. We never allow
+     * inlining in the uncached case.
      */
     protected abstract boolean isMaxSizeExceeded();
 

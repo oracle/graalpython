@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNodeGen;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
@@ -58,9 +57,13 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @GenerateUncached
 @ReportPolymorphism
-public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
+public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     public static CallBinaryMethodNode create() {
-        return CallBinaryMethodNodeGen.create();
+        return CallBinaryMethodNodeGen.create(false);
+    }
+
+    static CallBinaryMethodNode createReversed() {
+        return CallBinaryMethodNodeGen.create(true);
     }
 
     public static CallBinaryMethodNode getUncached() {
@@ -96,152 +99,335 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
+                    "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
     boolean callBoolSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    boolean callBoolSingleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
     @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
+                    "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
     int callIntSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeInt(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    int callIntSingleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeInt(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     int callInt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeInt(frame, arg1, arg2);
     }
 
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    int callIntReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeInt(frame, arg2, arg1);
+    }
+
     @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
+                    "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
     boolean callBoolIntSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    boolean callBoolIntSingleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     boolean callBoolInt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolIntReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
     @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
+                    "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
     long callLongSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeLong(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    long callLongSingleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeLong(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     long callLong(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeLong(frame, arg1, arg2);
     }
 
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    long callLongReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeLong(frame, arg2, arg1);
+    }
+
     @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
+                    "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
     boolean callBoolLongSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    boolean callBoolLongSingleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     boolean callBoolLong(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolLongReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
     @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
+                    "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
     double callDoubleSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeDouble(frame, arg1, arg2);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    double callDouble(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeDouble(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
+                    "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    double callDoubleSingleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeDouble(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    double callDouble(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeDouble(frame, arg1, arg2);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    double callDoubleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeDouble(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
     boolean callBoolDoubleSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    boolean callBoolDoubleSingleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     boolean callBoolDouble(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
         return builtinNode.executeBool(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolDoubleReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callObjectSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    Object callObjectSingleContextReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.execute(frame, arg2, arg1);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObject(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callObjectReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.execute(frame, arg2, arg1);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -282,7 +468,11 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
     }
 
-    @Specialization(replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle", "callBoolLong", "callDoubleSingle", "callDouble", "callBoolDoubleSingle", "callBoolDouble", "callObjectSingleContext", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
+    @Specialization(replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle", "callBoolLong",
+                    "callDoubleSingle", "callDouble", "callBoolDoubleSingle", "callBoolDouble", "callObjectSingleContext", "callObject", "callBoolSingleReverse", "callBoolReverse",
+                    "callIntSingleReverse", "callIntReverse", "callBoolIntSingleReverse", "callBoolIntReverse", "callLongSingleReverse", "callLongReverse", "callBoolLongSingleReverse",
+                    "callBoolLongReverse", "callDoubleSingleReverse", "callDoubleReverse", "callBoolDoubleSingleReverse", "callBoolDoubleReverse", "callObjectSingleContextReverse",
+                    "callObjectReverse", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2,
                     @Cached CallNode callNode) {
         return callNode.execute(frame, func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);

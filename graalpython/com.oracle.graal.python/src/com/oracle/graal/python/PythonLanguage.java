@@ -582,7 +582,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Function<Builtin, RootCallTarget> supplier) {
-        synchronized(this) {
+        synchronized (this) {
             return builtinCallTargetCache.computeIfAbsent(builtin, supplier);
         }
     }

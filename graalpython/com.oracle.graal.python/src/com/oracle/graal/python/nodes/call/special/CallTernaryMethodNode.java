@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNodeGen;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
@@ -57,10 +56,13 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @ReportPolymorphism
 @GenerateUncached
-public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
-
+public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     public static CallTernaryMethodNode create() {
-        return CallTernaryMethodNodeGen.create();
+        return CallTernaryMethodNodeGen.create(false);
+    }
+
+    static CallTernaryMethodNode createReversed() {
+        return CallTernaryMethodNodeGen.create(true);
     }
 
     public static CallTernaryMethodNode getUncached() {
@@ -71,36 +73,80 @@ public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
 
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3);
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object doBuiltinFunctionOIOCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    Object doBuiltinFunctionOIOCachedReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.execute(frame, arg2, arg1, arg3);
+    }
+
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object doBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2, arg3);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isReverse",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    Object doBuiltinFunctionCachedReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.execute(frame, arg2, arg1, arg3);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object doBuiltinFunctionOIOCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object doBuiltinFunctionOIOCtCachedReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.execute(frame, arg2, arg1, arg3);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object doBuiltinFunctionCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2, arg3);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object doBuiltinFunctionCtCachedReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
+                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.execute(frame, arg2, arg1, arg3);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -160,8 +206,10 @@ public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
     }
 
-    @Specialization(replaces = {"doBuiltinFunctionOIOCached", "doBuiltinFunctionCached", "doBuiltinFunctionOIOCtCached", "doBuiltinFunctionCtCached", "doBuiltinMethodOIOCached",
-                    "doBuiltinMethodCached", "doBuiltinMethodOIOCtCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext", "callSelfMethod"})
+    @Specialization(replaces = {"doBuiltinFunctionOIOCached", "doBuiltinFunctionCached", "doBuiltinFunctionOIOCtCached", "doBuiltinFunctionCtCached",
+                    "doBuiltinFunctionOIOCachedReverse", "doBuiltinFunctionCachedReverse", "doBuiltinFunctionOIOCtCachedReverse", "doBuiltinFunctionCtCachedReverse",
+                    "doBuiltinMethodOIOCached", "doBuiltinMethodCached", "doBuiltinMethodOIOCtCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext",
+                    "callSelfMethod"})
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
                     @Cached CallNode callNode) {
         return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);

@@ -189,10 +189,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
         this.reverseOp = isReverse;
-        assert (!reverseOp
-                        || PythonBinaryBuiltinNode.class.isAssignableFrom(factory.getNodeClass())
-                        || PythonTernaryBuiltinNode.class.isAssignableFrom(factory.getNodeClass()))
-            : "reverse wrappers can only apply to binary and ternary nodes";
+        assert (!reverseOp || PythonBinaryBuiltinNode.class.isAssignableFrom(factory.getNodeClass()) ||
+                        PythonTernaryBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) : "reverse wrappers can only apply to binary and ternary nodes";
         if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
         }
@@ -395,6 +393,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
         return factory;
+    }
+
+    public Builtin getBuiltin() {
+        return builtin;
     }
 
     @Override

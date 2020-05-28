@@ -125,7 +125,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
         // this also serves as a branch profile
         if (reverseDispatchNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reverseDispatchNode = insert(CallTernaryMethodNode.create());
+            reverseDispatchNode = insert(CallTernaryMethodNode.createReversed());
         }
         return reverseDispatchNode;
     }
@@ -161,7 +161,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("create()") IsSameTypeNode isSameTypeNode,
                     @Cached("create()") BranchProfile notImplementedBranch) {
-        // c.f. mostly slot_nb_power and wrap_ternaryfunc_r.  like
+        // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
         // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
         // of this method is modeled after this. However, this method also merges the logic from
         // slot_nb_power/wrap_ternaryfunc_r in that it swaps arguments around. The reversal is
