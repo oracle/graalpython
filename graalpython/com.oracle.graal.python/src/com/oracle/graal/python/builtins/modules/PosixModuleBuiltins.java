@@ -1900,7 +1900,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("str") PythonObjectLibrary lib) {
             String path = lib.asPath(str);
             try {
-                return getContext().getEnv().getPublicTruffleFile(path).getCanonicalFile().getPath();
+                TruffleFile original = getContext().getEnv().getPublicTruffleFile(path);
+                TruffleFile canonicalFile = original.getCanonicalFile();
+                if (original.equals(canonicalFile)) {
+                    throw raiseOSError(frame, OSErrorEnum.EINVAL, path);
+                }
+                return canonicalFile.getPath();
             } catch (Exception e) {
                 throw raiseOSError(frame, e, path);
             }
