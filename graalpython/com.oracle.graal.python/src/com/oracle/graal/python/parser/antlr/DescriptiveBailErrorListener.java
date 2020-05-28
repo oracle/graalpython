@@ -68,26 +68,47 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
 
         String entireMessage = e == null || e.getMessage() == null ? "invalid syntax" : e.getMessage();
 
+        IntervalSet expectedTokens = null;
+        if (e != null) {
+            expectedTokens = e.getExpectedTokens();
+        } else if (recognizer instanceof Python3Parser) {
+            expectedTokens = ((Python3Parser) recognizer).getExpectedTokens();
+        }
+
         if (isInteractive(recognizer)) {
-            PIncompleteSourceException handleRecognitionException = null;
-            if (e != null) {
-                handleRecognitionException = handleRecognitionException(e.getExpectedTokens(), entireMessage, e, line);
-            } else if (recognizer instanceof Python3Parser) {
-                handleRecognitionException = handleRecognitionException(((Python3Parser) recognizer).getExpectedTokens(), entireMessage, null, line);
+            PIncompleteSourceException incompleteSourceException = null;
+            if (expectedTokens != null) {
+                incompleteSourceException = handleRecognitionException(expectedTokens, entireMessage, e, line);
             }
-            if (handleRecognitionException == null) {
-                handleRecognitionException = handleInteractiveException(recognizer, offendingSymbol);
+            if (incompleteSourceException == null) {
+                incompleteSourceException = handleInteractiveException(recognizer, offendingSymbol);
             }
-            if (handleRecognitionException != null) {
-                throw handleRecognitionException;
+            if (incompleteSourceException != null) {
+                throw incompleteSourceException;
             }
         }
+
         if (offendingSymbol instanceof Token) {
             Token token = (Token) offendingSymbol;
             ErrorType errorType = ErrorType.Generic;
-            if (token.getType() == Python3Parser.INDENT_ERROR) {
-                entireMessage = "unindent does not match any outer indentation level";
-                errorType = ErrorType.Indentation;
+            switch (token.getType()) {
+                case Python3Parser.INDENT_ERROR:
+                    entireMessage = "unindent does not match any outer indentation level";
+                    errorType = ErrorType.Indentation;
+                    break;
+                case Python3Parser.INDENT:
+                    entireMessage = "unexpected indent";
+                    errorType = ErrorType.Indentation;
+                    break;
+                case Python3Parser.DEDENT:
+                    entireMessage = "unexpected unindent";
+                    errorType = ErrorType.Indentation;
+                    break;
+                default:
+                    if (expectedTokens != null && expectedTokens.contains(Python3Parser.INDENT)) {
+                        entireMessage = "expected an indented block";
+                        errorType = ErrorType.Indentation;
+                    }
             }
             throw new EmptyRecognitionException(errorType, entireMessage, recognizer, token);
         }
