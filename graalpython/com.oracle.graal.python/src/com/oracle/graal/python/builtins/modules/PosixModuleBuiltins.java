@@ -53,7 +53,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -70,6 +69,8 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -78,7 +79,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -1688,14 +1688,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonBuiltinNode {
+        private static SecureRandom secureRandom;
+
+        private static SecureRandom createRandomInstance() {
+            try {
+                return SecureRandom.getInstance("NativePRNGNonBlocking");
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
         @Specialization
         @TruffleBoundary(allowInlining = true)
         PBytes urandom(int size) {
-            // size is in bytes
-            BigInteger bigInteger = new BigInteger(size * 8, new Random());
-            // sign may introduce an extra byte
-            byte[] range = Arrays.copyOfRange(bigInteger.toByteArray(), 0, size);
-            return factory().createBytes(range);
+            if (secureRandom == null) {
+                secureRandom = createRandomInstance();
+            }
+            byte[] bytes = new byte[size];
+            secureRandom.nextBytes(bytes);
+            return factory().createBytes(bytes);
         }
     }
 
