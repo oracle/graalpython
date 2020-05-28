@@ -70,6 +70,8 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -1676,11 +1678,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonBuiltinNode {
+        private static SecureRandom secureRandom;
+
+        private static SecureRandom createRandomInstance() {
+            try {
+                return SecureRandom.getInstance("NativePRNGNonBlocking");
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+
         @Specialization
         @TruffleBoundary(allowInlining = true)
         PBytes urandom(int size) {
+            if (secureRandom == null) {
+                secureRandom = createRandomInstance();
+            }
             byte[] bytes = new byte[size];
-            new Random().nextBytes(bytes);
+            secureRandom.nextBytes(bytes);
             return factory().createBytes(bytes);
         }
     }
