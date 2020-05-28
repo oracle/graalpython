@@ -410,9 +410,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                  */
                 FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
                 assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
-                functionRootNode = functionRootNode.copyWithNewSignature(signature.createWithSelf());
-                functionRootNode.setRewritten();
-                functionRootNode.accept(new NodeVisitor() {
+
+                functionRootNode = functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
 
                     public boolean visit(Node node) {
                         if (node instanceof ReadVarArgsNode) {
