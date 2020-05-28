@@ -35,7 +35,7 @@ grammar Python3;
 // All comments that start with "///" are copy-pasted from
 // The Python Language Reference
 
-tokens { INDENT, DEDENT }
+tokens { INDENT, DEDENT, INDENT_ERROR }
 
 @lexer::members {
   // new version with semantic actions in parser
@@ -165,6 +165,20 @@ tokens { INDENT, DEDENT }
     CommonToken dedent = commonToken(Python3Parser.DEDENT, "");
     dedent.setLine(this.lastToken.getLine());
     return dedent;
+  }
+
+  private Token createIndentError() {
+    // For some reason, CPython sets the error position to the end of line
+    int cur = getCharIndex();
+    String s;
+    do {
+        s = _input.getText(new Interval(cur, cur));
+        cur++;
+    } while (!s.isEmpty() && s.charAt(0) != '\n');
+    cur--;
+    CommonToken error = new CommonToken(this._tokenFactorySourcePair, Python3Parser.INDENT_ERROR, DEFAULT_TOKEN_CHANNEL, cur, cur);
+    error.setLine(this.lastToken.getLine());
+    return error;
   }
 
   private CommonToken commonToken(int type, String text) {
@@ -1773,9 +1787,13 @@ NEWLINE
        }
        else {
          // Possibly emit more than 1 DEDENT token.
-         while(!indents.isEmpty() && indents.peek() > indent) {
+         while (!indents.isEmpty() && indents.peek() > indent) {
            this.emit(createDedent());
            indents.pop();
+         }
+         int expectedIndent = indents.empty() ? 0 : indents.peek();
+         if (expectedIndent != indent) {
+           this.emit(createIndentError());
          }
        }
      }
