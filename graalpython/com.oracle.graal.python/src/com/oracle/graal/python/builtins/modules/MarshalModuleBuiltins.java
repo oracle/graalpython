@@ -683,7 +683,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                lib.setItem(newStorage, key, PNone.NO_VALUE);
+                newStorage = lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createSet(newStorage);
@@ -699,7 +699,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                lib.setItem(newStorage, key, PNone.NO_VALUE);
+                newStorage = lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createFrozenSet(newStorage);
@@ -785,7 +785,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             reset();
             this.data = dataBytes;
             Object state = IndirectCallContext.enter(frame, context, this);

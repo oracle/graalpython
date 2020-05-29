@@ -150,7 +150,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static HashingStorage getStringAsHashingStorage(VirtualFrame frame, String str, HashingStorageLibrary lib, ConditionProfile hasFrame) {
+    private static HashingStorage getStringAsHashingStorage(VirtualFrame frame, String str, HashingStorageLibrary lib, ConditionProfile hasFrame) {
         HashingStorage storage = EconomicMapStorage.create(PString.length(str));
         for (int i = 0; i < PString.length(str); i++) {
             String key = PString.valueOf(PString.charAt(str, i));
@@ -444,13 +444,13 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return lib.union(selfStorage, other.getDictStorage());
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         HashingStorage doIterable(VirtualFrame frame, HashingStorage dictStorage, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage curStorage = dictStorage;
             Object iterator = getIteratorNode.executeWith(frame, iterable);
             while (true) {

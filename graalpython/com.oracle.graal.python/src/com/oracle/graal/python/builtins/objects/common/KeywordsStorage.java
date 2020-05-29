@@ -238,7 +238,7 @@ public class KeywordsStorage extends HashingStorage {
         @ExplodeLoop
         static HashingStorage cached(KeywordsStorage self, HashingStorage other,
                         @Exclusive @Cached("self.length()") int cachedLen,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
             for (int i = 0; i < cachedLen; i++) {
                 PKeyword entry = self.keywords[i];

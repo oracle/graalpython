@@ -730,7 +730,7 @@ public final class StringBuiltins extends PythonBuiltins {
         PDict doString(@SuppressWarnings("unused") VirtualFrame frame, Object from, Object to, @SuppressWarnings("unused") Object z,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
 
             String toStr = castToNode.cast(to, "argument 2 must be str, not %p", to);
             String fromStr = castFromNode.cast(from, "first maketrans argument must be a string if there is a second argument");
