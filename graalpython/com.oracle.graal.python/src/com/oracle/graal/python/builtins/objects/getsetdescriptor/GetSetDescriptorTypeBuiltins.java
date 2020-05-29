@@ -195,7 +195,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object get(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached("create()") CallUnaryMethodNode callNode) {
+                        @Cached CallUnaryMethodNode callNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
@@ -210,8 +210,8 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object getSlot(HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached ConditionProfile profile) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
                 return descr;
             }
@@ -240,7 +240,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object set(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached("create()") CallBinaryMethodNode callNode) {
+                        @Cached CallBinaryMethodNode callNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
@@ -255,7 +255,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object setSlot(HiddenKeyDescriptor descr, Object obj, Object value,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
+                        @Cached WriteAttributeToObjectNode writeNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
                 return descr;
             }
@@ -280,7 +280,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object delete(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached("create()") CallBinaryMethodNode callNode) {
+                        @Cached CallBinaryMethodNode callNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
@@ -299,7 +299,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object deleteSlot(HiddenKeyDescriptor descr, Object obj,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
+                        @Cached WriteAttributeToObjectNode writeNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
                 return descr;
             }
