@@ -11,6 +11,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -18,7 +19,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
-import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -29,6 +29,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 import java.util.List;
 
@@ -327,11 +328,11 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return rect(r, phi);
         }
 
-        @Specialization
-        PComplex doGeneral(VirtualFrame frame, Object r, Object phi,
-                        @Cached CoerceToDoubleNode coerceRToDouble,
-                        @Cached CoerceToDoubleNode coercePhiToDouble) {
-            return rect(coerceRToDouble.execute(frame, r), coercePhiToDouble.execute(frame, phi));
+        @Specialization(limit = "2")
+        PComplex doGeneral(Object r, Object phi,
+                        @CachedLibrary("r") PythonObjectLibrary rLib,
+                        @CachedLibrary("phi") PythonObjectLibrary phiLib) {
+            return rect(rLib.asJavaDouble(r), phiLib.asJavaDouble(phi));
         }
 
         private PComplex rect(double r, double phi) {
@@ -339,7 +340,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             if (!Double.isFinite(r) || !Double.isFinite(phi)) {
                 // need to raise an exception if r is a nonzero number and phi is infinite
                 if (r != 0.0 && !Double.isNaN(r) && Double.isInfinite(phi)) {
-                    throw raise(ValueError, "math domain error");
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
 
                 // if r is +/-infinity and phi is finite but nonzero then
@@ -434,7 +435,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                     final double scaleUp = 0x1.0p53;
                     return Math.log(Math.hypot(ax * scaleUp, ay * scaleUp)) - 53 * ln2;
                 }
-                throw raise(ValueError, "math domain error");
+                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
             double h = Math.hypot(ax, ay);
             if (0.71 <= h && h <= 1.73) {
