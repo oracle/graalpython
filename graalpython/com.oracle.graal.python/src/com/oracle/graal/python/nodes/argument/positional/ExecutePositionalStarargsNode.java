@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -140,7 +141,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                 }
             }
         }
-        throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
+        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -213,7 +214,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                     }
                 }
             }
-            throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
         }
     }
 }

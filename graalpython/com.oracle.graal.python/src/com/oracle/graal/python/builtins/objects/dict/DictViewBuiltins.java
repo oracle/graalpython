@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -144,11 +143,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.hasKeyWithState(self.getWrappedDict().getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                return lib.hasKey(self.getWrappedDict().getDictStorage(), key);
-            }
+            return lib.hasKeyWithFrame(self.getWrappedDict().getDictStorage(), key, hasFrame, frame);
         }
 
         @Specialization(limit = "1")
@@ -164,13 +159,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
                 return false;
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
-            Object value = hlib.getItemWithState(dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0), PArguments.getThreadState(frame));
+            Object value = hlib.getItemWithFrame(dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0), hasFrame, frame);
             if (value != null) {
-                if (hasFrame.profile(frame != null)) {
-                    return lib.equalsWithState(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, PArguments.getThreadState(frame));
-                } else {
-                    return lib.equals(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib);
-                }
+                return lib.equalsWithFrame(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, hasFrame, frame);
             } else {
                 return false;
             }
@@ -319,19 +310,11 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
 
-        protected static HashingStorage diff(HashingStorageLibrary lib, HashingStorage left, HashingStorage right, VirtualFrame frame, ConditionProfile hasFrame) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.diffWithState(left, right, PArguments.getThreadState(frame));
-            } else {
-                return lib.diff(left, right);
-            }
-        }
-
         @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = diff(lib, self.getWrappedDict().getDictStorage(), other.getDictStorage(), frame, hasFrame);
+            HashingStorage storage = lib.diffWithFrame(self.getWrappedDict().getDictStorage(), other.getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
 
@@ -339,7 +322,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = diff(lib, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage(), frame, hasFrame);
+            HashingStorage storage = lib.diffWithFrame(self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
 
@@ -349,7 +332,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
-            HashingStorage storage = diff(lib, selfSet.getDictStorage(), other.getDictStorage(), frame, hasFrame);
+            HashingStorage storage = lib.diffWithFrame(selfSet.getDictStorage(), other.getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
 
@@ -360,7 +343,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            HashingStorage storage = diff(lib, selfSet.getDictStorage(), otherSet.getDictStorage(), frame, hasFrame);
+            HashingStorage storage = lib.diffWithFrame(selfSet.getDictStorage(), otherSet.getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
 
@@ -371,7 +354,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            HashingStorage storage = diff(lib, selfSet.getDictStorage(), otherSet.getDictStorage(), frame, hasFrame);
+            HashingStorage storage = lib.diffWithFrame(selfSet.getDictStorage(), otherSet.getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
     }
@@ -380,21 +363,13 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
 
-        protected static HashingStorage intersect(HashingStorageLibrary lib, HashingStorage left, HashingStorage right, VirtualFrame frame, ConditionProfile hasFrame) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.intersectWithState(left, right, PArguments.getThreadState(frame));
-            } else {
-                return lib.intersect(left, right);
-            }
-        }
-
         @Specialization(limit = "1")
         PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = other.getDictStorage();
-            HashingStorage intersectedStorage = intersect(lib, left, right, frame, hasFrame);
+            HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
         }
 
@@ -404,7 +379,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = other.getWrappedDict().getDictStorage();
-            HashingStorage intersectedStorage = intersect(lib, left, right, frame, hasFrame);
+            HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
         }
 
@@ -416,7 +391,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             HashingStorage left = selfSet.getDictStorage();
             HashingStorage right = other.getDictStorage();
-            HashingStorage intersectedStorage = intersect(lib, left, right, frame, hasFrame);
+            HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
         }
 
@@ -429,7 +404,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             PSet otherSet = constructSetNode.executeWith(frame, other);
             HashingStorage left = selfSet.getDictStorage();
             HashingStorage right = otherSet.getDictStorage();
-            HashingStorage intersectedStorage = intersect(lib, left, right, frame, hasFrame);
+            HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
         }
     }

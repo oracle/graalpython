@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -290,7 +291,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
                     Locale.setDefault(newLocale);
                 }
             } else {
-                throw raise(PythonErrorType.ValueError, "unsupported locale setting");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.UNSUPPORTED_LOCALE_SETTING);
             }
 
             return toPosix(newLocale);
@@ -298,7 +299,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object setLocale(@SuppressWarnings("unused") Object category, @SuppressWarnings("unused") Object locale) {
-            throw raise(PythonErrorType.ValueError, "invalid locale category");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
         }
     }
 }

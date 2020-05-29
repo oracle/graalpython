@@ -52,6 +52,7 @@ import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.ReadByteFromChannelNodeGen;
@@ -190,7 +191,7 @@ public abstract class ChannelNodes {
             } else if (channel instanceof ReadableByteChannel) {
                 return readReadable((ReadableByteChannel) channel, size, gotException, raiseNode);
             } else {
-                throw raiseNode.raise(OSError, "file not opened for reading");
+                throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
             }
         }
 
@@ -343,7 +344,7 @@ public abstract class ChannelNodes {
             } else if (channel instanceof ReadableByteChannel) {
                 return writeWritable((WritableByteChannel) channel, s, len, gotException, raiseNode, limitProfile);
             } else {
-                throw raiseNode.raise(OSError, "file not opened for reading");
+                throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
             }
         }
 

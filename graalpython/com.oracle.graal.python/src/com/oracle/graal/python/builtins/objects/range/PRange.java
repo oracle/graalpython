@@ -29,6 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
@@ -55,7 +56,7 @@ public final class PRange extends PImmutableSequence {
         super(PythonBuiltinClassType.PRange, PythonBuiltinClassType.PRange.newInstance());
         if (step == 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(ValueError, "range() arg 3 must not be zero");
+            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_ZERO, "range()", 3);
         }
 
         int n;
@@ -82,7 +83,7 @@ public final class PRange extends PImmutableSequence {
             n = (int) ((diff / step) + 1);
             if (n < 0) {
                 CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(OverflowError, "range() result has too many items");
+                throw PRaiseNode.getUncached().raise(OverflowError, ErrorMessages.RESULT_TOO_MANY_ITEMS, "range()");
             }
         }
         return n;

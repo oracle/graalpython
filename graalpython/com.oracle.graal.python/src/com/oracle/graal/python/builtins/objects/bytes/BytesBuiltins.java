@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -136,7 +137,7 @@ public class BytesBuiltins extends PythonBuiltins {
         if (action != null) {
             return action;
         }
-        throw n.raise(PythonErrorType.LookupError, "unknown error handler name '%s'", errors);
+        throw n.raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
     }
 
     public static CodingErrorAction toCodingErrorAction(String errors, PythonBuiltinBaseNode n) {
@@ -144,7 +145,7 @@ public class BytesBuiltins extends PythonBuiltins {
         if (action != null) {
             return action;
         }
-        throw n.raise(PythonErrorType.LookupError, "unknown error handler name '%s'", errors);
+        throw n.raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
     }
 
     @Override
@@ -180,7 +181,7 @@ public class BytesBuiltins extends PythonBuiltins {
             if (self instanceof PIBytesLike) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, "descriptor '__eq__' requires a bytes-like object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__eq__", "bytes-like", self);
         }
 
         private SequenceStorageNodes.CmpNode getEqNode() {
@@ -208,7 +209,7 @@ public class BytesBuiltins extends PythonBuiltins {
             if (self instanceof PIBytesLike) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, "descriptor '__ne__' requires a bytes-like object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__ne__", "bytes-like", self);
         }
 
         private SequenceStorageNodes.CmpNode getEqNode() {
@@ -371,7 +372,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
                 return factory().createBytes(res);
             }
-            throw raise(SystemError, "could not get bytes of memoryview");
+            throw raise(SystemError, ErrorMessages.COULD_NOT_GET_BYTES_OF_MEMORYVIEW);
         }
 
         @Specialization
@@ -385,13 +386,13 @@ public class BytesBuiltins extends PythonBuiltins {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
                 return factory().createByteArray(res);
             }
-            throw raise(SystemError, "could not get bytes of memoryview");
+            throw raise(SystemError, ErrorMessages.COULD_NOT_GET_BYTES_OF_MEMORYVIEW);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         public Object add(Object self, Object other) {
-            throw raise(TypeError, "can't concat bytes to %p", other);
+            throw raise(TypeError, ErrorMessages.CANT_CONCAT_S_TO_P, "bytes", other);
         }
     }
 
@@ -430,7 +431,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         public Object mul(Object self, Object other) {
-            throw raise(TypeError, "can't multiply sequence by non-int of type '%p'", other);
+            throw raise(TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, other);
         }
     }
 
@@ -495,7 +496,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         public Object doGeneric(Object self, Object arg) {
-            throw raise(TypeError, "can only join an iterable");
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
         }
     }
 
@@ -547,14 +548,14 @@ public class BytesBuiltins extends PythonBuiltins {
 
             if (!containsNode.execute(frame, self.getSequenceStorage(), other)) {
                 errorProfile.enter();
-                throw raise(ValueError, "%s is not in bytes literal", other);
+                throw raise(ValueError, ErrorMessages.ISNT_IN_BYTES_LITERAL, other);
             }
             return true;
         }
 
         @Fallback
         boolean contains(@SuppressWarnings("unused") Object self, Object other) {
-            throw raise(TypeError, "a bytes-like object is required, not '%p'", other);
+            throw raise(TypeError, ErrorMessages.BYTES_OBJ_REQUIRED, other);
         }
 
     }
@@ -1259,13 +1260,13 @@ public class BytesBuiltins extends PythonBuiltins {
             try {
                 return from.intValueExact();
             } catch (ArithmeticException e) {
-                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }
 
         private int getIntValue(long from) {
             if (getOverflowProfile().profile(Integer.MIN_VALUE > from || from > Integer.MAX_VALUE)) {
-                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
             return (int) from;
         }
@@ -1327,7 +1328,7 @@ public class BytesBuiltins extends PythonBuiltins {
         PList split(VirtualFrame frame, PBytes bytes, Object sep, int maxsplit) {
             byte[] sepBs = getSepToBytesNode().execute(frame, sep);
             if (getIsEmptyProfile().profile(sepBs.length == 0)) {
-                throw raise(PythonErrorType.ValueError, "empty separator");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
             byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getBytesResult(splitDelimiter(splitBs, sepBs, maxsplit));
@@ -1353,7 +1354,7 @@ public class BytesBuiltins extends PythonBuiltins {
         PList split(VirtualFrame frame, PByteArray bytes, Object sep, int maxsplit) {
             byte[] sepBs = getSepToBytesNode().execute(frame, sep);
             if (getIsEmptyProfile().profile(sepBs.length == 0)) {
-                throw raise(PythonErrorType.ValueError, "empty separator");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
             byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getByteArrayResult(splitDelimiter(splitBs, sepBs, maxsplit));
@@ -1642,7 +1643,7 @@ public class BytesBuiltins extends PythonBuiltins {
             byte[] fromB = toByteNode.execute(frame, from);
             byte[] toB = toByteNode.execute(frame, to);
             if (fromB.length != toB.length) {
-                throw raise(PythonErrorType.ValueError, "maketrans arguments must have same length");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.ARGS_MUST_HAVE_SAME_LENGTH, "maketrans");
             }
 
             byte[] table = new byte[256];
@@ -1685,7 +1686,7 @@ public class BytesBuiltins extends PythonBuiltins {
             }
 
             if (isLenTable256Profile.profile(table.length != 256)) {
-                throw raise(PythonErrorType.ValueError, "translation table must be 256 characters long");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.TRANS_TABLE_MUST_BE_256);
             }
         }
 

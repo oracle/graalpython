@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -103,7 +104,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
                     @Cached LookupAndCallUnaryDynamicNode callIntNode) {
         Object result = callIntNode.executeObject(x, __INT__);
         if (result == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, "must be numeric, not %p", x);
+            throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, x);
         }
         if (result instanceof PInt) {
             return toLongInternal((PInt) result);
@@ -114,7 +115,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
         if (result instanceof Long) {
             return (long) result;
         }
-        throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
+        throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, x, "__int__", result);
     }
 
     @GenerateUncached
@@ -133,7 +134,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
                 return x.longValueExact();
             } catch (ArithmeticException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as long (type %p)", x);
+                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_BE_INTEPRETED_AS_LONG, x);
             }
         }
     }

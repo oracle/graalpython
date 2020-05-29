@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,6 +12,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -51,7 +52,7 @@ public class InternalFormat {
         } else if (text instanceof String) {
             return fromText(core, (String) text);
         } else {
-            throw core.raise(TypeError, "%s argument 1 must be str, not %p", method, text);
+            throw core.raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, method, 1, "str", text);
         }
     }
 
@@ -508,7 +509,7 @@ public class InternalFormat {
          * @return exception to throw
          */
         public static PException unknownFormat(ParserErrorCallback errors, char code, String forType) {
-            throw errors.raise(ValueError, "Unknown format code '%c' for object of type '%s'", code, forType);
+            throw errors.raise(ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, code, forType);
         }
 
         /**
@@ -615,7 +616,7 @@ public class InternalFormat {
                 withOrIn = "with ";
                 codeAsString = " '" + code + "'";
             }
-            throw errors.raise(ValueError, "%s not allowed %s%s format specifier%s", outrage, withOrIn, forType, codeAsString);
+            throw errors.raise(ValueError, ErrorMessages.NOT_ALLOWED_S_S_FORMAT_SPECIFIERS_S, outrage, withOrIn, forType, codeAsString);
         }
 
         /**
@@ -627,7 +628,7 @@ public class InternalFormat {
          * @return exception to throw
          */
         public PException precisionTooLarge(String type) {
-            throw errors.raise(OverflowError, "formatted %s is too long (precision too large?)", type);
+            throw errors.raise(OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
         }
 
     }

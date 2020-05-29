@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -401,7 +402,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         private PException raiseCallStackDepth() {
-            return raise(ValueError, "call stack is not deep enough");
+            return raise(ValueError, ErrorMessages.CALL_STACK_NOT_DEEP_ENOUGH);
         }
     }
 
@@ -475,7 +476,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         private Object checkResult(VirtualFrame frame, Object result, PythonObjectLibrary lib) {
             int value = lib.asSizeWithState(result, PArguments.getThreadState(frame));
             if (value < 0) {
-                throw raise(ValueError, "__sizeof__() should return >= 0");
+                throw raise(ValueError, ErrorMessages.SHOULD_RETURN, "__sizeof__()", ">= 0");
             }
             return value;
         }
@@ -484,7 +485,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return LookupAndCallUnaryNode.create(__SIZEOF__, () -> new NoAttributeHandler() {
                 @Override
                 public Object execute(Object receiver) {
-                    throw raise(TypeError, "Type %p doesn't define %s", receiver, __SIZEOF__);
+                    throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, receiver, __SIZEOF__);
                 }
             });
         }

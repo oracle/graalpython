@@ -1,1 +1,6 @@
 *ExceptionTests.testChainingAttrs
+*ExceptionTests.testChainingDescriptors
+*ExceptionTests.testExceptionCleanupNames
+*ExceptionTests.testInvalidTraceback
+*ExceptionTests.testKeywordArgs
+*ExceptionTests.testNoneClearsTracebackAttr

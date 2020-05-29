@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -133,12 +134,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         public Object doWithDefault(VirtualFrame frame, PMappingproxy self, Object key, Object defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            final Object value;
-            if (profile.profile(frame != null)) {
-                value = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                value = hlib.getItem(self.getDictStorage(), key);
-            }
+            final Object value = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             return value != null ? value : defaultValue;
         }
 
@@ -146,12 +142,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         public Object doNoDefault(VirtualFrame frame, PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            final Object value;
-            if (profile.profile(frame != null)) {
-                value = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                value = hlib.getItem(self.getDictStorage(), key);
-            }
+            final Object value = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             return value != null ? value : PNone.NONE;
         }
 
@@ -164,12 +155,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         Object getItem(VirtualFrame frame, PMappingproxy self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            final Object result;
-            if (profile.profile(frame != null)) {
-                result = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                result = hlib.getItem(self.getDictStorage(), key);
-            }
+            final Object result = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             if (result == null) {
                 throw raise(KeyError, "%s", key);
             }
@@ -183,7 +169,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object run(PMappingproxy self, Object key, Object value) {
-            throw raise(TypeError, "'mappingproxy' object does not support item assignment");
+            throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, "mappingproxy");
         }
     }
 
@@ -195,11 +181,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         boolean run(VirtualFrame frame, PMappingproxy self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.hasKeyWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-            } else {
-                return lib.hasKey(self.getDictStorage(), key);
-            }
+            return lib.hasKeyWithFrame(self.getDictStorage(), key, hasFrame, frame);
         }
     }
 

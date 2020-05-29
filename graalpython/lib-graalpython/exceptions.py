@@ -55,29 +55,13 @@ def SystemExit__init__(self, *args):
 SystemExit.__init__ = SystemExit__init__
 del SystemExit__init__
 
-def ImportError__init__(self, msg, name=None, path=None):
-    self.message = msg
+def ImportError__init__(self, msg=None, /, *args, name=None, path=None):
+    self.msg = msg
     self.name = name
     self.path = path
 
 ImportError.__init__ = ImportError__init__
 del ImportError__init__
-
-def ModuleNotFoundError__init__(self, msg, name=None):
-    self.msg = msg
-    self.name = name
-
-ModuleNotFoundError.__init__ = ModuleNotFoundError__init__
-del ModuleNotFoundError__init__
-
-def ModuleNotFoundError__str__(self):
-    if self.name is not None:
-        return "ModuleNotFound: '" + self.name + "'. " + self.msg
-    else:
-        return "ModuleNotFound: " + self.msg
-
-ModuleNotFoundError__str__.__init__ = ModuleNotFoundError__str__
-del ModuleNotFoundError__str__
 
 # EnvironmentError is just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
 EnvironmentError = OSError

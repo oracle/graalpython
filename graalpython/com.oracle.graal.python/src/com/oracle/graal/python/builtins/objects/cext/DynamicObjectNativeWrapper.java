@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -134,8 +135,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1142,13 +1142,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         static Object doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @Cached CoerceToIntegerNode.Dynamic castToIntNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
                 return 0L;
             }
-            setAttrNode.execute(object, __DICTOFFSET__, castToIntNode.execute(value));
+            setAttrNode.execute(object, __DICTOFFSET__, lib.asPInt(value));
             return value;
         }
 
@@ -1167,7 +1167,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(F_LINENO, key)")
         static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntLossyNode castToJavaIntNode) {
             try {
                 int lineno = castToJavaIntNode.execute(value);
                 object.setLine(lineno);
@@ -1335,7 +1335,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     return interopLib.asPointer(nativePointer);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreter();
-                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, "invalid pointer object: %s", nativePointer);
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_PTR_OBJ, nativePointer);
                 }
             }
         }

@@ -69,7 +69,7 @@ public class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     int getBufferLength(
                     @Shared("readNativeMemoryViewNode") @Cached ReadAttributeFromDynamicObjectNode readNativeMemoryViewNode,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                    @CachedLibrary("this") PythonObjectLibrary lib) {
         Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(getStorage(), C_MEMORYVIEW);
         return lib.length(nativeMemoryViewObject);
     }
@@ -77,7 +77,7 @@ public class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     byte[] getBufferBytes(
                     @Shared("readNativeMemoryViewNode") @Cached ReadAttributeFromDynamicObjectNode readNativeMemoryViewNode,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
                     @Cached PInteropSubscriptNode subscriptNode,
                     @Cached CastToByteNode castToByteNode) {
         Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(getStorage(), C_MEMORYVIEW);

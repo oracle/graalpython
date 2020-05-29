@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundL
 
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNodeGen.ReadFromCellNodeGen;
@@ -99,9 +100,9 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
                 return ref;
             } else {
                 if (isFreeVar) {
-                    throw raise.raise(NameError, "free variable '%s' referenced before assignment in enclosing scope", identifier);
+                    throw raise.raise(NameError, ErrorMessages.FREE_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
                 }
-                throw raise.raise(UnboundLocalError, "local variable '%s' referenced before assignment", identifier);
+                throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
             }
         }
 

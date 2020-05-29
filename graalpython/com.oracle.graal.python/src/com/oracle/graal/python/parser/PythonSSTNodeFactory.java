@@ -44,6 +44,7 @@ package com.oracle.graal.python.parser;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
@@ -139,7 +140,7 @@ public final class PythonSSTNodeFactory {
             if (scopeInfo.findFrameSlot(name) != null) {
                 // the expectation is that in the local context the variable can not have slot yet.
                 // The slot is created by assignment or declaration
-                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), "name '%s' is assigned to before nonlocal declaration", name);
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NAME_IS_ASSIGNED_BEFORE_NONLOCAL, name);
             }
             scopeInfo.addExplicitNonlocalVariable(name);
         }

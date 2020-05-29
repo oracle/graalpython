@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -121,7 +122,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             try {
                 ifd = PInt.intValueExact(fd);
             } catch (ArithmeticException e) {
-                throw raise(ValueError, "invalid file descriptor");
+                throw raise(ValueError, ErrorMessages.INVALID_FILE_DESCRIPTOR);
             }
 
             String path = getContext().getResources().getFilePath(ifd);
@@ -149,7 +150,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
 
                 return factory().createMMap(clazz, fileChannel, actualLen, offset);
             } catch (IOException e) {
-                throw raise(ValueError, "cannot mmap file");
+                throw raise(ValueError, ErrorMessages.CANNOT_MMAP_FILE);
             }
         }
 
@@ -179,7 +180,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         private void checkLength(long length) {
             if (length < 0) {
                 invalidLengthProfile.enter();
-                throw raise(PythonBuiltinClassType.OverflowError, "memory mapped length must be positive");
+                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
             }
         }
 

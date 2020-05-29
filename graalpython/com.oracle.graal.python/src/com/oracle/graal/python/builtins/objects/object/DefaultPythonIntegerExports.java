@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -243,5 +245,42 @@ final class DefaultPythonIntegerExports {
     @ExportMessage
     static int asFileDescriptor(Integer x) {
         return x;
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Integer receiver) {
+        return receiver.doubleValue();
+    }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static long asJavaLong(Integer receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Integer receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static int asPInt(Integer receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    public static Object lookupAttribute(Integer x, String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        return lookup.execute(x, name, inheritedOnly);
     }
 }

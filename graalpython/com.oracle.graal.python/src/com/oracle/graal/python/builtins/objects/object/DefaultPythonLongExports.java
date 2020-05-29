@@ -41,13 +41,15 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -264,15 +266,51 @@ final class DefaultPythonLongExports {
     @ExportMessage
     static int asFileDescriptor(Long x,
                     @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached CastToJavaIntNode castToJavaIntNode,
+                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile errorProfile) {
         try {
             return castToJavaIntNode.execute(x);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
             // we need to convert the TypeError to an OverflowError
-            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to int");
+            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Long receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Long receiver) {
+        return receiver.doubleValue();
+    }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Long receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static long asJavaLong(Long receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Long receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static long asPInt(Long receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    public static Object lookupAttribute(Long x, String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        return lookup.execute(x, name, inheritedOnly);
+    }
 }

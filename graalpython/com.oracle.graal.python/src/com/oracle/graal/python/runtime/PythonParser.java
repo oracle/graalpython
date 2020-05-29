@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.frame.Frame;
@@ -82,7 +83,7 @@ public interface PythonParser {
         RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments);
 
         default RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
-            return raiseInvalidSyntax(source, section, "invalid syntax", new Object[0]);
+            return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, new Object[0]);
         }
 
         PythonLanguage getLanguage();

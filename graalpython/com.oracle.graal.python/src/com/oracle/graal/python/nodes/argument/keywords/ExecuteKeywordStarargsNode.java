@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -113,7 +114,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
                 return keywords;
             } catch (KeywordNotStringException e) {
                 errorProfile.enter();
-                throw raise.raise(TypeError, "keywords must be strings");
+                throw raise.raise(TypeError, ErrorMessages.MUST_BE_STRINGS, "keywords");
             }
         }
 

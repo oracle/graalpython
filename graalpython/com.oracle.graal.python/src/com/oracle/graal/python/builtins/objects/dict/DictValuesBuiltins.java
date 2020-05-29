@@ -41,7 +41,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -93,12 +92,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
             final PHashingCollection dict = self.getWrappedDict();
             final HashingStorage storage = other.getWrappedDict().getDictStorage();
             for (Object selfKey : dict.keys()) {
-                final boolean hasKey;
-                if (hasFrame.profile(frame != null)) {
-                    hasKey = lib.hasKeyWithState(storage, selfKey, PArguments.getThreadState(frame));
-                } else {
-                    hasKey = lib.hasKey(storage, selfKey);
-                }
+                final boolean hasKey = lib.hasKeyWithFrame(storage, selfKey, hasFrame, frame);
                 if (!hasKey) {
                     return false;
                 }

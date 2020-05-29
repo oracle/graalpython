@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -261,7 +262,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             try {
                 return factory().createInt(fromDouble(self));
             } catch (NumberFormatException e) {
-                throw raise(ValueError, "cannot convert float %f to integer", self);
+                throw raise(ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
             }
         }
 
@@ -295,7 +296,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doFallback(Object possibleBase) {
-            throw raise(PythonErrorType.TypeError, "must be real number, not %p", possibleBase);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, possibleBase);
         }
     }
 
@@ -666,7 +667,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             try {
                 double result = Double.parseDouble(str);
                 if (Double.isInfinite(result)) {
-                    throw raise(PythonErrorType.OverflowError, "hexadecimal value too large to represent as a float");
+                    throw raise(PythonErrorType.OverflowError, ErrorMessages.HEX_VALUE_TOO_LARGE_AS_FLOAT);
                 }
 
                 return result;
@@ -690,7 +691,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         public double fromhex(Object object, Object arg) {
-            throw raise(PythonErrorType.TypeError, "bad argument type for built-in operation");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
     }
 
@@ -943,9 +944,9 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Fallback
         double roundFallback(Object x, Object n) {
             if (MathGuards.isFloat(x)) {
-                throw raise(PythonErrorType.TypeError, "'%p' object cannot be interpreted as an integer", n);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
             } else {
-                throw raise(PythonErrorType.TypeError, "descriptor '__round__' requires a 'float' but received a '%p'", x);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__round__", "float", x);
             }
         }
     }
@@ -1369,10 +1370,10 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile nanProfile,
                         @Cached("createBinaryProfile()") ConditionProfile infProfile) {
             if (nanProfile.profile(Double.isNaN(self))) {
-                throw raise(PythonErrorType.ValueError, "cannot convert NaN to integer ratio");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }
             if (infProfile.profile(Double.isInfinite(self))) {
-                throw raise(PythonErrorType.OverflowError, "cannot convert Infinity to integer ratio");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "Infinity");
             }
 
             // At the first time find mantissa and exponent. This is functionanlity of Math.frexp
@@ -1452,10 +1453,10 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile nanProfile,
                         @Cached("createBinaryProfile()") ConditionProfile infProfile) {
             if (nanProfile.profile(Double.isNaN(value))) {
-                throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
             if (infProfile.profile(Double.isInfinite(value))) {
-                throw raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
             return truncate(value);
         }
@@ -1466,10 +1467,10 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile infProfile) {
             double value = pValue.getValue();
             if (nanProfile.profile(Double.isNaN(value))) {
-                throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
             if (infProfile.profile(Double.isInfinite(value))) {
-                throw raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
             return truncate(value);
         }
@@ -1504,14 +1505,14 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         String getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object typeStr) {
-            throw raise(PythonErrorType.ValueError, "__getformat__() argument 1 must be 'double' or 'float'");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_D_MUST_BE_S_OR_S, "__getformat__()", 1, "double", "float");
         }
     }
 
     private abstract static class FloatBinaryBuiltinNode extends PythonBinaryBuiltinNode {
         protected void raiseDivisionByZero(boolean cond) {
             if (cond) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
         }
     }

@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -173,7 +174,7 @@ public class SemLockBuiltins extends PythonBuiltins {
         Object doRelease(PSemLock self) {
             if (self.getKind() == PSemLock.RECURSIVE_MUTEX) {
                 if (!self.isMine()) {
-                    throw raise(PythonBuiltinClassType.AssertionError, "attempt to release recursive lock not owned by thread");
+                    throw raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
                 }
                 if (self.getCount() > 1) {
                     self.decreaseCount();

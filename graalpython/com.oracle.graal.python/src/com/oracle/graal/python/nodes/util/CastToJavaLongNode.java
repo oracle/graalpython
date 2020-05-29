@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -50,38 +49,27 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
-/**
- * Casts a Python integer to a Java long, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * fails, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
 @ImportStatic(PGuards.class)
-public abstract class CastToJavaLongNode extends PNodeWithContext {
+abstract class CastToJavaLongNode extends PNodeWithContext {
 
     public abstract long execute(Object x) throws CannotCastException;
 
     @Specialization
-    static long doLong(boolean x) {
+    long doLong(boolean x) {
         return x ? 1 : 0;
     }
 
     @Specialization
-    static long doLong(int x) {
+    long doLong(int x) {
         return x;
     }
 
     @Specialization
-    static long doLong(long x) {
+    long doLong(long x) {
         return x;
-    }
-
-    @Specialization
-    static long doPInt(PInt x) {
-        return x.longValue();
     }
 
     @Specialization
@@ -99,13 +87,5 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
     @Fallback
     static long doUnsupported(@SuppressWarnings("unused") Object x) {
         throw CannotCastException.INSTANCE;
-    }
-
-    public static CastToJavaLongNode create() {
-        return CastToJavaLongNodeGen.create();
-    }
-
-    public static CastToJavaLongNode getUncached() {
-        return CastToJavaLongNodeGen.getUncached();
     }
 }

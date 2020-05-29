@@ -7,6 +7,7 @@
 *ContextManagerTestCase.test_contextmanager_except
 *ContextManagerTestCase.test_contextmanager_except_stopiter
 *ContextManagerTestCase.test_contextmanager_finally
+*ContextManagerTestCase.test_contextmanager_no_reraise
 *ContextManagerTestCase.test_contextmanager_plain
 *ContextManagerTestCase.test_contextmanager_trap_yield_after_throw
 *ContextManagerTestCase.test_instance_docstring_given_cm_docstring
@@ -31,3 +32,12 @@
 *TestContextDecorator.test_instance_docs
 *TestContextDecorator.test_typo_enter
 *TestContextDecorator.test_typo_exit
+*TestSuppress.test_cm_is_reentrant
+*TestSuppress.test_exact_exception
+*TestSuppress.test_exception_hierarchy
+*TestSuppress.test_instance_docs
+*TestSuppress.test_multiple_exception_args
+*TestSuppress.test_no_args
+*TestSuppress.test_no_exception
+*TestSuppress.test_no_result_from_enter
+*TestSuppress.test_other_exception

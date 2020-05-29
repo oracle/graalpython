@@ -42,8 +42,11 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -251,6 +254,79 @@ final class DefaultPythonObjectExports {
                 throw new IllegalStateException(e);
             }
         }
-        throw raise.raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
+        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
     }
+
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Object receiver,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        return interopLib.fitsInDouble(receiver);
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Object receiver,
+                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        if (canBeJavaDouble(receiver, interopLib)) {
+            try {
+                return interopLib.asDouble(receiver);
+            } catch (UnsupportedMessageException ex) {
+                // cannot happen due to check
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(ex);
+            }
+        }
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
+
+    }
+
+    @ExportMessage
+    public static Object lookupAttribute(@SuppressWarnings("unused") Object x, @SuppressWarnings("unused") String name, @SuppressWarnings("unused") boolean inheritedOnly) {
+        return PNone.NO_VALUE;
+    }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Object receiver,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        return interopLib.fitsInLong(receiver);
+    }
+
+    @ExportMessage
+    static long asJavaLong(Object receiver,
+                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        if (canBeJavaDouble(receiver, interopLib)) {
+            try {
+                return interopLib.asLong(receiver);
+            } catch (UnsupportedMessageException ex) {
+                // cannot happen due to check
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(ex);
+            }
+        }
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary lib) {
+        return lib.fitsInLong(receiver);
+    }
+
+    @ExportMessage
+    static long asPInt(Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary lib,
+                    @Cached.Exclusive @Cached PRaiseNode raise) {
+        if (lib.fitsInLong(receiver)) {
+            try {
+                return lib.asLong(receiver);
+            } catch (UnsupportedMessageException ex) {
+                // cannot happen due to check
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(ex);
+            }
+        }
+        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
+    }
+
 }

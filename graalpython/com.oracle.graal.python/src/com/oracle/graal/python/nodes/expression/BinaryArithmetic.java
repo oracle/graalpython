@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -75,7 +76,7 @@ public enum BinaryArithmetic {
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Override
             public Object execute(Object arg, Object arg2) {
-                throw PRaiseNode.getUncached().raise(TypeError, "unsupported operand type(s) for %s: '%p' and '%p'", operator, arg, arg2);
+                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, operator, arg, arg2);
             }
         };
     }

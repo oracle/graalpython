@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -68,9 +69,9 @@ public enum TernaryArithmetic {
             @Override
             public Object execute(Object arg, Object arg2, Object arg3) {
                 if (arg3 instanceof PNone) {
-                    throw raiseNode.raise(TypeError, "unsupported operand type(s) for %s or %s(): '%p' and '%p'", operator, operatorFunction, arg, arg2);
+                    throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P, operator, operatorFunction, arg, arg2);
                 } else {
-                    throw raiseNode.raise(TypeError, "unsupported operand type(s) for %s(): '%p', '%p', '%p'", operatorFunction, arg, arg2, arg3);
+                    throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, operatorFunction, arg, arg2, arg3);
                 }
             }
         };

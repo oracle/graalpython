@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -108,7 +109,7 @@ abstract class AccessForeignItemNodes {
             if (foreignSizeObj <= Integer.MAX_VALUE) {
                 return (int) foreignSizeObj;
             }
-            throw raise(TypeError, "number %s cannot fit into index-sized integer", foreignSizeObj);
+            throw raise(TypeError, ErrorMessages.NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT, foreignSizeObj);
         }
 
         protected SliceInfo materializeSlice(PSlice idxSlice, Object object, InteropLibrary libForObject) throws UnsupportedMessageException {
@@ -166,7 +167,7 @@ abstract class AccessForeignItemNodes {
 
         private PException raiseAttributeErrorDisambiguated(Object object, String key, InteropLibrary lib) {
             if (lib.hasArrayElements(object)) {
-                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, key);
             } else {
                 throw raiseAttributeError(object);
             }
@@ -189,11 +190,11 @@ abstract class AccessForeignItemNodes {
         }
 
         private PException raiseIndexError(long index) {
-            return raise(IndexError, "invalid index %s", index);
+            return raise(IndexError, ErrorMessages.INVALID_INDEX_S, index);
         }
 
         private PException raiseAttributeError(Object object) {
-            return raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
+            return raise(AttributeError, ErrorMessages.INSTANCE_HAS_NO_ATTR_S, object, "__getitem__");
         }
 
         private PForeignToPTypeNode getToPythonNode() {
@@ -263,18 +264,18 @@ abstract class AccessForeignItemNodes {
 
         private PException raiseAttributeReadOnlyDisambiguated(Object object, String key, InteropLibrary lib) {
             if (lib.hasArrayElements(object)) {
-                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, key);
             } else {
                 throw raiseAttributeReadOnly(key);
             }
         }
 
         private PException raiseAttributeReadOnly(String key) {
-            return raise(AttributeError, "attribute %s is read-only", key);
+            return raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
         }
 
         private PException raiseAttributeError(String key) {
-            return raise(AttributeError, "foreign object has no attribute '%s'", key);
+            return raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
         }
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -305,18 +306,18 @@ abstract class AccessForeignItemNodes {
                         throw new IllegalStateException("Array element should be writable, as per test");
                     } catch (UnsupportedTypeException e) {
                         unsupportedType.enter();
-                        throw raise(TypeError, "type '%p' is not supported by the foreign object", value);
+                        throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
                     }
                 }
                 wrongIndex.enter();
-                throw raise(IndexError, "invalid index %s", idx);
+                throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, idx);
             }
             unsupportedMessage.enter();
             throw raiseNoSetItem(object);
         }
 
         private PException raiseNoSetItem(Object object) {
-            return raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
+            return raise(AttributeError, ErrorMessages.INSTANCE_HAS_NO_ATTR_S, object, "__setitem__");
         }
 
         public static SetForeignItemNode create() {
@@ -363,14 +364,14 @@ abstract class AccessForeignItemNodes {
         }
 
         private PException raiseAttributeError(String key) {
-            return raise(AttributeError, "foreign object has no attribute '%s'", key);
+            return raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
         }
 
         private PException raiseAttributeReadOnlyDisambiguated(Object object, String key, InteropLibrary lib) {
             if (lib.hasArrayElements(object)) {
-                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, key);
             } else {
-                throw raise(AttributeError, "attribute %s is read-only", key);
+                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             }
         }
 
@@ -390,7 +391,7 @@ abstract class AccessForeignItemNodes {
         }
 
         private PException raiseAttributeError(Object object) {
-            return raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
+            return raise(AttributeError, ErrorMessages.INSTANCE_HAS_NO_ATTR_S, object, "__delitem__");
         }
 
         private Object removeForeignValue(Object object, int idx, InteropLibrary libForObject) throws UnsupportedMessageException {
@@ -398,7 +399,7 @@ abstract class AccessForeignItemNodes {
                 try {
                     libForObject.removeArrayElement(object, idx);
                 } catch (InvalidArrayIndexException ex) {
-                    throw raise(IndexError, "invalid index %s", idx);
+                    throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, idx);
                 }
             }
             throw raiseAttributeError(object);

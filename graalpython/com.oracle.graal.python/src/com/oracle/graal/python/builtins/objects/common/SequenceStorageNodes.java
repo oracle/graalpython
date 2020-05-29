@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -800,7 +801,7 @@ public abstract class SequenceStorageNodes {
             if (verifyNativeItemNode.execute(storage.getElementType(), item)) {
                 return item;
             }
-            throw raiseNode.raise(SystemError, "Invalid item type %s returned from native sequence storage (expected: %s)", item, storage.getElementType());
+            throw raiseNode.raise(SystemError, ErrorMessages.INVALID_ITEM_RETURNED_FROM_NATIVE_SEQ, item, storage.getElementType());
         }
     }
 
@@ -1369,7 +1370,7 @@ public abstract class SequenceStorageNodes {
             int length = selfLenNode.execute(store);
             int valueLen = otherLenNode.execute(sequence);
             if (wrongLength.profile(sinfo.step != 1 && sinfo.length != valueLen)) {
-                throw raiseNode.raise(ValueError, "attempt to assign sequence of size %d to extended slice of size %d", valueLen, length);
+                throw raiseNode.raise(ValueError, ErrorMessages.ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE, valueLen, length);
             }
             int start = sinfo.start;
             int stop = sinfo.stop;
@@ -2213,7 +2214,7 @@ public abstract class SequenceStorageNodes {
      * result to the new storage.
      */
     public abstract static class ConcatNode extends SequenceStorageBaseNode {
-        private static final String DEFAULT_ERROR_MSG = "bad argument type for built-in operation";
+        private static final String DEFAULT_ERROR_MSG = ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 
         @Child private ConcatBaseNode concatBaseNode = ConcatBaseNodeGen.create();
         @Child private CreateEmptyNode createEmptyNode = CreateEmptyNode.create();

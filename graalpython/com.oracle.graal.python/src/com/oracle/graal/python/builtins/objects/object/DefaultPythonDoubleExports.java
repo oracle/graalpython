@@ -42,16 +42,20 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -100,7 +104,7 @@ final class DefaultPythonDoubleExports {
 
         @Specialization
         static boolean dF(Double receiver, PFloat other,
-                        @Cached IsBuiltinClassProfile isFloat) {
+                        @Cached.Exclusive @Cached IsBuiltinClassProfile isFloat) {
             if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
                 return dd(receiver, other.getValue());
             } else {
@@ -167,5 +171,44 @@ final class DefaultPythonDoubleExports {
                     @Cached.Exclusive @Cached PRaiseNode raise,
                     @Cached.Exclusive @Cached ConditionProfile gotState) {
         return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    static boolean canBeJavaDouble(@SuppressWarnings("unused") Double receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static double asJavaDouble(Double receiver) {
+        return receiver;
+    }
+
+    @ExportMessage
+    static boolean canBeJavaLong(@SuppressWarnings("unused") Double receiver) {
+        return false;
+    }
+
+    @ExportMessage
+    static long asJavaLong(Double receiver,
+                    @Exclusive @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, receiver);
+    }
+
+    @ExportMessage
+    static boolean canBePInt(@SuppressWarnings("unused") Double receiver) {
+        return false;
+    }
+
+    @ExportMessage
+    static int asPInt(Double receiver,
+                    @Exclusive @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
+    }
+
+    @ExportMessage
+    public static Object lookupAttribute(Double x, String name, boolean inheritedOnly,
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        return lookup.execute(x, name, inheritedOnly);
     }
 }

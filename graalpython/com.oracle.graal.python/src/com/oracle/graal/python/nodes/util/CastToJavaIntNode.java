@@ -40,30 +40,17 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntExactNodeGen;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntLossyNodeGen;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CastToJavaIntNode extends PNodeWithContext {
+abstract class CastToJavaIntNode extends PNodeWithContext {
 
     public abstract int execute(int x);
 
@@ -71,107 +58,14 @@ public abstract class CastToJavaIntNode extends PNodeWithContext {
 
     public abstract int execute(Object x);
 
-    protected int toIntInternal(@SuppressWarnings("unused") long x) {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new IllegalStateException("should not be reached");
-    }
-
-    protected int toIntInternal(@SuppressWarnings("unused") PInt x) {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new IllegalStateException("should not be reached");
-    }
-
-    public static CastToJavaIntNode create() {
-        return CastToJavaIntExactNodeGen.create();
-    }
-
-    public static CastToJavaIntNode createLossy() {
-        return CastToJavaIntLossyNodeGen.create();
-    }
-
-    public static CastToJavaIntNode getUncached() {
-        return CastToJavaIntExactNodeGen.getUncached();
-    }
-
-    public static CastToJavaIntNode getLossyUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
-    }
-
     @Specialization
     public int toInt(int x) {
         return x;
     }
 
-    @Specialization
-    public int toInt(long x) {
-        return toIntInternal(x);
+    @Fallback
+    static int doUnsupported(@SuppressWarnings("unused") Object x) {
+        throw CannotCastException.INSTANCE;
     }
 
-    @Specialization
-    public int toInt(PInt x) {
-        return toIntInternal(x);
-    }
-
-    @Specialization(guards = "!isNumber(x)")
-    public int toInt(Object x,
-                    @Cached BranchProfile noValueProfile,
-                    @Cached BranchProfile integerProfile,
-                    @Cached BranchProfile longProfile,
-                    @Cached BranchProfile pIntProfile,
-                    @Cached BranchProfile errorProfile,
-                    @Cached PRaiseNode raise,
-                    @Cached LookupAndCallUnaryDynamicNode callIntNode) {
-        Object result = callIntNode.executeObject(x, __INT__);
-        if (result instanceof PNone) {
-            noValueProfile.enter();
-            throw raise.raise(TypeError, "must be numeric, not %p", x);
-        } else if (result instanceof Integer) {
-            integerProfile.enter();
-            return ((Integer) result).intValue();
-        } else if (result instanceof Long) {
-            longProfile.enter();
-            return toIntInternal((long) result);
-        } else if (result instanceof PInt) {
-            pIntProfile.enter();
-            return toIntInternal((PInt) result);
-        }
-        errorProfile.enter();
-        throw raise.raise(TypeError, "%p.__int__ returned a non int (type %p)", x, result);
-    }
-
-    @GenerateUncached
-    abstract static class CastToJavaIntLossyNode extends CastToJavaIntNode {
-        @Override
-        protected int toIntInternal(long x) {
-            return (int) x;
-        }
-
-        @Override
-        protected int toIntInternal(PInt x) {
-            return x.intValue();
-        }
-    }
-
-    @GenerateUncached
-    abstract static class CastToJavaIntExactNode extends CastToJavaIntNode {
-        @Override
-        protected int toIntInternal(long x) {
-            try {
-                return PInt.intValueExact(x);
-            } catch (ArithmeticException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(TypeError, "value too large to find into index-sized integer");
-            }
-        }
-
-        @Override
-        protected int toIntInternal(PInt x) {
-            try {
-                return x.intValueExact();
-            } catch (ArithmeticException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as int (type %p)", x, x);
-            }
-        }
-    }
 }

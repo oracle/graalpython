@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportEr
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -121,7 +122,7 @@ public class ImportFromNode extends AbstractImportNode {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         raiseNode = insert(PRaiseNode.create());
                     }
-                    throw raiseNode.raise(ImportError, "cannot import name '%s'", attr);
+                    throw raiseNode.raise(ImportError, ErrorMessages.CANNOT_IMPORT_NAME, attr);
                 }
             }
         }

@@ -1,3 +1,13 @@
+*ArbitraryFunctionAttrTest.test_delete_unknown_attr
+*ArbitraryFunctionAttrTest.test_unset_attr
+*FunctionDictsTest.test_func_as_dict_key
 *FunctionPropertiesTest.test___closure__
 *FunctionPropertiesTest.test___code__
 *FunctionPropertiesTest.test___globals__
+*FunctionPropertiesTest.test_copying___code__
+*FunctionPropertiesTest.test_dir_includes_correct_attrs
+*FunctionPropertiesTest.test_duplicate_function_equality
+*FunctionPropertiesTest.test_empty_cell
+*FunctionPropertiesTest.test_module
+*InstancemethodAttrTest.test___func__
+*InstancemethodAttrTest.test___self__

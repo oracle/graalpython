@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -162,7 +163,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
-            throw raise(AttributeError, "'foreign' object has no attribute '__len__'");
+            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, "__len__");
         }
     }
 
@@ -522,7 +523,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
-            throw raise(TypeError, "'foreign' object is not iterable");
+            throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
 
         @Specialization(guards = "lib.isString(iterable)")
@@ -533,12 +534,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
-            throw raise(TypeError, "'foreign' object is not iterable");
+            throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
 
         @Fallback
         PNone doGeneric(@SuppressWarnings("unused") Object o) {
-            throw raise(TypeError, "'foreign' object is not iterable");
+            throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
     }
 
@@ -563,14 +564,14 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 Object res = lib.instantiate(callee, convertedArgs);
                 return toPTypeNode.executeConvert(res);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, "invalid instantiation of foreign object");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
         protected Object doGeneric(Object callee, Object arguments, Object keywords) {
-            throw raise(PythonErrorType.TypeError, "invalid instantiation of foreign object");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
     }
 
@@ -613,14 +614,14 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     ForeignCallContext.exit(frame, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
         protected Object doGeneric(Object callee, Object arguments, Object keywords) {
-            throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
 
         public static CallNode create() {
@@ -653,7 +654,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
             }
-            throw raise(PythonErrorType.AttributeError, "foreign object has no attribute '%s'", member);
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, member);
         }
     }
 
@@ -666,7 +667,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 lib.writeMember(object, key, value);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object has no attribute '%s'", key);
+                throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             }
             return PNone.NONE;
         }
@@ -693,7 +694,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 lib.removeMember(object, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object has no attribute '%s'", key);
+                throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             }
             return PNone.NONE;
         }

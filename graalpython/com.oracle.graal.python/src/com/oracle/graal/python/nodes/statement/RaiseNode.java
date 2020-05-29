@@ -33,12 +33,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -66,16 +67,25 @@ public abstract class RaiseNode extends StatementNode {
         // raise * from <class>
         @Specialization
         void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, LazyPythonClass causeClass,
-                        @Cached PythonObjectFactory factory,
                         @Cached BranchProfile baseCheckFailedProfile,
                         @Cached ValidExceptionNode validException,
+                        @Cached CallNode callConstructor,
                         @Cached PRaiseNode raise) {
             if (!validException.execute(frame, causeClass)) {
                 baseCheckFailedProfile.enter();
-                throw raise.raise(PythonBuiltinClassType.TypeError, "exception causes must derive from BaseException");
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
-            PBaseException cause = factory.createBaseException(causeClass);
-            exception.setCause(cause);
+            Object cause = callConstructor.execute(causeClass);
+            if (cause instanceof PBaseException) {
+                exception.setCause((PBaseException) cause);
+            } else {
+                // msimacek: CPython currently (3.8.2) has a bug that it's not checking the type of
+                // the value returned by the constructor, you can set a non-exception as a cause
+                // this way and see the exception printer TypeError on it. I don't want to raise an
+                // exception because CPython doesn't do it and I don't want to change the cause type
+                // to Object either, because it's not meant to be that way.
+                exception.setCause(null);
+            }
         }
 
         // raise * from None
@@ -88,7 +98,7 @@ public abstract class RaiseNode extends StatementNode {
         @Specialization(guards = "!isValidCause(cause)")
         void setCause(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PBaseException exception, @SuppressWarnings("unused") Object cause,
                         @Cached PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "exception causes must derive from BaseException");
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
         }
 
         protected static boolean isValidCause(Object object) {
@@ -104,7 +114,7 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
         PException caughtException = getCaughtExceptionNode.execute(frame);
         if (hasCurrentException.profile(caughtException == null)) {
-            throw raise.raise(RuntimeError, "No active exception to reraise");
+            throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
         }
         throw caughtException.getExceptionForReraise();
     }
@@ -146,22 +156,34 @@ public abstract class RaiseNode extends StatementNode {
     @Specialization(guards = "isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, @SuppressWarnings("unused") PNone cause,
                     @Cached ValidExceptionNode validException,
+                    @Cached CallNode callConstructor,
+                    @Cached BranchProfile constructorTypeErrorProfile,
                     @Cached PRaiseNode raise) {
         checkBaseClass(frame, pythonClass, validException, raise);
-        throw raise.raise(pythonClass);
+        Object newException = callConstructor.execute(frame, pythonClass);
+        if (newException instanceof PBaseException) {
+            throw raise.raise((PBaseException) newException);
+        } else {
+            constructorTypeErrorProfile.enter();
+            throw raise.raise(TypeError, "calling %s should have returned an instance of BaseException, not %p", pythonClass, newException);
+        }
     }
 
     // raise <class> from *
     @Specialization(guards = "!isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, Object cause,
-                    @Cached PythonObjectFactory factory,
                     @Cached ValidExceptionNode validException,
                     @Cached PRaiseNode raise,
+                    @Cached CallNode callConstructor,
                     @Cached SetExceptionCauseNode setExceptionCauseNode) {
         checkBaseClass(frame, pythonClass, validException, raise);
-        PBaseException pythonException = factory.createBaseException(pythonClass);
-        setExceptionCauseNode.execute(frame, pythonException, cause);
-        throw raise.raise(pythonException);
+        Object newException = callConstructor.execute(frame, pythonClass);
+        if (newException instanceof PBaseException) {
+            setExceptionCauseNode.execute(frame, (PBaseException) newException, cause);
+            throw raise.raise((PBaseException) newException);
+        } else {
+            throw raise.raise(TypeError, "calling %s should have returned an instance of BaseException, not %p", pythonClass, newException);
+        }
     }
 
     // raise <invalid> [from *]
@@ -173,7 +195,7 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     private static PException raiseNoException(PRaiseNode raise) {
-        throw raise.raise(TypeError, "exceptions must derive from BaseException");
+        throw raise.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
     }
 
     public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {

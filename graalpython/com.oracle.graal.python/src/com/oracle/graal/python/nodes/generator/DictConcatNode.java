@@ -43,8 +43,6 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -87,15 +85,8 @@ public abstract class DictConcatNode extends ExpressionNode {
                     HashingStorageLibrary firstlib, HashingStorageLibrary otherlib) {
         HashingStorage dictStorage = dict.getDictStorage();
         for (Object key : other.keys()) {
-            Object value;
-            if (hasFrame.profile(frame != null)) {
-                ThreadState state = PArguments.getThreadState(frame);
-                value = otherlib.getItemWithState(other.getDictStorage(), key, state);
-                dictStorage = firstlib.setItemWithState(dictStorage, key, value, state);
-            } else {
-                value = otherlib.getItem(other.getDictStorage(), key);
-                dictStorage = firstlib.setItem(dictStorage, key, value);
-            }
+            Object value = otherlib.getItemWithFrame(other.getDictStorage(), key, hasFrame, frame);
+            dictStorage = firstlib.setItemWithFrame(dictStorage, key, value, hasFrame, frame);
         }
         dict.setDictStorage(dictStorage);
     }

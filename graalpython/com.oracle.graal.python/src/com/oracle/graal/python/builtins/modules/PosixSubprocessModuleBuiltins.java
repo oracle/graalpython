@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -137,7 +138,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 } else if (o instanceof PString) {
                     argStrings.add(((PString) o).getValue());
                 } else {
-                    throw raise(PythonBuiltinClassType.OSError, "illegal argument");
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_ARG);
                 }
             }
 
@@ -178,7 +179,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
                     pb.directory(new File(cwd));
                 } else {
-                    throw raise(PythonBuiltinClassType.OSError, "working directory %s is not accessible", cwd);
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.WORK_DIR_NOT_ACCESSIBLE, cwd);
                 }
             } catch (SecurityException e) {
                 throw raise(PythonBuiltinClassType.OSError, e);
@@ -220,7 +221,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     // errno:description"
                     err = resources.getFileChannel(errpipe_write);
                     if (!(err instanceof WritableByteChannel)) {
-                        throw raise(PythonBuiltinClassType.OSError, "there was an error writing the fork_exec error to the error pipe");
+                        throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR_WRITING_FORKEXEC);
                     } else {
                         ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
                         try {
@@ -253,7 +254,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 try {
                     actualCwd = castCwd.execute(cwd);
                 } catch (CannotCastException e) {
-                    throw raise(PythonBuiltinClassType.TypeError, "expected bytes, %p found", cwd);
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", cwd);
                 }
             }
 

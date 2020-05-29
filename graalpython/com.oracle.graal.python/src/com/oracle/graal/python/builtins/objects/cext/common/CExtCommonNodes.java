@@ -61,11 +61,12 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -138,9 +139,9 @@ public abstract class CExtCommonNodes {
             try {
                 return library.readMember(capiLibrary, name);
             } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid C API function: %s", name);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "corrupted C API library object: %s", capiLibrary);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, capiLibrary);
             }
         }
     }
@@ -167,7 +168,7 @@ public abstract class CExtCommonNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
                 profile.enter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "C API symbol %s is not callable", name);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
             }
         }
     }
@@ -259,17 +260,17 @@ public abstract class CExtCommonNodes {
                 ByteBuffer bytes;
                 if (cachedElementSize == 1L || cachedElementSize == 2L || cachedElementSize == 4L) {
                     if (!lib.hasArrayElements(arr)) {
-                        throw raiseNode.raise(SystemError, "provided object is not an array", cachedElementSize);
+                        throw raiseNode.raise(SystemError, ErrorMessages.PROVIDED_OBJ_NOT_ARRAY, cachedElementSize);
                     }
                     long arraySize = lib.getArraySize(arr);
                     bytes = readWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize), (int) cachedElementSize);
                     bytes.flip();
                 } else {
-                    throw raiseNode.raise(ValueError, "unsupported 'wchar_t' size; was: %d", cachedElementSize);
+                    throw raiseNode.raise(ValueError, ErrorMessages.UNSUPPORTED_SIZE_WAS, "wchar_t", cachedElementSize);
                 }
                 return decode(bytes);
             } catch (ArithmeticException e) {
-                throw raiseNode.raise(ValueError, "array size too large");
+                throw raiseNode.raise(ValueError, ErrorMessages.ARRAY_SIZE_TOO_LARGE);
             } catch (CharacterCodingException e) {
                 throw raiseNode.raise(UnicodeError, "%m", e);
             } catch (IllegalArgumentException e) {
@@ -277,13 +278,13 @@ public abstract class CExtCommonNodes {
             } catch (InteropException e) {
                 throw raiseNode.raise(TypeError, "%m", e);
             } catch (IllegalElementTypeException e) {
-                throw raiseNode.raise(UnicodeDecodeError, "Invalid input element type '%p'", e.elem);
+                throw raiseNode.raise(UnicodeDecodeError, ErrorMessages.INVALID_INPUT_ELEM_TYPE, e.elem);
             }
         }
 
         @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
         static String doBytes(Object arr, Object elementSizeObj,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @CachedLibrary("arr") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -291,7 +292,7 @@ public abstract class CExtCommonNodes {
                 long es = castToJavaLongNode.execute(elementSizeObj);
                 return doBytes(arr, es, es, lib, elemLib, raiseNode);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(ValueError, "invalid parameters");
+                throw raiseNode.raise(ValueError, ErrorMessages.INVALID_PARAMS);
             }
         }
 

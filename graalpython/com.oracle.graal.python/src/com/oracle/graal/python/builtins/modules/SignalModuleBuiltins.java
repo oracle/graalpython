@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -166,7 +167,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
                 Signals.scheduleAlarm(seconds.longValueExact());
                 return 0;
             } catch (ArithmeticException e) {
-                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }
     }
@@ -221,7 +222,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             try {
                 retval = Signals.setSignalHandler(signum, id);
             } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.TypeError, "TypeError: signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {

@@ -47,6 +47,7 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -122,7 +123,7 @@ public class CoerceToIntegerNode extends Node {
             if (typeErrorHandler != null) {
                 return typeErrorHandler.apply(x);
             } else {
-                throw raiseNode.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x);
             }
         }
 
@@ -138,12 +139,12 @@ public class CoerceToIntegerNode extends Node {
                     if (typeErrorHandler != null) {
                         return typeErrorHandler.apply(x);
                     } else {
-                        throw raiseNode.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+                        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x);
                     }
                 }
             }
             if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-                throw raiseNode.raise(TypeError, "__index__ returned non-int (type %p)", result);
+                throw raiseNode.raise(TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
             }
             return result;
         }

@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -92,13 +93,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteByteToChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteToChannelNode;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -128,7 +128,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public int execute(Channel channel) {
-                    throw raise.raise(PythonBuiltinClassType.ValueError, "read byte out of range");
+                    throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.READ_BYTE_OUT_OF_RANGE);
                 }
             });
         }
@@ -138,7 +138,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public int execute(Channel channel) {
-                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise.raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
             });
 
@@ -152,7 +152,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public void execute(Channel channel, byte b) {
-                    throw raise.raise(PythonBuiltinClassType.ValueError, "write byte out of range");
+                    throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.WRITE_BYTE_OUT_OF_RANGE);
                 }
             });
         }
@@ -162,7 +162,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 @Override
                 public void execute(Channel channel, byte b) {
-                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise.raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
             });
 
@@ -244,14 +244,14 @@ public class MMapBuiltins extends PythonBuiltins {
 
         public abstract long executeLong(PMMap self, Object idxObj);
 
-        @Specialization(guards = "!isPSlice(idxObj)")
+        @Specialization(guards = "!isPSlice(idxObj)", limit = "1")
         int doSingle(PMMap self, Object idxObj,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
-                        @Cached("create()") CoerceToJavaLongNode castToLongNode) {
+                        @CachedLibrary("idxObj") PythonObjectLibrary libIdx) {
 
             try {
-                long i = castToLongNode.execute(idxObj);
+                long i = libIdx.asJavaLong(idxObj);
                 long len = self.getLength();
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
@@ -300,22 +300,22 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetItemNode extends PythonTernaryBuiltinNode implements ByteWritingNode {
 
-        @Specialization(guards = "!isPSlice(idxObj)")
+        @Specialization(guards = "!isPSlice(idxObj)", limit = "1")
         PNone doSingle(PMMap self, Object idxObj, Object val,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") WriteByteToChannelNode writeByteNode,
-                        @Cached("create()") CoerceToJavaLongNode castToLongNode,
+                        @CachedLibrary("idxObj") PythonObjectLibrary libIdx,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
                         @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {
 
             try {
-                long i = castToLongNode.execute(idxObj);
+                long i = libIdx.asJavaLong(idxObj);
                 long len = self.getLength();
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
 
                 if (outOfRangeProfile.profile(idx < 0 || idx >= len)) {
-                    throw raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
 
                 // save current position
@@ -346,7 +346,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 SeekableByteChannel channel = self.getChannel();
 
                 if (invalidStepProfile.profile(info.step != 1)) {
-                    throw raise(PythonBuiltinClassType.SystemError, "step != 1 not supported");
+                    throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.STEP_1_NOT_SUPPORTED);
                 }
 
                 // save current position
@@ -410,7 +410,7 @@ public class MMapBuiltins extends PythonBuiltins {
             try {
                 close(self);
             } catch (IOException e) {
-                throw raiseNode.raise(PythonErrorType.BufferError, "cannot close exported pointers exist");
+                throw raiseNode.raise(PythonErrorType.BufferError, ErrorMessages.CANNOT_CLOSE_EXPORTED_PTRS_EXIST);
             }
             return PNone.NONE;
         }
@@ -596,11 +596,11 @@ public class MMapBuiltins extends PythonBuiltins {
                         break;
                     default:
                         errorProfile.enter();
-                        throw raise(PythonBuiltinClassType.ValueError, "unknown seek type");
+                        throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_S_TYPE, "seek");
                 }
                 if (where > size || where < 0) {
                     errorProfile.enter();
-                    throw raise(PythonBuiltinClassType.ValueError, "seek out of range");
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SEEK_OUT_OF_RANGE);
                 }
                 PMMap.position(channel, where);
                 return PNone.NONE;
@@ -622,7 +622,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(VirtualFrame frame, PMMap primary, PIBytesLike sub, Object starting, Object ending,
-                        @Shared("castLong") @Cached CastToJavaLongNode castLong,
+                        @Shared("castLong") @Cached CastToJavaLongLossyNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
@@ -665,7 +665,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(PMMap primary, int sub, Object starting, @SuppressWarnings("unused") Object ending,
-                        @Shared("castLong") @Cached CastToJavaLongNode castLong,
+                        @Shared("castLong") @Cached CastToJavaLongLossyNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
@@ -692,7 +692,7 @@ public class MMapBuiltins extends PythonBuiltins {
             }
         }
 
-        private static long castToLong(CastToJavaLongNode castLong, Object obj, long defaultVal) {
+        private static long castToLong(CastToJavaLongLossyNode castLong, Object obj, long defaultVal) {
             try {
                 return castLong.execute(obj);
             } catch (CannotCastException e) {

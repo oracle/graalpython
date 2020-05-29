@@ -17,6 +17,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.util.BiFunction;
 
+import java.math.BigInteger;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -26,6 +28,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -47,7 +50,7 @@ public class StringFormatter {
         try {
             return formatText.charAt(index++);
         } catch (StringIndexOutOfBoundsException e) {
-            throw core.raise(ValueError, "incomplete format");
+            throw core.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
         }
     }
 
@@ -82,7 +85,7 @@ public class StringFormatter {
                 break;
         }
         if (ret == null) {
-            throw core.raise(TypeError, "not enough arguments for format string");
+            throw core.raise(TypeError, ErrorMessages.NOT_ENOUGH_ARGS_FOR_FORMAT_STRING);
         }
         return ret;
     }
@@ -102,7 +105,7 @@ public class StringFormatter {
             } else if (o instanceof PFloat) {
                 return (int) ((PFloat) o).getValue();
             }
-            throw core.raise(TypeError, "* wants int");
+            throw core.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
         } else {
             if (Character.isDigit(c)) {
                 int numStart = index - 1;
@@ -215,7 +218,7 @@ public class StringFormatter {
             if (c == '(') {
                 // Mapping key, consisting of a parenthesised sequence of characters.
                 if (mapping == null) {
-                    throw core.raise(TypeError, "format requires a mapping");
+                    throw core.raise(TypeError, ErrorMessages.FORMAT_REQUIRES_MAPPING);
                 }
                 // Scan along until a matching close parenthesis is found
                 int parens = 1;
@@ -354,7 +357,7 @@ public class StringFormatter {
                         Object result = callNode.execute(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         ft.format(result.toString());
                     } else {
-                        throw core.raise(TypeError, " %%b requires bytes, or an object that implements %s, not '%p'", __BYTES__, arg);
+                        throw core.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, __BYTES__, arg);
                     }
                     break;
                 case 's': // String: converts any object using __str__(), __unicode__() ...
@@ -371,7 +374,7 @@ public class StringFormatter {
                             break;
                         }
                     }
-                    throw core.raise(TypeError, " %%r requires an object that implements %s", (spec.type == 's' ? __STR__ : __REPR__));
+                    throw core.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, (spec.type == 's' ? __STR__ : __REPR__));
 
                 case 'd': // All integer formats (+case for X).
                 case 'o':
@@ -393,10 +396,10 @@ public class StringFormatter {
                         fi.format((Integer) argAsNumber);
                     } else if (argAsNumber instanceof Long) {
                         f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                        fi.format(((Long) argAsNumber).intValue());
+                        fi.format((BigInteger.valueOf((Long) argAsNumber)));
                     } else if (argAsNumber instanceof PInt) {
                         f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                        fi.format(((PInt) argAsNumber).intValue());
+                        fi.format(((PInt) argAsNumber).getValue());
                     } else if (arg instanceof String && ((String) arg).length() == 1) {
                         f = ft = new TextFormatter(core, buffer, spec);
                         ft.format((String) arg);
@@ -405,7 +408,7 @@ public class StringFormatter {
                         ft.format(((PString) arg).getCharSequence());
                     } else {
                         // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, "%%%c requires int or char");
+                        throw core.raise(TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR);
                     }
 
                     break;
@@ -431,7 +434,7 @@ public class StringFormatter {
                         ff.format(((PFloat) argAsFloat).getValue());
                     } else {
                         // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, "float argument required, not %p", arg);
+                        throw core.raise(TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
                     }
 
                     break;
@@ -442,7 +445,7 @@ public class StringFormatter {
                     break;
 
                 default:
-                    throw core.raise(ValueError, "unsupported format character '%c' (0x%x) at index %d", spec.type, (int) spec.type, index - 1);
+                    throw core.raise(ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
             }
 
             // Pad the result as specified (in-place, in the buffer).
@@ -457,7 +460,7 @@ public class StringFormatter {
          * that has not yet been used.
          */
         if (argIndex == -1 || (argIndex >= 0 && PythonObjectLibrary.getUncached().length(args1) > argIndex + 1)) {
-            throw core.raise(TypeError, "not all arguments converted during string formatting");
+            throw core.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING);
         }
 
         // Return the final buffer contents as a str or unicode as appropriate.

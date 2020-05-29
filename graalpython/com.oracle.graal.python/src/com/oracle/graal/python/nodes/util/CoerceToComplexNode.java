@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes.util;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -61,7 +63,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 @ImportStatic(MathGuards.class)
 public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
     @Child private LookupAndCallUnaryNode callComplexFunc;
-    @Child private CoerceToDoubleNode coerceToDouble;
+    @Child private PythonObjectLibrary toDoubleLib;
 
     public abstract PComplex execute(VirtualFrame frame, Object x);
 
@@ -99,13 +101,13 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
                 // and may be removed in a future version of Python.
                 return (PComplex) result;
             } else {
-                throw raise(TypeError, "__complex__ should return a complex object");
+                throw raise(TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
         }
-        if (coerceToDouble == null) {
+        if (toDoubleLib == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            coerceToDouble = insert(CoerceToDoubleNode.create());
+            toDoubleLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
         }
-        return factory().createComplex(coerceToDouble.execute(frame, x), 0);
+        return factory().createComplex(toDoubleLib.asJavaDouble(x), 0);
     }
 }

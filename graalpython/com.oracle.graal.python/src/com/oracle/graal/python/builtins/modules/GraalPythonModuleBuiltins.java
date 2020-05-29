@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -283,7 +284,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @CachedLanguage PythonLanguage lang) {
             final CallTarget ct = lang.cacheCode(modulename, () -> null);
             if (ct == null) {
-                throw raise(ImportError, "no cached code for %s", modulename);
+                throw raise(ImportError, ErrorMessages.NO_CACHED_CODE, modulename);
             } else {
                 return factory().createCode((RootCallTarget) ct);
             }

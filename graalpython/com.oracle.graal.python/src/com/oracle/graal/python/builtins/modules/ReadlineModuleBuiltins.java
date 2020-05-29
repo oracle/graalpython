@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -169,7 +170,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return data.history.get(index);
             } catch (IndexOutOfBoundsException e) {
-                throw raise(PythonErrorType.IndexError, "index out of bounds");
+                throw raise(PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -191,7 +192,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return data.history.set(index, string);
             } catch (IndexOutOfBoundsException e) {
-                throw raise(PythonErrorType.IndexError, "index out of bounds");
+                throw raise(PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -207,7 +208,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return data.history.remove(index);
             } catch (IndexOutOfBoundsException e) {
-                throw raise(PythonErrorType.IndexError, "index out of bounds");
+                throw raise(PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }

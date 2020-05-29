@@ -1,3 +1,4 @@
+*ExceptionTest.test_except_gen_except
 *ExceptionTest.test_except_next
 *ExceptionTest.test_except_throw
 *ExceptionTest.test_return_stopiteration

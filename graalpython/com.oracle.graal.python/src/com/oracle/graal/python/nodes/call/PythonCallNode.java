@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -273,7 +274,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         PKeyword[] keywords = evaluateKeywords(frame);
         if (keywords.length != 0) {
             keywordsError.enter();
-            throw raise.raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.FOREIGN_INVOCATION_DOESNT_SUPPORT_KEYWORD_ARG);
         }
         try {
             return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.identifier, arguments));

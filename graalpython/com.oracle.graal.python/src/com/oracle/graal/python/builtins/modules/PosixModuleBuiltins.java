@@ -82,6 +82,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.ProcessProperties;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -112,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
@@ -121,10 +125,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -337,7 +339,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object doExecuteInternal(PythonModule thisModule, String path, PSequence args) throws IOException {
             int size = args.getSequenceStorage().length();
             if (size == 0) {
-                throw raise(ValueError, "arg 2 must not be empty");
+                throw raise(ValueError, ErrorMessages.ARG_D_MUST_NOT_BE_EMPTY);
             }
             String[] cmd = new String[size];
             // We don't need the path variable because it's already in the array
@@ -414,11 +416,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getpid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
+        @Specialization(rewriteOn = Exception.class)
+        @TruffleBoundary
+        long getPid() throws Exception {
+            if (ImageInfo.inImageRuntimeCode()) {
+                return ProcessProperties.getProcessID();
+            }
+            TruffleFile statFile = getContext().getPublicTruffleFileRelaxed("/proc/self/stat");
+            return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
+        }
+
         @Specialization
-        int getPid() {
-            // TODO: this needs to be implemented properly at some point (consider managed execution
-            // as well)
-            return System.identityHashCode(getContext());
+        @TruffleBoundary
+        long getPidFallback() {
+            String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+            return Long.parseLong(info.split("@")[0]);
         }
     }
 
@@ -868,7 +880,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "dupInt")
         int dupGeneric(Object fd,
-                        @Cached CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
             return getResources().dup(castToJavaIntNode.execute(fd));
         }
     }
@@ -1017,14 +1029,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
                         @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached CoerceToJavaLongNode castFdNode,
-                        @Cached CoerceToJavaLongNode castPosNode,
-                        @Cached CastToJavaIntNode castHowNode) {
+                        @CachedLibrary("fd") PythonObjectLibrary libFd,
+                        @CachedLibrary("pos") PythonObjectLibrary libPos,
+                        @Cached CastToJavaIntExactNode castHowNode) {
 
-            return lseek(frame, castFdNode.execute(fd), castPosNode.execute(pos), castHowNode.execute(how), channelClassProfile);
+            return lseek(frame, libFd.asJavaLong(fd), libPos.asJavaLong(pos), castHowNode.execute(how), channelClassProfile);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1222,21 +1234,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(array);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CoerceToJavaLongNode castToLongNode) {
-            return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize) {
+            return readLong(frame, fd, libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CoerceToJavaLongNode castToLongNode,
-                        @Cached CastToJavaIntNode castToIntNode) {
-            return readLong(frame, castToIntNode.execute(fd), castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize,
+                        @Cached CastToJavaIntExactNode castToIntNode) {
+            return readLong(frame, castToIntNode.execute(fd), libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
     }
 
@@ -1380,7 +1392,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isPNone(ns)"})
         Object utimeWrongNs(VirtualFrame frame, Object path, PTuple times, Object ns, Object dir_fd, Object follow_symlinks) {
-            throw raise(ValueError, "utime: you may specify either 'times' or 'ns' but not both");
+            throw raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
         }
 
         @SuppressWarnings("unused")
@@ -1413,13 +1425,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw tupleError(argname);
             }
             if (mtime < 0) {
-                throw raise(ValueError, "time cannot be negative");
+                throw raise(ValueError, ErrorMessages.CANNOT_BE_NEGATIVE, "time");
             }
             return mtime;
         }
 
         private PException tupleError(String argname) {
-            return raise(TypeError, "utime: '%s' must be either a tuple of two ints or None", argname);
+            return raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", argname, "a tuple of two ints", "None");
         }
 
         private void setMtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
@@ -1781,20 +1793,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
 
-        @Child private CoerceToIntegerNode castIntNode;
+        @Child private PythonObjectLibrary asPIntLib;
         @Child private GetTerminalSizeNode recursiveNode;
 
         @CompilationFinal private ConditionProfile errorProfile;
         @CompilationFinal private ConditionProfile overflowProfile;
 
-        private CoerceToIntegerNode getCastIntNode() {
-            if (castIntNode == null) {
+        private PythonObjectLibrary getAsPIntLibrary() {
+            if (asPIntLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CoerceToIntegerNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
+                asPIntLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
             }
-            return castIntNode;
+            return asPIntLib;
         }
 
         private ConditionProfile getErrorProfile() {
@@ -1832,7 +1842,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PTuple getTerminalSize(VirtualFrame frame, long fd) {
             if (getOverflowProfile().profile(Integer.MIN_VALUE > fd || fd > Integer.MAX_VALUE)) {
-                raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
             if (getErrorProfile().profile(getContext().getResources().getFileChannel((int) fd) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
@@ -1849,7 +1859,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     throw raiseOSError(frame, OSErrorEnum.EBADF);
                 }
             } catch (ArithmeticException e) {
-                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
             return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
@@ -1864,7 +1874,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object getTerminalSize(VirtualFrame frame, Object fd) {
-            Object value = getCastIntNode().execute(fd);
+            PythonObjectLibrary lib = getAsPIntLibrary();
+            if (!lib.canBePInt(fd)) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, fd);
+            }
+            Object value = lib.asPInt(fd);
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = create();

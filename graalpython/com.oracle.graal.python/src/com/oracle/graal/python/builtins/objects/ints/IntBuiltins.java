@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -121,7 +122,7 @@ public class IntBuiltins extends PythonBuiltins {
         protected void raiseDivisionByZero(boolean cond) {
             if (cond) {
                 divisionByZeroProfile.enter();
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
         }
     }
@@ -324,7 +325,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         double divDD(double x, double y) {
             if (y == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return x / y;
         }
@@ -332,7 +333,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         double doPI(long left, PInt right) {
             if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return op(PInt.longToBigInteger(left), right.getValue());
         }
@@ -340,7 +341,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         double doPL(PInt left, long right) {
             if (right == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return op(left.getValue(), PInt.longToBigInteger(right));
         }
@@ -348,7 +349,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         double doPP(PInt left, PInt right) {
             if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return op(left.getValue(), right.getValue());
         }
@@ -391,7 +392,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         double divDD(double right, double left) {
             if (right == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return left / right;
         }
@@ -399,7 +400,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         double doPL(PInt right, long left) {
             if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return op(PInt.longToBigInteger(left), right.getValue());
         }
@@ -407,7 +408,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         double doPP(PInt right, PInt left) {
             if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return op(left.getValue(), right.getValue());
         }
@@ -920,7 +921,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             if (b != (int) b) {
                 // exponent does not fit in an int, this is likely going to cause out-of-memory
-                throw raise(PythonErrorType.ArithmeticError, "exponent too large");
+                throw raise(PythonErrorType.ArithmeticError, ErrorMessages.EXPONENT_TOO_LARGE);
             }
             return a.pow((int) b);
         }
@@ -1142,7 +1143,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (shiftCount >= Integer.SIZE) {
                 throw new ArithmeticException("integer overflow");
             } else if (shiftCount < 0) {
-                throw raise(ValueError, "negative shift count");
+                throw raise(ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
             }
         }
 
@@ -1240,7 +1241,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         private void raiseNegativeShiftCount(boolean cond) {
             if (cond) {
-                throw raise(PythonErrorType.ValueError, "negative shift count");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
             }
         }
 
@@ -1309,7 +1310,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         private void raiseNegativeShiftCount(boolean cond) {
             if (cond) {
-                throw raise(PythonErrorType.ValueError, "negative shift count");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
             }
         }
 
@@ -1858,7 +1859,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (order.equals("little")) {
                 return false;
             }
-            throw raise(PythonErrorType.ValueError, "byteorder must be either 'little' or 'big'");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
         }
 
         @Specialization
@@ -2061,7 +2062,7 @@ public class IntBuiltins extends PythonBuiltins {
         PBytes general(VirtualFrame frame, Object self, Object byteCount, Object byteorder, Object oSigned) {
             int count = PythonObjectLibrary.getUncached().asSizeWithState(byteCount, PArguments.getThreadState(frame));
             if (!PGuards.isString(byteorder)) {
-                throw raise(PythonErrorType.TypeError, "to_bytes() argument 2 must be str, not %p", byteorder);
+                throw raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "to_bytes()", 2, "str", byteorder);
             }
             boolean signed = oSigned instanceof Boolean ? (boolean) oSigned : false;
             if (recursiveNode == null) {
@@ -2164,7 +2165,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (order.equals("little")) {
                 return false;
             }
-            throw raise(PythonErrorType.ValueError, "byteorder must be either 'little' or 'big'");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
         }
 
         private Object createIntObject(LazyPythonClass cl, BigInteger number) {
@@ -2276,7 +2277,7 @@ public class IntBuiltins extends PythonBuiltins {
             Object result = callBytesNode.executeObject(frame, object);
             if (result != PNone.NO_VALUE) { // first try o use __bytes__ call result
                 if (!(result instanceof PIBytesLike)) {
-                    raise(PythonErrorType.TypeError, "__bytes__ returned non-bytes (type %p)", result);
+                    raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NONBYTES, "__bytes__", result);
                 }
                 BigInteger bi = createBigInteger(getToBytesNode().execute(frame, result), isBigEndian(byteorder), false);
                 return createIntObject(cl, bi);
@@ -2290,7 +2291,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object general(@SuppressWarnings("unused") Object cl, Object object, @SuppressWarnings("unused") Object byteorder, @SuppressWarnings("unused") Object signed) {
-            throw raise(PythonErrorType.TypeError, "cannot convert '%p' object to bytes", object);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CONVERT_S_OBJ_TO_BYTES, object);
         }
     }
 

@@ -47,11 +47,12 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -67,6 +68,7 @@ import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * The standard Python object library. This implements a general-purpose Python object interface.
@@ -125,7 +127,7 @@ public abstract class PythonObjectLibrary extends Library {
      * objects.
      */
     public void setLazyPythonClass(Object receiver, LazyPythonClass cls) {
-        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'", receiver);
+        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES, receiver);
     }
 
     /**
@@ -227,6 +229,17 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public long hash(Object receiver) {
         return hashWithState(receiver, null);
+    }
+
+    /**
+     * @see #hashWithState(Object, ThreadState)
+     */
+    public final long hashWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return hashWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return hash(receiver);
+        }
     }
 
     @SuppressWarnings("static-method")
@@ -344,7 +357,7 @@ public abstract class PythonObjectLibrary extends Library {
     // used.
     @Child private DefaultNodes defaultNodes;
 
-    private final DefaultNodes getDefaultNodes() {
+    private DefaultNodes getDefaultNodes() {
         if (isAdoptable()) {
             if (defaultNodes == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -416,6 +429,17 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * @see #equalsWithState
+     */
+    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, ConditionProfile hasFrame, VirtualFrame frame) {
+        if (hasFrame.profile(frame != null)) {
+            return equalsWithState(receiver, other, otherLibrary, PArguments.getThreadState(frame));
+        } else {
+            return equals(receiver, other, otherLibrary);
+        }
+    }
+
+    /**
      * Compare {@code receiver} to {@code other} using {@code __eq__}.
      *
      * @param threadState may be {@code null}
@@ -461,13 +485,24 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * @see #asIndexWithState
+     */
+    public Object asIndexWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return asIndexWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return asIndex(receiver);
+        }
+    }
+
+    /**
      * Return the file system path representation of the object. If the object is str or bytes, then
      * allow it to pass through. If the object defines __fspath__(), then return the result of that
      * method. All other types raise a TypeError.
      */
     public String asPathWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "expected str, bytes or os.PathLike object, not %p", receiver);
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
         }
         return asPath(receiver);
     }
@@ -508,7 +543,7 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public int asFileDescriptorWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "argument must be an int, or have a fileno() method.");
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
         }
         return asFileDescriptor(receiver);
     }
@@ -540,6 +575,109 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Checks whether the receiver can be coerced to a Java double.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__index__</b>
+     * and <b>__float__</b> special methods. This is analogous to the checks made in
+     * {@code PyFloat_AsDouble} in {@code floatobject.c}
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a java double
+     */
+    @Abstract(ifExported = {"asJavaDoubleWithState", "asJavaDouble"})
+    public boolean canBeJavaDouble(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Java {@code double}. This method follows the
+     * semantics of CPython's function {@code PyFloat_AsDouble}.
+     */
+    public double asJavaDoubleWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asJavaDouble(receiver);
+    }
+
+    /**
+     * @see #asJavaDoubleWithState
+     */
+    public double asJavaDouble(Object receiver) {
+        return asJavaDoubleWithState(receiver, null);
+    }
+
+    /**
+     * Checks whether the receiver can be coerced to a Python int.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
+     * and <b>__index__</b> special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a Python int
+     */
+    @Abstract(ifExported = {"asPIntWithState", "asPInt"})
+    public boolean canBePInt(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Python {@code int}. This method follows the
+     * semantics of CPython's function {@code _PyLong_AsInt}.
+     */
+    public Object asPIntWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asPInt(receiver);
+    }
+
+    /**
+     * @see #asPIntWithState
+     */
+    public Object asPInt(Object receiver) {
+        return asPIntWithState(receiver, null);
+    }
+
+    /**
+     * Checks whether the receiver can be coerced to a Java long.
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object can be converted to a java long
+     */
+    @Abstract(ifExported = {"asJavaLongWithState", "asJavaLong"})
+    public boolean canBeJavaLong(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Coerces a given primitive or object to a Java {@code long}. This method follows the semantics
+     * of CPython's function {@code PyLong_AsLong}.
+     */
+    public long asJavaLongWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+        }
+        return asJavaLong(receiver);
+    }
+
+    /**
+     * @see #asJavaLongWithState
+     */
+    public long asJavaLong(Object receiver) {
+        return asJavaLongWithState(receiver, null);
+    }
+
+    /**
      * Coerces the receiver into an index-sized integer, using the same mechanism as
      * {@code PyNumber_AsSsize_t}:
      * <ol>
@@ -554,7 +692,7 @@ public abstract class PythonObjectLibrary extends Library {
         if (threadState == null) {
             // this will very likely always raise an integer interpretation error in
             // asIndexWithState
-            long result = CastToJavaLongNode.getUncached().execute(asIndexWithState(receiver, null));
+            long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, null));
             int intResult = (int) result;
             if (intResult == result) {
                 return intResult;
@@ -645,6 +783,17 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public int length(Object receiver) {
         return lengthWithState(receiver, null);
+    }
+
+    /**
+     * @see #asIndexWithState
+     */
+    public int lengthWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
+        if (hasFrameProfile.profile(frame != null)) {
+            return lengthWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return length(receiver);
+        }
     }
 
     /**

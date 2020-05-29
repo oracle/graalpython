@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 
@@ -82,7 +83,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     public void setNewLength(int length) {
         if (length != 0) {
             CompilerDirectives.transferToInterpreter();
-            PRaiseNode.getUncached().raise(ValueError, "list length out of range");
+            PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
         }
     }
 
@@ -109,13 +110,13 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public Object getItemNormalized(int idx) {
         CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "list index out of range");
+        throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
     }
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
         CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "list assignment index out of range");
+        throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
     }
 
     @Override

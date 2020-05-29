@@ -84,11 +84,11 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raiseHasNoLength(Object result) {
-        return raise(PythonBuiltinClassType.TypeError, "object of type '%p' has no len()", result);
+        return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_HAS_NO_LEN, result);
     }
 
     public final PException raiseIntegerInterpretationError(Object result) {
-        return raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", result);
+        return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, result);
     }
 
     public final PException raise(LazyPythonClass exceptionType) {

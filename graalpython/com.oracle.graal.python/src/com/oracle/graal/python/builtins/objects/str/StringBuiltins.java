@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -102,7 +103,7 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -270,7 +271,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 selfStr = castStr.execute(self);
                 otherStr = castStr.execute(other);
             } catch (CannotCastException e) {
-                throw raise(TypeError, "'in <string>' requires string as left operand, not %P", other);
+                throw raise(TypeError, ErrorMessages.REQUIRES_STRING_AS_LEFT_OPERAND, other);
             }
             return op(selfStr, otherStr);
         }
@@ -734,7 +735,7 @@ public final class StringBuiltins extends PythonBuiltins {
             String toStr = castToNode.cast(to, "argument 2 must be str, not %p", to);
             String fromStr = castFromNode.cast(from, "first maketrans argument must be a string if there is a second argument");
             if (fromStr.length() != toStr.length()) {
-                throw raise(PythonBuiltinClassType.ValueError, "the first two maketrans arguments must have equal length");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
             }
 
             HashingStorage storage = PDict.createNewStorage(false, fromStr.length());
@@ -763,7 +764,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isDict(from)", "isNoValue(to)"})
         @SuppressWarnings("unused")
         PDict doFail(Object from, Object to, Object z) {
-            throw raise(PythonBuiltinClassType.TypeError, "if you give only one argument to maketrans it must be a dict");
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT);
         }
     }
 
@@ -914,7 +915,7 @@ public final class StringBuiltins extends PythonBuiltins {
         PList doStringSepMaxsplit(String self, String sep, int maxsplit,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
             if (sep.isEmpty()) {
-                throw raise(ValueError, "empty separator");
+                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
             int splits = maxsplit == -1 ? Integer.MAX_VALUE : maxsplit;
 
@@ -1040,7 +1041,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
             if (sep.length() == 0) {
-                throw raise(ValueError, "empty separator");
+                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
             PList list = factory().createList();
             int splits = 0;
@@ -1188,7 +1189,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = {"doString", "doStringKeepends"})
         PList doGeneric(Object self, Object keepends,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaIntNode castToJavaIntNode) {
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "splitlines", self);
             boolean bKeepends = !PGuards.isPNone(keepends) && castToJavaIntNode.execute(keepends) != 0;
             return doStringKeepends(selfStr, bKeepends);
@@ -1335,7 +1336,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached StringNodes.FindNode findNode) {
             int idx = findNode.execute(frame, self, substr, start, end);
             if (idx < 0) {
-                throw raise(ValueError, "substring not found");
+                throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
             return idx;
         }
@@ -1346,7 +1347,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached StringNodes.FindNode findNode) {
             int idx = findNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "index", self), substr, start, end);
             if (idx < 0) {
-                throw raise(ValueError, "substring not found");
+                throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
             return idx;
         }
@@ -1360,7 +1361,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached StringNodes.RFindNode rFindNode) {
             int idx = rFindNode.execute(frame, self, substr, start, end);
             if (idx < 0) {
-                throw raise(ValueError, "substring not found");
+                throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
             return idx;
         }
@@ -1371,7 +1372,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached StringNodes.RFindNode rFindNode) {
             int idx = rFindNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "rindex", self), substr, start, end);
             if (idx < 0) {
-                throw raise(ValueError, "substring not found");
+                throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
             return idx;
         }
@@ -1433,7 +1434,7 @@ public final class StringBuiltins extends PythonBuiltins {
             try {
                 cs = Charset.forName(encoding);
             } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
+                throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             try {
                 ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
@@ -1950,7 +1951,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String fillStr = PGuards.isNoValue(fill) ? " " : castFillNode.cast(fill, "", fill);
             if (errorProfile.profile(fillStr.codePointCount(0, fillStr.length()) != 1)) {
-                throw raise(TypeError, "The fill character must be exactly one character long");
+                throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
             }
             return make(self, lib.asSizeWithState(width, PArguments.getThreadState(frame)), fillStr);
         }
@@ -2076,7 +2077,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
                 return charAtToString(primary, index);
             } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
-                throw raise(IndexError, "IndexError: string index out of range");
+                throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
         }
 

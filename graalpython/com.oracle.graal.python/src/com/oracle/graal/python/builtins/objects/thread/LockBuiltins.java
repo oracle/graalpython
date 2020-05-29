@@ -56,14 +56,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -84,18 +85,10 @@ public class LockBuiltins extends PythonBuiltins {
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
-        private @Child CoerceToDoubleNode coerceToDoubleNode;
         private @Child CoerceToBooleanNode castToBooleanNode;
+        private @Child PythonObjectLibrary pythonObjectLibrary;
         private @CompilationFinal ConditionProfile isBlockingProfile = ConditionProfile.createBinaryProfile();
         private @CompilationFinal ConditionProfile defaultTimeoutProfile = ConditionProfile.createBinaryProfile();
-
-        private CoerceToDoubleNode getCoerceToDoubleNode() {
-            if (coerceToDoubleNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                coerceToDoubleNode = insert(CoerceToDoubleNode.create());
-            }
-            return coerceToDoubleNode;
-        }
 
         private CoerceToBooleanNode getCastToBooleanNode() {
             if (castToBooleanNode == null) {
@@ -105,23 +98,31 @@ public class LockBuiltins extends PythonBuiltins {
             return castToBooleanNode;
         }
 
+        private PythonObjectLibrary getPythonObjectLibrary() {
+            if (pythonObjectLibrary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                pythonObjectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+            }
+            return pythonObjectLibrary;
+        }
+
         @Specialization
         boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout) {
             // args setup
             boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
             double timeoutSeconds = UNSET_TIMEOUT;
             if (!(timeout instanceof PNone)) {
-                timeoutSeconds = getCoerceToDoubleNode().execute(frame, timeout);
+                timeoutSeconds = getPythonObjectLibrary().asJavaDouble(timeout);
 
                 if (timeoutSeconds != UNSET_TIMEOUT) {
                     if (!isBlocking) {
-                        throw raise(ValueError, "can't specify a timeout for a non-blocking call");
+                        throw raise(ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
                     }
 
                     if (timeoutSeconds < 0) {
-                        throw raise(ValueError, "timeout value must be positive");
+                        throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
                     } else if (timeoutSeconds > TIMEOUT_MAX) {
-                        throw raise(OverflowError, "timeout value is too large");
+                        throw raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
                     }
                 }
             }

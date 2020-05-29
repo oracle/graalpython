@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.util.WeakASTReference;
@@ -86,7 +87,7 @@ public class StaticmethodBuiltins extends PythonBuiltins {
             Object callable = self.getCallable();
             if (callable == null) {
                 uninitialized.enter();
-                throw raise(PythonBuiltinClassType.RuntimeError, "uninitialized staticmethod object");
+                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return callable;
         }

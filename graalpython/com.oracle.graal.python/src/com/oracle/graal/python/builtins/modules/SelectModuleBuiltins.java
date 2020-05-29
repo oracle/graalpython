@@ -58,13 +58,13 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -99,11 +99,11 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("rlist") PythonObjectLibrary rlistLibrary,
                         @CachedLibrary("wlist") PythonObjectLibrary wlistLibrary,
                         @CachedLibrary("xlist") PythonObjectLibrary xlistLibrary,
-                        @Cached CoerceToDoubleNode coerceToDoubleNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary coerceTimeoutLib,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
-            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, rlistLibrary, wlistLibrary, xlistLibrary, coerceToDoubleNode, callGetItemNode, constructListNode, itemLib);
+            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, rlistLibrary, wlistLibrary, xlistLibrary, coerceTimeoutLib, callGetItemNode, constructListNode, itemLib);
         }
 
         @Specialization(replaces = "doWithoutTimeout", limit = "3")
@@ -111,7 +111,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("rlist") PythonObjectLibrary rlistLibrary,
                         @CachedLibrary("wlist") PythonObjectLibrary wlistLibrary,
                         @CachedLibrary("xlist") PythonObjectLibrary xlistLibrary,
-                        @Cached CoerceToDoubleNode coerceToDoubleNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary coerceTimeOutLib,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
@@ -137,14 +137,14 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             // Java API.
             long timeoutMillis;
             if (!PGuards.isPNone(timeout)) {
-                double timeoutSecs = coerceToDoubleNode.execute(frame, timeout);
+                double timeoutSecs = coerceTimeOutLib.asJavaDouble(timeout);
                 timeoutMillis = timeoutSecs != 0.0 ? (long) (timeoutSecs * 1000.0) : 1L;
             } else {
                 timeoutMillis = 0;
             }
 
             if (timeoutMillis < 0) {
-                throw raise(PythonBuiltinClassType.ValueError, "timeout must be non-negative");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
             }
 
             try {

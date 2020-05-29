@@ -28,8 +28,6 @@ package com.oracle.graal.python.nodes.literal;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -78,15 +76,9 @@ public abstract class DictLiteralNode extends LiteralNode {
     @ExplodeLoop
     private HashingStorage evalAndSetValues(VirtualFrame frame, HashingStorage dictStorage, Keys evalKeys, ConditionProfile hasFrame, HashingStorageLibrary lib) {
         HashingStorage storage = dictStorage;
-        ThreadState state = PArguments.getThreadState(frame);
         for (int i = 0; i < values.length; i++) {
             final Object val = values[i].execute(frame);
-            if (hasFrame.profile(frame != null)) {
-                storage = lib.setItemWithState(storage, evalKeys.keys[i], val, state);
-            } else {
-                storage = lib.setItem(storage, evalKeys.keys[i], val);
-            }
-
+            storage = lib.setItemWithFrame(storage, evalKeys.keys[i], val, hasFrame, frame);
         }
         return storage;
     }

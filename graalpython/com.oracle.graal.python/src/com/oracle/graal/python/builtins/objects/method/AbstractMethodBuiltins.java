@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -249,7 +250,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)"})
         Object getModule(@SuppressWarnings("unused") PBuiltinMethod self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonBuiltinClassType.AttributeError, "attribute '__doc__' of 'builtin_function_or_method' objects is not writable");
+            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, "__doc__", "builtin_function_or_method");
         }
     }
 }

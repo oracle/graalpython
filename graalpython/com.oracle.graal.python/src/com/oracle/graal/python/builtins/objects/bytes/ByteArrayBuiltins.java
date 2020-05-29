@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -91,7 +92,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         protected Object doGeneric(Object self, Object idx) {
-            throw raise(TypeError, "descriptor '__delitem__' requires a 'bytearray' object but received a '%p'", idx);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__delitem__", "bytearray", idx);
         }
     }
 
@@ -118,13 +119,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 updateSequenceStorage(self, res);
                 return self;
             }
-            throw raise(SystemError, "could not get bytes of memoryview");
+            throw raise(SystemError, ErrorMessages.COULD_NOT_GET_BYTES_OF_MEMORYVIEW);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         public Object add(Object self, Object other) {
-            throw raise(TypeError, "can't concat bytearray to %p", other);
+            throw raise(TypeError, ErrorMessages.CANT_CONCAT_S_TO_P, "bytearray", other);
         }
 
         private static void updateSequenceStorage(PByteArray array, SequenceStorage s) {
@@ -226,7 +227,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 doSlice(frame, self, slice, bytesObj, setItemNode);
                 return PNone.NONE;
             }
-            throw raise(SystemError, "could not get bytes of memoryview");
+            throw raise(SystemError, ErrorMessages.COULD_NOT_GET_BYTES_OF_MEMORYVIEW);
         }
 
         @Specialization(guards = "!isMemoryView(value)")

@@ -76,7 +76,6 @@ import java.io.PrintStream;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.List;
-import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -114,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -162,6 +162,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -242,7 +243,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbsNode) {
             Object result = callAbsNode.executeObject(frame, object);
             if (result == NO_VALUE) {
-                throw raise(TypeError, "bad operand type for abs():  %p", object);
+                throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
             return result;
         }
@@ -304,12 +305,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isPInt) {
-            Object index;
-            if (hasFrame.profile(frame != null)) {
-                index = lib.asIndexWithState(x, PArguments.getThreadState(frame));
-            } else {
-                index = lib.asIndex(x);
-            }
+            Object index = lib.asIndexWithFrame(x, hasFrame, frame);
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
@@ -330,7 +326,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * It should not be possible to get here, as PyNumber_Index already has a check for the
              * same condition
              */
-            throw raise(PythonBuiltinClassType.ValueError, "PyNumber_ToBase: index not int");
+            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INDEX_NOT_INT, "PyNumber_ToBase");
         }
     }
 
@@ -420,7 +416,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (arg >= 0 && arg <= 1114111) {
                 return Character.toString((char) arg);
             } else {
-                throw raise(ValueError, "chr() arg not in range(0x110000)");
+                throw raise(ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
             }
         }
 
@@ -428,9 +424,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public char charFromObject(PInt arg) {
             if (arg.longValue() > Integer.MAX_VALUE) {
-                throw raise(OverflowError, "integer is greater than maximum");
+                throw raise(OverflowError, ErrorMessages.INTEGER_GREATER_THAN_MAX);
             } else {
-                throw new RuntimeException("chr does not support PInt " + arg);
+                throw new RuntimeException(ErrorMessages.CHR_DOES_NOT_SUPPORT + arg);
             }
         }
 
@@ -438,17 +434,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         public Object charFromObject(double arg) {
-            throw raise(TypeError, "integer argument expected, got float");
+            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
         }
 
         @TruffleBoundary
         @Specialization
         public char charFromObject(Object arg) {
             if (arg instanceof Double) {
-                throw raise(TypeError, "integer argument expected, got float");
+                throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
             }
 
-            throw raise(TypeError, "an integer is required");
+            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
         }
     }
 
@@ -460,11 +456,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         long hash(VirtualFrame frame, Object object,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            if (profile.profile(frame != null)) {
-                return lib.hashWithState(object, PArguments.getThreadState(frame));
-            } else {
-                return lib.hash(object);
-            }
+            return lib.hashWithFrame(object, profile, frame);
         }
     }
 
@@ -509,7 +501,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = "doLong")
         public PTuple doLongZero(long a, long b) {
             if (b == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, "ZeroDivisionError: integer division or modulo by zero");
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.INTEGER_DIVISION_BY_ZERO);
             }
             return factory().createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
         }
@@ -553,7 +545,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] freeVars = code.getFreeVars();
             if (freeVars.length > 0) {
                 hasFreeVarsBranch.enter();
-                throw raise(PythonBuiltinClassType.TypeError, "code object passed to %s may not contain free variables", getMode());
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CODE_OBJ_NO_FREE_VARIABLES, getMode());
             }
         }
 
@@ -645,7 +637,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setCustomLocals(args, globals);
             RootCallTarget rootCallTarget = code.getRootCallTarget();
             if (rootCallTarget == null) {
-                throw raise(ValueError, "cannot create the a call target from the code object: %p", code);
+                throw raise(ValueError, ErrorMessages.CANNOT_CREATE_CALL_TARGET, code);
             }
 
             return invokeNode.execute(frame, rootCallTarget, args);
@@ -677,12 +669,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
         PNone badGlobals(@SuppressWarnings("unused") Object source, Object globals, @SuppressWarnings("unused") Object locals) {
-            throw raise(TypeError, "%s() globals must be a dict, not %p", funcname, globals);
+            throw raise(TypeError, ErrorMessages.GLOBALS_MUST_BE_DICT, funcname, globals);
         }
 
         @Specialization(guards = {"isAnyNone(globals) || isDict(globals)", "!isAnyNone(locals)", "!isMapping(locals)"})
         PNone badLocals(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") PDict globals, Object locals) {
-            throw raise(TypeError, "%s() locals must be a mapping or None, not %p", funcname, locals);
+            throw raise(TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, funcname, locals);
         }
     }
 
@@ -743,7 +735,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (mode.equals("single")) {
                 pm = ParserMode.Statement;
             } else {
-                throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
+                throw raise(ValueError, ErrorMessages.COMPILE_MUST_BE);
             }
             Supplier<CallTarget> createCode = () -> {
                 Source source = PythonLanguage.newSource(context, expression, filename, mayBeFromFile);
@@ -1221,11 +1213,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public int len(VirtualFrame frame, Object obj,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.lengthWithState(obj, PArguments.getThreadState(frame));
-            } else {
-                return lib.length(obj);
-            }
+            return lib.lengthWithFrame(obj, hasFrame, frame);
         }
     }
 
@@ -1267,7 +1255,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 currentValue = next.execute(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile1);
-                throw raise(PythonErrorType.ValueError, "%s() arg is an empty sequence", this instanceof MaxNode ? "max" : "min");
+                throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, this instanceof MaxNode ? "max" : "min");
             }
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             while (true) {
@@ -1387,7 +1375,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return next.execute(frame, iterator);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
-                throw raise(TypeError, e.setCatchingFrameAndGetEscapedException(frame), "'%p' object is not an iterator", iterator);
+                throw raise(TypeError, e.setCatchingFrameAndGetEscapedException(frame), ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
             }
         }
 
@@ -1416,7 +1404,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public int ord(String chr) {
             if (chr.length() != 1) {
-                throw raise(TypeError, "ord() expected a character, but string of length %d found", chr.length());
+                throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", chr.length());
             }
             return chr.charAt(0);
         }
@@ -1427,7 +1415,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
             int len = lenNode.execute(chr.getSequenceStorage());
             if (len != 1) {
-                throw raise(TypeError, "ord() expected a character, but string of length %d found", len);
+                throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
 
             Object element = getItemNode.execute(frame, chr.getSequenceStorage(), 0);
@@ -1512,14 +1500,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             try {
                 sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "sep must be None or a string, not %p", sepIn);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.SEP_MUST_BE_NONE_OR_STRING, sepIn);
             }
 
             String end;
             try {
                 end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "end must be None or a string, not %p", sepIn);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.END_MUST_BE_NONE_OR_STRING, sepIn);
             }
 
             Object file;
@@ -1580,7 +1568,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
                 return result;
             }
-            throw raise(TypeError, "__repr__ returned non-string (type %p)", obj);
+            throw raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", obj);
         }
     }
 
@@ -1687,7 +1675,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 Object sysModule = hlib.getItem(sysModules.getDictStorage(), "sys");
                 Object breakpointhook = getBreakpointhookNode.execute(sysModule, BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
-                    throw raise(PythonBuiltinClassType.RuntimeError, "lost sys.breakpointhook");
+                    throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOST_SYSBREAKPOINTHOOK);
                 }
                 return callNode.execute(frame, breakpointhook, args, kwargs);
             } else {

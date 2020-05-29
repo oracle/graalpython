@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -76,7 +77,7 @@ public abstract class DeleteItemNode extends StatementNode {
 
             @Override
             public Object execute(Object arg, Object arg2) {
-                throw raiseNode.raise(TypeError, "'%p' object doesn't support item deletion", arg);
+                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, arg);
             }
         };
     }

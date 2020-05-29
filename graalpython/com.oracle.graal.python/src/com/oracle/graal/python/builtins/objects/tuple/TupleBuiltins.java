@@ -61,12 +61,12 @@ import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -74,7 +74,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -141,7 +141,7 @@ public class TupleBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raise(PythonErrorType.ValueError, "tuple.index(x): x not in tuple");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
 
         @Specialization
@@ -288,8 +288,9 @@ public class TupleBuiltins extends PythonBuiltins {
         public int doNative(PythonNativeObject self,
                         @Cached PCallCapiFunction callSizeNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached CoerceToJavaLongNode castToLongNode) {
-            return (int) castToLongNode.execute(callSizeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self)));
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached CastToJavaIntExactNode castToInt) {
+            return castToInt.execute(lib.asJavaLong(callSizeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self))));
         }
     }
 
@@ -508,7 +509,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, "can only concatenate tuple (not \"%p\") to tuple", right);
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
         }
     }
 
@@ -590,12 +591,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, tupleStore, i);
-                long tmp;
-                if (hasFrame.profile(frame != null)) {
-                    tmp = lib.hashWithState(item, PArguments.getThreadState(frame));
-                } else {
-                    tmp = lib.hash(item);
-                }
+                long tmp = lib.hashWithFrame(item, hasFrame, frame);
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }
