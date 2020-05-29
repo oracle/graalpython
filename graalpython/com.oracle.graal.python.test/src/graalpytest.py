@@ -213,6 +213,11 @@ class TestCase(object):
             msg = "Expected '%r' to be greater than '%r'" % (actual, expected)
         assert expected > actual, msg
 
+    def assertGreaterEqual(self, expected, actual, msg=None):
+        if not msg:
+            msg = "Expected '%r' to be greater than or equal to '%r'" % (actual, expected)
+        assert expected >= actual, msg
+
     def assertSequenceEqual(self, expected, actual, msg=None):
         if not msg:
             msg = "Expected '%r' to be equal to '%r'" % (actual, expected)
