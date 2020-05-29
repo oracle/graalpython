@@ -1654,7 +1654,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
         Object call(Object get, Object set, String name, LazyPythonClass owner) {
-            return factory().createGetSetDescriptor(get, set, name, owner);
+            return factory().createGetSetDescriptor(get, set, name, owner, true);
         }
 
         @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
@@ -1664,7 +1664,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(get)", "!isNoValue(set)"})
         Object call(@SuppressWarnings("unused") PNone get, Object set, String name, LazyPythonClass owner) {
-            return factory().createGetSetDescriptor(null, set, name, owner);
+            return factory().createGetSetDescriptor(null, set, name, owner, true);
         }
     }
 

@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -409,6 +410,14 @@ public abstract class CExtNodes {
         @Specialization
         static Object doNativeNull(@SuppressWarnings("unused") CExtContext cextContext, PythonNativeNull object) {
             return object.getPtr();
+        }
+
+        @Specialization
+        static Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            assert marker == DescriptorDeleteMarker.INSTANCE;
+            PythonNativeNull nativeNull = (PythonNativeNull) getNativeNullNode.execute();
+            return nativeNull.getPtr();
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
