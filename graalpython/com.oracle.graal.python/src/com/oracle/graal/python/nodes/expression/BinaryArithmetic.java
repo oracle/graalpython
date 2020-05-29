@@ -67,11 +67,14 @@ public enum BinaryArithmetic {
     Pow(SpecialMethodNames.__POW__, "**");
 
     private final String methodName;
+    private final String reverseMethodName;
     private final String operator;
     private final Supplier<NotImplementedHandler> notImplementedHandler;
 
     BinaryArithmetic(String methodName, String operator) {
         this.methodName = methodName;
+        assert methodName.startsWith("__");
+        this.reverseMethodName = "__r" + methodName.substring(2);
         this.operator = operator;
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Override
@@ -112,10 +115,10 @@ public enum BinaryArithmetic {
     }
 
     public ExpressionNode create(ExpressionNode left, ExpressionNode right) {
-        return new BinaryArithmeticExpression(LookupAndCallBinaryNode.createReversible(methodName, notImplementedHandler), left, right);
+        return new BinaryArithmeticExpression(LookupAndCallBinaryNode.createReversible(methodName, reverseMethodName, notImplementedHandler), left, right);
     }
 
     public LookupAndCallBinaryNode create() {
-        return LookupAndCallBinaryNode.createReversible(methodName, notImplementedHandler);
+        return LookupAndCallBinaryNode.createReversible(methodName, reverseMethodName, notImplementedHandler);
     }
 }
