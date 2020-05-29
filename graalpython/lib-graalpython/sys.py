@@ -149,8 +149,6 @@ ps1 = ">>> "
 # continue prompt for interactive shell
 ps2 = "... "
 
-pycache_prefix = None
-
 # Stub audit hooks implementation for PEP 578
 def audit(str, *args):
     pass

@@ -377,6 +377,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
             dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
+            String cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
+            if (cachePrefix != null) {
+                contextBuilder.option("python.PyCachePrefix", cachePrefix);
+            }
         }
 
         String executable = getContextOptionIfSetViaCommandLine("python.Executable");
@@ -552,8 +556,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     protected void printHelp(OptionCategory maxCategory) {
         print("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
-                        "-B     : on CPython, this disables writing .py[co] files on import;\n" +
-                        "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
+                        "-B     : this disables writing .py[co] files on import\n" +
                         "-c cmd : program passed in as string (terminates option list)\n" +
                         // "-d : debug output from parser; also PYTHONDEBUG=x\n" +
                         "-E     : ignore PYTHON* environment variables (such as PYTHONPATH)\n" +

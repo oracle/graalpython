@@ -4,8 +4,10 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 20.1.1
-* When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing. 
-   
+* When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
+* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable. 
+* Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.
+* Command option -B works
 
 ## Version 20.1.0
 
