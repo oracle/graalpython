@@ -96,6 +96,10 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
                     entireMessage = "unindent does not match any outer indentation level";
                     errorType = ErrorType.Indentation;
                     break;
+                case Python3Parser.TAB_ERROR:
+                    entireMessage = "inconsistent use of tabs and spaces in indentation";
+                    errorType = ErrorType.Tab;
+                    break;
                 case Python3Parser.INDENT:
                     entireMessage = "unexpected indent";
                     errorType = ErrorType.Indentation;
