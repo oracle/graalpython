@@ -189,6 +189,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
 
     private PException wrapJavaException(Throwable e) {
         PException pe = PException.fromObject(getBaseException(e), this);
+        pe.setHideLocation(true);
         // Re-attach truffle stacktrace
         moveTruffleStackTrace(e, pe);
         return pe;
@@ -206,6 +207,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
 
     public static PException createRecursionError(Throwable e, PythonObjectFactory factory, Node location) {
         PException pe = PException.fromObject(factory.createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}), location);
+        pe.setHideLocation(true);
         moveTruffleStackTrace(e, pe);
         return pe;
     }
