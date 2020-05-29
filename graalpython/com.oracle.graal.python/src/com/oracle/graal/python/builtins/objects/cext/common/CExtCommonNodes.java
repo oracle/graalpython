@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -269,7 +270,7 @@ public abstract class CExtCommonNodes {
                     throw raiseNode.raise(ValueError, ErrorMessages.UNSUPPORTED_SIZE_WAS, "wchar_t", cachedElementSize);
                 }
                 return decode(bytes);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raise(ValueError, ErrorMessages.ARRAY_SIZE_TOO_LARGE);
             } catch (CharacterCodingException e) {
                 throw raiseNode.raise(UnicodeError, "%m", e);
@@ -324,7 +325,7 @@ public abstract class CExtCommonNodes {
                 if (elemLib.fitsInLong(elem)) {
                     barr[j] = (byte) elemLib.asLong(elem);
                 } else {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalElementTypeException(elem);
                 }
             }

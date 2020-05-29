@@ -32,10 +32,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -183,8 +185,13 @@ public abstract class PSequence extends PythonBuiltinObject {
     @ExportMessage
     public Object readArrayElement(long index,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Cached SequenceStorageNodes.GetItemScalarNode getItem) {
-        return getItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+                    @Cached SequenceStorageNodes.GetItemScalarNode getItem) throws InvalidArrayIndexException {
+        try {
+            return getItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
     }
 
 }

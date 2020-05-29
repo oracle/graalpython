@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -82,8 +83,8 @@ final class DefaultPythonLongExports {
 
     @ExportMessage
     static class AsSize {
-        @Specialization(rewriteOn = ArithmeticException.class)
-        static int noOverflow(Long self, @SuppressWarnings("unused") LazyPythonClass type) {
+        @Specialization(rewriteOn = OverflowException.class)
+        static int noOverflow(Long self, @SuppressWarnings("unused") LazyPythonClass type) throws OverflowException {
             return PInt.intValueExact(self);
         }
 
@@ -92,7 +93,7 @@ final class DefaultPythonLongExports {
                         @Exclusive @Cached PRaiseNode raise) {
             try {
                 return PInt.intValueExact(self);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 if (type != null) {
                     throw raise.raiseNumberTooLarge(type, self);
                 } else {

@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -121,7 +122,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             int ifd;
             try {
                 ifd = PInt.intValueExact(fd);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_FILE_DESCRIPTOR);
             }
 

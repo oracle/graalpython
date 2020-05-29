@@ -153,6 +153,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -3759,7 +3760,7 @@ public abstract class SequenceStorageNodes {
                                             array = elements;
                                         }
                                         elements[i++] = bvalue;
-                                    } catch (ArithmeticException e) {
+                                    } catch (OverflowException e) {
                                         throw new UnexpectedResultException(value);
                                     }
                                 } catch (PException e) {

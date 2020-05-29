@@ -38,50 +38,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.util;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+public class OverflowException extends Exception {
+    private static final long serialVersionUID = 3636682077428219386L;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+    public static final OverflowException INSTANCE = new OverflowException();
 
-/**
- * Casts a Python integer to a Java int without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
-
-    public static CastToJavaIntExactNode create() {
-        return CastToJavaIntExactNodeGen.create();
+    private OverflowException() {
+        /*
+         * We use the super constructor that initializes the cause to null. Without that, the cause
+         * would be this exception itself. This helps escape analysis: it avoids the circle of an
+         * object pointing to itself. We also do not need a message, so we use the constructor that
+         * also allows us to set the message to null.
+         */
+        super(null, null);
     }
 
-    public static CastToJavaIntExactNode getUncached() {
-        return CastToJavaIntExactNodeGen.getUncached();
-    }
-
-    @Specialization
-    public int toInt(long x) {
-        try {
-            return PInt.intValueExact(x);
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
-    }
-
-    @Specialization
-    public int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (ArithmeticException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x, x);
-        }
+    /**
+     * For performance reasons, this exception does not record any stack trace information.
+     */
+    @SuppressWarnings("sync-override")
+    @Override
+    public final Throwable fillInStackTrace() {
+        return this;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.Normali
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithoutBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -197,10 +198,10 @@ public abstract class IndexNodes {
             return index;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(rewriteOn = OverflowException.class)
         int doLong(long lIndex, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int index = PInt.intValueExact(lIndex);
             return doInt(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
         }
@@ -212,7 +213,7 @@ public abstract class IndexNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doLong(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
@@ -243,7 +244,7 @@ public abstract class IndexNodes {
     abstract static class NormalizeIndexWithoutBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 
         @Specialization
-        int doInt(int index, int length, @SuppressWarnings("unused") String errorMessage,
+        static int doInt(int index, int length, @SuppressWarnings("unused") String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
             int idx = index;
             if (negativeIndexProfile.profile(idx < 0)) {
@@ -253,38 +254,37 @@ public abstract class IndexNodes {
         }
 
         @Specialization
-        int doBool(boolean index, @SuppressWarnings("unused") int length, @SuppressWarnings("unused") String errorMessage) {
-            int idx = PInt.intValue(index);
-            return idx;
+        static int doBool(boolean index, @SuppressWarnings("unused") int length, @SuppressWarnings("unused") String errorMessage) {
+            return PInt.intValue(index);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doLong(long index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
+        @Specialization(rewriteOn = OverflowException.class)
+        static int doLong(long index, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) throws OverflowException {
             int idx = PInt.intValueExact(index);
             return doInt(idx, length, errorMessage, negativeIndexProfile);
         }
 
         @Specialization(replaces = "doLong")
-        int doLongOvf(long index, int length, String errorMessage,
+        static int doLongOvf(long index, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doLong(index, length, errorMessage, negativeIndexProfile);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int doPInt(PInt index, int length, String errorMessage,
+        static int doPInt(PInt index, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, negativeIndexProfile);
         }
 
         @Specialization(replaces = "doPInt")
-        int doPIntOvf(PInt index, int length, String errorMessage,
+        static int doPIntOvf(PInt index, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {

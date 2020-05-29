@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -134,9 +136,10 @@ public abstract class CArrayWrappers {
                 } else if (idx == s.length()) {
                     return '\0';
                 }
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // fall through
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw InvalidArrayIndexException.create(index);
         }
 
@@ -198,9 +201,10 @@ public abstract class CArrayWrappers {
                 } else if (idx == arr.length) {
                     return (byte) 0;
                 }
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // fall through
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw InvalidArrayIndexException.create(index);
         }
 

@@ -43,8 +43,6 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.util.Function;
-
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -53,6 +51,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -89,8 +89,8 @@ public abstract class CastToByteNode extends Node {
         return value;
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    protected byte doShort(short value) {
+    @Specialization(rewriteOn = OverflowException.class)
+    protected byte doShort(short value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
 
@@ -98,13 +98,13 @@ public abstract class CastToByteNode extends Node {
     protected byte doShortOvf(short value) {
         try {
             return PInt.byteValueExact(value);
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             return handleRangeError(value);
         }
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    protected byte doInt(int value) {
+    @Specialization(rewriteOn = OverflowException.class)
+    protected byte doInt(int value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
 
@@ -112,13 +112,13 @@ public abstract class CastToByteNode extends Node {
     protected byte doIntOvf(int value) {
         try {
             return PInt.byteValueExact(value);
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             return handleRangeError(value);
         }
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    protected byte doLong(long value) {
+    @Specialization(rewriteOn = OverflowException.class)
+    protected byte doLong(long value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
 
@@ -126,13 +126,13 @@ public abstract class CastToByteNode extends Node {
     protected byte doLongOvf(long value) {
         try {
             return PInt.byteValueExact(value);
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             return handleRangeError(value);
         }
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    protected byte doPInt(PInt value) {
+    @Specialization(rewriteOn = OverflowException.class)
+    protected byte doPInt(PInt value) throws OverflowException {
         return PInt.byteValueExact(value.longValueExact());
     }
 
@@ -140,7 +140,7 @@ public abstract class CastToByteNode extends Node {
     protected byte doPIntOvf(PInt value) {
         try {
             return PInt.byteValueExact(value.longValueExact());
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             return handleRangeError(value);
         }
     }

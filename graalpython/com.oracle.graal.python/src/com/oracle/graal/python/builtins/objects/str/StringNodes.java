@@ -75,6 +75,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -365,7 +366,7 @@ public abstract class StringNodes {
             try {
                 translatedChars[i] = PInt.charValueExact(translated);
                 return translatedChars;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
             }
@@ -378,7 +379,7 @@ public abstract class StringNodes {
             try {
                 translatedChars[i] = PInt.charValueExact(translated);
                 return translatedChars;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
             }
