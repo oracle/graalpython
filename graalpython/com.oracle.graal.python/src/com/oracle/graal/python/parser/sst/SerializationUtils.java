@@ -91,7 +91,9 @@ public class SerializationUtils {
         WhileID,
         WithID,
         YieldExpressionID,
-        NullID, // represent null value in the tree (needed for collections for example)
+        NullID; // represent null value in the tree (needed for collections for example)
+
+        public static final SSTId[] VALUES = values();
     }
 
     // This implementation requires that if the enum is changed,
@@ -101,7 +103,7 @@ public class SerializationUtils {
     }
 
     public static SSTId getSSTNodeTypeFromId(byte id) {
-        return SSTId.values()[id];
+        return SSTId.VALUES[id];
     }
 
     public static byte getUnaryArithemticId(UnaryArithmetic ua) {
