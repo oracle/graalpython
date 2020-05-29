@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,17 +41,180 @@
 
 package com.oracle.graal.python.parser.sst;
 
-public class StringLiteralSSTNode extends SSTNode {
-    protected final String[] values;
+import java.util.ArrayList;
+import java.util.List;
 
-    public StringLiteralSSTNode(String[] values, int start, int end) {
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.source.Source;
+
+public abstract class StringLiteralSSTNode extends SSTNode {
+
+    private StringLiteralSSTNode(int start, int end) {
         super(start, end);
-        this.values = values;
     }
 
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
+    public static final class RawStringLiteralSSTNode extends StringLiteralSSTNode {
+
+        protected String value;
+
+        protected RawStringLiteralSSTNode(String value, int startIndex, int endIndex) {
+            super(startIndex, endIndex);
+            this.value = value;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
+    public static final class BytesLiteralSSTNode extends StringLiteralSSTNode {
+
+        protected byte[] value;
+
+        protected BytesLiteralSSTNode(byte[] value, int startIndex, int endIndex) {
+            super(startIndex, endIndex);
+            this.value = value;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class FormatStringLiteralSSTNode extends StringLiteralSSTNode {
+
+        protected FormatStringLiteralNode.StringPart[] value;
+
+        protected FormatStringLiteralSSTNode(FormatStringLiteralNode.StringPart[] value, int startIndex, int endIndex) {
+            super(startIndex, endIndex);
+            this.value = value;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    private static final String CANNOT_MIX_MESSAGE = "cannot mix bytes and nonbytes literals";
+
+    private static class BytesBuilder {
+        List<byte[]> bytes = new ArrayList<>();
+        int len = 0;
+
+        void append(byte[] b) {
+            len += b.length;
+            bytes.add(b);
+        }
+
+        byte[] build() {
+            byte[] output = new byte[len];
+            int offset = 0;
+            for (byte[] bs : bytes) {
+                PythonUtils.arraycopy(bs, 0, output, offset, bs.length);
+                offset += bs.length;
+            }
+            return output;
+        }
+    }
+
+    public static StringLiteralSSTNode create(String[] values, int startOffset, int endOffset, Source source, PythonParser.ParserErrorCallback errors) {
+        StringBuilder sb = null;
+        BytesBuilder bb = null;
+        boolean isFormatString = false;
+        List<FormatStringLiteralNode.StringPart> formatStrings = null;
+        for (String text : values) {
+            boolean isRaw = false;
+            boolean isBytes = false;
+            boolean isFormat = false;
+
+            int strStartIndex = 1;
+            int strEndIndex = text.length() - 1;
+
+            for (int i = 0; i < 3; i++) {
+                char chr = Character.toLowerCase(text.charAt(i));
+
+                if (chr == 'r') {
+                    isRaw = true;
+                } else if (chr == 'u') {
+                    // unicode case (default)
+                } else if (chr == 'b') {
+                    isBytes = true;
+                } else if (chr == 'f') {
+                    isFormat = true;
+                } else if (chr == '\'' || chr == '"') {
+                    strStartIndex = i + 1;
+                    break;
+                }
+            }
+
+            if (text.endsWith("'''") || text.endsWith("\"\"\"")) {
+                strStartIndex += 2;
+                strEndIndex -= 2;
+            }
+
+            text = text.substring(strStartIndex, strEndIndex);
+            if (isBytes) {
+                if (sb != null || isFormatString) {
+                    throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), CANNOT_MIX_MESSAGE);
+                }
+                if (bb == null) {
+                    bb = new BytesBuilder();
+                }
+                if (isRaw) {
+                    bb.append(text.getBytes());
+                } else {
+                    bb.append(BytesUtils.fromString(errors, text));
+                }
+            } else {
+                if (bb != null) {
+                    throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), CANNOT_MIX_MESSAGE);
+                }
+                if (!isRaw) {
+                    try {
+                        text = StringUtils.unescapeJavaString(text);
+                    } catch (PException e) {
+                        e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
+                        String message = e.getMessage();
+                        message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
+                        throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
+                    }
+                }
+                if (isFormat) {
+                    isFormatString = true;
+                    if (formatStrings == null) {
+                        formatStrings = new ArrayList<>();
+                    }
+                    if (sb != null && sb.length() > 0) {
+                        formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
+                        sb = null;
+                    }
+                    formatStrings.add(new FormatStringLiteralNode.StringPart(text, true));
+                } else {
+                    if (sb == null) {
+                        sb = new StringBuilder();
+                    }
+                    sb.append(text);
+                }
+            }
+        }
+
+        if (bb != null) {
+            return new BytesLiteralSSTNode(bb.build(), startOffset, endOffset);
+        } else if (isFormatString) {
+            if (sb != null && sb.length() > 0) {
+                formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
+            }
+            return new FormatStringLiteralSSTNode(formatStrings.toArray(new FormatStringLiteralNode.StringPart[formatStrings.size()]), startOffset, endOffset);
+        }
+        return new RawStringLiteralSSTNode(sb == null ? "" : sb.toString(), startOffset, endOffset);
+    }
 }

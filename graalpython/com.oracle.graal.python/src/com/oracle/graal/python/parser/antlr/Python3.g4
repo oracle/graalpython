@@ -1222,7 +1222,7 @@ factor returns [SSTNode result]
                         // solving cases like --2
                         $result =  new UnarySSTNode(UnaryArithmetic.Neg, fResult, getStartIndex($ctx), getStopIndex($factor.stop)); 
                     } else {
-                        ((NumberLiteralSSTNode)fResult).setIsNegative(true);
+                        ((NumberLiteralSSTNode)fResult).negate();
                         fResult.setStartOffset($m.getStartIndex());
                         $result =  fResult;
                     }
@@ -1318,34 +1318,34 @@ atom returns [SSTNode result]
 	| DECIMAL_INTEGER 
             { 
                 String text = $DECIMAL_INTEGER.text;
-                $result = text != null ? new NumberLiteralSSTNode(text, 0, 10, $DECIMAL_INTEGER.getStartIndex(), $DECIMAL_INTEGER.getStopIndex() + 1) : null; 
+                $result = text != null ? NumberLiteralSSTNode.create(text, 0, 10, $DECIMAL_INTEGER.getStartIndex(), $DECIMAL_INTEGER.getStopIndex() + 1) : null; 
             }
 	| OCT_INTEGER 
             { 
                 String text = $OCT_INTEGER.text;
-                $result = text != null ? new NumberLiteralSSTNode(text, 2, 8, $OCT_INTEGER.getStartIndex(), $OCT_INTEGER.getStopIndex() + 1) : null; 
+                $result = text != null ? NumberLiteralSSTNode.create(text, 2, 8, $OCT_INTEGER.getStartIndex(), $OCT_INTEGER.getStopIndex() + 1) : null; 
             }
 	| HEX_INTEGER 
             { 
                 String text = $HEX_INTEGER.text;
-                $result = text != null ? new NumberLiteralSSTNode(text, 2, 16, $HEX_INTEGER.getStartIndex(), $HEX_INTEGER.getStopIndex() + 1) : null; 
+                $result = text != null ? NumberLiteralSSTNode.create(text, 2, 16, $HEX_INTEGER.getStartIndex(), $HEX_INTEGER.getStopIndex() + 1) : null; 
             }
 	| BIN_INTEGER 
             { 
                 String text = $BIN_INTEGER.text;
-                $result = text != null ? new NumberLiteralSSTNode(text, 2, 2, $BIN_INTEGER.getStartIndex(), $BIN_INTEGER.getStopIndex() + 1) : null; 
+                $result = text != null ? NumberLiteralSSTNode.create(text, 2, 2, $BIN_INTEGER.getStartIndex(), $BIN_INTEGER.getStopIndex() + 1) : null; 
             }
 	| FLOAT_NUMBER 
             {   
                 String text = $FLOAT_NUMBER.text;
-                $result = text != null ? new FloatLiteralSSTNode(text, false, $FLOAT_NUMBER.getStartIndex(), $FLOAT_NUMBER.getStopIndex() + 1) : null; 
+                $result = text != null ? FloatLiteralSSTNode.create(text, false, $FLOAT_NUMBER.getStartIndex(), $FLOAT_NUMBER.getStopIndex() + 1) : null; 
             }
 	| IMAG_NUMBER 
             { 
                 String text = $IMAG_NUMBER.text;
-                $result = text != null ? new FloatLiteralSSTNode(text, true, $IMAG_NUMBER.getStartIndex(), $IMAG_NUMBER.getStopIndex() + 1) : null; 
+                $result = text != null ? FloatLiteralSSTNode.create(text, true, $IMAG_NUMBER.getStartIndex(), $IMAG_NUMBER.getStopIndex() + 1) : null; 
             }
-	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralSSTNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
+	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = factory.createStringLiteral(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
 	| t='...' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS,  start, start + 3);}
 	| t='None' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  start, start + 4);}
 	| t='True' { int start = $t.getStartIndex(); $result = new BooleanLiteralSSTNode(true,  start, start + 4); }

@@ -41,35 +41,117 @@
 
 package com.oracle.graal.python.parser.sst;
 
-public class NumberLiteralSSTNode extends SSTNode {
-    protected final String value;
-    protected final int start;
-    protected final int base;
-    protected boolean negative;
+import java.math.BigInteger;
 
-    public NumberLiteralSSTNode(String value, int start, int base, int startIndex, int endIndex) {
+public abstract class NumberLiteralSSTNode extends SSTNode {
+
+    private NumberLiteralSSTNode(int startIndex, int endIndex) {
         super(startIndex, endIndex);
-        this.value = value.indexOf('_') == -1 ? value : value.replaceAll("_", "");
-        this.start = start;
-        this.base = base;
     }
 
-    public NumberLiteralSSTNode(String value, boolean negative, int start, int base, int startIndex, int endIndex) {
-        this(value, start, base, startIndex, endIndex);
-        this.negative = negative;
+    public static final class IntegerLiteralSSTNode extends NumberLiteralSSTNode {
+
+        protected long value;
+
+        protected IntegerLiteralSSTNode(long value, int startIndex, int endIndex) {
+            super(startIndex, endIndex);
+            this.value = value;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public void negate() {
+            assert value != Long.MIN_VALUE;
+            value = -value;
+        }
+
+        @Override
+        public boolean isNegative() {
+            return value < 0;
+        }
     }
 
-    public boolean isNegative() {
-        return negative;
+    public static final class BigIntegerLiteralSSTNode extends NumberLiteralSSTNode {
+
+        protected BigInteger value;
+
+        protected BigIntegerLiteralSSTNode(BigInteger value, int startIndex, int endIndex) {
+            super(startIndex, endIndex);
+            this.value = value;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public void negate() {
+            value = value.negate();
+        }
+
+        @Override
+        public boolean isNegative() {
+            return value.signum() < 0;
+        }
     }
 
-    public void setIsNegative(boolean isNegative) {
-        this.negative = isNegative;
+    private static int digitValue(char ch) {
+        if (ch >= '0' && ch <= '9') {
+            return ch - '0';
+        } else if (ch >= 'a' && ch <= 'f') {
+            return ch - 'a' + 10;
+        } else {
+            assert ch >= 'A' && ch <= 'f';
+            return ch - 'A' + 10;
+        }
     }
 
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
+    public static NumberLiteralSSTNode create(String rawValue, int start, int base, int startIndex, int endIndex) {
+        String value = rawValue.replace("_", "");
+
+        final long max = Long.MAX_VALUE;
+        final long moltmax = max / base;
+        int i = start;
+        long result = 0;
+        int lastD;
+        boolean overunder = false;
+        while (i < value.length()) {
+            lastD = digitValue(value.charAt(i));
+
+            long next = result;
+            if (next > moltmax) {
+                overunder = true;
+            } else {
+                next *= base;
+                if (next > (max - lastD)) {
+                    overunder = true;
+                } else {
+                    next += lastD;
+                }
+            }
+            if (overunder) {
+                // overflow
+                BigInteger bigResult = BigInteger.valueOf(result);
+                BigInteger bigBase = BigInteger.valueOf(base);
+                while (i < value.length()) {
+                    bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
+                    i++;
+                }
+                return new BigIntegerLiteralSSTNode(bigResult, startIndex, endIndex);
+            }
+            result = next;
+            i++;
+        }
+
+        return new IntegerLiteralSSTNode(result, startIndex, endIndex);
     }
 
+    public abstract void negate();
+
+    public abstract boolean isNegative();
 }

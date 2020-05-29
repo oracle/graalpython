@@ -44,8 +44,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.parser.sst.ArgDefListBuilder.Parameter;
 import com.oracle.graal.python.parser.sst.ArgDefListBuilder.ParameterWithDefValue;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.IntegerLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils.SSTId;
 
 public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
@@ -464,7 +467,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
             writeId(SSTId.FloatLiteralID);
             writePosition(node);
             out.writeBoolean(node.imaginary);
-            writeString(node.value);
+            writeLong(Double.doubleToRawLongBits(node.value));
         } catch (IOException e) {
             handleIOExceptin(e);
         }
@@ -621,14 +624,25 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visit(NumberLiteralSSTNode node) {
+    public Boolean visit(IntegerLiteralSSTNode node) {
         try {
-            writeId(SSTId.NumberLiteralID);
+            writeId(SSTId.IntegerLiteralID);
             writePosition(node);
-            out.writeByte(node.start);
-            out.writeByte(node.base);
-            out.writeBoolean(node.negative);
-            writeString(node.value);
+            writeLong(node.value);
+        } catch (IOException e) {
+            handleIOExceptin(e);
+        }
+        return true;
+    }
+
+    @Override
+    public Boolean visit(BigIntegerLiteralSSTNode node) {
+        try {
+            writeId(SSTId.BigIntegerLiteralID);
+            writePosition(node);
+            byte[] bytes = node.value.toByteArray();
+            writeInt(bytes.length);
+            out.write(bytes);
         } catch (IOException e) {
             handleIOExceptin(e);
         }
@@ -711,11 +725,41 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visit(StringLiteralSSTNode node) {
+    public Boolean visit(StringLiteralSSTNode.RawStringLiteralSSTNode node) {
         try {
-            writeId(SSTId.StringLiteralID);
+            writeId(SSTId.RawStringLiteralID);
             writePosition(node);
-            write(node.values);
+            writeString(node.value);
+        } catch (IOException e) {
+            handleIOExceptin(e);
+        }
+        return true;
+    }
+
+    @Override
+    public Boolean visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+        try {
+            writeId(SSTId.BytesLiteralID);
+            writePosition(node);
+            writeInt(node.value.length);
+            out.write(node.value);
+        } catch (IOException e) {
+            handleIOExceptin(e);
+        }
+        return true;
+    }
+
+    @Override
+    public Boolean visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
+        try {
+            writeId(SSTId.FormatStringLiteralID);
+            writePosition(node);
+            StringPart[] parts = node.value;
+            writeInt(parts.length);
+            for (StringPart part : parts) {
+                out.writeBoolean(part.isFormatString());
+                writeString(part.getText());
+            }
         } catch (IOException e) {
             handleIOExceptin(e);
         }

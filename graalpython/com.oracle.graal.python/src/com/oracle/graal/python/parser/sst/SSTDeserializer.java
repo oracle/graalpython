@@ -43,6 +43,7 @@ package com.oracle.graal.python.parser.sst;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.sst.SerializationUtils.SSTId;
 import java.io.DataInputStream;
@@ -126,8 +127,10 @@ public final class SSTDeserializer {
                 return readLambda();
             case NotID:
                 return readNot();
-            case NumberLiteralID:
-                return readNumberLiteral();
+            case IntegerLiteralID:
+                return readIntegerLiteral();
+            case BigIntegerLiteralID:
+                return readBigIntegerLiteral();
             case OrID:
                 return readOr();
             case RaiseID:
@@ -140,8 +143,12 @@ public final class SSTDeserializer {
                 return readSlice();
             case StarID:
                 return readStar();
-            case StringLiteralID:
-                return readStringLiteral();
+            case RawStringLiteralID:
+                return readRawStringLiteral();
+            case BytesLiteralID:
+                return readBytesLiteral();
+            case FormatStringLiteralID:
+                return readFormatStringLiteral();
             case SubscriptID:
                 return readSubscript();
             case TernaryIfID:
@@ -172,20 +179,20 @@ public final class SSTDeserializer {
 
     private int readInt(byte firstByte) throws IOException {
         switch (firstByte) {
-            default:
-                return firstByte & 0xFF;
-            case (byte) 0x80:
+            case (byte) 0x80: // two bytes
                 return ((stream.readByte() & 0xFF) << 8) |
                                 (stream.readByte() & 0xFF);
-            case (byte) 0x81:
+            case (byte) 0x81: // three bytes
                 return ((stream.readByte() & 0xFF) << 16) |
                                 ((stream.readByte() & 0xFF) << 8) |
                                 (stream.readByte() & 0xFF);
-            case (byte) 0x82:
+            case (byte) 0x82: // four bytes
                 return ((stream.readByte() & 0xFF) << 24) |
                                 ((stream.readByte() & 0xFF) << 16) |
                                 ((stream.readByte() & 0xFF) << 8) |
                                 (stream.readByte() & 0xFF);
+            default: // 7 bits
+                return firstByte & 0xFF;
         }
     }
 
@@ -430,7 +437,7 @@ public final class SSTDeserializer {
         int startOffset = startIndex;
         int endOffset = endIndex;
         boolean imaginary = stream.readBoolean();
-        String value = readString();
+        double value = Double.longBitsToDouble(readLong());
         return new FloatLiteralSSTNode(value, imaginary, startOffset, endOffset);
     }
 
@@ -553,25 +560,22 @@ public final class SSTDeserializer {
         return new NotSSTNode(value, startOffset, endOffset);
     }
 
-    private SSTNode readNumberLiteral() throws IOException {
+    private SSTNode readIntegerLiteral() throws IOException {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        byte start = stream.readByte();
-        byte base = stream.readByte();
-        boolean negativ = stream.readBoolean();
-        // String value = source.getCharacters().subSequence(negativ ? startOffset + 1 :
-        // startOffset, endOffset).toString();
-        String value = readString();
-        char c = value.charAt(0);
-        if (c == '(') {
-            value = value.substring(1);
-            c = value.charAt(0);
-        }
-        if (c == ' ') {
-            value = value.trim();
-        }
-        return new NumberLiteralSSTNode(value, negativ, start, base, startOffset, endOffset);
+        long value = readLong();
+        return new NumberLiteralSSTNode.IntegerLiteralSSTNode(value, startOffset, endOffset);
+    }
+
+    private SSTNode readBigIntegerLiteral() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        int length = readInt();
+        byte[] bytes = new byte[length];
+        stream.readFully(bytes);
+        return new NumberLiteralSSTNode.BigIntegerLiteralSSTNode(new BigInteger(bytes), startOffset, endOffset);
     }
 
     private SSTNode readOr() throws IOException {
@@ -625,12 +629,34 @@ public final class SSTDeserializer {
         return new StarSSTNode(value, startOffset, endOffset);
     }
 
-    private SSTNode readStringLiteral() throws IOException {
+    private SSTNode readRawStringLiteral() throws IOException {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        String[] values = readStrings();
-        return new StringLiteralSSTNode(values, startOffset, endOffset);
+        String value = readString();
+        return new StringLiteralSSTNode.RawStringLiteralSSTNode(value, startOffset, endOffset);
+    }
+
+    private SSTNode readBytesLiteral() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        byte[] value = new byte[readInt()];
+        stream.readFully(value);
+        return new StringLiteralSSTNode.BytesLiteralSSTNode(value, startOffset, endOffset);
+    }
+
+    private SSTNode readFormatStringLiteral() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        StringPart[] value = new StringPart[readInt()];
+        for (int i = 0; i < value.length; i++) {
+            boolean isFormatString = stream.readBoolean();
+            String text = readString();
+            value[i] = new StringPart(text, isFormatString);
+        }
+        return new StringLiteralSSTNode.FormatStringLiteralSSTNode(value, startOffset, endOffset);
     }
 
     private SSTNode readSubscript() throws IOException {
