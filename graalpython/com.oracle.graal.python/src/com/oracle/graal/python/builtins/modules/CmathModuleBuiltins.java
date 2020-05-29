@@ -161,7 +161,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+        PComplex doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
     }
@@ -191,7 +192,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+        boolean doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
     }
@@ -245,7 +247,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+        double doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
     }
@@ -267,12 +270,14 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PTuple doC(PComplex value, @Cached ComplexBuiltins.AbsNode absNode) {
+        PTuple doC(PComplex value,
+                        @Cached ComplexBuiltins.AbsNode absNode) {
             return toPolar(value, absNode);
         }
 
         @Specialization
-        PTuple doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex,
+        PTuple doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex,
                         @Cached ComplexBuiltins.AbsNode absNode) {
             return toPolar(coerceToComplex.execute(frame, value), absNode);
         }
@@ -386,7 +391,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplexComplex(VirtualFrame frame, PComplex x, PComplex y, @Cached ComplexBuiltins.DivNode divNode) {
+        PComplex doComplexComplex(VirtualFrame frame, PComplex x, PComplex y,
+                        @Cached ComplexBuiltins.DivNode divNode) {
             return divNode.executeComplex(frame, log(x), log(y));
         }
 
@@ -397,8 +403,10 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(yObj)")
-        PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj, @Cached CoerceToComplexNode coerceXToComplex,
-                        @Cached CoerceToComplexNode coerceYToComplex, @Cached ComplexBuiltins.DivNode divNode) {
+        PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj,
+                        @Cached CoerceToComplexNode coerceXToComplex,
+                        @Cached CoerceToComplexNode coerceYToComplex,
+                        @Cached ComplexBuiltins.DivNode divNode) {
             PComplex x = log(coerceXToComplex.execute(frame, xObj));
             PComplex y = log(coerceYToComplex.execute(frame, yObj));
             return divNode.executeComplex(frame, x, y);
@@ -452,7 +460,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doGeneral(VirtualFrame frame, Object zObj, @Cached CoerceToComplexNode coerceXToComplex) {
+        PComplex doGeneral(VirtualFrame frame, Object zObj,
+                        @Cached CoerceToComplexNode coerceXToComplex) {
             return doComplex(frame, coerceXToComplex.execute(frame, zObj));
         }
     }
