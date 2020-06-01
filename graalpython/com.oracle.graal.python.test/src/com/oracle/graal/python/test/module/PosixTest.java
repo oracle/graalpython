@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.test.module;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
 import static com.oracle.graal.python.test.PythonTests.assertLastLineError;
+import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -184,7 +184,7 @@ public class PosixTest {
     }
 
     @Test
-    public void readlink() throws IOException {
+    public void readlinkWithSymlink() throws IOException {
         Path realPath = tmpfile.toRealPath();
         Path symlinkPath = realPath.getParent().resolve(tmpfile.getFileName() + "__symlink");
         try {
@@ -194,6 +194,13 @@ public class PosixTest {
         } finally {
             Files.deleteIfExists(symlinkPath);
         }
+    }
+
+    @Test
+    public void readlinkWithOriginalFile() throws IOException {
+        Path realPath = tmpfile.toRealPath();
+        assertLastLineErrorContains("OSError", "import posix\n" +
+                        "print(posix.readlink('" + realPath.toString() + "'))\n");
     }
 
     @Test
