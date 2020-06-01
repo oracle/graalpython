@@ -82,6 +82,71 @@ def StopIteration__value__set(self, arg):
 
 StopIteration.value = property(fget=StopIteration__value__get, fset=StopIteration__value__set)
 
+
+def SyntaxError__init__(self, *args, **kwargs):
+    BaseException.__init__(self, *args, **kwargs)
+    self.msg = None
+    self.filename = None
+    self.lineno = None
+    self.offset = None
+    self.text = None
+    self.print_file_and_line = None
+    if len(args) > 0:
+        self.msg = args[0]
+    if len(args) == 2:
+        info = tuple(args[1])
+        if len(info) != 4:
+            raise IndexError("tuple index out of range")
+        self.filename = info[0]
+        self.lineno = info[1]
+        self.offset = info[2]
+        self.text = info[3]
+
+
+SyntaxError.__init__ = SyntaxError__init__
+del SyntaxError__init__
+
+
+def UnicodeEncodeError__init__(self, encoding, object, start, end, reason):
+    BaseException.__init__(self, encoding, object, start, end, reason)
+    self.encoding = encoding
+    self.object = object
+    self.start = start
+    self.end = end
+    self.reason = reason
+
+
+UnicodeEncodeError.__init__ = UnicodeEncodeError__init__
+del UnicodeEncodeError__init__
+
+
+def UnicodeDecodeError__init__(self, encoding, object, start, end, reason):
+    BaseException.__init__(self, encoding, object, start, end, reason)
+    self.encoding = encoding
+    if isinstance(object, bytes):
+        self.object = object
+    else:
+        self.object = bytes(object)
+    self.start = start
+    self.end = end
+    self.reason = reason
+
+
+UnicodeDecodeError.__init__ = UnicodeDecodeError__init__
+del UnicodeDecodeError__init__
+
+
+def UnicodeTranslateError__init__(self, object, start, end, reason):
+    self.object = object
+    self.start = start
+    self.end = end
+    self.reason = reason
+
+
+UnicodeTranslateError.__init__ = UnicodeTranslateError__init__
+del UnicodeTranslateError__init__
+
+
 # These errors are just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
 EnvironmentError = OSError
 IOError = OSError
