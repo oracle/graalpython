@@ -488,7 +488,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public Object factorialObject(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached("create()") FactorialNode recursiveNode) {
-            return recursiveNode.execute(frame, lib.asPInt(value));
+            return recursiveNode.execute(frame, lib.asIndex(value));
         }
 
         protected boolean isInteger(double value) {
