@@ -216,7 +216,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         protected ReadLocalVariableNode createRead(VirtualFrame frame) {
             FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
             if (slot == null) {
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.EMPTY_CLASS_CELL);
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             return ReadLocalVariableNode.create(slot);
         }
@@ -238,7 +238,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 cls = getGetRefNode().execute((PCell) cls);
             }
             if (cls == PNone.NONE) {
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.EMPTY_CLASS_CELL, "super()");
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             return init(frame, self, cls, obj);
         }
@@ -276,7 +276,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             if (cls instanceof PCell) {
                 cls = getGetRefNode().execute((PCell) cls);
                 if (cls == null) {
-                    throw raise(PythonErrorType.RuntimeError, ErrorMessages.EMPTY_CLASS_CELL, "super()");
+                    throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
                 }
             }
             return cls != null ? cls : PNone.NONE;
