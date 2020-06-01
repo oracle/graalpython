@@ -87,7 +87,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private List<String> relaunchArgs;
     private boolean wantsExperimental = false;
     private Map<String, String> enginePolyglotOptions;
-    private boolean dontWriteBytecode = ImageInfo.inImageBuildtimeCode();
+    private boolean dontWriteBytecode = false;
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -608,6 +608,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
+                        "PYTHONPYCACHEPREFIX: if this is set, GraalPython will write .pyc files in a mirror\n" +
+                        "   directory tree at this path, instead of in __pycache__ directories within the source tree.\n" +
                         "GRAAL_PYTHON_ARGS: the value is added as arguments as if passed on the\n" +
                         "   commandline. There is one special case: any `$$' in the value is replaced\n" +
                         "   with the current process id. To pass a literal `$$', you must escape the\n" +

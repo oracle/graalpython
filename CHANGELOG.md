@@ -5,7 +5,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 20.1.1
 * When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
-* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable. 
+* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now. 
 * Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.
 * Command option -B works
 
