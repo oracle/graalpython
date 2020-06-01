@@ -367,7 +367,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeInt(@SuppressWarnings("unused") int value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -382,7 +382,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeLong(@SuppressWarnings("unused") long value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -397,7 +397,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNegative(value)")
         public Object factorialPINegative(@SuppressWarnings("unused") PInt value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "isOvf(value)")
@@ -427,7 +427,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNegative(value)")
         public PInt factorialDoubleNegative(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "!isInteger(value)")
@@ -461,7 +461,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNegative(value.getValue())")
         public PInt factorialPFLNegative(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "!isInteger(value.getValue())")
