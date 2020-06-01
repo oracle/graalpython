@@ -311,7 +311,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String strFromBytes(byte[] execute) {
-            return new String(execute);
+            return new String(execute, StandardCharsets.ISO_8859_1);
         }
     }
 
@@ -601,7 +601,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                             throw new CharacterCodingException();
                         }
                     } else {
-                        val = b;
+                        // Bytes that are not an escape sequence are latin-1, which maps to unicode
+                        // codepoints directly
+                        val = b & 0xFF;
                     }
                     buf.putInt(val);
                 }
