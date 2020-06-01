@@ -156,11 +156,11 @@ def OSError__init__(self, *args, **kwds):
 def OSError__str__(self):
     if (self.filename):
         if(self.filename2):
-            return "[Errno %i] %s: %s -> %s" % (self.errno, self.strerror, self.filename, self.filename2)
+            return "[Errno %s] %s: %s -> %s" % (self.errno, self.strerror, self.filename, self.filename2)
         else:
-            return "[Errno %i] %s: %s" % (self.errno, self.strerror, self.filename)
+            return "[Errno %s] %s: %s" % (self.errno, self.strerror, self.filename)
     if(self.errno and self.strerror):
-        return "[Errno %i] %s" % (self.errno, self.strerror)
+        return "[Errno %s] %s" % (self.errno, self.strerror)
     return BaseException.__str__(self)
 
 OSError.__new__ = OSError__new__
