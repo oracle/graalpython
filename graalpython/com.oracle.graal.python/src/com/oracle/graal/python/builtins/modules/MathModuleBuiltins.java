@@ -516,6 +516,171 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "comb", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class CombNode extends PythonBinaryBuiltinNode {
+
+        @TruffleBoundary
+        private BigInteger calculateComb(BigInteger n, BigInteger k) {
+            if (n.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
+            }
+            if (k.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
+            }
+
+            BigInteger factors = k.min(n.subtract(k));
+            if (factors.signum() < 0) {
+                return BigInteger.ZERO;
+            }
+            if (factors.signum() == 0) {
+                return BigInteger.ONE;
+            }
+            BigInteger result = n;
+            BigInteger factor = n;
+            BigInteger i = BigInteger.ONE;
+            while (i.compareTo(factors) < 0) {
+                factor = factor.subtract(BigInteger.ONE);
+                result = result.multiply(factor);
+                i = i.add(BigInteger.ONE);
+                result = result.divide(i);
+            }
+            return result;
+        }
+
+        @Specialization
+        PInt comb(long n, long k) {
+            return factory().createInt(calculateComb(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt comb(long n, PInt k) {
+            return factory().createInt(calculateComb(PInt.longToBigInteger(n), k.getValue()));
+        }
+
+        @Specialization
+        PInt comb(PInt n, long k) {
+            return factory().createInt(calculateComb(n.getValue(), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt comb(PInt n, PInt k) {
+            return factory().createInt(calculateComb(n.getValue(), k.getValue()));
+        }
+
+        @Specialization
+        int comb(@SuppressWarnings("unused") double n, @SuppressWarnings("unused") Object k) {
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        }
+
+        @Specialization
+        int comb(@SuppressWarnings("unused") Object n, @SuppressWarnings("unused") double k) {
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        }
+
+        @Specialization(guards = "!isNumber(n) || !isNumber(k)")
+        Object comb(VirtualFrame frame, Object n, Object k,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached CombNode recursiveNode) {
+            Object nValue = lib.asIndexWithFrame(n, hasFrame, frame);
+            Object kValue = lib.asIndexWithFrame(k, hasFrame, frame);
+            return recursiveNode.execute(frame, nValue, kValue);
+        }
+
+        public static CombNode create() {
+            return MathModuleBuiltinsFactory.CombNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "perm", minNumOfPositionalArgs = 1, parameterNames = {"n", "k"})
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class PermNode extends PythonBinaryBuiltinNode {
+
+        @TruffleBoundary
+        private BigInteger calculatePerm(BigInteger n, BigInteger k) {
+            if (n.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
+            }
+            if (k.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
+            }
+            if (n.compareTo(k) < 0) {
+                return BigInteger.ZERO;
+            }
+            if (k.equals(BigInteger.ZERO)) {
+                return BigInteger.ONE;
+            }
+            if (k.equals(BigInteger.ONE)) {
+                return n;
+            }
+
+            BigInteger result = n;
+            BigInteger factor = n;
+            BigInteger i = BigInteger.ONE;
+            while (i.compareTo(k) < 0) {
+                factor = factor.subtract(BigInteger.ONE);
+                result = result.multiply(factor);
+                i = i.add(BigInteger.ONE);
+            }
+            return result;
+        }
+
+        @Specialization
+        PInt perm(long n, long k) {
+            return factory().createInt(calculatePerm(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt perm(long n, PInt k) {
+            return factory().createInt(calculatePerm(PInt.longToBigInteger(n), k.getValue()));
+        }
+
+        @Specialization
+        PInt perm(PInt n, long k) {
+            return factory().createInt(calculatePerm(n.getValue(), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt perm(PInt n, PInt k) {
+            return factory().createInt(calculatePerm(n.getValue(), k.getValue()));
+        }
+
+        @Specialization
+        int perm(@SuppressWarnings("unused") double n, @SuppressWarnings("unused") Object k) {
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        }
+
+        @Specialization
+        int perm(@SuppressWarnings("unused") Object n, @SuppressWarnings("unused") double k) {
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        }
+
+        @Specialization
+        Object perm(VirtualFrame frame, Object n, @SuppressWarnings("unused") PNone k,
+                        @Cached FactorialNode factorialNode) {
+            return factorialNode.execute(frame, n);
+        }
+
+        @Specialization(guards = "!isNumber(n) || !isNumber(k)")
+        Object perm(VirtualFrame frame, Object n, Object k,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PermNode recursiveNode) {
+            Object nValue = lib.asIndexWithFrame(n, hasFrame, frame);
+            Object kValue = lib.asIndexWithFrame(k, hasFrame, frame);
+            return recursiveNode.execute(frame, nValue, kValue);
+        }
+
+        public static PermNode create() {
+            return MathModuleBuiltinsFactory.PermNodeFactory.create();
+        }
+    }
+
     @Builtin(name = "floor", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
