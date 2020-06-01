@@ -176,16 +176,69 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = ISDISJOINT, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IsDisjointNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = {"self == other"})
+        boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other) {
+            return self.getWrappedDict().size() == 0;
+        }
+
+        @Specialization(guards = {"self != other"}, limit = "1")
+        boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
+                        @Cached ConditionProfile sizeProfile,
+                        @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached("create(false)") ContainedInNode contained) {
+            return disjointImpl(frame, self, other, sizeProfile, lib, contained);
+        }
+
+        @Specialization(limit = "1")
+        boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
+                        @Cached ConditionProfile sizeProfile,
+                        @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached("create(false)") ContainedInNode contained) {
+            return disjointImpl(frame, self, other, sizeProfile, lib, contained);
+        }
+
+        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, ConditionProfile sizeProfile, PythonObjectLibrary lib, ContainedInNode contained) {
+            if (sizeProfile.profile(self.size() <= lib.length(other))) {
+                return !contained.execute(frame, self, other);
+            } else {
+                return !contained.execute(frame, other, self);
+            }
+        }
+
+        @Specialization(guards = {"lib.isIterable(other)", "!isAnySet(other)", "!isDictView(other)"}, limit = "1")
+        boolean disjoint(VirtualFrame frame, PDictView self, Object other,
+                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached("create(false)") ContainedInNode contained) {
+            return !contained.execute(frame, other, self);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!lib.isIterable(other)", limit = "1")
+        boolean disjoint(PDictView self, Object other,
+                        @CachedLibrary("other") PythonObjectLibrary lib) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
+        }
+    }
+
     /**
-     * See CPython's dictobject.c all_contained_in. The semantics of dict view comparisons dictates
-     * that we need to use iteration to compare them in the general case.
+     * See CPython's dictobject.c all_contained_in and dictviews_isdisjoint. The semantics of dict
+     * view comparisons dictates that we need to use iteration to compare them in the general case.
      */
-    protected static class AllContainedInNode extends PNodeWithContext {
+    protected static class ContainedInNode extends PNodeWithContext {
         @Child GetIteratorNode iter = GetIteratorNode.create();
         @Child GetNextNode next;
         @Child LookupAndCallBinaryNode contains;
         @Child CoerceToBooleanNode cast;
         @CompilationFinal IsBuiltinClassProfile stopProfile;
+        private final boolean checkAll;
+
+        public ContainedInNode(boolean checkAll) {
+            this.checkAll = checkAll;
+        }
 
         private GetNextNode getNext() {
             if (next == null) {
@@ -221,9 +274,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         public boolean execute(VirtualFrame frame, Object self, Object other) {
             Object iterator = iter.executeWith(frame, self);
-            boolean ok = true;
+            boolean ok = checkAll;
             try {
-                while (ok) {
+                while (checkAll && ok || !checkAll && !ok) {
                     Object item = getNext().execute(frame, iterator);
                     ok = getCast().executeBoolean(frame, getContains().executeObject(frame, other, item));
                 }
@@ -233,8 +286,12 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return ok;
         }
 
-        public static AllContainedInNode create() {
-            return new AllContainedInNode();
+        static ContainedInNode create() {
+            return new ContainedInNode(true);
+        }
+
+        static ContainedInNode create(boolean all) {
+            return new ContainedInNode(all);
         }
     }
 
@@ -253,7 +310,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         boolean doView(VirtualFrame frame, PDictView self, PBaseSet other,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary selflib,
                         @CachedLibrary("other.getDictStorage()") HashingStorageLibrary otherlib,
-                        @Cached AllContainedInNode allContained) {
+                        @Cached ContainedInNode allContained) {
             int lenSelf = selflib.length(self.getWrappedDict().getDictStorage());
             int lenOther = otherlib.length(other.getDictStorage());
             return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
@@ -263,7 +320,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         boolean doView(VirtualFrame frame, PDictView self, PDictView other,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary selflib,
                         @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary otherlib,
-                        @Cached AllContainedInNode allContained) {
+                        @Cached ContainedInNode allContained) {
             int lenSelf = selflib.length(self.getWrappedDict().getDictStorage());
             int lenOther = otherlib.length(other.getWrappedDict().getDictStorage());
             return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
