@@ -419,7 +419,7 @@ public class Python3Lexer extends Lexer {
 			       }
 			       else if (indent > previous) {
 			         indents.push(indent);
-			         emit(commonToken(Python3Parser.INDENT, getText()));
+			         emit(commonToken(Python3Parser.INDENT, ""));
 			       }
 			       else {
 			         // Possibly emit more than 1 DEDENT token.

@@ -1807,7 +1807,7 @@ NEWLINE
            this.emit(createIndentError(Python3Parser.TAB_ERROR));
          }
          indents.push(indent);
-         emit(commonToken(Python3Parser.INDENT, getText()));
+         emit(commonToken(Python3Parser.INDENT, ""));
        }
        else {
          // Possibly emit more than 1 DEDENT token.
