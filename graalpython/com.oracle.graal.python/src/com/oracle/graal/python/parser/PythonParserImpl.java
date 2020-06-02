@@ -30,6 +30,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -75,6 +77,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     private long timeInParser = 0;
     private long numberOfFiles = 0;
     private static final boolean IN_IMAGE_BUILD_TIME = ImageInfo.inImageBuildtimeCode();
+
+    private static final Pattern START_INDENT_REGEX = Pattern.compile("^([ \t]+)[^#\r\n\f]");
 
     public static final DescriptiveBailErrorListener ERROR_LISTENER = new DescriptiveBailErrorListener();
 
@@ -273,6 +277,12 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             } catch (PythonFileDetector.InvalidEncodingException e) {
                 throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
             }
+        }
+        // We need to reject inputs starting with indent, but doing it in ANTLR is expensive, so we
+        // do it here manually
+        Matcher matcher = START_INDENT_REGEX.matcher(sourceText);
+        if (matcher.find()) {
+            throw errors.raiseInvalidSyntax(ErrorType.Indentation, source, source.createSection(0, matcher.end(1)), "unexpected indent");
         }
         // ANTLR parsing
         Python3Parser parser = getPython3Parser(source, sourceText, errors);

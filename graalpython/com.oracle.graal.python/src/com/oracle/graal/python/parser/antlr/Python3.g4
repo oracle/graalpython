@@ -1774,8 +1774,8 @@ ASYNC : 'async';
 AWAIT : 'await';
 
 NEWLINE
- : (
-     {atStartOfInput()}?   SPACES |
+ : ( // For performance reasons, rejecting input starting with indent is handled by a preprocessing step in PythonParserImpl
+     // {atStartOfInput()}?   SPACES |
      ( '\r'? '\n' | '\r' | '\f' ) SPACES?
    )
    {
