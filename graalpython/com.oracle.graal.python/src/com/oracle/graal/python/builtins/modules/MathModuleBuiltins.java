@@ -854,6 +854,52 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = "remainder", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class RemainderNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        double remainderDD(double x, double y) {
+            if (Double.isFinite(x) && Double.isFinite(y)) {
+                if (y == 0.0) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+                double absx = Math.abs(x);
+                double absy = Math.abs(y);
+                double m = absx % absy;
+                double c = absy - m;
+                double r;
+                if (m < c) {
+                    r = m;
+                } else if (m > c) {
+                    r = -c;
+                } else {
+                    r = m - 2.0 * ((0.5 * (absx - m)) % absy);
+                }
+                return Math.copySign(1.0, x) * r;
+            }
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            if (Double.isNaN(y)) {
+                return y;
+            }
+            if (Double.isInfinite(x)) {
+                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+            }
+            return x;
+        }
+
+        @Specialization(limit = "1")
+        double remainderOO(Object x, Object y,
+                        @CachedLibrary("x") PythonObjectLibrary xLib,
+                        @CachedLibrary("y") PythonObjectLibrary yLib) {
+            return remainderDD(xLib.asJavaDouble(x), yLib.asJavaDouble(y));
+        }
+    }
+
     @Builtin(name = "frexp", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
