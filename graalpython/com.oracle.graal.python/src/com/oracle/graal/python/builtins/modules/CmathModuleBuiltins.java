@@ -8,15 +8,21 @@ package com.oracle.graal.python.builtins.modules;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -24,13 +30,26 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 import java.util.List;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 @CoreFunctions(defineModule = "cmath")
 public class CmathModuleBuiltins extends PythonBuiltins {
+
+    // Constants used for the definition of special values tables in node classes
+    static final double INF = Double.POSITIVE_INFINITY;
+    static final double NAN = Double.NaN;
+    static final double P = Math.PI;
+    static final double P14 = 0.25 * Math.PI;
+    static final double P12 = 0.5 * Math.PI;
+    static final double P34 = 0.75 * Math.PI;
+
+    static final double largeDouble = Double.MAX_VALUE / 4.0;       // used to avoid overflow
+    static final double ln2 = 0.6931471805599453094;    // natural log of 2
+    static final double ln10 = 2.302585092994045684;    // natural log of 10
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -50,84 +69,80 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
+    static PComplex specialValue(PythonObjectFactory factory, ComplexConstant[][] table, double real, double imag) {
+        if (!Double.isFinite(real) || !Double.isFinite(imag)) {
+            ComplexConstant c = table[SpecialType.ofDouble(real).ordinal()][SpecialType.ofDouble(imag).ordinal()];
+            if (c == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
+            return factory.createComplex(c.real, c.imag);
+        }
+        return null;
+    }
+
+    /**
+     * Creates an instance of ComplexConstant. The name of this factory method is intentionally
+     * short to allow nested classess compact definition of their tables of special values.
+     *
+     * @param real the real part of the complex constant
+     * @param imag the imaginary part of the complex constant
+     * @return a new instance of ComplexConstant representing the complex number real + i * imag
+     */
+    static ComplexConstant C(double real, double imag) {
+        return new ComplexConstant(real, imag);
+    }
+
+    static class ComplexConstant {
+        final double real;
+        final double imag;
+
+        ComplexConstant(double real, double imag) {
+            this.real = real;
+            this.imag = imag;
+        }
+    }
+
+    enum SpecialType {
+        NINF,           // 0, negative infinity
+        NEG,            // 1, negative finite number (nonzero)
+        NZERO,          // 2, -0.0
+        PZERO,          // 3, +0.0
+        POS,            // 4, positive finite number (nonzero)
+        PINF,           // 5, positive infinity
+        NAN;            // 6, Not a Number
+
+        @TruffleBoundary
+        static SpecialType ofDouble(double d) {
+            if (Double.isFinite(d)) {
+                if (d != 0) {
+                    if (Math.copySign(1.0, d) == 1.0) {
+                        return POS;
+                    } else {
+                        return NEG;
+                    }
+                } else {
+                    if (Math.copySign(1.0, d) == 1.0) {
+                        return PZERO;
+                    } else {
+                        return NZERO;
+                    }
+                }
+            }
+            if (Double.isNaN(d)) {
+                return NAN;
+            }
+            if (Math.copySign(1.0, d) == 1.0) {
+                return PINF;
+            } else {
+                return NINF;
+            }
+        }
+    }
+
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     abstract static class CmathComplexUnaryBuiltinNode extends PythonUnaryBuiltinNode {
-
-        // Constants used for the definition of special values tables in subclassess
-        static final double INF = Double.POSITIVE_INFINITY;
-        static final double NAN = Double.NaN;
-
-        protected static class ComplexConstant {
-            final double real;
-            final double imag;
-
-            ComplexConstant(double real, double imag) {
-                this.real = real;
-                this.imag = imag;
-            }
-        }
-
-        private enum SpecialType {
-            NINF,           // 0, negative infinity
-            NEG,            // 1, negative finite number (nonzero)
-            NZERO,          // 2, -0.0
-            PZERO,          // 3, +0.0
-            POS,            // 4, positive finite number (nonzero)
-            PINF,           // 5, positive infinity
-            NAN;            // 6, Not a Number
-
-            static SpecialType ofDouble(double d) {
-                if (Double.isFinite(d)) {
-                    if (d != 0) {
-                        if (Math.copySign(1.0, d) == 1.0) {
-                            return POS;
-                        } else {
-                            return NEG;
-                        }
-                    } else {
-                        if (Math.copySign(1.0, d) == 1.0) {
-                            return PZERO;
-                        } else {
-                            return NZERO;
-                        }
-                    }
-                }
-                if (Double.isNaN(d)) {
-                    return NAN;
-                }
-                if (Math.copySign(1.0, d) == 1.0) {
-                    return PINF;
-                } else {
-                    return NINF;
-                }
-            }
-        }
-
-        protected PComplex specialValue(ComplexConstant[][] table, double real, double imag) {
-            if (!Double.isFinite(real) || !Double.isFinite(imag)) {
-                ComplexConstant c = table[SpecialType.ofDouble(real).ordinal()][SpecialType.ofDouble(imag).ordinal()];
-                if (c == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("should not be reached");
-                }
-                return factory().createComplex(c.real, c.imag);
-            }
-            return null;
-        }
-
-        /**
-         * Creates an instance of ComplexConstant. The name of this factory method is intentionally
-         * short to allow subclassess compact definition of their tables of special values.
-         *
-         * @param real the real part of the complex constant
-         * @param imag the imaginary part of the complex constant
-         * @return a new instance of ComplexConstant representing the complex number real + i * imag
-         */
-        protected static ComplexConstant C(double real, double imag) {
-            return new ComplexConstant(real, imag);
-        }
-
         PComplex compute(@SuppressWarnings("unused") double real, @SuppressWarnings("unused") double imag) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("should not be reached");
@@ -149,7 +164,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+        PComplex doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
     }
@@ -179,7 +195,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+        boolean doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
     }
@@ -233,7 +250,8 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
+        double doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, value));
         }
     }
@@ -255,30 +273,201 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PTuple doC(PComplex value) {
-            // TODO: the implementation of abs(z) should be shared with ComplexBuiltins.AbsNode, but
-            // it currently does not pass the overflow test
-            double r;
-            if (!Double.isFinite(value.getReal()) || !Double.isFinite(value.getImag())) {
-                if (Double.isInfinite(value.getReal())) {
-                    r = Math.abs(value.getReal());
-                } else if (Double.isInfinite(value.getImag())) {
-                    r = Math.abs(value.getImag());
-                } else {
-                    r = Double.NaN;
-                }
-            } else {
-                r = Math.hypot(value.getReal(), value.getImag());
-                if (Double.isInfinite(r)) {
-                    throw raise(OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
-                }
-            }
-            return factory().createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
+        PTuple doC(PComplex value,
+                        @Cached ComplexBuiltins.AbsNode absNode) {
+            return toPolar(value, absNode);
         }
 
         @Specialization
-        PTuple doGeneral(VirtualFrame frame, Object value, @Cached CoerceToComplexNode coerceToComplex) {
-            return doC(coerceToComplex.execute(frame, value));
+        PTuple doGeneral(VirtualFrame frame, Object value,
+                        @Cached CoerceToComplexNode coerceToComplex,
+                        @Cached ComplexBuiltins.AbsNode absNode) {
+            return toPolar(coerceToComplex.execute(frame, value), absNode);
+        }
+
+        private PTuple toPolar(PComplex value, ComplexBuiltins.AbsNode absNode) {
+            double r = absNode.executeDouble(value);
+            return factory().createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
+        }
+    }
+
+    @Builtin(name = "rect", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    abstract static class RectNode extends PythonBinaryBuiltinNode {
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(INF, NAN), null,        C(-INF, 0.0), C(-INF, -0.0), null,        C(INF, NAN), C(INF, NAN)},
+                {C(NAN, NAN), null,        null,         null,          null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(0.0, 0.0), null,        C(-0.0, 0.0), C(-0.0, -0.0), null,        C(0.0, 0.0), C(0.0, 0.0)},
+                {C(0.0, 0.0), null,        C(0.0, -0.0), C(0.0, 0.0),   null,        C(0.0, 0.0), C(0.0, 0.0)},
+                {C(NAN, NAN), null,        null,         null,          null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(INF, NAN), null,        C(INF, -0.0), C(INF, 0.0),   null,        C(INF, NAN), C(INF, NAN)},
+                {C(NAN, NAN), C(NAN, NAN), C(NAN, 0.0),  C(NAN, 0.0),   C(NAN, NAN), C(NAN, NAN), C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Specialization
+        PComplex doLL(long r, long phi) {
+            return rect(r, phi);
+        }
+
+        @Specialization
+        PComplex doLD(long r, double phi) {
+            return rect(r, phi);
+        }
+
+        @Specialization
+        PComplex doDL(double r, long phi) {
+            return rect(r, phi);
+        }
+
+        @Specialization
+        PComplex doDD(double r, double phi) {
+            return rect(r, phi);
+        }
+
+        @Specialization(limit = "2")
+        PComplex doGeneral(Object r, Object phi,
+                        @CachedLibrary("r") PythonObjectLibrary rLib,
+                        @CachedLibrary("phi") PythonObjectLibrary phiLib) {
+            return rect(rLib.asJavaDouble(r), phiLib.asJavaDouble(phi));
+        }
+
+        @TruffleBoundary
+        private PComplex rect(double r, double phi) {
+            // deal with special values
+            if (!Double.isFinite(r) || !Double.isFinite(phi)) {
+                // need to raise an exception if r is a nonzero number and phi is infinite
+                if (r != 0.0 && !Double.isNaN(r) && Double.isInfinite(phi)) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+
+                // if r is +/-infinity and phi is finite but nonzero then
+                // result is (+-INF +-INF i), but we need to compute cos(phi)
+                // and sin(phi) to figure out the signs.
+                if (Double.isInfinite(r) && Double.isFinite(phi) && phi != 0.0) {
+                    double real = Math.copySign(Double.POSITIVE_INFINITY, Math.cos(phi));
+                    double imag = Math.copySign(Double.POSITIVE_INFINITY, Math.sin(phi));
+                    if (r > 0) {
+                        return factory().createComplex(real, imag);
+                    } else {
+                        return factory().createComplex(-real, -imag);
+                    }
+                }
+                return specialValue(factory(), SPECIAL_VALUES, r, phi);
+            }
+            return factory().createComplex(r * Math.cos(phi), r * Math.sin(phi));
+        }
+    }
+
+    @Builtin(name = "log", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    abstract static class LogNode extends PythonBinaryBuiltinNode {
+
+        abstract PComplex executeComplex(VirtualFrame frame, Object x, Object y);
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(INF, -P34), C(INF, -P),   C(INF, -P),    C(INF, P),    C(INF, P),   C(INF, P34), C(INF, NAN)},
+                {C(INF, -P12), null,         null,          null,         null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         C(-INF, -P),   C(-INF, P),   null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         C(-INF, -0.0), C(-INF, 0.0), null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         null,          null,         null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P14), C(INF, -0.0), C(INF, -0.0),  C(INF, 0.0),  C(INF, 0.0), C(INF, P14), C(INF, NAN)},
+                {C(INF, NAN),  C(NAN, NAN),  C(NAN, NAN),   C(NAN, NAN),  C(NAN, NAN), C(INF, NAN), C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        static LogNode create() {
+            return CmathModuleBuiltinsFactory.LogNodeFactory.create();
+        }
+
+        @Specialization(guards = "isNoValue(y)")
+        PComplex doComplexNone(PComplex x, @SuppressWarnings("unused") PNone y) {
+            return log(x);
+        }
+
+        @Specialization
+        PComplex doComplexComplex(VirtualFrame frame, PComplex x, PComplex y,
+                        @Cached ComplexBuiltins.DivNode divNode) {
+            return divNode.executeComplex(frame, log(x), log(y));
+        }
+
+        @Specialization(guards = "isNoValue(yObj)")
+        PComplex doGeneral(VirtualFrame frame, Object xObj, @SuppressWarnings("unused") PNone yObj,
+                        @Cached CoerceToComplexNode coerceXToComplex) {
+            return log(coerceXToComplex.execute(frame, xObj));
+        }
+
+        @Specialization(guards = "!isNoValue(yObj)")
+        PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj,
+                        @Cached CoerceToComplexNode coerceXToComplex,
+                        @Cached CoerceToComplexNode coerceYToComplex,
+                        @Cached ComplexBuiltins.DivNode divNode) {
+            PComplex x = log(coerceXToComplex.execute(frame, xObj));
+            PComplex y = log(coerceYToComplex.execute(frame, yObj));
+            return divNode.executeComplex(frame, x, y);
+        }
+
+        private PComplex log(PComplex z) {
+            PComplex r = specialValue(factory(), SPECIAL_VALUES, z.getReal(), z.getImag());
+            if (r != null) {
+                return r;
+            }
+            double real = computeRealPart(z.getReal(), z.getImag());
+            double imag = Math.atan2(z.getImag(), z.getReal());
+            return factory().createComplex(real, imag);
+        }
+
+        @TruffleBoundary
+        private double computeRealPart(double real, double imag) {
+            double ax = Math.abs(real);
+            double ay = Math.abs(imag);
+
+            if (ax > largeDouble || ay > largeDouble) {
+                return Math.log(Math.hypot(ax / 2.0, ay / 2.0)) + ln2;
+            }
+            if (ax < Double.MIN_NORMAL && ay < Double.MIN_NORMAL) {
+                if (ax > 0.0 || ay > 0.0) {
+                    final double scaleUp = 0x1.0p53;
+                    return Math.log(Math.hypot(ax * scaleUp, ay * scaleUp)) - 53 * ln2;
+                }
+                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+            }
+            double h = Math.hypot(ax, ay);
+            if (0.71 <= h && h <= 1.73) {
+                double am = Math.max(ax, ay);
+                double an = Math.min(ax, ay);
+                return Math.log1p((am - 1) * (am + 1) + an * an) / 2.0;
+            }
+            return Math.log(h);
+        }
+    }
+
+    @Builtin(name = "log10", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    abstract static class Log10Node extends PythonUnaryBuiltinNode {
+        @Child LogNode logNode = LogNode.create();
+
+        @Specialization
+        PComplex doComplex(VirtualFrame frame, PComplex z) {
+            PComplex r = logNode.executeComplex(frame, z, PNone.NO_VALUE);
+            return factory().createComplex(r.getReal() / ln10, r.getImag() / ln10);
+        }
+
+        @Specialization
+        PComplex doGeneral(VirtualFrame frame, Object zObj,
+                        @Cached CoerceToComplexNode coerceXToComplex) {
+            return doComplex(frame, coerceXToComplex.execute(frame, zObj));
         }
     }
 
@@ -301,7 +490,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
         @Override
         PComplex compute(double real, double imag) {
-            PComplex result = specialValue(SPECIAL_VALUES, real, imag);
+            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
             }
