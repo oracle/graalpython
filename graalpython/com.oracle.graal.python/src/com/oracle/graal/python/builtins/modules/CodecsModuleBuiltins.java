@@ -423,7 +423,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             try {
                 ByteBuffer encoded = UTF32.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
-                ByteBuffer buf = ByteBuffer.allocate(n);
+                // Worst case is 6 bytes ("\\uXXXX") for every java char
+                ByteBuffer buf = ByteBuffer.allocate(self.length() * 6);
                 assert n % Integer.BYTES == 0;
                 int codePoints = n / Integer.BYTES;
 
@@ -432,9 +433,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     if (codePoint <= 0xFF) {
                         buf.put((byte) codePoint);
                     } else {
-                        buf.put((byte) '\\');
-                        buf.put((byte) 'u');
-                        String hexString = Integer.toHexString(codePoint);
+                        String hexString = String.format((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
                         for (int i = 0; i < hexString.length(); i++) {
                             assert hexString.charAt(i) < 128;
                             buf.put((byte) hexString.charAt(i));
