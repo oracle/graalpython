@@ -22,6 +22,7 @@ import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -111,6 +112,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         PINF,           // 5, positive infinity
         NAN;            // 6, Not a Number
 
+        @TruffleBoundary
         static SpecialType ofDouble(double d) {
             if (Double.isFinite(d)) {
                 if (d != 0) {
@@ -335,6 +337,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return rect(rLib.asJavaDouble(r), phiLib.asJavaDouble(phi));
         }
 
+        @TruffleBoundary
         private PComplex rect(double r, double phi) {
             // deal with special values
             if (!Double.isFinite(r) || !Double.isFinite(phi)) {
@@ -423,6 +426,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return factory().createComplex(real, imag);
         }
 
+        @TruffleBoundary
         private double computeRealPart(double real, double imag) {
             double ax = Math.abs(real);
             double ay = Math.abs(imag);
