@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -311,7 +312,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String strFromBytes(byte[] execute) {
-            return new String(execute);
+            return new String(execute, StandardCharsets.ISO_8859_1);
         }
     }
 
@@ -423,7 +424,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             try {
                 ByteBuffer encoded = UTF32.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
-                ByteBuffer buf = ByteBuffer.allocate(n);
+                // Worst case is 6 bytes ("\\uXXXX") for every java char
+                ByteBuffer buf = ByteBuffer.allocate(self.length() * 6);
                 assert n % Integer.BYTES == 0;
                 int codePoints = n / Integer.BYTES;
 
@@ -432,9 +434,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     if (codePoint <= 0xFF) {
                         buf.put((byte) codePoint);
                     } else {
-                        buf.put((byte) '\\');
-                        buf.put((byte) 'u');
-                        String hexString = Integer.toHexString(codePoint);
+                        String hexString = String.format((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
                         for (int i = 0; i < hexString.length(); i++) {
                             assert hexString.charAt(i) < 128;
                             buf.put((byte) hexString.charAt(i));
@@ -587,28 +587,32 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             try {
                 ByteBuffer buf = ByteBuffer.allocate(bytes.remaining() * Integer.BYTES);
+                byte[] hexString = new byte[8];
                 while (bytes.hasRemaining()) {
                     int val;
                     byte b = bytes.get();
                     if (b == (byte) '\\') {
                         byte b1 = bytes.get();
                         if (b1 == (byte) 'u') {
-                            // read 2 bytes as integer
-                            val = bytes.getShort();
+                            bytes.get(hexString, 0, 4);
+                            val = Integer.parseInt(new String(hexString, 0, 4), 16);
                         } else if (b1 == (byte) 'U') {
-                            val = bytes.getInt();
+                            bytes.get(hexString, 0, 8);
+                            val = Integer.parseInt(new String(hexString, 0, 8), 16);
                         } else {
                             throw new CharacterCodingException();
                         }
                     } else {
-                        val = b;
+                        // Bytes that are not an escape sequence are latin-1, which maps to unicode
+                        // codepoints directly
+                        val = b & 0xFF;
                     }
                     buf.putInt(val);
                 }
                 buf.flip();
                 CharBuffer decoded = UTF32.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
                 return String.valueOf(decoded);
-            } catch (CharacterCodingException e) {
+            } catch (CharacterCodingException | NumberFormatException | BufferUnderflowException e) {
                 throw raise(UnicodeDecodeError, e);
             }
         }

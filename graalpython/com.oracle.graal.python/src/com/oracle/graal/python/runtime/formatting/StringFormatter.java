@@ -408,7 +408,7 @@ public class StringFormatter {
                         ft.format(((PString) arg).getCharSequence());
                     } else {
                         // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR);
+                        throw core.raise(TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
                     }
 
                     break;
