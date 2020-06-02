@@ -326,13 +326,13 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         @TruffleBoundary
-        @Specialization(limit = "2")
+        @Specialization
         static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary("other") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                result = lib.setItem(other, cursor.getKey().value, cursor.getValue());
+                result = lib.setItem(result, cursor.getKey().value, cursor.getValue());
             }
             return result;
         }
