@@ -184,7 +184,10 @@ def make_excepthook():
     def __print_traceback__(typ, value, tb):
         try:
             import traceback
-            traceback.print_exception(typ, value, tb)
+            lines = traceback.format_exception(typ, value, tb)
+            lines[-1] = lines[-1].replace(f'<unprintable {typ.__name__} object>', f'<exception str() failed>')
+            for line in lines:
+                print(line, file=stderr, end="")
         except BaseException as exc:
             print("Error in sys.excepthook:\n", file=stderr)
             simple_print_traceback(exc)
