@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -586,16 +587,18 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             try {
                 ByteBuffer buf = ByteBuffer.allocate(bytes.remaining() * Integer.BYTES);
+                byte[] hexString = new byte[8];
                 while (bytes.hasRemaining()) {
                     int val;
                     byte b = bytes.get();
                     if (b == (byte) '\\') {
                         byte b1 = bytes.get();
                         if (b1 == (byte) 'u') {
-                            // read 2 bytes as integer
-                            val = bytes.getShort();
+                            bytes.get(hexString, 0, 4);
+                            val = Integer.parseInt(new String(hexString, 0, 4), 16);
                         } else if (b1 == (byte) 'U') {
-                            val = bytes.getInt();
+                            bytes.get(hexString, 0, 8);
+                            val = Integer.parseInt(new String(hexString, 0, 8), 16);
                         } else {
                             throw new CharacterCodingException();
                         }
@@ -609,7 +612,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 buf.flip();
                 CharBuffer decoded = UTF32.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
                 return String.valueOf(decoded);
-            } catch (CharacterCodingException e) {
+            } catch (CharacterCodingException | NumberFormatException | BufferUnderflowException e) {
                 throw raise(UnicodeDecodeError, e);
             }
         }
