@@ -2343,15 +2343,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object make(PFunction func, Object errorResult,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            func.getFunctionRootNode().accept(new NodeVisitor() {
-                public boolean visit(Node node) {
-                    if (node instanceof PythonCallNode) {
-                        node.replace(((PythonCallNode) node).asSpecialCall());
-                    }
-                    return true;
-                }
-            });
-
             RootNode rootNode = null;
             Signature funcSignature = func.getSignature();
             if (funcSignature.takesPositionalOnly()) {

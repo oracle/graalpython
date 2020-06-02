@@ -393,14 +393,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                  * declare the module argument
                  */
                 builtinFunc = func;
-                func.getFunctionRootNode().accept(new NodeVisitor() {
-                    public boolean visit(Node node) {
-                        if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
-                        }
-                        return true;
-                    }
-                });
             } else {
                 /*
                  * Otherwise, we create a new function with a signature that requires one extra
@@ -419,8 +411,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                             node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
                         } else if (node instanceof ReadIndexedArgumentNode) {
                             node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                        } else if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
                         }
                         return true;
                     }
