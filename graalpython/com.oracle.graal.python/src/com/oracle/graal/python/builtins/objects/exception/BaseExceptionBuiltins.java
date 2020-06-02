@@ -90,6 +90,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization(guards = "args.length == 0")
         Object initNoArgs(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object[] args) {
+            self.setArgs(null);
             return PNone.NONE;
         }
 

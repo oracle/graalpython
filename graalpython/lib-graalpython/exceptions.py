@@ -55,8 +55,12 @@ def SystemExit__init__(self, *args):
 SystemExit.__init__ = SystemExit__init__
 del SystemExit__init__
 
-def ImportError__init__(self, msg=None, /, *args, name=None, path=None):
-    self.msg = msg
+def ImportError__init__(self, *args, name=None, path=None, **kwargs):
+    if kwargs:
+        kwarg = next(iter(kwargs))
+        raise TypeError(f"'{kwarg}' is an invalid keyword argument for ImportError")
+    BaseException.__init__(self, *args)
+    self.msg = args[0] if args else None
     self.name = name
     self.path = path
 
