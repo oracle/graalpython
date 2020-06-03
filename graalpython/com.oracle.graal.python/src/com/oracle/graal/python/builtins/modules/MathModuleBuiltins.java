@@ -367,7 +367,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeInt(@SuppressWarnings("unused") int value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -382,7 +382,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeLong(@SuppressWarnings("unused") long value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -397,7 +397,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNegative(value)")
         public Object factorialPINegative(@SuppressWarnings("unused") PInt value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "isOvf(value)")
@@ -427,7 +427,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNegative(value)")
         public PInt factorialDoubleNegative(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "!isInteger(value)")
@@ -461,7 +461,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNegative(value.getValue())")
         public PInt factorialPFLNegative(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFNED_FOR_NEGATIVE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = "!isInteger(value.getValue())")
@@ -488,7 +488,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public Object factorialObject(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached("create()") FactorialNode recursiveNode) {
-            return recursiveNode.execute(frame, lib.asPInt(value));
+            return recursiveNode.execute(frame, lib.asIndex(value));
         }
 
         protected boolean isInteger(double value) {
@@ -513,6 +513,151 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         protected static FactorialNode create() {
             return MathModuleBuiltinsFactory.FactorialNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "comb", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class CombNode extends PythonBinaryBuiltinNode {
+
+        @TruffleBoundary
+        private BigInteger calculateComb(BigInteger n, BigInteger k) {
+            if (n.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
+            }
+            if (k.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
+            }
+
+            BigInteger factors = k.min(n.subtract(k));
+            if (factors.signum() < 0) {
+                return BigInteger.ZERO;
+            }
+            if (factors.signum() == 0) {
+                return BigInteger.ONE;
+            }
+            BigInteger result = n;
+            BigInteger factor = n;
+            BigInteger i = BigInteger.ONE;
+            while (i.compareTo(factors) < 0) {
+                factor = factor.subtract(BigInteger.ONE);
+                result = result.multiply(factor);
+                i = i.add(BigInteger.ONE);
+                result = result.divide(i);
+            }
+            return result;
+        }
+
+        @Specialization
+        PInt comb(long n, long k) {
+            return factory().createInt(calculateComb(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt comb(long n, PInt k) {
+            return factory().createInt(calculateComb(PInt.longToBigInteger(n), k.getValue()));
+        }
+
+        @Specialization
+        PInt comb(PInt n, long k) {
+            return factory().createInt(calculateComb(n.getValue(), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt comb(PInt n, PInt k) {
+            return factory().createInt(calculateComb(n.getValue(), k.getValue()));
+        }
+
+        @Specialization
+        Object comb(VirtualFrame frame, Object n, Object k,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached CombNode recursiveNode) {
+            Object nValue = lib.asIndexWithFrame(n, hasFrame, frame);
+            Object kValue = lib.asIndexWithFrame(k, hasFrame, frame);
+            return recursiveNode.execute(frame, nValue, kValue);
+        }
+
+        public static CombNode create() {
+            return MathModuleBuiltinsFactory.CombNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "perm", minNumOfPositionalArgs = 1, parameterNames = {"n", "k"})
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class PermNode extends PythonBinaryBuiltinNode {
+
+        @TruffleBoundary
+        private BigInteger calculatePerm(BigInteger n, BigInteger k) {
+            if (n.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
+            }
+            if (k.signum() < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
+            }
+            if (n.compareTo(k) < 0) {
+                return BigInteger.ZERO;
+            }
+            if (k.equals(BigInteger.ZERO)) {
+                return BigInteger.ONE;
+            }
+            if (k.equals(BigInteger.ONE)) {
+                return n;
+            }
+
+            BigInteger result = n;
+            BigInteger factor = n;
+            BigInteger i = BigInteger.ONE;
+            while (i.compareTo(k) < 0) {
+                factor = factor.subtract(BigInteger.ONE);
+                result = result.multiply(factor);
+                i = i.add(BigInteger.ONE);
+            }
+            return result;
+        }
+
+        @Specialization
+        PInt perm(long n, long k) {
+            return factory().createInt(calculatePerm(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt perm(long n, PInt k) {
+            return factory().createInt(calculatePerm(PInt.longToBigInteger(n), k.getValue()));
+        }
+
+        @Specialization
+        PInt perm(PInt n, long k) {
+            return factory().createInt(calculatePerm(n.getValue(), PInt.longToBigInteger(k)));
+        }
+
+        @Specialization
+        PInt perm(PInt n, PInt k) {
+            return factory().createInt(calculatePerm(n.getValue(), k.getValue()));
+        }
+
+        @Specialization
+        Object perm(VirtualFrame frame, Object n, @SuppressWarnings("unused") PNone k,
+                        @Cached FactorialNode factorialNode) {
+            return factorialNode.execute(frame, n);
+        }
+
+        @Specialization(guards = "!isPNone(k)")
+        Object perm(VirtualFrame frame, Object n, Object k,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PermNode recursiveNode) {
+            Object nValue = lib.asIndexWithFrame(n, hasFrame, frame);
+            Object kValue = lib.asIndexWithFrame(k, hasFrame, frame);
+            return recursiveNode.execute(frame, nValue, kValue);
+        }
+
+        public static PermNode create() {
+            return MathModuleBuiltinsFactory.PermNodeFactory.create();
         }
     }
 
@@ -687,6 +832,52 @@ public class MathModuleBuiltins extends PythonBuiltins {
             }
         }
 
+    }
+
+    @Builtin(name = "remainder", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class RemainderNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        double remainderDD(double x, double y) {
+            if (Double.isFinite(x) && Double.isFinite(y)) {
+                if (y == 0.0) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+                double absx = Math.abs(x);
+                double absy = Math.abs(y);
+                double m = absx % absy;
+                double c = absy - m;
+                double r;
+                if (m < c) {
+                    r = m;
+                } else if (m > c) {
+                    r = -c;
+                } else {
+                    r = m - 2.0 * ((0.5 * (absx - m)) % absy);
+                }
+                return Math.copySign(1.0, x) * r;
+            }
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            if (Double.isNaN(y)) {
+                return y;
+            }
+            if (Double.isInfinite(x)) {
+                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+            }
+            return x;
+        }
+
+        @Specialization(limit = "1")
+        double remainderOO(Object x, Object y,
+                        @CachedLibrary("x") PythonObjectLibrary xLib,
+                        @CachedLibrary("y") PythonObjectLibrary yLib) {
+            return remainderDD(xLib.asJavaDouble(x), yLib.asJavaDouble(y));
+        }
     }
 
     @Builtin(name = "frexp", minNumOfPositionalArgs = 1)

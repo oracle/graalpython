@@ -191,7 +191,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
-    public static final String FACTORIAL_NOT_DEFNED_FOR_NEGATIVE = "factorial() not defined for negative values";
+    public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
     public static final String FILE_NOT_OPENED_FOR_READING = "file not opened for reading";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
@@ -309,6 +309,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
+    public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
     public static final String MUST_BE_REAL_NUMBER = "must be real number, not %p";
     public static final String MUST_BE_S_NOT_P = "%s must be a %s, not %p";
