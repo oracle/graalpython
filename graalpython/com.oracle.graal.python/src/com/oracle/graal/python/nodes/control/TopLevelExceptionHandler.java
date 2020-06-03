@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 
@@ -141,7 +142,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 }
                 return null;
             } catch (StackOverflowError e) {
-                PException pe = ExceptionHandlingStatementNode.createRecursionError(e, factory(), this);
+                PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
                 PBaseException pythonException = pe.getExceptionObject();
                 printExc(frame, pythonException);
                 if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {

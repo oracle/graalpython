@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -49,7 +50,6 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -187,29 +187,24 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return shouldCatchAllExceptions;
     }
 
-    private PException wrapJavaException(Throwable e) {
-        PException pe = PException.fromObject(getBaseException(e), this);
+    public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
+        PException pe = PException.fromObject(pythonException, node);
         pe.setHideLocation(true);
         // Re-attach truffle stacktrace
         moveTruffleStackTrace(e, pe);
-        return pe;
+        // Create a new traceback chain, because the current one has been finalized by Truffle
+        return pe.getExceptionForReraise();
     }
 
+    @TruffleBoundary
     protected PException wrapJavaExceptionIfApplicable(Throwable e) {
         if (e instanceof StackOverflowError) {
-            return createRecursionError(e, factory(), this);
+            return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
         }
         if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
-            return wrapJavaException(e);
+            return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
         }
         return null;
-    }
-
-    public static PException createRecursionError(Throwable e, PythonObjectFactory factory, Node location) {
-        PException pe = PException.fromObject(factory.createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}), location);
-        pe.setHideLocation(true);
-        moveTruffleStackTrace(e, pe);
-        return pe;
     }
 
     @TruffleBoundary
@@ -218,10 +213,5 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         // Host exceptions have their stacktrace already filled in, call this to set
         // the cutoff point to the catch site
         pe.getTruffleStackTrace();
-    }
-
-    @TruffleBoundary
-    private PBaseException getBaseException(Throwable e) {
-        return factory().createBaseException(PythonErrorType.SystemError, "%m", new Object[]{e});
     }
 }
