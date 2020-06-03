@@ -505,6 +505,14 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void for17() throws Exception {
+        checkSyntaxError(
+                        "for i in range(10):\n" +
+                                        "    class foo:\n" +
+                                        "        break\n");
+    }
+
+    @Test
     public void global01() throws Exception {
         checkScopeAndTree();
     }
