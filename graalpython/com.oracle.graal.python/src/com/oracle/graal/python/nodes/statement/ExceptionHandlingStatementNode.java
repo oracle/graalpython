@@ -196,13 +196,12 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return pe.getExceptionForReraise();
     }
 
-    @TruffleBoundary
     protected PException wrapJavaExceptionIfApplicable(Throwable e) {
-        if (e instanceof StackOverflowError) {
-            return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
-        }
         if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
             return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
+        }
+        if (e instanceof StackOverflowError) {
+            return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
         }
         return null;
     }
