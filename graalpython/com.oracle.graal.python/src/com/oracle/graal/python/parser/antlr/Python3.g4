@@ -432,7 +432,7 @@ typedargslist [ArgDefListBuilder args]
 :
     (
         defparameter[args] ( ',' defparameter[args] )* ',' '/' {args.markPositionalOnlyIndex();}
-            ((',' defparameter[args] ( ',' defparameter[args] )*)?
+            (',' defparameter[args] ( ',' defparameter[args] )*)?
                 ( ',' 
                     ( splatparameter[args]	
                         ( ',' defparameter[args])*
@@ -440,7 +440,6 @@ typedargslist [ArgDefListBuilder args]
                         | kwargsparameter[args] ','?
                     )?
                 )?
-            )?
 	| defparameter[args] ( ',' defparameter[args] )*
             ( ',' 
                 ( splatparameter[args]	
@@ -498,7 +497,7 @@ varargslist returns [ArgDefListBuilder result]
 	{ ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
 	(
             vdefparameter[args] ( ',' vdefparameter[args] )* ',' '/' {args.markPositionalOnlyIndex();}
-                ((',' vdefparameter[args] (',' vdefparameter[args])* )?
+                (',' vdefparameter[args] (',' vdefparameter[args])* )?
                     ( ','
                         ( vsplatparameter[args]
                             ( ',' vdefparameter[args])*
@@ -506,7 +505,6 @@ varargslist returns [ArgDefListBuilder result]
                             | vkwargsparameter[args] ','?
                         )?
                     )?
-                )?
             | vdefparameter[args] (',' vdefparameter[args])*
                 ( ','
                     ( vsplatparameter[args]
@@ -1739,23 +1737,23 @@ BYTES_LITERAL
 
 /// decimalinteger 
 DECIMAL_INTEGER
- : NON_ZERO_DIGIT DIGIT* (['_'] DIGIT+)*
- | '0'+ (['_']'0'+)*
+ : NON_ZERO_DIGIT DIGIT* ('_' DIGIT+)*
+ | '0'+ ('_''0'+)*
  ;
 
 /// octinteger    
 OCT_INTEGER
- : '0' [oO] (OCT_DIGIT | (['_'] OCT_DIGIT+))+
+ : '0' [oO] (OCT_DIGIT | ('_' OCT_DIGIT+))+
  ;
 
 /// hexinteger
 HEX_INTEGER
- : '0' [xX] (HEX_DIGIT | (['_'] HEX_DIGIT+))+
+ : '0' [xX] (HEX_DIGIT | ('_' HEX_DIGIT+))+
  ;
 
 /// bininteger
 BIN_INTEGER
- : '0' [bB] (BIN_DIGIT | (['_'] BIN_DIGIT+))+
+ : '0' [bB] (BIN_DIGIT | ('_' BIN_DIGIT+))+
  ;
 
 /// floatnumber   ::=  pointfloat | exponentfloat
@@ -1899,7 +1897,7 @@ fragment EXPONENT_FLOAT
 
 /// intpart
 fragment INT_PART
- : DIGIT+ (['_'] DIGIT+)*
+ : DIGIT+ ('_' DIGIT+)*
  ;
 
 /// fraction
