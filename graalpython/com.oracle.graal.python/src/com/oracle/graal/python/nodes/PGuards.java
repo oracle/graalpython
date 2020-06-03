@@ -424,6 +424,14 @@ public abstract class PGuards {
         return obj instanceof PDictView;
     }
 
+    public static boolean isDictKeysView(Object obj) {
+        return obj instanceof PDictView.PDictKeysView;
+    }
+
+    public static boolean isDictItemsView(Object obj) {
+        return obj instanceof PDictView.PDictItemsView;
+    }
+
     public static boolean isPSlice(Object obj) {
         return obj instanceof PSlice;
     }
