@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-public class DescriptorDeleteMarker {
+import com.oracle.truffle.api.interop.TruffleObject;
+
+public class DescriptorDeleteMarker implements TruffleObject {
     public static final DescriptorDeleteMarker INSTANCE = new DescriptorDeleteMarker();
 
     private DescriptorDeleteMarker() {
