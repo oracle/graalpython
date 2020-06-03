@@ -571,16 +571,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int comb(@SuppressWarnings("unused") double n, @SuppressWarnings("unused") Object k) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
-        }
-
-        @Specialization
-        int comb(@SuppressWarnings("unused") Object n, @SuppressWarnings("unused") double k) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
-        }
-
-        @Specialization(guards = "!isNumber(n) || !isNumber(k)")
         Object comb(VirtualFrame frame, Object n, Object k,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
@@ -651,22 +641,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int perm(@SuppressWarnings("unused") double n, @SuppressWarnings("unused") Object k) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
-        }
-
-        @Specialization
-        int perm(@SuppressWarnings("unused") Object n, @SuppressWarnings("unused") double k) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
-        }
-
-        @Specialization
         Object perm(VirtualFrame frame, Object n, @SuppressWarnings("unused") PNone k,
                         @Cached FactorialNode factorialNode) {
             return factorialNode.execute(frame, n);
         }
 
-        @Specialization(guards = "!isNumber(n) || !isNumber(k)")
+        @Specialization(guards = "!isPNone(k)")
         Object perm(VirtualFrame frame, Object n, Object k,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
