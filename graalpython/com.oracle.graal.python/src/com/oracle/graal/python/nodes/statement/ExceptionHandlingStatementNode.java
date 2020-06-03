@@ -57,6 +57,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -197,6 +198,9 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     protected PException wrapJavaExceptionIfApplicable(Throwable e) {
+        if (e instanceof ControlFlowException) {
+            return null;
+        }
         if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
             return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
         }
