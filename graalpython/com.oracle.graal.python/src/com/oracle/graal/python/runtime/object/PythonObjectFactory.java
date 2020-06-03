@@ -435,6 +435,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new GetSetDescriptor(get, set, name, type));
     }
 
+    public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, LazyPythonClass type, boolean allowsDelete) {
+        return trace(new GetSetDescriptor(get, set, name, type, allowsDelete));
+    }
+
     public HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, LazyPythonClass type) {
         return trace(new HiddenKeyDescriptor(key, type));
     }
@@ -616,6 +620,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {
         return trace(new PTraceback(frame, lineno, next));
+    }
+
+    public PTraceback createTraceback(PFrame frame, int lineno, int lasti, PTraceback next) {
+        return trace(new PTraceback(frame, lineno, lasti, next));
     }
 
     public PTraceback createTraceback(LazyTraceback tb) {

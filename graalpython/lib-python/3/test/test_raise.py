@@ -437,6 +437,7 @@ class TestContext(unittest.TestCase):
 
         f()
 
+    @support.impl_detail("relies on reference counting", graalvm=False)
     def test_3611(self):
         # A re-raised exception in a __del__ caused the __context__
         # to be cleared

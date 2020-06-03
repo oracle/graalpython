@@ -199,6 +199,19 @@ excepthook = __excepthook__
 del make_excepthook
 
 
+def make_unraisablehook():
+    def __unraisablehook__(unraisable, /):
+        # We don't currently use it and there's no way to construct the parameter in python code (internal type)
+        pass
+
+    return __unraisablehook__
+
+
+__unraisablehook__ = make_unraisablehook()
+unraisablehook = __unraisablehook__
+del make_unraisablehook
+
+
 @__graalpython__.builtin
 def breakpointhook(*args, **kws):
     import importlib, os, warnings

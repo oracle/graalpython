@@ -59,6 +59,7 @@ public abstract class BuiltinNames {
     public static final String DISPLAYHOOK = "displayhook";
     public static final String BREAKPOINTHOOK = "breakpointhook";
     public static final String EXCEPTHOOK = "excepthook";
+    public static final String UNRAISABLEHOOK = "unraisablehook";
     public static final String LAST_TYPE = "last_type";
     public static final String LAST_VALUE = "last_value";
     public static final String LAST_TRACEBACK = "last_traceback";

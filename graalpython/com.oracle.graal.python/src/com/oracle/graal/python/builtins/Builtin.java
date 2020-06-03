@@ -47,6 +47,8 @@ public @interface Builtin {
 
     boolean isSetter() default false;
 
+    boolean allowsDelete() default false;
+
     boolean takesVarArgs() default false;
 
     boolean varArgsMarker() default false;
