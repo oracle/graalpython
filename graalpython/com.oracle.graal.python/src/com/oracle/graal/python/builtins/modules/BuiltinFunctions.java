@@ -726,10 +726,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+            String code = expression;
             PythonContext context = getContext();
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
+                if (!code.endsWith("\n")) {
+                    code += '\n';
+                }
             } else if (mode.equals("eval")) {
                 pm = ParserMode.Eval;
             } else if (mode.equals("single")) {
@@ -737,8 +741,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 throw raise(ValueError, ErrorMessages.COMPILE_MUST_BE);
             }
+            final String codeToCompile = code;
             Supplier<CallTarget> createCode = () -> {
-                Source source = PythonLanguage.newSource(context, expression, filename, mayBeFromFile);
+                Source source = PythonLanguage.newSource(context, codeToCompile, filename, mayBeFromFile);
                 return Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
             };
             RootCallTarget ct;
