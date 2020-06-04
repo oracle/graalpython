@@ -10,6 +10,10 @@
 *TestBinaryOps.test_intersection_overlap
 *TestBinaryOps.test_intersection_subset
 *TestBinaryOps.test_intersection_superset
+*TestBinaryOps.test_isdisjoint_non_overlap
+*TestBinaryOps.test_isdisjoint_overlap
+*TestBinaryOps.test_isdisjoint_subset
+*TestBinaryOps.test_isdisjoint_superset
 *TestBinaryOps.test_sym_difference_non_overlap
 *TestBinaryOps.test_sym_difference_overlap
 *TestBinaryOps.test_sym_difference_subset

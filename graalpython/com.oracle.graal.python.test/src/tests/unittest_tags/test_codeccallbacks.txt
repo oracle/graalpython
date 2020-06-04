@@ -1,4 +1,5 @@
 *CodecCallbackTest.test_badregistercall
 *CodecCallbackTest.test_bug828737
+*CodecCallbackTest.test_translatehelper
 *CodecCallbackTest.test_unencodablereplacement
 *CodecCallbackTest.test_unknownhandler

@@ -494,7 +494,7 @@ public abstract class CExtNodes {
 
         static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
-                            object instanceof PythonNativeNull || object instanceof PythonAbstractObject) &&
+                            object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE || object instanceof PythonAbstractObject) &&
                             !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
         }
 
@@ -654,6 +654,12 @@ public abstract class CExtNodes {
         @Specialization
         static Object doNativeNull(CExtContext cextContext, PythonNativeNull object) {
             return ToSulongNode.doNativeNull(cextContext, object);
+        }
+
+        @Specialization
+        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
@@ -825,6 +831,12 @@ public abstract class CExtNodes {
         @Specialization
         static Object doNativeNull(CExtContext cextContext, PythonNativeNull object) {
             return ToSulongNode.doNativeNull(cextContext, object);
+        }
+
+        @Specialization
+        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
@@ -1001,6 +1013,9 @@ public abstract class CExtNodes {
                 return false;
             }
             if (CApiGuards.isNativeNull(obj)) {
+                return false;
+            }
+            if (obj == DescriptorDeleteMarker.INSTANCE) {
                 return false;
             }
             if (PGuards.isAnyPythonObject(obj)) {

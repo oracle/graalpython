@@ -1185,11 +1185,20 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(guards = {"left == 0", "right.isZeroOrPositive()"})
+        static int doLPiZero(@SuppressWarnings("unused") long left, @SuppressWarnings("unused") PInt right) {
+            return 0;
+        }
+
+        @Specialization(replaces = "doLPiZero")
         PInt doLPi(long left, PInt right) {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
+            if (left == 0) {
+                return factory().createInt(BigInteger.ZERO);
+            }
             try {
-                return factory().createInt(op(PInt.longToBigInteger(left), right.intValueExact()));
+                int iright = right.intValueExact();
+                return factory().createInt(op(PInt.longToBigInteger(left), iright));
             } catch (ArithmeticException e) {
                 throw raise(PythonErrorType.OverflowError);
             }
@@ -1219,9 +1228,17 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(guards = {"left.isZero()", "right.isZeroOrPositive()"})
+        static int doPiPiZero(@SuppressWarnings("unused") PInt left, @SuppressWarnings("unused") PInt right) {
+            return 0;
+        }
+
+        @Specialization(replaces = "doPiPiZero")
         PInt doPiPi(PInt left, PInt right) {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
+            if (left.isZero()) {
+                return factory().createInt(BigInteger.ZERO);
+            }
             try {
                 return factory().createInt(op(left.getValue(), right.intValueExact()));
             } catch (ArithmeticException e) {

@@ -1,1 +1,2 @@
 *ShlexTest.testCompat
+*ShlexTest.testJoin

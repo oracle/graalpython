@@ -1,3 +1,14 @@
 *LongTest.test_access_to_nonexistent_digit_0
 *LongTest.test_bit_length
 *LongTest.test_conversion
+*LongTest.test_floordiv
+*LongTest.test_from_bytes
+*LongTest.test_huge_lshift_of_zero
+*LongTest.test_karatsuba
+*LongTest.test_logs
+*LongTest.test_lshift_of_zero
+*LongTest.test_mod_division
+*LongTest.test_negative_shift_count
+*LongTest.test_shift_bool
+*LongTest.test_small_ints
+*LongTest.test_to_bytes
