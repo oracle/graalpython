@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,9 @@
  */
 package com.oracle.graal.python.parser;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
 
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
@@ -40,14 +39,12 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import org.antlr.v4.runtime.Token;
 
 public final class PythonParserImpl implements PythonParser {
 
@@ -152,10 +149,10 @@ public final class PythonParserImpl implements PythonParser {
                     parser.reset();
                     parserSSTResult = parser.eval_input().result;
                 } catch (Exception e2) {
-                    throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
+                    throw handleParserError(errors, source, e);
                 }
             } else {
-                throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
+                throw handleParserError(errors, source, e);
             }
         }
 
@@ -163,7 +160,7 @@ public final class PythonParserImpl implements PythonParser {
         try {
             return sstFactory.createParserResult(parserSSTResult, mode, currentFrame);
         } catch (Exception e) {
-            throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
+            throw handleParserError(errors, source, e);
         }
     }
 
@@ -197,20 +194,11 @@ public final class PythonParserImpl implements PythonParser {
         return StringUtils.unescapeJavaString(str);
     }
 
-    private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e, boolean showBadLine) {
-        if (e instanceof TruffleException && ((TruffleException) e).isSyntaxError() && e instanceof PException) {
-            if (!showBadLine) {
-                PBaseException instance = ((PException) e).getExceptionObject();
-                // In cpython shell the line with the error is not displayed, so we should do it in
-                // the same way.
-                // This rely on implementation in traceback.py file. See comment in
-                // Python3Core.raiseInvalidSyntax method
-                instance.setAttribute("text", PNone.NONE);
-            }
-            return (PException) e;
+    private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
+        if (e instanceof PException && ((PException) e).isSyntaxError()) {
+            throw (PException) e;
         }
-
-        SourceSection section = showBadLine ? PythonErrorStrategy.getPosition(source, e) : source.createUnavailableSection();
+        SourceSection section = PythonErrorStrategy.getPosition(source, e);
         // from parser we are getting RuntimeExceptions
         String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
         throw errors.raiseInvalidSyntax(source, section, message);
