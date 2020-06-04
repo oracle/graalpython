@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.BoundsC
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithoutBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -57,15 +58,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class IndexNodes {
 
     public static final class NormalizeIndexNode extends Node {
-        public static final String INDEX_OUT_OF_BOUNDS = "index out of range";
-        public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
-        public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
-        public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
-        public static final String LIST_OUT_OF_BOUNDS = "list index out of range";
-        public static final String LIST_ASSIGN_OUT_OF_BOUNDS = "list assignment index out of range";
-        public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
-        public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
-        public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
 
         @Child private NormalizeIndexCustomMessageNode subNode;
 
@@ -101,7 +93,7 @@ public abstract class IndexNodes {
         }
 
         public static NormalizeIndexNode create() {
-            return new NormalizeIndexNode(INDEX_OUT_OF_BOUNDS, true);
+            return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, true);
         }
 
         public static NormalizeIndexNode create(String errorMessage) {
@@ -109,7 +101,7 @@ public abstract class IndexNodes {
         }
 
         public static NormalizeIndexNode create(boolean boundsCheck) {
-            return new NormalizeIndexNode(INDEX_OUT_OF_BOUNDS, boundsCheck);
+            return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, boundsCheck);
         }
 
         public static NormalizeIndexNode create(String errorMessage, boolean boundsCheck) {
@@ -117,35 +109,35 @@ public abstract class IndexNodes {
         }
 
         public static NormalizeIndexNode forList() {
-            return create(LIST_OUT_OF_BOUNDS);
+            return create(ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
         }
 
         public static NormalizeIndexNode forListAssign() {
-            return create(LIST_ASSIGN_OUT_OF_BOUNDS);
+            return create(ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
         }
 
         public static NormalizeIndexNode forTuple() {
-            return create(TUPLE_OUT_OF_BOUNDS);
+            return create(ErrorMessages.TUPLE_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forTupleAssign() {
-            return create(TUPLE_ASSIGN_OUT_OF_BOUNDS);
+            return create(ErrorMessages.TUPLE_ASSIGN_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forArray() {
-            return create(ARRAY_OUT_OF_BOUNDS);
+            return create(ErrorMessages.ARRAY_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forArrayAssign() {
-            return create(ARRAY_ASSIGN_OUT_OF_BOUNDS);
+            return create(ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forRange() {
-            return create(RANGE_OUT_OF_BOUNDS);
+            return create(ErrorMessages.RANGE_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forBytearray() {
-            return create(BYTEARRAY_OUT_OF_BOUNDS);
+            return create(ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
         }
     }
 

@@ -60,6 +60,8 @@ public abstract class ErrorMessages {
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %l";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
+    public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
+    public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
     public static final String ARRAY_SIZE_TOO_LARGE = "array size too large";
     public static final String ATTEMP_TO_RELEASE_RECURSIVE_LOCK = "attempt to release recursive lock not owned by thread";
     public static final String ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE = "attempt to assign sequence of size %d to extended slice of size %d";
@@ -83,6 +85,7 @@ public abstract class ErrorMessages {
     public static final String BOOL_SHOULD_RETURN_BOOL = "__bool__ should return bool, returned %p";
     public static final String BUFFER_INDICES_MUST_BE_INTS = "buffer indices must be integers, not %p";
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
+    public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
     public static final String BYTES_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
@@ -232,6 +235,7 @@ public abstract class ErrorMessages {
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
     public static final String INDEX_OUT_OF_BOUNDS = "index out of bounds";
+    public static final String INDEX_OUT_OF_RANGE = "index out of range";
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
     public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
@@ -371,7 +375,8 @@ public abstract class ErrorMessages {
     public static final String PROVIDED_OBJ_NOT_ARRAY = "provided object is not an array";
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO = "Python int too large to convert to %s";
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE = "Python int too large to convert to %s-byte C type";
-    public static final String RAGE_DOES_NOT_SUPPORT = "range does not support %s, %s, %s";
+    public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
+    public static final String RANGE_DOES_NOT_SUPPORT = "range does not support %s, %s, %s";
     public static final String RAW_FORMAT_NOT_SUPPORTED = "RAW format unsupported";
     public static final String READ_BYTE_OUT_OF_RANGE = "read byte out of range";
     public static final String READ_WRITE_BYTELIKE_OBJ = "read-write bytes-like object";
@@ -434,6 +439,8 @@ public abstract class ErrorMessages {
     public static final String TOO_MANY_VALUES_TO_UNPACK = "too many values to unpack (expected %d)";
     public static final String TRAILING_S_IN_STR = "Trailing %s in string";
     public static final String TRANS_TABLE_MUST_BE_256 = "translation table must be 256 characters long";
+    public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
+    public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
     public static final String TUPLE_OR_STRUCT_TIME_ARG_REQUIRED = "Tuple or struct_time argument required";
     public static final String TWO_STARRED_EXPRESSION_IN_ASSIGMENT = "two starred expressions in assignment";
     public static final String TYPE_DOES_NOT_PROVIDE_BASES = "type does not provide bases";

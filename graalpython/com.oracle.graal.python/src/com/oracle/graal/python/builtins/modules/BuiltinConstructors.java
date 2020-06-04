@@ -1803,14 +1803,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
 
-            throw raise(TypeError, ErrorMessages.RAGE_DOES_NOT_SUPPORT, start, stop, step);
+            throw raise(TypeError, ErrorMessages.RANGE_DOES_NOT_SUPPORT, start, stop, step);
         }
 
         @TruffleBoundary
         @Specialization(guards = "!isNumber(stop)")
         public PSequence rangeError(Object cls, Object start, Object stop, Object step) {
             CompilerDirectives.transferToInterpreter();
-            throw raise(TypeError, ErrorMessages.RAGE_DOES_NOT_SUPPORT, start, stop, step);
+            throw raise(TypeError, ErrorMessages.RANGE_DOES_NOT_SUPPORT, start, stop, step);
         }
 
         public static boolean isNumber(Object value) {
