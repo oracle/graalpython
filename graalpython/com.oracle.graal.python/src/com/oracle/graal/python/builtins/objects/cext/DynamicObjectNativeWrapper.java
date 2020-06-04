@@ -131,7 +131,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -1416,15 +1415,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return true;
             }
 
-            static boolean isPyTimeMemberReadable(PythonObjectNativeWrapper receiver, PythonNativeWrapperLibrary lib, GetLazyClassNode getClassNode, GetNameNode getNameNode) {
-                return ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(receiver))));
+            static boolean isPyTimeMemberReadable(PythonObjectNativeWrapper receiver, PythonNativeWrapperLibrary lib, PythonObjectLibrary plib, GetNameNode getNameNode) {
+                return ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(plib.getLazyPythonClass(lib.getDelegate(receiver))));
             }
 
             @SuppressWarnings("unused")
-            @Specialization(guards = "isPyTimeMemberReadable(receiver, lib, getClassNode, getNameNode)")
+            @Specialization(guards = "isPyTimeMemberReadable(receiver, lib, plib, getNameNode)")
             static boolean isReadablePyTime(PythonObjectNativeWrapper receiver, String name,
                             @CachedLibrary("receiver") PythonNativeWrapperLibrary lib,
-                            @Cached GetLazyClassNode getClassNode,
+                            @CachedLibrary(limit = "4") PythonObjectLibrary plib,
                             @Cached GetNameNode getNameNode) {
                 return true;
             }
@@ -1433,10 +1432,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @TruffleBoundary
             static boolean isReadableFallback(PythonObjectNativeWrapper receiver, String name,
                             @CachedLibrary("receiver") PythonNativeWrapperLibrary lib,
-                            @Cached GetLazyClassNode getClassNode,
+                            @CachedLibrary(limit = "4") PythonObjectLibrary plib,
                             @Cached GetNameNode getNameNode) {
                 return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMember.isValid(name) ||
-                                ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(receiver))));
+                                ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(plib.getLazyPythonClass(lib.getDelegate(receiver))));
             }
         }
 
@@ -1647,7 +1646,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                             @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                             @Cached GetClassNode getClassNode) {
 
-                PythonAbstractClass clazz;
+                Object clazz;
                 if (object.isBool()) {
                     clazz = getClassNode.execute(true);
                 } else if (object.isByte() || object.isInt() || object.isLong()) {

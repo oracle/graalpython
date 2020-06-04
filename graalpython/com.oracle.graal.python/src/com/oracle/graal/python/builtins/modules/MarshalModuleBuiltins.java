@@ -523,7 +523,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 if (isBuiltinProfile == null) {
                     isBuiltinProfile = IsBuiltinClassProfile.create();
                 }
-                if (isBuiltinProfile.profileClass((LazyPythonClass) v, PythonBuiltinClassType.StopIteration)) {
+                if (isBuiltinProfile.profileClass(v, PythonBuiltinClassType.StopIteration)) {
                     writeByte(TYPE_STOPITER, version, buffer);
                 } else {
                     writeByte(TYPE_UNKNOWN, version, buffer);

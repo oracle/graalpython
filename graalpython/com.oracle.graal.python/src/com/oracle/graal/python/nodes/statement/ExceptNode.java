@@ -29,6 +29,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -39,7 +40,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -222,10 +222,10 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
     boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
                     @SuppressWarnings("unused") @CachedLibrary("clause") InteropLibrary lib,
                     @Cached ValidExceptionNode isValidException,
-                    @Cached GetLazyClassNode getLazyClass,
+                    @CachedLibrary("e.getExceptionObject()") PythonObjectLibrary plib,
                     @Cached IsSubtypeNode isSubtype) {
         raiseIfNoException(frame, clause, isValidException);
-        return isSubtype.execute(frame, getLazyClass.execute(e.getExceptionObject()), clause);
+        return isSubtype.execute(frame, plib.getLazyPythonClass(e.getExceptionObject()), clause);
     }
 
     @Specialization(guards = {"emulateJython", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"}, limit = "1")

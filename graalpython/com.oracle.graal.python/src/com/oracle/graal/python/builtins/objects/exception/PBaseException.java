@@ -43,19 +43,20 @@ package com.oracle.graal.python.builtins.objects.exception;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -183,11 +184,17 @@ public final class PBaseException extends PythonObject {
         return messageArgs.clone();
     }
 
-    public String getFormattedMessage(GetLazyClassNode getClassNode) {
-        String typeName = GetNameNode.doSlowPath(getLazyPythonClass());
+    public String getFormattedMessage(PythonObjectLibrary lib) {
+        final Object clazz;
+        if (lib == null) {
+            clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(this);
+        } else {
+            clazz = lib.getLazyPythonClass(this);
+        }
+        String typeName = GetNameNode.doSlowPath(clazz);
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(lib, messageFormat, getMessageArgs());
             } else if (hasMessageFormat) {
                 return typeName + ": " + messageFormat;
             } else {
@@ -223,7 +230,7 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    RuntimeException throwException(@Cached GetLazyClassNode getClass,
+    RuntimeException throwException(@CachedLibrary("this") PythonObjectLibrary lib,
                     @Cached PRaiseNode raiseNode) {
         Object[] newArgs = messageArgs;
         if (newArgs == null) {
@@ -233,7 +240,7 @@ public final class PBaseException extends PythonObject {
         if (format == null) {
             format = PNone.NO_VALUE;
         }
-        throw raiseNode.execute(getClass.execute(this), this, format, newArgs);
+        throw raiseNode.execute(lib.getLazyPythonClass(this), this, format, newArgs);
     }
 
     /**

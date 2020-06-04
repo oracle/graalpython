@@ -42,15 +42,16 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @ImportStatic(PGuards.class)
 abstract class CastToJavaLongNode extends PNodeWithContext {
@@ -72,11 +73,11 @@ abstract class CastToJavaLongNode extends PNodeWithContext {
         return x;
     }
 
-    @Specialization
+    @Specialization(limit = "1")
     static long doNativeObject(PythonNativeObject x,
-                    @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary("x") PythonObjectLibrary plib,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
+        if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PInt)) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
         }

@@ -49,8 +49,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetS
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -79,6 +78,7 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -104,7 +104,6 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
     @ImportStatic(PGuards.class)
     public abstract static class CastToListNode extends Node implements IndirectCallNode {
-        @Child private GetLazyClassNode getClassNode;
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
@@ -122,17 +121,10 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         public abstract PList execute(VirtualFrame frame, Object list);
 
-        protected final LazyPythonClass getClass(Object value) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode.execute(value);
-        }
-
-        @Specialization(guards = {"cannotBeOverridden(getClass(v))", "cachedLength == getLength(v)", "cachedLength < 32"})
+        @Specialization(guards = {"cannotBeOverridden(plib.getLazyPythonClass(v))", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
         @ExplodeLoop
         protected PList starredTupleCachedLength(VirtualFrame frame, PTuple v,
+                        @SuppressWarnings("unused") @CachedLibrary("v") PythonObjectLibrary plib,
                         @Cached PythonObjectFactory factory,
                         @Cached("getLength(v)") int cachedLength) {
             SequenceStorage s = v.getSequenceStorage();
@@ -143,15 +135,17 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             return factory.createList(array);
         }
 
-        @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(getClass(v))")
+        @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(plib.getLazyPythonClass(v))", limit = "2")
         protected PList starredTuple(PTuple v,
                         @Cached PythonObjectFactory factory,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
+                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @SuppressWarnings("unused") @CachedLibrary("v") PythonObjectLibrary plib) {
             return factory.createList(getObjectArrayNode.execute(v).clone());
         }
 
-        @Specialization(guards = "cannotBeOverridden(getClass(v))")
-        protected PList starredList(PList v) {
+        @Specialization(guards = "cannotBeOverridden(plib.getLazyPythonClass(v))", limit = "2")
+        protected PList starredList(PList v,
+                        @SuppressWarnings("unused") @CachedLibrary("v") PythonObjectLibrary plib) {
             return v;
         }
 

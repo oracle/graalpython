@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -72,7 +73,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -81,6 +81,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -106,7 +107,6 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Child private GetMroNode getMroNode;
         @Child private GetNameNode getNameNode;
         @Child private IsSameTypeNode isSameTypeNode;
-        @Child private GetLazyClassNode getLazyClassNode;
         @Child private PRaiseNode raiseNode;
 
         private final IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
@@ -117,15 +117,16 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         public abstract boolean execute(LazyPythonClass descrType, String name, Object obj);
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        @Specialization
-        boolean descr_check(LazyPythonClass descrType, String name, Object obj) {
+        @Specialization(limit = "3")
+        boolean descr_check(LazyPythonClass descrType, String name, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
             if (PGuards.isNone(obj)) {
                 // object's descriptors (__class__,...) need to work on every object including None
                 if (!isBuiltinPythonClassObject.profileClass(descrType, PythonBuiltinClassType.PythonObject)) {
                     return true;
                 }
             }
-            LazyPythonClass type = getLazyClass(obj);
+            Object type = lib.getLazyPythonClass(obj);
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
                 for (PythonAbstractClass o : getMro(type)) {
@@ -144,15 +145,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             throw getRaiseNode().raise(TypeError, ErrorMessages.DESC_S_FOR_S_DOESNT_APPLY_TO_S, name, getTypeName(descrType), getTypeName(type));
         }
 
-        private LazyPythonClass getLazyClass(Object obj) {
-            if (getLazyClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getLazyClassNode = insert(GetLazyClassNode.create());
-            }
-            return getLazyClassNode.execute(obj);
-        }
-
-        private PythonAbstractClass[] getMro(LazyPythonClass clazz) {
+        private PythonAbstractClass[] getMro(Object clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -160,7 +153,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             return getMroNode.execute(clazz);
         }
 
-        private Object getTypeName(LazyPythonClass descrType) {
+        private Object getTypeName(Object descrType) {
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());

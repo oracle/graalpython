@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttri
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -55,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -77,12 +77,12 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static int asSize(Integer value, @SuppressWarnings("unused") LazyPythonClass errorType) {
+    static int asSize(Integer value, @SuppressWarnings("unused") Object errorType) {
         return value;
     }
 
     @ExportMessage
-    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Integer value) {
+    static Object getLazyPythonClass(@SuppressWarnings("unused") Integer value) {
         return PythonBuiltinClassType.PInt;
     }
 
@@ -162,9 +162,10 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static int iF(Integer receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltin.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
+            if (isBuiltin.profileIsAnyBuiltinClass(lib.getLazyPythonClass(other))) {
                 return other.getValue() == receiver ? 1 : 0;
             } else {
                 return -1;

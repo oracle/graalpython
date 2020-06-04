@@ -45,16 +45,17 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
  * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -83,13 +84,13 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
         return materializeNode.execute(x);
     }
 
-    @Specialization
+    @Specialization(limit = "2")
     static String doNativeObject(PythonNativeObject x,
-                    @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary("x") PythonObjectLibrary plib,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                     @Cached ToSulongNode toSulongNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+        if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
             // read the native data
             Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
             assert result instanceof String;

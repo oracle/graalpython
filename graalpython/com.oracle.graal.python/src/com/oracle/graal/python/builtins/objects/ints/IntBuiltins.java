@@ -85,7 +85,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -2100,8 +2099,6 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FromBytesNode extends PythonBuiltinNode {
 
-        @Child private GetLazyClassNode getClassNode;
-
         @Child private LookupAndCallVarargsNode constructNode;
         @Child private BytesNodes.FromSequenceNode fromSequenceNode;
         @Child private BytesNodes.FromIteratorNode fromIteratorNode;
@@ -2109,14 +2106,6 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Child private BytesNodes.ToBytesNode toBytesNode;
         @Child private LookupAndCallUnaryNode callBytesNode;
-
-        protected LazyPythonClass getClass(Object value) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode.execute(value);
-        }
 
         protected BytesNodes.FromSequenceNode getFromSequenceNode() {
             if (fromSequenceNode == null) {
@@ -2255,25 +2244,29 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         // from PList, only if it is not extended
-        @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(VirtualFrame frame, LazyPythonClass cl, PList list, String byteorder, boolean signed) {
+        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(list))", limit = "3")
+        public Object fromPList(VirtualFrame frame, LazyPythonClass cl, PList list, String byteorder, boolean signed,
+                        @SuppressWarnings("unused") @CachedLibrary("list") PythonObjectLibrary lib) {
             return compute(cl, getFromSequenceNode().execute(frame, list), byteorder, signed);
         }
 
-        @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(VirtualFrame frame, LazyPythonClass cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPList(frame, cl, list, byteorder, false);
+        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(list))", limit = "3")
+        public Object fromPList(VirtualFrame frame, LazyPythonClass cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed,
+                        @SuppressWarnings("unused") @CachedLibrary("list") PythonObjectLibrary lib) {
+            return fromPList(frame, cl, list, byteorder, false, lib);
         }
 
         // from PTuple, only if it is not extended
-        @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(VirtualFrame frame, LazyPythonClass cl, PTuple tuple, String byteorder, boolean signed) {
+        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(tuple))", limit = "3")
+        public Object fromPTuple(VirtualFrame frame, LazyPythonClass cl, PTuple tuple, String byteorder, boolean signed,
+                        @SuppressWarnings("unused") @CachedLibrary("tuple") PythonObjectLibrary lib) {
             return compute(cl, getFromSequenceNode().execute(frame, tuple), byteorder, signed);
         }
 
-        @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(VirtualFrame frame, LazyPythonClass cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPTuple(frame, cl, tuple, byteorder, false);
+        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(tuple))", limit = "3")
+        public Object fromPTuple(VirtualFrame frame, LazyPythonClass cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed,
+                        @SuppressWarnings("unused") @CachedLibrary("tuple") PythonObjectLibrary lib) {
+            return fromPTuple(frame, cl, tuple, byteorder, false, lib);
         }
 
         // rest objects
@@ -2477,15 +2470,6 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonUnaryBuiltinNode {
-        @Child private GetLazyClassNode getClassNode;
-
-        protected LazyPythonClass getClass(Object value) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode.execute(value);
-        }
 
         @Specialization
         int doB(boolean self) {
@@ -2502,23 +2486,27 @@ public class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "cannotBeOverridden(getClass(self))")
-        PInt doPInt(PInt self) {
+        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(self))", limit = "3")
+        PInt doPInt(PInt self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
             return self;
         }
 
-        @Specialization(guards = "!cannotBeOverridden(getClass(self))", rewriteOn = ArithmeticException.class)
-        int doPIntOverridenNarrowInt(PInt self) {
+        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", rewriteOn = ArithmeticException.class, limit = "3")
+        int doPIntOverridenNarrowInt(PInt self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
             return self.intValueExact();
         }
 
-        @Specialization(guards = "!cannotBeOverridden(getClass(self))", replaces = "doPIntOverridenNarrowInt", rewriteOn = ArithmeticException.class)
-        long doPIntOverridenNarrowLong(PInt self) {
+        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", replaces = "doPIntOverridenNarrowInt", rewriteOn = ArithmeticException.class, limit = "3")
+        long doPIntOverridenNarrowLong(PInt self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
             return self.longValueExact();
         }
 
-        @Specialization(guards = "!cannotBeOverridden(getClass(self))", replaces = "doPIntOverridenNarrowLong")
-        PInt doPIntOverriden(PInt self) {
+        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", replaces = "doPIntOverridenNarrowLong", limit = "3")
+        PInt doPIntOverriden(PInt self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
             return factory().createInt(self.getValue());
         }
 

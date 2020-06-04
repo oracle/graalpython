@@ -89,7 +89,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -126,7 +125,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
 
         @Specialization(guards = "isNoValue(value)")
-        PythonAbstractClass getClass(Object self, @SuppressWarnings("unused") PNone value,
+        Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
         }
@@ -143,17 +142,16 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone setClass(PythonObject self, PythonAbstractClass value,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary slotsLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib2,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
-                        @Cached("create()") BranchProfile errorSlotsBranch,
-                        @Cached("create()") GetLazyClassNode getLazyClass) {
+                        @Cached("create()") BranchProfile errorSlotsBranch) {
             if (value instanceof PythonBuiltinClass || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
                 throw raise(TypeError, ERROR_MESSAGE);
             }
-            LazyPythonClass lazyClass = getLazyClass.execute(self);
+            Object lazyClass = lib1.getLazyPythonClass(self);
             if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || PGuards.isNativeClass(lazyClass)) {
                 errorSelfBranch.enter();
                 throw raise(TypeError, ERROR_MESSAGE);
@@ -161,12 +159,12 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object selfSlots = getLookupSlotsInSelf().execute(lazyClass);
             if (selfSlots != PNone.NO_VALUE) {
                 Object otherSlots = getLookupSlotsInOther().execute(value);
-                if (otherSlots == PNone.NO_VALUE || !slotsLib.equals(selfSlots, otherSlots, slotsLib)) {
+                if (otherSlots == PNone.NO_VALUE || !lib2.equals(selfSlots, otherSlots, lib2)) {
                     errorSlotsBranch.enter();
                     throw raise(TypeError, ErrorMessages.CLASS_ASIGMENT_D_LAYOUT_DIFFERS_FROM_S, getTypeName(value), getTypeName(lazyClass));
                 }
             }
-            lib.setLazyPythonClass(self, value);
+            lib1.setLazyPythonClass(self, value);
             return PNone.NONE;
         }
 
@@ -196,7 +194,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
         }
 
-        private String getTypeName(LazyPythonClass clazz) {
+        private String getTypeName(Object clazz) {
             if (getTypeNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getTypeNameNode = insert(TypeNodes.GetNameNode.create());
@@ -295,7 +293,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (self == PNone.NONE) {
                 return "None";
             }
-            PythonAbstractClass type = getClass.execute(self);
+            Object type = getClass.execute(self);
             Object moduleName = readModuleNode.executeObject(frame, type);
             Object qualName = readQualNameNode.executeObject(frame, type);
             if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
@@ -321,8 +319,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        @Child private GetLazyClassNode getObjectClassNode = GetLazyClassNode.create();
-        @Child private GetLazyClassNode getDataClassNode;
         @Child private LookupAttributeInMRONode lookupGetNode;
         @Child private LookupAttributeInMRONode lookupSetNode;
         @Child private LookupAttributeInMRONode lookupDeleteNode;
@@ -330,13 +326,14 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode attrRead;
 
         @Specialization
-        protected Object doIt(VirtualFrame frame, Object object, Object key) {
-            LazyPythonClass type = getObjectClassNode.execute(object);
+        protected Object doIt(VirtualFrame frame, Object object, Object key,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+            Object type = lib.getLazyPythonClass(object);
             Object descr = lookup.execute(type, key);
-            LazyPythonClass dataDescClass = null;
+            Object dataDescClass = null;
             if (descr != PNone.NO_VALUE) {
                 hasDescProfile.enter();
-                dataDescClass = getDataClass(descr);
+                dataDescClass = lib.getLazyPythonClass(descr);
                 Object delete = PNone.NO_VALUE;
                 Object set = lookupSet(dataDescClass);
                 if (set == PNone.NO_VALUE) {
@@ -393,7 +390,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dispatchGet.execute(frame, get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
         }
 
-        private Object lookupGet(LazyPythonClass dataDescClass) {
+        private Object lookupGet(Object dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
@@ -401,7 +398,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupGetNode.execute(dataDescClass);
         }
 
-        private Object lookupDelete(LazyPythonClass dataDescClass) {
+        private Object lookupDelete(Object dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
@@ -409,20 +406,12 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupDeleteNode.execute(dataDescClass);
         }
 
-        private Object lookupSet(LazyPythonClass dataDescClass) {
+        private Object lookupSet(Object dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
             }
             return lookupSetNode.execute(dataDescClass);
-        }
-
-        private LazyPythonClass getDataClass(Object descr) {
-            if (getDataClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDataClassNode = insert(GetLazyClassNode.create());
-            }
-            return getDataClassNode.execute(descr);
         }
 
         public static GetAttributeNode create() {
@@ -433,18 +422,18 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         protected PNone doIt(VirtualFrame frame, Object object, Object key, Object value,
-                        @Cached("create()") GetLazyClassNode getObjectClassNode,
+                        @CachedLibrary("object") PythonObjectLibrary libObj,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
                         @Cached("create()") CallTernaryMethodNode callSetNode,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            LazyPythonClass type = getObjectClassNode.execute(object);
+            Object type = libObj.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                PythonAbstractClass dataDescClass = getDataClassNode.execute(descr);
+                Object dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupSetNode.execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
                     callSetNode.execute(frame, set, descr, object, value);
@@ -465,19 +454,19 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         protected PNone doIt(VirtualFrame frame, Object object, Object key,
-                        @Cached("create()") GetLazyClassNode getObjectClassNode,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached("create()") CallBinaryMethodNode callSetNode,
                         @Cached("create()") ReadAttributeFromObjectNode attrRead,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            LazyPythonClass type = getObjectClassNode.execute(object);
+            Object type = lib.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                PythonAbstractClass dataDescClass = getDataClassNode.execute(descr);
+                Object dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupDeleteNode.execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
                     callSetNode.executeObject(frame, set, descr, object);

@@ -1581,13 +1581,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         long doPythonObject(PythonNativeWrapper nativeWrapper,
                         @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib) {
-            PythonAbstractClass pclass = getGetClassNode().execute(lib.getDelegate(nativeWrapper));
+            Object pclass = getGetClassNode().execute(lib.getDelegate(nativeWrapper));
             return getGetTypeFlagsNode().execute(pclass);
         }
 
         @Specialization
         long doPythonObject(PythonAbstractObject object) {
-            PythonAbstractClass pclass = getGetClassNode().execute(object);
+            Object pclass = getGetClassNode().execute(object);
             return getGetTypeFlagsNode().execute(pclass);
         }
 

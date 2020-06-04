@@ -91,7 +91,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -824,12 +823,12 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         PList doPList(PList left, PList other,
-                        @Cached("create()") GetLazyClassNode getLazyClassNode,
+                        @CachedLibrary("left") PythonObjectLibrary plib,
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
-            return factory().createList(getLazyClassNode.execute(left), newStore);
+            return factory().createList(plib.getLazyPythonClass(left), newStore);
         }
 
         @Specialization(guards = "!isList(right)")

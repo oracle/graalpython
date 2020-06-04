@@ -126,7 +126,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getContext().getCore();
     }
 
-    public final PythonAbstractClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
+    public final PythonAbstractClass getPythonClass(Object lazyClass, ConditionProfile profile) {
         if (profile.profile(lazyClass instanceof PythonBuiltinClassType)) {
             return getCore().lookupType((PythonBuiltinClassType) lazyClass);
         } else {

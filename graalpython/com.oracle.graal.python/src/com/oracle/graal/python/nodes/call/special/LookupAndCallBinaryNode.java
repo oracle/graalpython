@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -53,11 +51,12 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -267,10 +266,16 @@ public abstract class LookupAndCallBinaryNode extends Node {
         }
     }
 
+    protected static boolean isReflectedObject(Object left, Object right, PythonObjectLibrary libLeft, PythonObjectLibrary libRight) {
+        return libLeft.isReflectedObject(left, left) || libRight.isReflectedObject(right, right);
+    }
+
     // Object, Object
 
-    @Specialization(guards = "!isReversible()")
+    @Specialization(guards = {"!isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @CachedLibrary("left") PythonObjectLibrary libLeft,
+                    @SuppressWarnings("unused") @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create(name)") LookupInheritedAttributeNode getattr) {
         Object leftCallable = getattr.execute(left);
         if (leftCallable == PNone.NO_VALUE) {
@@ -283,19 +288,19 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return ensureDispatch().executeObject(frame, leftCallable, left, right);
     }
 
-    @Specialization(guards = "isReversible()")
+    @Specialization(guards = {"isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name)") LookupAttributeInMRONode getattr,
                     @Cached("create(rname)") LookupAttributeInMRONode getattrR,
-                    @Cached("create()") GetLazyClassNode getClass,
-                    @Cached("create()") GetLazyClassNode getClassR,
+                    @CachedLibrary("left") PythonObjectLibrary libLeft,
+                    @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        LazyPythonClass leftClass = getClass.execute(left);
+        Object leftClass = libLeft.getLazyPythonClass(left);
         Object leftCallable = getattr.execute(leftClass);
-        LazyPythonClass rightClass = getClassR.execute(right);
+        Object rightClass = libRight.getLazyPythonClass(right);
         Object rightCallable = getattrR.execute(rightClass);
         if (leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
@@ -320,6 +325,14 @@ public abstract class LookupAndCallBinaryNode extends Node {
             return runErrorHandler(left, right);
         }
         return result;
+    }
+
+    @Specialization(guards = "isReflectedObject(left, right, libLeft, libRight)", limit = "1")
+    Object callReflected(VirtualFrame frame, Object left, Object right,
+                    @CachedLibrary("left") PythonObjectLibrary libLeft,
+                    @CachedLibrary("right") PythonObjectLibrary libRight,
+                    @Cached("create(name, rname, handlerFactory)") LookupAndCallBinaryNode recursiveCall) {
+        return recursiveCall.executeObject(frame, libLeft.getReflectedObject(left), libRight.getReflectedObject(right));
     }
 
     private Object runErrorHandler(Object left, Object right) {

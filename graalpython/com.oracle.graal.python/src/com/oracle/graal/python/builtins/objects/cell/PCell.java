@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cell;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -117,9 +116,14 @@ public final class PCell extends PythonAbstractObject {
     }
 
     @Override
+    public Object getInternalLazyPythonClass() {
+        return getLazyPythonClass();
+    }
+
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
-    public LazyPythonClass getLazyPythonClass() {
+    public Object getLazyPythonClass() {
         return PythonBuiltinClassType.PCell;
     }
 }

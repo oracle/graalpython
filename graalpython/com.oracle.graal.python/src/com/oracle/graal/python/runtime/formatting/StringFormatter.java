@@ -15,8 +15,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.util.BiFunction;
-
 import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -33,9 +31,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class StringFormatter {
@@ -172,7 +170,7 @@ public class StringFormatter {
 
         // We need to do a full subtype-check because native objects may inherit from tuple but have
         // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
-        boolean tupleArgs = PGuards.isPTuple(args1) || IsSubtypeNodeGen.getUncached().execute(GetLazyClassNode.getUncached().execute(args1), PythonBuiltinClassType.PTuple);
+        boolean tupleArgs = PGuards.isPTuple(args1) || IsSubtypeNodeGen.getUncached().execute(PythonObjectLibrary.getUncached().getLazyPythonClass(args1), PythonBuiltinClassType.PTuple);
         assert tupleArgs || !PGuards.isPTuple(args1);
         if (tupleArgs) {
             // We will simply work through the tuple elements

@@ -40,11 +40,8 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -52,6 +49,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -161,8 +159,8 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("create()") IsSameTypeNode isSameTypeNode,
                     @Cached("create()") BranchProfile notImplementedBranch) {
-        PythonAbstractClass leftClass = getClass.execute(v);
-        PythonAbstractClass rightClass = getClassR.execute(w);
+        Object leftClass = getClass.execute(v);
+        Object rightClass = getClassR.execute(w);
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftCallable = getattr.execute(leftClass);

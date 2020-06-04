@@ -33,9 +33,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.truffle.api.Assumption;
@@ -59,42 +56,33 @@ import com.oracle.truffle.api.object.dsl.Layout;
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey HAS_DICT = new HiddenKey("has_dict");
 
-    private LazyPythonClass storedPythonClass;
+    private Object storedPythonClass;
     private PHashingCollection dict;
     private final DynamicObject storage;
 
-    public PythonObject(LazyPythonClass pythonClass, DynamicObject storage) {
+    public PythonObject(Object pythonClass, DynamicObject storage) {
         assert pythonClass != null;
         this.storedPythonClass = pythonClass;
         this.storage = storage;
     }
 
-    public final PythonAbstractClass getPythonClass() {
-        CompilerAsserts.neverPartOfCompilation();
-        LazyPythonClass pythonClass = getLazyPythonClass();
-        if (pythonClass instanceof PythonAbstractClass) {
-            return (PythonAbstractClass) pythonClass;
-        } else {
-            return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) pythonClass);
-        }
+    public static Assumption getSingleContextAssumption() {
+        return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
     @ExportMessage
     @GenerateUncached
     public abstract static class SetLazyPythonClass {
-        public static Assumption getSingleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
-        }
 
         @Specialization(assumptions = "storingClassesInShapes")
-        public static void setSingle(PythonObject self, PythonAbstractClass cls,
+        public static void setSingle(PythonObject self, Object cls,
                         @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption storingClassesInShapes) {
             self.storedPythonClass = cls;
             PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(self.storage, cls);
         }
 
         @Specialization
-        public static void setMultiContext(PythonObject self, PythonAbstractClass cls) {
+        public static void setMultiContext(PythonObject self, Object cls) {
             self.storedPythonClass = cls;
             if (PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(self.storage) != null) {
                 // for the builtin class enums, we now should change the shape
@@ -108,9 +96,40 @@ public class PythonObject extends PythonAbstractObject {
     /**
      * This is usually final, a fact may be optimized further if the storage turns into a constant.
      */
-    @Override
+
     @ExportMessage
-    public final LazyPythonClass getLazyPythonClass() {
+    public static class GetLazyPythonClass {
+
+        // if object is constant here, storage will also be constant, so the shape
+        // lookup is the only thing we need.
+        @Specialization(guards = "object.getStorage().getShape() == cachedShape", assumptions = {"storingClassesInShapes"}, limit = "4")
+        public static Object getPythonClassCachedSingle(@SuppressWarnings("unused") PythonObject object,
+                        @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
+                        @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption storingClassesInShapes,
+                        @Cached("object.getInternalLazyPythonClass()") Object klass) {
+            return klass;
+        }
+
+        public static boolean isBuiltinType(Shape shape) {
+            return PythonObject.getLazyClassFromObjectType(shape.getObjectType()) instanceof PythonBuiltinClassType;
+        }
+
+        // we can at least cache builtin types in the multi-context case
+        @Specialization(guards = {"object.getStorage().getShape() == cachedShape", "isBuiltinType(cachedShape)"}, limit = "4")
+        public static Object getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
+                        @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
+                        @Cached("object.getInternalLazyPythonClass()") Object klass) {
+            return klass;
+        }
+
+        @Specialization(replaces = {"getPythonClassCachedSingle", "getPythonClassCached"})
+        public static Object getLazyPythonClass(PythonObject object) {
+            return object.storedPythonClass;
+        }
+    }
+
+    @Override
+    public final Object getInternalLazyPythonClass() {
         return storedPythonClass;
     }
 
@@ -140,13 +159,6 @@ public class PythonObject extends PythonAbstractObject {
         return keyList;
     }
 
-    public final PythonAbstractClass asPythonClass() {
-        if (this instanceof PythonManagedClass) {
-            return (PythonManagedClass) this;
-        }
-        return getPythonClass();
-    }
-
     @Override
     public int compareTo(Object o) {
         return this == o ? 0 : 1;
@@ -162,7 +174,7 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + TypeNodes.GetNameNode.doSlowPath(getLazyPythonClass()) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + TypeNodes.GetNameNode.doSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(this)) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     @ExportMessage
@@ -218,22 +230,22 @@ public class PythonObject extends PythonAbstractObject {
 
     @Layout(implicitCastIntToLong = true, implicitCastIntToDouble = false)
     protected static interface PythonObjectLayout {
-        DynamicObjectFactory createPythonObjectShape(LazyPythonClass lazyPythonClass);
+        DynamicObjectFactory createPythonObjectShape(Object lazyPythonClass);
 
         DynamicObject createPythonObject(DynamicObjectFactory factory);
 
-        LazyPythonClass getLazyPythonClass(DynamicObjectFactory factory);
+        Object getLazyPythonClass(DynamicObjectFactory factory);
 
-        LazyPythonClass getLazyPythonClass(ObjectType objectType);
+        Object getLazyPythonClass(ObjectType objectType);
 
-        LazyPythonClass getLazyPythonClass(DynamicObject object);
+        Object getLazyPythonClass(DynamicObject object);
 
-        void setLazyPythonClass(DynamicObject object, LazyPythonClass value);
+        void setLazyPythonClass(DynamicObject object, Object value);
     }
 
     private static final Shape emptyShape = PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(null).getShape();
 
-    public static Shape freshShape(LazyPythonClass klass) {
+    public static Shape freshShape(Object klass) {
         // GR-17243: I would like to enable this assertion, but it breaks
         // building native images under some circumstances.
         // assert (PythonLanguage.getCurrent().singleContextAssumption.isValid()
@@ -245,7 +257,7 @@ public class PythonObject extends PythonAbstractObject {
         return emptyShape;
     }
 
-    public static LazyPythonClass getLazyClassFromObjectType(ObjectType type) {
+    public static Object getLazyClassFromObjectType(ObjectType type) {
         return PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(type);
     }
 }

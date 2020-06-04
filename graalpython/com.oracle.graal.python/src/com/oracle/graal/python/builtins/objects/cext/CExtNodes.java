@@ -125,7 +125,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -495,7 +494,7 @@ public abstract class CExtNodes {
         static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
                             object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE || object instanceof PythonAbstractObject) &&
-                            !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
+                            !lib.isReflectedObject(object, object) && !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
         }
 
         protected static boolean isNaN(double d) {
@@ -1000,15 +999,15 @@ public abstract class CExtNodes {
             return d;
         }
 
-        @Specialization(guards = "isFallback(obj, getClassNode, isForeignClassProfile)")
+        @Specialization(guards = "isFallback(obj, lib, isForeignClassProfile)", limit = "3")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object obj,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.INVALID_OBJ_FROM_NATIVE, obj);
         }
 
-        protected static boolean isFallback(Object obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
+        protected static boolean isFallback(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
             if (CApiGuards.isNativeWrapper(obj)) {
                 return false;
             }
@@ -1021,7 +1020,7 @@ public abstract class CExtNodes {
             if (PGuards.isAnyPythonObject(obj)) {
                 return false;
             }
-            if (isForeignObject(obj, getClassNode, isForeignClassProfile)) {
+            if (isForeignObject(obj, lib, isForeignClassProfile)) {
                 return false;
             }
             if (PGuards.isString(obj)) {
@@ -1045,8 +1044,8 @@ public abstract class CExtNodes {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
         }
 
-        protected static boolean isForeignObject(Object obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
-            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.ForeignObject);
+        protected static boolean isForeignObject(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
+            return isForeignClassProfile.profileClass(lib.getLazyPythonClass(obj), PythonBuiltinClassType.ForeignObject);
         }
     }
 
@@ -1058,9 +1057,9 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
@@ -1085,9 +1084,9 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
@@ -1111,9 +1110,9 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class WrapVoidPtrNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
             // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they cannot
             // be used in the user value space but might be passed-through
@@ -2169,7 +2168,7 @@ public abstract class CExtNodes {
         @Specialization
         double runGeneric(PythonAbstractObject value,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
-                        @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile classProfile,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Cached PRaiseNode raiseNode) {
@@ -2184,7 +2183,7 @@ public abstract class CExtNodes {
             // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses
             // of
             // PFloat
-            if (classProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PFloat)) {
+            if (classProfile.profileClass(lib.getLazyPythonClass(result), PythonBuiltinClassType.PFloat)) {
                 return castToJavaDoubleNode.execute(result);
             }
             throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_FLOAT, value, __FLOAT__, result);
@@ -2793,7 +2792,7 @@ public abstract class CExtNodes {
         }
 
         private static boolean isNativeTypeObject(Object self) {
-            return IsBuiltinClassProfile.profileClassSlowPath(GetLazyClassNode.getUncached().execute(self), PythonBuiltinClassType.PythonClass);
+            return IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(self), PythonBuiltinClassType.PythonClass);
         }
 
         public static GetTypeMemberNode create() {

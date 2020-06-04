@@ -1050,11 +1050,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       CallNodeGen SourceSection: None
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -3524,11 +3524,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           LookupInheritedAttributeNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
                               IsSameTypeNodeGen SourceSection: None
-                            GetLazyClassNodeGen SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           LookupInheritedAttributeNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
                               IsSameTypeNodeGen SourceSection: None
-                            GetLazyClassNodeGen SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           CallNodeGen SourceSection: None
                           CallNodeGen SourceSection: None
                           YesNodeGen SourceSection: None

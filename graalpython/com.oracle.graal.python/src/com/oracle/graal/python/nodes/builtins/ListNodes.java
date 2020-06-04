@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.Crea
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -79,6 +80,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class ListNodes {
@@ -153,8 +155,9 @@ public abstract class ListNodes {
 
         public abstract PSequence execute(Object value);
 
-        @Specialization(guards = "cannotBeOverridden(value.getLazyPythonClass())")
-        protected PSequence doPList(PSequence value) {
+        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(value))", limit = "2")
+        protected PSequence doPList(PSequence value,
+                        @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary lib) {
             return value;
         }
 

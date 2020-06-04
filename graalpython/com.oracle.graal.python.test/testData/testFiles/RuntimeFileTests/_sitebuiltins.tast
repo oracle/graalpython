@@ -608,11 +608,11 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   LookupInheritedAttributeNode SourceSection: None
                                                     LookupAttributeInMRONodeGen SourceSection: None
                                                       IsSameTypeNodeGen SourceSection: None
-                                                    GetLazyClassNodeGen SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   LookupInheritedAttributeNode SourceSection: None
                                                     LookupAttributeInMRONodeGen SourceSection: None
                                                       IsSameTypeNodeGen SourceSection: None
-                                                    GetLazyClassNodeGen SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   CallNodeGen SourceSection: None
                                                   CallNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None

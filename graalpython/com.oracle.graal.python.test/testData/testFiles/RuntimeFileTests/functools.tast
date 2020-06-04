@@ -6157,11 +6157,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
                                             IsSameTypeNodeGen SourceSection: None
-                                          GetLazyClassNodeGen SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
                                             IsSameTypeNodeGen SourceSection: None
-                                          GetLazyClassNodeGen SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         CallNodeGen SourceSection: None
                                         CallNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
@@ -6469,11 +6469,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
                                             IsSameTypeNodeGen SourceSection: None
-                                          GetLazyClassNodeGen SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
                                             IsSameTypeNodeGen SourceSection: None
-                                          GetLazyClassNodeGen SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         CallNodeGen SourceSection: None
                                         CallNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
@@ -6559,11 +6559,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
                                         IsSameTypeNodeGen SourceSection: None
-                                      GetLazyClassNodeGen SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
                                         IsSameTypeNodeGen SourceSection: None
-                                      GetLazyClassNodeGen SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     CallNodeGen SourceSection: None
                                     CallNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
@@ -6673,11 +6673,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
                                         IsSameTypeNodeGen SourceSection: None
-                                      GetLazyClassNodeGen SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
                                         IsSameTypeNodeGen SourceSection: None
-                                      GetLazyClassNodeGen SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     CallNodeGen SourceSection: None
                                     CallNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None

@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -62,6 +62,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -78,15 +79,15 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return executeInternal(frame, derived, cls);
     }
 
-    public final boolean execute(LazyPythonClass derived, LazyPythonClass cls) {
+    public final boolean execute(Object derived, Object cls) {
         return executeInternal(null, derived, cls);
     }
 
-    protected static boolean isSameType(IsSameTypeNode isSameTypeNode, LazyPythonClass cls, LazyPythonClass cachedCls) {
+    protected static boolean isSameType(IsSameTypeNode isSameTypeNode, Object cls, Object cachedCls) {
         return isSameTypeNode.execute(cls, cachedCls);
     }
 
-    protected boolean isSubMro(LazyPythonClass base, MroSequenceStorage derivedMro, int baseMroLen, IsSameTypeNode isSameTypeNode) {
+    protected boolean isSubMro(Object base, MroSequenceStorage derivedMro, int baseMroLen, IsSameTypeNode isSameTypeNode) {
         CompilerAsserts.partialEvaluationConstant(baseMroLen);
         PythonAbstractClass[] derivedMroAry = derivedMro.getInternalClassArray();
         int derivedMroLen = derivedMroAry.length;
@@ -102,7 +103,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    protected boolean isInMro(LazyPythonClass cls, MroSequenceStorage mro, int sz, IsSameTypeNode isSameTypeNode) {
+    protected boolean isInMro(Object cls, MroSequenceStorage mro, int sz, IsSameTypeNode isSameTypeNode) {
         PythonAbstractClass[] mroAry = mro.getInternalClassArray();
         for (int i = 0; i < sz; i++) {
             if (isSameType(isSameTypeNode, mroAry[i], cls)) {
@@ -112,7 +113,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return false;
     }
 
-    protected PythonBuiltinClassType getType(LazyPythonClass cls, ConditionProfile builtinType, ConditionProfile builtinClass) {
+    protected PythonBuiltinClassType getType(Object cls, ConditionProfile builtinType, ConditionProfile builtinClass) {
         if (builtinType.profile(cls instanceof PythonBuiltinClassType)) {
             return (PythonBuiltinClassType) cls;
         } else if (builtinClass.profile(cls instanceof PythonBuiltinClass)) {
@@ -132,7 +133,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     // n.b.: in multi-context, we only cache PythonBuiltinClassType, so no need
     // for assumptions. we also use a larger limit here, because these generate
     // very little code
-    boolean isSubtypeOfCachedMultiContext(LazyPythonClass derived, LazyPythonClass cls,
+    boolean isSubtypeOfCachedMultiContext(Object derived, Object cls,
                     @Cached("createBinaryProfile()") ConditionProfile builtinTypeProfile,
                     @Cached("createBinaryProfile()") ConditionProfile builtinClassProfile,
                     @Cached("getType(derived, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedDerived,
@@ -148,7 +149,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "getType(cls, builtinTypeProfile, builtinClassProfile) == cachedCls",
                     "isKindOfBuiltinClass(derived)" // see assertion in isSubMro
     }, replaces = "isSubtypeOfCachedMultiContext", limit = "getVariableArgumentInlineCacheLimit()")
-    boolean isVariableSubtypeOfConstantTypeCachedMultiContext(LazyPythonClass derived, @SuppressWarnings("unused") LazyPythonClass cls,
+    boolean isVariableSubtypeOfConstantTypeCachedMultiContext(Object derived, @SuppressWarnings("unused") Object cls,
                     @SuppressWarnings("unused") @Cached("createBinaryProfile()") ConditionProfile builtinTypeProfile,
                     @SuppressWarnings("unused") @Cached("createBinaryProfile()") ConditionProfile builtinClassProfile,
                     @Cached IsSameTypeNode isSameTypeNode,
@@ -159,6 +160,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
+                    "libD.isLazyPythonClass(derived)", "libC.isLazyPythonClass(cls)",
                     "isSameType(isSameDerivedNode, derived, cachedDerived)",
                     "isSameType(isSameClsNode, cls, cachedCls)",
     }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
@@ -169,9 +171,11 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "singleContextAssumption()"
     })
     @SuppressWarnings("unused")
-    boolean isSubtypeOfCached(LazyPythonClass derived, LazyPythonClass cls,
-                    @Cached("derived") LazyPythonClass cachedDerived,
-                    @Cached("cls") LazyPythonClass cachedCls,
+    boolean isSubtypeOfCached(Object derived, Object cls,
+                    @Cached("derived") Object cachedDerived,
+                    @Cached("cls") Object cachedCls,
+                    @CachedLibrary("derived") PythonObjectLibrary libD,
+                    @CachedLibrary("cls") PythonObjectLibrary libC,
                     @Cached IsSameTypeNode isSameDerivedNode,
                     @Cached IsSameTypeNode isSameClsNode,
                     @Cached IsSameTypeNode isSameTypeInLoopNode,
@@ -182,6 +186,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
+                    "libD.isLazyPythonClass(derived)", "libC.isLazyPythonClass(cls)",
                     "isSameType(isSameDerivedNode, derived, cachedDerived)",
                     "mro.getInternalClassArray().length < 32"
     }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
@@ -192,8 +197,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "mro.getLookupStableAssumption()",
                     "singleContextAssumption()"
     })
-    boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") LazyPythonClass derived, LazyPythonClass cls,
-                    @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
+    boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") Object derived, Object cls,
+                    @Cached("derived") @SuppressWarnings("unused") Object cachedDerived,
+                    @SuppressWarnings("unused") @CachedLibrary("derived") PythonObjectLibrary libD,
+                    @SuppressWarnings("unused") @CachedLibrary("cls") PythonObjectLibrary libC,
                     @SuppressWarnings("unused") @Cached GetMroStorageNode getMro,
                     @Cached("getMro.execute(cachedDerived)") MroSequenceStorage mro,
                     @Cached("mro.getInternalClassArray().length") int sz,
@@ -215,8 +222,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "baseMro.getLookupStableAssumption()",
                     "singleContextAssumption()"
     })
-    boolean isVariableSubtypeOfConstantTypeCached(LazyPythonClass derived, @SuppressWarnings("unused") LazyPythonClass cls,
-                    @Cached("cls") @SuppressWarnings("unused") LazyPythonClass cachedCls,
+    boolean isVariableSubtypeOfConstantTypeCached(Object derived, @SuppressWarnings("unused") Object cls,
+                    @Cached("cls") @SuppressWarnings("unused") Object cachedCls,
                     @Cached GetMroStorageNode getMro,
                     @SuppressWarnings("unused") @Cached("getMro.execute(cachedCls)") MroSequenceStorage baseMro,
                     @Cached("baseMro.getInternalClassArray().length") int baseMroLen,
@@ -225,14 +232,16 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return isSubMro(cachedCls, getMro.execute(derived), baseMroLen, isSameTypeInLoopNode);
     }
 
-    @Specialization(replaces = {
+    @Specialization(guards = {"libD.isLazyPythonClass(derived)", "libC.isLazyPythonClass(cls)"}, replaces = {
                     "isVariableSubtypeOfConstantTypeCached",
                     "isSubtypeOfCachedMultiContext",
                     "isVariableSubtypeOfConstantTypeCachedMultiContext",
                     "isSubtypeOfCached",
                     "isSubtypeOfVariableTypeCached"
-    })
-    boolean issubTypeGeneric(LazyPythonClass derived, LazyPythonClass cls,
+    }, limit = "4")
+    boolean issubTypeGeneric(Object derived, Object cls,
+                    @SuppressWarnings("unused") @CachedLibrary("derived") PythonObjectLibrary libD,
+                    @SuppressWarnings("unused") @CachedLibrary("cls") PythonObjectLibrary libC,
                     @Cached("createBinaryProfile()") ConditionProfile builtinClassIsSubtypeProfile,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached GetMroStorageNode getMro) {
@@ -248,12 +257,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return false;
     }
 
-    protected static boolean notClass(Object obj) {
-        return !(obj instanceof LazyPythonClass);
-    }
-
-    @Specialization(guards = {"notClass(derived) || notClass(cls)"})
+    @Specialization(guards = {"!libD.isLazyPythonClass(derived) || !libC.isLazyPythonClass(cls)"})
     public boolean fallback(VirtualFrame frame, Object derived, Object cls,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary libD,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary libC,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
                     @Cached("createBinaryProfile()") ConditionProfile exceptionDerivedProfile,
@@ -270,7 +277,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return abstractIsSubclassNode.execute(frame, derived, cls);
     }
 
-    private static boolean isBuiltinClass(LazyPythonClass cls) {
+    private static boolean isBuiltinClass(Object cls) {
         return cls instanceof PythonBuiltinClass || cls instanceof PythonBuiltinClassType;
     }
 

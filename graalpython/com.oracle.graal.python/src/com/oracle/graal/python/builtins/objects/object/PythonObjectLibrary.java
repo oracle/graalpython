@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -60,6 +59,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
@@ -117,16 +117,27 @@ public abstract class PythonObjectLibrary extends Library {
      * @return the Python type of the receiver
      */
     @Abstract
-    public LazyPythonClass getLazyPythonClass(Object receiver) {
+    public Object getLazyPythonClass(Object receiver) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
+
+    /**
+     * @return true if the receiver of a Python type.<br>
+     *         <br>
+     *
+     *         Note: this is similar to {@link InteropLibrary#isMetaObject(Object)} but without the
+     *         {@link InteropLibrary#isMetaInstance(Object, Object)} assertion.
+     */
+    public boolean isLazyPythonClass(Object receiver) {
+        return false;
     }
 
     /**
      * Sets the {@code __class__} value of the receiver. This is not supported for all kinds of
      * objects.
      */
-    public void setLazyPythonClass(Object receiver, LazyPythonClass cls) {
+    public void setLazyPythonClass(Object receiver, Object cls) {
         PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES, receiver);
     }
 
@@ -394,8 +405,8 @@ public abstract class PythonObjectLibrary extends Library {
 
         boolean checkedReverseOp = false;
 
-        LazyPythonClass leftClass = getLazyPythonClass(receiver);
-        LazyPythonClass rightClass = otherLibrary.getLazyPythonClass(other);
+        Object leftClass = getLazyPythonClass(receiver);
+        Object rightClass = otherLibrary.getLazyPythonClass(other);
         int result;
         boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
         if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
@@ -516,7 +527,7 @@ public abstract class PythonObjectLibrary extends Library {
 
     /**
      * Coerces the receiver into an Python string just like {@code PyObject_Str}.
-     * 
+     *
      * Return a Python string from the receiver. Raise TypeError if the result is not a string.
      */
     public Object asPStringWithState(Object receiver, ThreadState threadState) {
@@ -537,7 +548,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Coerces a given primitive or object to a file descriptor (i.e. Java {@code int}) just like
      * {@code PyObject_AsFileDescriptor} does.
-     * 
+     *
      * Converted to int if possible, or if the object defines __fileno__(), then return the result
      * of that method. Raise TypeError otherwise.
      */
@@ -557,7 +568,7 @@ public abstract class PythonObjectLibrary extends Library {
 
     /**
      * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
-     * 
+     *
      * @param receiver
      * @param name attribute name
      * @param inheritedOnly determines whether the lookup should start on the class or on the object
@@ -688,7 +699,7 @@ public abstract class PythonObjectLibrary extends Library {
      *
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
      */
-    public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
+    public int asSizeWithState(Object receiver, Object errorType, ThreadState threadState) {
         if (threadState == null) {
             // this will very likely always raise an integer interpretation error in
             // asIndexWithState
@@ -706,21 +717,21 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, Object, ThreadState)
      */
     public final int asSizeWithState(Object receiver, ThreadState threadState) {
         return asSizeWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
     }
 
     /**
-     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, Object, ThreadState)
      */
-    public int asSize(Object receiver, LazyPythonClass errorClass) {
+    public int asSize(Object receiver, Object errorClass) {
         return asSizeWithState(receiver, errorClass, null);
     }
 
     /**
-     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, Object, ThreadState)
      */
     public final int asSize(Object receiver) {
         return asSize(receiver, PythonBuiltinClassType.OverflowError);
@@ -897,8 +908,12 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiverOrigin also the receiver Object
      * @return True if there has been a reflection
      */
-    public boolean isRefelectedObject(Object receiver, Object receiverOrigin) {
+    public boolean isReflectedObject(Object receiver, Object receiverOrigin) {
         return receiver != receiverOrigin;
+    }
+
+    public Object getReflectedObject(Object receiver) {
+        return receiver;
     }
 
     public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {

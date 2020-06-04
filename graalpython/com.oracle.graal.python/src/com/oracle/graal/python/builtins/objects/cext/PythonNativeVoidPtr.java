@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -63,9 +62,14 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
     }
 
     @Override
+    public Object getInternalLazyPythonClass() {
+        return getLazyPythonClass();
+    }
+
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
-    public LazyPythonClass getLazyPythonClass() {
+    public Object getLazyPythonClass() {
         return PythonBuiltinClassType.PInt;
     }
 

@@ -43,16 +43,17 @@ package com.oracle.graal.python.nodes.util;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -70,22 +71,23 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
         return x;
     }
 
-    @Specialization
+    @Specialization(limit = "2")
     static boolean doPInt(PInt x,
                     @Cached("createBinaryProfile()") ConditionProfile isBoolean,
-                    @Cached IsSubtypeNode isSubtype) {
-        if (isBoolean.profile(isSubtype.execute(x.getLazyPythonClass(), PythonBuiltinClassType.Boolean))) {
+                    @Cached IsSubtypeNode isSubtype,
+                    @CachedLibrary("x") PythonObjectLibrary lib) {
+        if (isBoolean.profile(isSubtype.execute(lib.getLazyPythonClass(x), PythonBuiltinClassType.Boolean))) {
             return !x.isZero();
         } else {
             throw CannotCastException.INSTANCE;
         }
     }
 
-    @Specialization
+    @Specialization(limit = "2")
     static boolean doNativeObject(PythonNativeObject x,
-                    @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary("x") PythonObjectLibrary plib,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.Boolean)) {
+        if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.Boolean)) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("casting a native long object to a Java boolean is not implemented yet");
         }
