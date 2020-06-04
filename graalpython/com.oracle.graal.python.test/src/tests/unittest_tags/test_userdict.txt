@@ -1,3 +1,13 @@
 *graalpython.lib-python.3.test.test_userdict.UserDictTest.test_all
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_bool
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_clear
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_constructor
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_contains
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_copy
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_eq
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_fromkeys
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_getitem
 *graalpython.lib-python.3.test.test_userdict.UserDictTest.test_init
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_items
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_len
 *graalpython.lib-python.3.test.test_userdict.UserDictTest.test_missing

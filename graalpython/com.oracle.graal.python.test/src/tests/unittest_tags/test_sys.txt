@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_sys.DisplayHookTest.test_custom_displayhook
+*graalpython.lib-python.3.test.test_sys.ExceptHookTest.test_excepthook_bytes_filename
 *graalpython.lib-python.3.test.test_sys.ExceptHookTest.test_original_excepthook
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_43581
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test__enablelegacywindowsfsencoding

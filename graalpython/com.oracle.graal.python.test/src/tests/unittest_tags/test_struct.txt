@@ -9,3 +9,13 @@
 *graalpython.lib-python.3.test.test_struct.StructTest.test_calcsize
 *graalpython.lib-python.3.test.test_struct.StructTest.test_consistence
 *graalpython.lib-python.3.test.test_struct.StructTest.test_format_attr
+*graalpython.lib-python.3.test.test_struct.StructTest.test_isbigendian
+*graalpython.lib-python.3.test.test_struct.StructTest.test_issue29802
+*graalpython.lib-python.3.test.test_struct.StructTest.test_nN_code
+*graalpython.lib-python.3.test.test_struct.StructTest.test_new_features
+*graalpython.lib-python.3.test.test_struct.StructTest.test_p_code
+*graalpython.lib-python.3.test.test_struct.StructTest.test_trailing_counter
+*graalpython.lib-python.3.test.test_struct.StructTest.test_transitiveness
+*graalpython.lib-python.3.test.test_struct.StructTest.test_unpack_from
+*graalpython.lib-python.3.test.test_struct.UnpackIteratorTest.test_construct
+*graalpython.lib-python.3.test.test_struct.UnpackIteratorTest.test_half_float

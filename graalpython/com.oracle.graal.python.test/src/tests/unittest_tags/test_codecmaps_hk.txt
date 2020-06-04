@@ -1,0 +1,2 @@
+*graalpython.lib-python.3.test.test_codecmaps_hk.TestBig5HKSCSMap.test_errorhandle
+*graalpython.lib-python.3.test.test_codecmaps_hk.TestBig5HKSCSMap.test_mapping_supplemental

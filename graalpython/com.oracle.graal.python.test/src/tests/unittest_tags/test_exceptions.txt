@@ -1,6 +1,12 @@
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testAttributes
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testChainingAttrs
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testChainingDescriptors
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testExceptionCleanupNames
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInvalidAttrs
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInvalidTraceback
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testKeywordArgs
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testNoneClearsTracebackAttr
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testSettingException
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testWithTraceback
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_MemoryError
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_WindowsError

@@ -1,0 +1,9 @@
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_attributes_readonly
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_attributes_writable
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_delitem
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_getbuf_fail
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_iter
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_release
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_tobytes
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_tolist
+*graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_writable_readonly

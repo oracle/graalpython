@@ -17,8 +17,13 @@
 *graalpython.lib-python.3.test.test_locale.TestEnUSDelocalize.test_atof
 *graalpython.lib-python.3.test.test_locale.TestEnUSDelocalize.test_atoi
 *graalpython.lib-python.3.test.test_locale.TestEnUSDelocalize.test_delocalize
+*graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_complex_formatting
 *graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_currency
 *graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_format_deprecation
+*graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_grouping
+*graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_grouping_and_padding
+*graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_integer_grouping
+*graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_integer_grouping_and_padding
 *graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_padding
 *graalpython.lib-python.3.test.test_locale.TestEnUSNumberFormatting.test_simple
 *graalpython.lib-python.3.test.test_locale.TestFormatPatternArg.test_onlyOnePattern
@@ -36,6 +41,9 @@
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_invalid_iterable_in_localetuple
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_setlocale_category
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_strcoll_3303
+*graalpython.lib-python.3.test.test_locale.TestNumberFormatting.test_format_deprecation
+*graalpython.lib-python.3.test.test_locale.TestNumberFormatting.test_padding
+*graalpython.lib-python.3.test.test_locale.TestNumberFormatting.test_simple
 *graalpython.lib-python.3.test.test_locale.TestfrFRDelocalizeTest.test_atof
 *graalpython.lib-python.3.test.test_locale.TestfrFRDelocalizeTest.test_atoi
 *graalpython.lib-python.3.test.test_locale.TestfrFRDelocalizeTest.test_delocalize

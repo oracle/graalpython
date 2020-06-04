@@ -5,3 +5,4 @@
 *graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_environment_preferred
 *graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_get
 *graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_register
+*graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_synthesize

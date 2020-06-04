@@ -1,5 +1,7 @@
 *graalpython.lib-python.3.test.test_marshal.BufferTestCase.test_bytearray
 *graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_bug_5888452
+*graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_fuzz
+*graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_large_marshal
 *graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_different_filenames
 *graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_many_codeobjects
 *graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_same_filename_used

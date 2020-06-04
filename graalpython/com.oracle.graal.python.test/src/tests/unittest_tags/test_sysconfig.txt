@@ -11,4 +11,5 @@
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_main
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_platform_in_subprocess
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_srcdir_independent_of_cwd
+*graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_symlink
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_user_similar

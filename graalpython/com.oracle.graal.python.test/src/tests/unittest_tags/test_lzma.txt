@@ -1,3 +1,5 @@
+*graalpython.lib-python.3.test.test_lzma.CompressorDecompressorTestCase.test_compressor_bigmem
+*graalpython.lib-python.3.test.test_lzma.CompressorDecompressorTestCase.test_decompressor_bigmem
 *graalpython.lib-python.3.test.test_lzma.CompressorDecompressorTestCase.test_pickle
 *graalpython.lib-python.3.test.test_lzma.CompressorDecompressorTestCase.test_refleaks_in_decompressor___init__
 *graalpython.lib-python.3.test.test_lzma.FileTestCase.test_close

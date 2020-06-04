@@ -1,3 +1,5 @@
+*graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_implicit_newline
+*graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_underscore_literals
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_bom_no_cookie
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_cookie_first_line_no_bom
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_cookie_second_line_commented_first_line

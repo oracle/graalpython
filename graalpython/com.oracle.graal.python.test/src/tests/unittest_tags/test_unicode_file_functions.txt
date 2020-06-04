@@ -1,2 +1,10 @@
 *graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeFileTests.test_directory
 *graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeFileTests.test_rename
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFCFileTests.test_directory
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFCFileTests.test_rename
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFDFileTests.test_directory
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFDFileTests.test_rename
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFKCFileTests.test_directory
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFKCFileTests.test_rename
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFKDFileTests.test_directory
+*graalpython.lib-python.3.test.test_unicode_file_functions.UnicodeNFKDFileTests.test_rename

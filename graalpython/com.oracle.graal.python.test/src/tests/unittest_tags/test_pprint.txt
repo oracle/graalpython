@@ -12,6 +12,7 @@
 *graalpython.lib-python.3.test.test_pprint.QueryTestCase.test_knotted
 *graalpython.lib-python.3.test.test_pprint.QueryTestCase.test_nested_indentations
 *graalpython.lib-python.3.test.test_pprint.QueryTestCase.test_ordered_dict
+*graalpython.lib-python.3.test.test_pprint.QueryTestCase.test_set_of_sets_reprs
 *graalpython.lib-python.3.test.test_pprint.QueryTestCase.test_sort_dict
 *graalpython.lib-python.3.test.test_pprint.QueryTestCase.test_sort_orderable_and_unorderable_values
 *graalpython.lib-python.3.test.test_pprint.QueryTestCase.test_sort_unorderable_values

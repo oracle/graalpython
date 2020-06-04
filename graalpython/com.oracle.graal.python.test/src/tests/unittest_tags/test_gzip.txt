@@ -24,6 +24,7 @@
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_prepend_error
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_read
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_read1
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_read_large
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_read_truncated
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_read_with_extra
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_readline

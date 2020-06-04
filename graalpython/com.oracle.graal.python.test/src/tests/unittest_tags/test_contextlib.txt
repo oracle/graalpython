@@ -32,6 +32,7 @@
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_instance_docs
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_typo_enter
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_typo_exit
+*graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_body_exception_suppress
 *graalpython.lib-python.3.test.test_contextlib.TestSuppress.test_cm_is_reentrant
 *graalpython.lib-python.3.test.test_contextlib.TestSuppress.test_exact_exception
 *graalpython.lib-python.3.test.test_contextlib.TestSuppress.test_exception_hierarchy

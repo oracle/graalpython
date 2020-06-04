@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_strptime.CacheTests.test_TimeRE_recreation_locale
+*graalpython.lib-python.3.test.test_strptime.CacheTests.test_TimeRE_recreation_timezone
 *graalpython.lib-python.3.test.test_strptime.CacheTests.test_new_localetime
 *graalpython.lib-python.3.test.test_strptime.CacheTests.test_regex_cleanup
 *graalpython.lib-python.3.test.test_strptime.CacheTests.test_time_re_recreation

@@ -17,6 +17,7 @@
 *graalpython.lib-python.3.test.test_math.MathTests.testAtan2
 *graalpython.lib-python.3.test.test_math.MathTests.testAtanh
 *graalpython.lib-python.3.test.test_math.MathTests.testCeil
+*graalpython.lib-python.3.test.test_math.MathTests.testComb
 *graalpython.lib-python.3.test.test_math.MathTests.testConstants
 *graalpython.lib-python.3.test.test_math.MathTests.testCopysign
 *graalpython.lib-python.3.test.test_math.MathTests.testCos
@@ -26,6 +27,7 @@
 *graalpython.lib-python.3.test.test_math.MathTests.testFabs
 *graalpython.lib-python.3.test.test_math.MathTests.testFactorial
 *graalpython.lib-python.3.test.test_math.MathTests.testFactorialHugeInputs
+*graalpython.lib-python.3.test.test_math.MathTests.testFactorialNonIntegers
 *graalpython.lib-python.3.test.test_math.MathTests.testFloor
 *graalpython.lib-python.3.test.test_math.MathTests.testFmod
 *graalpython.lib-python.3.test.test_math.MathTests.testFrexp
@@ -42,8 +44,10 @@
 *graalpython.lib-python.3.test.test_math.MathTests.testLog2
 *graalpython.lib-python.3.test.test_math.MathTests.testLog2Exact
 *graalpython.lib-python.3.test.test_math.MathTests.testModf
+*graalpython.lib-python.3.test.test_math.MathTests.testPerm
 *graalpython.lib-python.3.test.test_math.MathTests.testPow
 *graalpython.lib-python.3.test.test_math.MathTests.testRadians
+*graalpython.lib-python.3.test.test_math.MathTests.testRemainder
 *graalpython.lib-python.3.test.test_math.MathTests.testSin
 *graalpython.lib-python.3.test.test_math.MathTests.testSinh
 *graalpython.lib-python.3.test.test_math.MathTests.testSqrt

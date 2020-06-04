@@ -20,6 +20,9 @@
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_choose_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_collision_with_existing_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_collision_with_existing_file
+*graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_non_directory
+*graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_nonexisting_directory
+*graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_read_only_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_basic
 *graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_choose_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_basic
@@ -29,6 +32,9 @@
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_collision_with_existing_file
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_file_mode
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_noinherit
+*graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_non_directory
+*graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_nonexisting_directory
+*graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_read_only_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_textmode
 *graalpython.lib-python.3.test.test_tempfile.TestNamedTemporaryFile.test_bad_mode
 *graalpython.lib-python.3.test.test_tempfile.TestNamedTemporaryFile.test_basic

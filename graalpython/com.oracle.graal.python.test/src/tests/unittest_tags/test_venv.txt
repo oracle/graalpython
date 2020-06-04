@@ -1,7 +1,11 @@
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts
+*graalpython.lib-python.3.test.test_venv.BasicTest.test_executable
+*graalpython.lib-python.3.test.test_venv.BasicTest.test_executable_symlinks
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_isolation
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_overwrite_existing
+*graalpython.lib-python.3.test.test_venv.BasicTest.test_prefixes
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_prompt
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_unicode_in_batch_file
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_unoverwritable_fails
+*graalpython.lib-python.3.test.test_venv.BasicTest.test_upgrade
 *graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_devnull

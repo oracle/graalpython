@@ -1,1 +1,3 @@
 *graalpython.lib-python.3.test.test_imaplib.TestImaplib.test_Internaldate2tuple
+*graalpython.lib-python.3.test.test_imaplib.TestImaplib.test_Internaldate2tuple_issue10941
+*graalpython.lib-python.3.test.test_imaplib.TestImaplib.test_Time2Internaldate

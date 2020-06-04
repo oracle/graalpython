@@ -35,6 +35,7 @@
 *graalpython.lib-python.3.test.test_list.ListTest.test_pickle
 *graalpython.lib-python.3.test.test_list.ListTest.test_pop
 *graalpython.lib-python.3.test.test_list.ListTest.test_preallocation
+*graalpython.lib-python.3.test.test_list.ListTest.test_print
 *graalpython.lib-python.3.test.test_list.ListTest.test_remove
 *graalpython.lib-python.3.test.test_list.ListTest.test_repeat
 *graalpython.lib-python.3.test.test_list.ListTest.test_repr

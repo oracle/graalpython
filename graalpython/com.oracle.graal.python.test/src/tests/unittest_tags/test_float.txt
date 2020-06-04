@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_issue35560
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_issue5864
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_containment
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_with_comma
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_floatasratio
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_keyword_args
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_ends
