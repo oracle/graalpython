@@ -34,6 +34,7 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
+import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
@@ -262,6 +263,16 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
     private CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
+        String sourceText = source.getCharacters().toString();
+        // Preprocessing
+        // Check that declared encoding (if any) is valid. The file detector picks an encoding for
+        // the file, but it doesn't have a means of communicating that the declared encoding wasn't
+        // valid or supported, so in that case it defaults to Latin-1 and we have to recheck it here
+        try {
+            PythonFileDetector.findEncodingStrict(sourceText);
+        } catch (PythonFileDetector.InvalidEncodingException e) {
+            throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
+        }
         // ANTLR parsing
         Python3Parser parser = getPython3Parser(source, errors);
         parser.setFactory(sstFactory);

@@ -40,11 +40,20 @@
  */
 package com.oracle.graal.python;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import com.oracle.truffle.api.TruffleFile;
+import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.truffle.api.TruffleFile;
 
 public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
+
+    private static final Pattern ENCODING_COMMENT = Pattern.compile("^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+).*");
 
     @Override
     public String findMimeType(TruffleFile file) throws IOException {
@@ -55,8 +64,72 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
         return null;
     }
 
+    public static class InvalidEncodingException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        private final String encodingName;
+
+        public InvalidEncodingException(String encodingName) {
+            super("Invalid or unsupported encoding: " + encodingName);
+            this.encodingName = encodingName;
+        }
+
+        public String getEncodingName() {
+            return encodingName;
+        }
+    }
+
+    public static Charset tryGetCharsetFromLine(String line) {
+        if (line == null) {
+            return null;
+        }
+        Matcher matcher = ENCODING_COMMENT.matcher(line);
+        if (matcher.matches()) {
+            Charset charset = CharsetMapping.getCharset(matcher.group(1));
+            if (charset == null) {
+                throw new InvalidEncodingException(matcher.group(1));
+            }
+            return charset;
+        }
+        return null;
+    }
+
+    public static Charset findEncodingStrict(BufferedReader reader) throws IOException {
+        Charset charset;
+        if ((charset = tryGetCharsetFromLine(reader.readLine())) != null) {
+            return charset;
+        }
+        if ((charset = tryGetCharsetFromLine(reader.readLine())) != null) {
+            return charset;
+        }
+        return StandardCharsets.UTF_8;
+    }
+
+    public static Charset findEncodingStrict(TruffleFile file) throws IOException {
+        // Using Latin-1 to read the header avoids exceptions on non-ascii characters
+        try (BufferedReader reader = file.newBufferedReader(StandardCharsets.ISO_8859_1)) {
+            return findEncodingStrict(reader);
+        }
+    }
+
+    public static Charset findEncodingStrict(String source) {
+        try (BufferedReader reader = new BufferedReader(new StringReader(source))) {
+            return findEncodingStrict(reader);
+        } catch (IOException e) {
+            // Shouldn't happen on a string
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public Charset findEncoding(TruffleFile file) throws IOException {
-        return null;
+        try {
+            return findEncodingStrict(file);
+        } catch (InvalidEncodingException e) {
+            // We cannot throw a SyntaxError at this point, but the parser will revalidate this.
+            // Return Latin-1 so that it doesn't throw encoding errors before getting to the
+            // parser, because Truffle would otherwise default to UTF-8
+            return StandardCharsets.ISO_8859_1;
+        }
     }
 }
