@@ -112,6 +112,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -305,10 +306,18 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "lib.canBeIndex(key) || isPSlice(key)")
         protected Object doScalar(VirtualFrame frame, PList self, Object key,
-                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             return getItemNode.execute(frame, self.getSequenceStorage(), key);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!lib.canBeIndex(key)", "!isPSlice(key)"})
+        public Object doListError(VirtualFrame frame, PList primary, Object key,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
@@ -332,11 +341,19 @@ public class ListBuiltins extends PythonBuiltins {
 
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
-        @Specialization
+        @Specialization(guards = "lib.fitsInInt(key) || isPSlice(key)")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
             return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!lib.fitsInInt(key)", "!isPSlice(key)"})
+        public Object doListError(VirtualFrame frame, PList primary, Object key, Object value,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         @SuppressWarnings("unused")
@@ -917,10 +934,38 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        protected static boolean isObjectStorage(PList left, PList right) {
+            return PGuards.isObjectStorage(left) || PGuards.isObjectStorage(right);
+        }
+
+        @Specialization(guards = "!isObjectStorage(left, right)")
         boolean doPList(VirtualFrame frame, PList left, PList right,
                         @Cached("createEq()") SequenceStorageNodes.CmpNode neNode) {
             return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+        }
+
+        /**
+         * This is a fix for the bpo-38588 bug. See
+         * {@code test_list.py: ListTest.test_equal_operator_modifying_operand}
+         *
+         */
+        @Specialization(guards = "isObjectStorage(left, right)")
+        boolean doPListObjectStorage(VirtualFrame frame, PList left, PList right,
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode neNode) {
+            final SequenceStorage leftStorage = left.getSequenceStorage();
+            final SequenceStorage rightStorage = right.getSequenceStorage();
+            final boolean result = neNode.execute(frame, leftStorage, rightStorage);
+            /**
+             * This will check if the underlying storage has been modified and if so, we do the
+             * check again.
+             */
+            if (leftStorage == left.getSequenceStorage() && rightStorage == right.getSequenceStorage()) {
+                return result;
+            }
+            /**
+             * To avoid possible infinite recursion case, we call the default specialization.
+             */
+            return doPList(frame, left, right, neNode);
         }
 
         @Fallback

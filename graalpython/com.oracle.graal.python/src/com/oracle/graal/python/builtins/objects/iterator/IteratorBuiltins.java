@@ -142,7 +142,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             throw raise(StopIteration);
         }
 
-        @Specialization(guards = "self.isPSequence()")
+        @Specialization(guards = {"self.isPSequence()"})
         public Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,

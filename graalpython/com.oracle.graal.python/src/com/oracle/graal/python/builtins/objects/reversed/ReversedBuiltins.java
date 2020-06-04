@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -64,6 +64,7 @@ public class ReversedBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         Object next(VirtualFrame frame, PSequenceReverseIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,

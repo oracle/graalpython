@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -516,9 +517,24 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
-        @Specialization
+
+        protected static boolean isSingleRepeat(PTuple left, PythonObjectLibrary tuplelib, Object right, PythonObjectLibrary lib) {
+            return PGuards.isPythonBuiltinClassType(tuplelib.getLazyPythonClass(left)) && lib.canBeIndex(right) && lib.asSize(right) == 1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isSingleRepeat(left, tuplelib, right, lib)")
+        PTuple doPTupleSingleRepeat(VirtualFrame frame, PTuple left, Object right,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary tuplelib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            return left;
+        }
+
+        @Specialization(guards = "!isSingleRepeat(left, tuplelib, right, lib)")
         PTuple mul(VirtualFrame frame, PTuple left, Object right,
-                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary tuplelib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), right));
         }
     }

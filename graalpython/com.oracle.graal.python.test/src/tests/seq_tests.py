@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -279,7 +279,7 @@ class CommonTest(unittest.TestCase):
             pass
         u3 = subclass([0, 1])
         self.assertEqual(u3, u3*1)
-        self.assertTrue(u3 is not u3*1)
+        self.assertIsNot(u3, u3*1)
 
     def test_iadd(self):
         u = self.type2test([0, 1])
