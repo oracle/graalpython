@@ -1,1 +1,1 @@
-*BinHexTestCase.test_binhex_error_on_long_filename
+*graalpython.lib-python.3.test.test_binhex.BinHexTestCase.test_binhex_error_on_long_filename

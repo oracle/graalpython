@@ -1,3 +1,3 @@
-*UserDictTest.test_all
-*UserDictTest.test_init
-*UserDictTest.test_missing
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_all
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_init
+*graalpython.lib-python.3.test.test_userdict.UserDictTest.test_missing

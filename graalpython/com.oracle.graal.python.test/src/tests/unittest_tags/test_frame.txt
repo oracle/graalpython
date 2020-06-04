@@ -1,3 +1,3 @@
-*ClearTest.test_clear_refcycles
-*FrameAttrsTest.test_f_lineno_del_segfault
-*FrameAttrsTest.test_locals
+*graalpython.lib-python.3.test.test_frame.ClearTest.test_clear_refcycles
+*graalpython.lib-python.3.test.test_frame.FrameAttrsTest.test_f_lineno_del_segfault
+*graalpython.lib-python.3.test.test_frame.FrameAttrsTest.test_locals

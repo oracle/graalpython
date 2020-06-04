@@ -1,6 +1,10 @@
-*LargeFileTest.test_lseek
-*LargeFileTest.test_osstat
-*LargeFileTest.test_seek_read
-*LargeFileTest.test_seekable
-*LargeFileTest.test_truncate
-*wrapper
+*graalpython.lib-python.3.test.test_largefile.CLargeFileTest.test_lseek
+*graalpython.lib-python.3.test.test_largefile.CLargeFileTest.test_osstat
+*graalpython.lib-python.3.test.test_largefile.CLargeFileTest.test_seek_read
+*graalpython.lib-python.3.test.test_largefile.CLargeFileTest.test_seekable
+*graalpython.lib-python.3.test.test_largefile.CLargeFileTest.test_truncate
+*graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_lseek
+*graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_osstat
+*graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_seek_read
+*graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_seekable
+*graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_truncate

@@ -1,4 +1,4 @@
-*TestResponse.test_addclosehook
-*TestResponse.test_addinfo
-*TestResponse.test_addinfourl
-*TestResponse.test_with
+*graalpython.lib-python.3.test.test_urllib_response.TestResponse.test_addclosehook
+*graalpython.lib-python.3.test.test_urllib_response.TestResponse.test_addinfo
+*graalpython.lib-python.3.test.test_urllib_response.TestResponse.test_addinfourl
+*graalpython.lib-python.3.test.test_urllib_response.TestResponse.test_with

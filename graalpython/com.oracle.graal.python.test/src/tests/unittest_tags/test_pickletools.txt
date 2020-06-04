@@ -1,1 +1,1 @@
-*AbstractPickleTests.test_buffers_numpy
+*test.pickletester.AbstractPickleTests.test_buffers_numpy

@@ -1,1 +1,1 @@
-*EncodingTest.test_error
+*graalpython.lib-python.3.test.test_compileall.EncodingTest.test_error

@@ -1,8 +1,8 @@
-*GettextTestCase2.test_bad_major_version
-*GettextTestCase2.test_bindtextdomain
-*GettextTestCase2.test_textdomain
-*MiscTestCase.test__all__
-*UnicodeTranslationsTest.test_unicode_context_msgstr
-*UnicodeTranslationsTest.test_unicode_msgid
-*UnicodeTranslationsTest.test_unicode_msgstr
-*WeirdMetadataTest.test_weird_metadata
+*graalpython.lib-python.3.test.test_gettext.GettextTestCase2.test_bad_major_version
+*graalpython.lib-python.3.test.test_gettext.GettextTestCase2.test_bindtextdomain
+*graalpython.lib-python.3.test.test_gettext.GettextTestCase2.test_textdomain
+*graalpython.lib-python.3.test.test_gettext.MiscTestCase.test__all__
+*graalpython.lib-python.3.test.test_gettext.UnicodeTranslationsTest.test_unicode_context_msgstr
+*graalpython.lib-python.3.test.test_gettext.UnicodeTranslationsTest.test_unicode_msgid
+*graalpython.lib-python.3.test.test_gettext.UnicodeTranslationsTest.test_unicode_msgstr
+*graalpython.lib-python.3.test.test_gettext.WeirdMetadataTest.test_weird_metadata

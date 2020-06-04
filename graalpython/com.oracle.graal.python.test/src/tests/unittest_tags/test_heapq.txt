@@ -1,2 +1,2 @@
-*TestModules.test_c_functions
-*TestModules.test_py_functions
+*graalpython.lib-python.3.test.test_heapq.TestModules.test_c_functions
+*graalpython.lib-python.3.test.test_heapq.TestModules.test_py_functions

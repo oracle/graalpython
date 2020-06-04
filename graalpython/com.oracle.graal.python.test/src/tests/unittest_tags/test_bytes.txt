@@ -1,2 +1,2 @@
-*BytesTest.test_buffer_is_readonly
-*BytesTest.test_from_format
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_buffer_is_readonly
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_from_format

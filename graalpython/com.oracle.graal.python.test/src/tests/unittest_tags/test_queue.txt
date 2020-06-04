@@ -1,1 +1,2 @@
-*FailingQueueTest.test_failing_queue
+*graalpython.lib-python.3.test.test_queue.CFailingQueueTest.test_failing_queue
+*graalpython.lib-python.3.test.test_queue.PyFailingQueueTest.test_failing_queue

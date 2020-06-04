@@ -1,1 +1,1 @@
-*TestDocTestFinder.test_empty_namespace_package
+*graalpython.lib-python.3.test.test_doctest.TestDocTestFinder.test_empty_namespace_package

@@ -1,7 +1,7 @@
-*TracebackCases.test_base_exception
-*TracebackCases.test_caret
-*TracebackCases.test_format_exception_only_bad__str__
-*TracebackCases.test_print_exception
-*TracebackFormatTests.test_format_stack
-*TracebackFormatTests.test_print_stack
-*TracebackFormatTests.test_recursive_traceback_cpython_internal
+*graalpython.lib-python.3.test.test_traceback.TracebackCases.test_base_exception
+*graalpython.lib-python.3.test.test_traceback.TracebackCases.test_caret
+*graalpython.lib-python.3.test.test_traceback.TracebackCases.test_format_exception_only_bad__str__
+*graalpython.lib-python.3.test.test_traceback.TracebackCases.test_print_exception
+*graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_format_stack
+*graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_print_stack
+*graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_recursive_traceback_cpython_internal

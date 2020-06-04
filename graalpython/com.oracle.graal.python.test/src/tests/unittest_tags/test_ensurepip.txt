@@ -1,1 +1,1 @@
-*TestEnsurePipVersion.test_returns_version
+*graalpython.lib-python.3.test.test_ensurepip.TestEnsurePipVersion.test_returns_version

@@ -1,5 +1,2 @@
-*TestCRLFNewlines.test_tell
-*TestGenericUnivNewlines.test_read
-*TestGenericUnivNewlines.test_readline
-*TestGenericUnivNewlines.test_readlines
-*TestGenericUnivNewlines.test_seek
+*graalpython.lib-python.3.test.test_univnewlines.CTestCRLFNewlines.test_tell
+*graalpython.lib-python.3.test.test_univnewlines.PyTestCRLFNewlines.test_tell

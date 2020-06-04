@@ -1,3 +1,3 @@
-*BarrierTest.test_barrier
-*TestForkInThread.test_forkinthread
-*ThreadRunningTests.test_nt_and_posix_stack_size
+*graalpython.lib-python.3.test.test_thread.BarrierTest.test_barrier
+*graalpython.lib-python.3.test.test_thread.TestForkInThread.test_forkinthread
+*graalpython.lib-python.3.test.test_thread.ThreadRunningTests.test_nt_and_posix_stack_size

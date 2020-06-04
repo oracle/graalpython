@@ -1,1 +1,1 @@
-*StringFormattingTest.test_string_formatting
+*graalpython.lib-python.3.test.test_robotparser.StringFormattingTest.test_string_formatting

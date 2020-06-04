@@ -1,5 +1,4 @@
-*PullDOMTestCase.test_external_ges_default
-*SAX2DOMTestCase.testSAX2DOM
-*ThoroughTestCase.test_sax2dom_fail
-*ThoroughTestCase.test_thorough_parse
-*ThoroughTestCase.test_thorough_sax2dom
+*graalpython.lib-python.3.test.test_pulldom.PullDOMTestCase.test_external_ges_default
+*graalpython.lib-python.3.test.test_pulldom.SAX2DOMTestCase.testSAX2DOM
+*graalpython.lib-python.3.test.test_pulldom.ThoroughTestCase.test_thorough_parse
+*graalpython.lib-python.3.test.test_pulldom.ThoroughTestCase.test_thorough_sax2dom

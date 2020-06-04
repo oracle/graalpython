@@ -1,6 +1,6 @@
-*MmapTests.test_anonymous
-*MmapTests.test_bad_file_desc
-*MmapTests.test_concat_repeat_exception
-*MmapTests.test_context_manager
-*MmapTests.test_context_manager_exception
-*MmapTests.test_crasher_on_windows
+*graalpython.lib-python.3.test.test_mmap.MmapTests.test_anonymous
+*graalpython.lib-python.3.test.test_mmap.MmapTests.test_bad_file_desc
+*graalpython.lib-python.3.test.test_mmap.MmapTests.test_concat_repeat_exception
+*graalpython.lib-python.3.test.test_mmap.MmapTests.test_context_manager
+*graalpython.lib-python.3.test.test_mmap.MmapTests.test_context_manager_exception
+*graalpython.lib-python.3.test.test_mmap.MmapTests.test_crasher_on_windows

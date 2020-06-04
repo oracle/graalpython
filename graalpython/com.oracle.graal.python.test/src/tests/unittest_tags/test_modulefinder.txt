@@ -1,1 +1,1 @@
-*ModuleFinderTest.test_bytecode
+*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_bytecode

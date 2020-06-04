@@ -1,7 +1,7 @@
-*ClassTests.testBadTypeReturned
-*ClassTests.testGetSetAndDel
-*ClassTests.testInit
-*ClassTests.testMisc
-*ClassTests.testSFBug532646
-*ClassTests.testSetattrWrapperNameIntern
-*ClassTests.testUnaryOps
+*graalpython.lib-python.3.test.test_class.ClassTests.testBadTypeReturned
+*graalpython.lib-python.3.test.test_class.ClassTests.testGetSetAndDel
+*graalpython.lib-python.3.test.test_class.ClassTests.testInit
+*graalpython.lib-python.3.test.test_class.ClassTests.testMisc
+*graalpython.lib-python.3.test.test_class.ClassTests.testSFBug532646
+*graalpython.lib-python.3.test.test_class.ClassTests.testSetattrWrapperNameIntern
+*graalpython.lib-python.3.test.test_class.ClassTests.testUnaryOps

@@ -1,2 +1,4 @@
-*ContextAPItests.test_from_legacy_strings
-*ExplicitConstructionTest.test_from_legacy_strings
+*graalpython.lib-python.3.test.test_decimal.CContextAPItests.test_from_legacy_strings
+*graalpython.lib-python.3.test.test_decimal.CExplicitConstructionTest.test_from_legacy_strings
+*graalpython.lib-python.3.test.test_decimal.PyContextAPItests.test_from_legacy_strings
+*graalpython.lib-python.3.test.test_decimal.PyExplicitConstructionTest.test_from_legacy_strings

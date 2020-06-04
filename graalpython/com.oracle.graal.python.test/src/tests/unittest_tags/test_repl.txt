@@ -1,2 +1,2 @@
-*TestInteractiveInterpreter.test_multiline_string_parsing
-*TestInteractiveInterpreter.test_no_memory
+*graalpython.lib-python.3.test.test_repl.TestInteractiveInterpreter.test_multiline_string_parsing
+*graalpython.lib-python.3.test.test_repl.TestInteractiveInterpreter.test_no_memory

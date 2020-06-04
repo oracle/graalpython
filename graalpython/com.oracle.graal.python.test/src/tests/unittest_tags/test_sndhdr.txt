@@ -1,1 +1,1 @@
-*TestFormats.test_pickleable
+*graalpython.lib-python.3.test.test_sndhdr.TestFormats.test_pickleable

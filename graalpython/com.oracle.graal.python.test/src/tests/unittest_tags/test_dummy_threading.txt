@@ -1,1 +1,1 @@
-*DummyThreadingTestCase.test_tasks
+*graalpython.lib-python.3.test.test_dummy_threading.DummyThreadingTestCase.test_tasks

@@ -1,8 +1,8 @@
-*ResourceTest.test_freebsd_contants
-*ResourceTest.test_fsize_enforced
-*ResourceTest.test_fsize_ismax
-*ResourceTest.test_fsize_toobig
-*ResourceTest.test_linux_constants
-*ResourceTest.test_prlimit
-*ResourceTest.test_prlimit_refcount
-*ResourceTest.test_setrusage_refcount
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_freebsd_contants
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_fsize_enforced
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_fsize_ismax
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_fsize_toobig
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_linux_constants
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_prlimit
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_prlimit_refcount
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_setrusage_refcount

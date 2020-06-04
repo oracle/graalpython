@@ -1,6 +1,6 @@
-*TypesTests.test_boolean_ops
-*TypesTests.test_comparisons
-*TypesTests.test_float_constructor
-*TypesTests.test_floats
-*TypesTests.test_normal_integers
-*TypesTests.test_numeric_types
+*graalpython.lib-python.3.test.test_types.TypesTests.test_boolean_ops
+*graalpython.lib-python.3.test.test_types.TypesTests.test_comparisons
+*graalpython.lib-python.3.test.test_types.TypesTests.test_float_constructor
+*graalpython.lib-python.3.test.test_types.TypesTests.test_floats
+*graalpython.lib-python.3.test.test_types.TypesTests.test_normal_integers
+*graalpython.lib-python.3.test.test_types.TypesTests.test_numeric_types

@@ -1,7 +1,7 @@
-*BrowserRegistrationTest.test_register
-*BrowserRegistrationTest.test_register_default
-*BrowserRegistrationTest.test_register_preferred
-*ImportTest.test_environment
-*ImportTest.test_environment_preferred
-*ImportTest.test_get
-*ImportTest.test_register
+*graalpython.lib-python.3.test.test_webbrowser.BrowserRegistrationTest.test_register
+*graalpython.lib-python.3.test.test_webbrowser.BrowserRegistrationTest.test_register_default
+*graalpython.lib-python.3.test.test_webbrowser.BrowserRegistrationTest.test_register_preferred
+*graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_environment
+*graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_environment_preferred
+*graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_get
+*graalpython.lib-python.3.test.test_webbrowser.ImportTest.test_register

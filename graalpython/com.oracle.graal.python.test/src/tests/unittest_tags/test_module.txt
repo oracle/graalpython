@@ -1,7 +1,7 @@
-*ModuleTests.test_descriptor_errors_propagate
-*ModuleTests.test_dont_clear_dict
-*ModuleTests.test_module_getattr
-*ModuleTests.test_module_getattr_errors
-*ModuleTests.test_module_getattr_tricky
-*ModuleTests.test_no_docstring
-*ModuleTests.test_weakref
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_descriptor_errors_propagate
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_dont_clear_dict
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_module_getattr
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_module_getattr_errors
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_module_getattr_tricky
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_no_docstring
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_weakref
