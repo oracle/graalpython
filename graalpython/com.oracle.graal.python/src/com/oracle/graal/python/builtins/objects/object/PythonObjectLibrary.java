@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -700,7 +699,7 @@ public abstract class PythonObjectLibrary extends Library {
      *
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
      */
-    public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
+    public int asSizeWithState(Object receiver, Object errorType, ThreadState threadState) {
         if (threadState == null) {
             // this will very likely always raise an integer interpretation error in
             // asIndexWithState
@@ -718,21 +717,21 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, Object, ThreadState)
      */
     public final int asSizeWithState(Object receiver, ThreadState threadState) {
         return asSizeWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
     }
 
     /**
-     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, Object, ThreadState)
      */
-    public int asSize(Object receiver, LazyPythonClass errorClass) {
+    public int asSize(Object receiver, Object errorClass) {
         return asSizeWithState(receiver, errorClass, null);
     }
 
     /**
-     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, Object, ThreadState)
      */
     public final int asSize(Object receiver) {
         return asSize(receiver, PythonBuiltinClassType.OverflowError);
@@ -909,8 +908,12 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiverOrigin also the receiver Object
      * @return True if there has been a reflection
      */
-    public boolean isRefelectedObject(Object receiver, Object receiverOrigin) {
+    public boolean isReflectedObject(Object receiver, Object receiverOrigin) {
         return receiver != receiverOrigin;
+    }
+
+    public Object getReflectedObject(Object receiver) {
+        return receiver;
     }
 
     public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {

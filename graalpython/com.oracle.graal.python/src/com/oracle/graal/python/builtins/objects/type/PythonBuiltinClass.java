@@ -29,12 +29,15 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -72,23 +75,37 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         return type;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isLazyPythonClass() {
-        return true;
-    }
-
-    @ExportMessage
+    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
+    @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
     boolean isMetaObject() {
         return true;
     }
 
     @ExportMessage
-    boolean isMetaInstance(Object instance,
-                    @Cached GetLazyClassNode getClass,
-                    @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(getClass.execute(instance), this);
+    static class IsMetaInstance {
+
+        protected static boolean isInstance(PythonBuiltinClass receiver, Object instance, PythonObjectLibrary plib, IsSubtypeNode isSubtype) {
+            return isSubtype.execute(plib.getLazyPythonClass(instance), receiver);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "instance == instanceCached", assumptions = "singleContextAssumption", limit = "3")
+        static boolean isMetaInstanceCached(PythonBuiltinClass receiver, Object instance,
+                        @CachedLibrary("instance") PythonObjectLibrary plib,
+                        @Cached IsSubtypeNode isSubtype,
+                        @Cached("instance") Object instanceCached,
+                        @Cached("isInstance(receiver, instanceCached, plib, isSubtype)") boolean isInstance,
+                        @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption singleContextAssumption) {
+            return isInstance;
+        }
+
+        @Specialization(replaces = "isMetaInstanceCached")
+        static boolean isMetaInstance(PythonBuiltinClass receiver, Object instance,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                        @Cached IsSubtypeNode isSubtype) {
+            return isInstance(receiver, instance, plib, isSubtype);
+        }
     }
 
     @ExportMessage

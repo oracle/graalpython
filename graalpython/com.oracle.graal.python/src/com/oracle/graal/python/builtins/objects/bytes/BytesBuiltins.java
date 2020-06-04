@@ -477,8 +477,9 @@ public class BytesBuiltins extends PythonBuiltins {
         public Object repr(VirtualFrame frame, PByteArray self,
                         @Cached("create()") TypeNodes.GetNameNode getNameNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-            String typeName = getNameNode.execute(self.getLazyPythonClass());
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            String typeName = getNameNode.execute(lib.getLazyPythonClass(self));
             SequenceStorage store = self.getSequenceStorage();
             int len = lenNode.execute(store);
             StringBuilder sb = newStringBuilder();

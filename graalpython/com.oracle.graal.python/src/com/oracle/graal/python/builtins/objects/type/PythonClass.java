@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -36,6 +36,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -51,13 +52,8 @@ public final class PythonClass extends PythonManagedClass {
         super(typeClass, storage, null, name, baseClasses);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isLazyPythonClass() {
-        return true;
-    }
-
-    @ExportMessage
+    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
+    @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
     boolean isMetaObject() {
         return true;
@@ -65,9 +61,9 @@ public final class PythonClass extends PythonManagedClass {
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
-                    @Cached GetLazyClassNode getClass,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(getClass.execute(instance), this);
+        return isSubtype.execute(plib.getLazyPythonClass(instance), this);
     }
 
     @ExportMessage

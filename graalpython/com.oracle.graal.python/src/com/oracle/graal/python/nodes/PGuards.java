@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -76,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -328,11 +328,11 @@ public abstract class PGuards {
 
     public static boolean isBuiltinString(Object obj, IsBuiltinClassProfile profile) {
         return obj instanceof String ||
-                        (obj instanceof PString && profile.profileClass(((PString) obj).getLazyPythonClass(), PythonBuiltinClassType.PString));
+                        (obj instanceof PString && profile.profileClass(((PString) obj).getInternalLazyPythonClass(), PythonBuiltinClassType.PString));
     }
 
-    public static boolean isBuiltinString(PString s, IsBuiltinClassProfile isBuiltinClassProfile, GetLazyClassNode getClassNode) {
-        return isBuiltinClassProfile.profileClass(getClassNode.execute(s), PythonBuiltinClassType.PString);
+    public static boolean isBuiltinString(PString s, IsBuiltinClassProfile isBuiltinClassProfile, PythonObjectLibrary lib) {
+        return isBuiltinClassProfile.profileClass(lib.getLazyPythonClass(s), PythonBuiltinClassType.PString);
     }
 
     public static boolean isNativeString(PString x) {
@@ -381,6 +381,10 @@ public abstract class PGuards {
 
     public static boolean isPTuple(Object obj) {
         return obj instanceof PTuple;
+    }
+
+    public static boolean isPSequence(Object obj) {
+        return obj instanceof PSequence;
     }
 
     public static boolean isPCode(Object obj) {

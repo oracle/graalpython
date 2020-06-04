@@ -201,7 +201,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
         PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj) {
             if (obj != PNone.NONE) {
-                PythonAbstractClass type = supercheck(frame, cls, obj);
+                Object type = supercheck(frame, cls, obj);
                 self.init(cls, type, obj);
             } else {
                 self.init(cls, null, null);
@@ -336,7 +336,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getAttrNode;
         }
 
-        private PythonAbstractClass supercheck(VirtualFrame frame, Object cls, Object object) {
+        private Object supercheck(VirtualFrame frame, Object cls, Object object) {
             /*
              * Check that a super() call makes sense. Return a type object.
              *
@@ -354,7 +354,7 @@ public final class SuperBuiltins extends PythonBuiltins {
              */
             if (ensureIsTypeNode().execute(object)) {
                 if (getIsSubtype().execute(frame, object, cls)) {
-                    return (PythonAbstractClass) object;
+                    return object;
                 }
             }
 
@@ -365,7 +365,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                     Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.__CLASS__);
                     if (ensureIsTypeNode().execute(classObject)) {
                         if (getIsSubtype().execute(frame, classObject, cls)) {
-                            return (PythonAbstractClass) classObject;
+                            return classObject;
                         }
                     }
                 } catch (PException e) {

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -646,7 +647,7 @@ public abstract class MaterializeFrameNode extends Node {
         protected static boolean isDictWithCustomStorage(PFrame pyFrame) {
             Object localsObject = pyFrame.getLocalsDict();
             // do not allow subclasses of 'dict'
-            return localsObject instanceof PDict && ((PDict) localsObject).getLazyPythonClass() == PythonBuiltinClassType.PDict;
+            return PythonObjectLibrary.getUncached().getLazyPythonClass(localsObject) == PythonBuiltinClassType.PDict;
         }
 
         protected static boolean isCustomLocalsObject(PFrame pyFrame, Frame frameToSync) {

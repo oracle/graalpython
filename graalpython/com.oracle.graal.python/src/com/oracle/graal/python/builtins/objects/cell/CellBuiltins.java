@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -130,13 +129,13 @@ public class CellBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public String repr(PCell self,
                         @Cached("create()") GetRefNode getRef,
-                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("create()") TypeNodes.GetNameNode getNameNode) {
             Object ref = getRef.execute(self);
             if (ref == null) {
                 return String.format("<cell at %s: empty>", self.hashCode());
             }
-            String typeName = getNameNode.execute(getClassNode.execute(ref));
+            String typeName = getNameNode.execute(lib.getLazyPythonClass(ref));
             return String.format("<cell at %s: %s object at %s>", self.hashCode(), typeName, ref.hashCode());
         }
 

@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -57,7 +56,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -106,24 +104,14 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ArgsNode extends PythonBuiltinNode {
 
-        @Child private GetLazyClassNode getClassNode;
-
         private final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
 
-        private GetLazyClassNode getGetClassNode() {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode;
-        }
-
         @TruffleBoundary
-        private String getFormattedMessage(String format, Object... args) {
+        private String getFormattedMessage(PythonObjectLibrary lib, String format, Object... args) {
             try {
                 // pre-format for custom error message formatter
                 if (ErrorMessageFormatter.containsCustomSpecifier(format)) {
-                    return formatter.format(getGetClassNode(), format, args);
+                    return formatter.format(lib, format, args);
                 }
                 return String.format(format, args);
             } catch (IllegalFormatException e) {
@@ -133,6 +121,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         public Object args(PBaseException self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile nullArgsProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasMessageFormat) {
             PTuple args = self.getArgs();
@@ -141,7 +130,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                     args = factory().createEmptyTuple();
                 } else {
                     // lazily format the exception message:
-                    args = factory().createTuple(new Object[]{getFormattedMessage(self.getMessageFormat(), self.getMessageArgs())});
+                    args = factory().createTuple(new Object[]{getFormattedMessage(lib, self.getMessageFormat(), self.getMessageArgs())});
                 }
                 self.setArgs(args);
             }
@@ -330,7 +319,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         Object reduce(VirtualFrame frame, PBaseException self,
                         @CachedLibrary("self") PythonObjectLibrary lib,
                         @Cached ArgsNode argsNode) {
-            LazyPythonClass clazz = lib.getLazyPythonClass(self);
+            Object clazz = lib.getLazyPythonClass(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
             Object dict = lib.lookupAttribute(self, __DICT__);
             return factory().createTuple(new Object[]{clazz, args, dict});

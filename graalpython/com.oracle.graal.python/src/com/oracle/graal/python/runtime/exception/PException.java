@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -179,7 +180,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public boolean isSyntaxError() {
-        return pythonException != null && IsBuiltinClassProfile.profileClassSlowPath(pythonException.getLazyPythonClass(), PythonBuiltinClassType.SyntaxError);
+        return pythonException != null && IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), PythonBuiltinClassType.SyntaxError);
     }
 
     public void setIncompleteSource(boolean val) {
@@ -244,7 +245,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
      * Save the exception handler's frame for the traceback. Should be called by all
      * exception-handling structures that need their current frame to be visible in the traceback,
      * i.e except, finally and __exit__. The frame is not yet marked as escaped.
-     * 
+     *
      * @param frame The current frame of the exception handler.
      */
     public void setCatchingFrameReference(VirtualFrame frame) {

@@ -35,7 +35,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -176,7 +175,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
         tryChainPreexistingException(frame, caughtException);
         ExceptionState savedExceptionState = saveExceptionState(frame);
         SetCaughtExceptionNode.execute(frame, pException);
-        PythonAbstractClass type = getClassNode.execute(caughtException);
+        Object type = getClassNode.execute(caughtException);
         LazyTraceback caughtTraceback = caughtException.getTraceback();
         PTraceback tb = getTraceback(caughtTraceback);
         // If exit handler returns 'true', suppress

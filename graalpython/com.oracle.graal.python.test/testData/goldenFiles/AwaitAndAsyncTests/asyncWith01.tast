@@ -42,11 +42,11 @@ ModuleRootNode Name: <module 'asyncWith01'> SourceSection: [0,34]`async def f():
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         CallNodeGen SourceSection: None
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None

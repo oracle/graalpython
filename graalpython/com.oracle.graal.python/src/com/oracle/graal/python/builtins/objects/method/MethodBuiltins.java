@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -57,7 +58,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
 public class MethodBuiltins extends PythonBuiltins {
@@ -128,12 +129,12 @@ public class MethodBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         Object reprMethod(VirtualFrame frame, PMethod self,
-                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameAttrNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
-            String typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
             return strFormat("<built-in method %s of %s object at 0x%x>", getNameAttrNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
         }
 

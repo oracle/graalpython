@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -113,7 +113,7 @@ public abstract class TypeNodes {
     public abstract static class GetTypeFlagsNode extends com.oracle.truffle.api.nodes.Node {
         private static final int HEAPTYPE = 1 << 9;
 
-        public abstract long execute(PythonAbstractClass clazz);
+        public abstract long execute(Object clazz);
 
         abstract static class GetTypeFlagsCachedNode extends GetTypeFlagsNode {
             @Specialization(guards = "isInitialized(clazz)")
@@ -140,7 +140,7 @@ public abstract class TypeNodes {
             private static final GetTypeFlagsUncachedNode INSTANCE = new GetTypeFlagsUncachedNode();
 
             @Override
-            public long execute(PythonAbstractClass clazz) {
+            public long execute(Object clazz) {
                 return doSlowPath(clazz);
             }
 
@@ -162,7 +162,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static long doSlowPath(PythonAbstractClass clazz) {
+        private static long doSlowPath(Object clazz) {
             if (PGuards.isManagedClass(clazz)) {
                 PythonManagedClass mclazz = (PythonManagedClass) clazz;
                 if (isInitialized(mclazz)) {
@@ -624,8 +624,8 @@ public abstract class TypeNodes {
 
         public abstract Object execute(Object object);
 
-        public final PythonAbstractClass profile(PythonAbstractClass object) {
-            return (PythonAbstractClass) execute(object);
+        public final Object profile(Object object) {
+            return execute(object);
         }
 
         public final PythonBuiltinClassType profile(PythonBuiltinClassType object) {
@@ -638,11 +638,11 @@ public abstract class TypeNodes {
             return cachedClassType;
         }
 
-        @Specialization(limit = "1", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
-        static PythonAbstractClass doPythonAbstractClass(PythonAbstractClass object,
+        @Specialization(guards = "isPythonAbstractClass(object)", limit = "1", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
+        static Object doPythonAbstractClass(Object object,
                         @Cached("weak(object)") WeakReference<PythonAbstractClass> cachedObjectRef,
                         @CachedLibrary("object") ReferenceLibrary referenceLibrary) throws NotSameTypeException {
-            PythonAbstractClass cachedObject = cachedObjectRef.get();
+            Object cachedObject = cachedObjectRef.get();
             if (referenceLibrary.isSame(object, cachedObject)) {
                 return cachedObject;
             }
@@ -655,8 +655,12 @@ public abstract class TypeNodes {
             return object;
         }
 
-        static WeakReference<PythonAbstractClass> weak(PythonAbstractClass object) {
-            return new WeakReference<>(object);
+        protected static boolean isPythonAbstractClass(Object obj) {
+            return PythonAbstractClass.isInstance(obj);
+        }
+
+        static WeakReference<PythonAbstractClass> weak(Object object) {
+            return new WeakReference<>(PythonAbstractClass.cast(object));
         }
 
         static final class NotSameTypeException extends ControlFlowException {
@@ -796,16 +800,16 @@ public abstract class TypeNodes {
             return true;
         }
 
-        @Specialization
+        @Specialization(limit = "3")
         boolean doNativeClass(PythonAbstractNativeObject obj,
                         @Cached IsBuiltinClassProfile profile,
-                        @Cached GetLazyClassNode getClassNode) {
+                        @CachedLibrary("obj") PythonObjectLibrary plib) {
             // TODO(fa): this check may not be enough since a type object may indirectly inherit
             // from 'type'
             // CPython has two different checks if some object is a type:
             // 1. test if type flag 'Py_TPFLAGS_TYPE_SUBCLASS' is set
             // 2. test if attribute '__bases__' is a tuple
-            return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
+            return profile.profileClass(plib.getLazyPythonClass(obj), PythonBuiltinClassType.PythonClass);
         }
 
         @Fallback

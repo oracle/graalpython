@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -65,12 +66,13 @@ public class PythonObject extends PythonAbstractObject {
         this.storage = storage;
     }
 
+    public static Assumption getSingleContextAssumption() {
+        return PythonLanguage.getCurrent().singleContextAssumption;
+    }
+
     @ExportMessage
     @GenerateUncached
     public abstract static class SetLazyPythonClass {
-        public static Assumption getSingleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
-        }
 
         @Specialization(assumptions = "storingClassesInShapes")
         public static void setSingle(PythonObject self, Object cls,
@@ -94,9 +96,40 @@ public class PythonObject extends PythonAbstractObject {
     /**
      * This is usually final, a fact may be optimized further if the storage turns into a constant.
      */
-    @Override
+
     @ExportMessage
-    public final Object getLazyPythonClass() {
+    public static class GetLazyPythonClass {
+
+        // if object is constant here, storage will also be constant, so the shape
+        // lookup is the only thing we need.
+        @Specialization(guards = "object.getStorage().getShape() == cachedShape", assumptions = {"storingClassesInShapes"}, limit = "4")
+        public static Object getPythonClassCachedSingle(@SuppressWarnings("unused") PythonObject object,
+                        @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
+                        @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption storingClassesInShapes,
+                        @Cached("object.getInternalLazyPythonClass()") Object klass) {
+            return klass;
+        }
+
+        public static boolean isBuiltinType(Shape shape) {
+            return PythonObject.getLazyClassFromObjectType(shape.getObjectType()) instanceof PythonBuiltinClassType;
+        }
+
+        // we can at least cache builtin types in the multi-context case
+        @Specialization(guards = {"object.getStorage().getShape() == cachedShape", "isBuiltinType(cachedShape)"}, limit = "4")
+        public static Object getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
+                        @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
+                        @Cached("object.getInternalLazyPythonClass()") Object klass) {
+            return klass;
+        }
+
+        @Specialization(replaces = {"getPythonClassCachedSingle", "getPythonClassCached"})
+        public static Object getLazyPythonClass(PythonObject object) {
+            return object.storedPythonClass;
+        }
+    }
+
+    @Override
+    public final Object getInternalLazyPythonClass() {
         return storedPythonClass;
     }
 
@@ -141,7 +174,7 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + TypeNodes.GetNameNode.doSlowPath(getLazyPythonClass()) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + TypeNodes.GetNameNode.doSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(this)) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     @ExportMessage

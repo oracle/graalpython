@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -64,7 +65,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -75,6 +75,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_weakref")
@@ -148,12 +149,12 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "2")
         public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
-                        @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary("pythonObject") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile profile) {
             Object actualCallback = callback instanceof PNone ? null : callback;
-            LazyPythonClass clazz = getClassNode.execute(pythonObject);
+            Object clazz = lib.getLazyPythonClass(pythonObject);
 
             // if the object is a type, a weak ref is allowed
             if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {

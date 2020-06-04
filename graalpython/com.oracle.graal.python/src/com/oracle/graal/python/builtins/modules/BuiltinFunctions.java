@@ -1059,7 +1059,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         boolean isInstance(VirtualFrame frame, Object instance, PythonAbstractClass cls,
                         @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached("create()") IsSubtypeNode isSubtypeNode) {
-            PythonAbstractClass instanceClass = getClassNode.execute(instance);
+            Object instanceClass = getClassNode.execute(instance);
             return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls);
         }
 

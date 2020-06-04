@@ -42,8 +42,7 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -56,6 +55,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -71,17 +71,17 @@ public abstract class GetClassNode extends PNodeWithContext {
         return GetClassNodeGen.getUncached();
     }
 
-    public abstract PythonAbstractClass execute(boolean object);
+    public abstract Object execute(boolean object);
 
-    public abstract PythonAbstractClass execute(int object);
+    public abstract Object execute(int object);
 
-    public abstract PythonAbstractClass execute(long object);
+    public abstract Object execute(long object);
 
-    public abstract PythonAbstractClass execute(double object);
+    public abstract Object execute(double object);
 
-    public abstract PythonAbstractClass execute(Object object);
+    public abstract Object execute(Object object);
 
-    protected PythonBuiltinClass lookupType(PythonContext context, LazyPythonClass klass) {
+    protected PythonBuiltinClass lookupType(PythonContext context, Object klass) {
         return context.getCore().lookupType((PythonBuiltinClassType) klass);
     }
 
@@ -138,13 +138,13 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
-                    "cachedLazyClass == getLazyClass.execute(object)",
+                    "cachedLazyClass == plib.getLazyPythonClass(object)",
                     "isPythonBuiltinClassType(cachedLazyClass)"
-    }, replaces = {"getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached"}, assumptions = "singleContextAssumption()", limit = "3")
-    protected PythonAbstractClass getPythonClassCached(@SuppressWarnings("unused") Object object,
+    }, replaces = {"getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached"}, assumptions = "singleContextAssumption()")
+    protected Object getPythonClassCached(@SuppressWarnings("unused") Object object,
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached GetLazyClassNode getLazyClass,
-                    @SuppressWarnings("unused") @Cached("getLazyClass.execute(object)") LazyPythonClass cachedLazyClass,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @SuppressWarnings("unused") @Cached("plib.getLazyPythonClass(object)") Object cachedLazyClass,
                     @Cached("lookupType(context, cachedLazyClass)") PythonBuiltinClass klass) {
         return klass;
     }
@@ -153,17 +153,17 @@ public abstract class GetClassNode extends PNodeWithContext {
                     "getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached",
                     "getBoolean", "getInt", "getLong", "getDouble",
                     "getPythonClassCached",
-    })
-    protected PythonAbstractClass getPythonClassGeneric(Object object,
-                    @Cached GetLazyClassNode getLazyClass,
+    }, limit = "3")
+    protected Object getPythonClassGeneric(Object object,
+                    @CachedLibrary("object") PythonObjectLibrary plib,
                     @Cached("createBinaryProfile()") ConditionProfile getClassProfile,
                     @Cached("createClassProfile()") ValueProfile classProfile,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-        LazyPythonClass lazyClass = getLazyClass.execute(object);
+        Object lazyClass = plib.getLazyPythonClass(object);
         if (getClassProfile.profile(lazyClass instanceof PythonBuiltinClassType)) {
             return classProfile.profile(contextRef.get().getCore().lookupType((PythonBuiltinClassType) lazyClass));
         } else {
-            return PythonAbstractClass.cast(classProfile.profile(lazyClass));
+            return classProfile.profile(lazyClass);
         }
     }
 }

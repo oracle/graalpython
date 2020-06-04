@@ -154,7 +154,7 @@ public class TopLevelExceptionHandler extends RootNode {
         CompilerDirectives.transferToInterpreter();
         PythonContext theContext = getContext();
         PythonCore core = theContext.getCore();
-        if (IsBuiltinClassProfile.profileClassSlowPath(pythonException.getLazyPythonClass(), SystemExit)) {
+        if (IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), SystemExit)) {
             handleSystemExit(frame, pythonException);
         }
 

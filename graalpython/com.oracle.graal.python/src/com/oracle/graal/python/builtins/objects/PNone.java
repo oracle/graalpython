@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -61,9 +60,14 @@ public final class PNone extends PythonAbstractObject {
     }
 
     @Override
+    public Object getInternalLazyPythonClass() {
+        return getLazyPythonClass();
+    }
+
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
-    public LazyPythonClass getLazyPythonClass() {
+    public Object getLazyPythonClass() {
         return PythonBuiltinClassType.PNone;
     }
 

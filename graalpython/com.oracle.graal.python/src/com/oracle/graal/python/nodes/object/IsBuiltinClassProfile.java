@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,19 +70,19 @@ public final class IsBuiltinClassProfile {
     }
 
     public boolean profileIsAnyBuiltinObject(PythonObject object) {
-        return profileIsAnyBuiltinClass(object.getLazyPythonClass());
+        return profileIsAnyBuiltinClass(object.getInternalLazyPythonClass());
     }
 
     public boolean profileIsOtherBuiltinObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileIsOtherBuiltinClass(object.getLazyPythonClass(), type);
+        return profileIsOtherBuiltinClass(object.getInternalLazyPythonClass(), type);
     }
 
     public boolean profileException(PException object, PythonBuiltinClassType type) {
-        return profileClass(object.getExceptionObject().getLazyPythonClass(), type);
+        return profileClass(object.getExceptionObject().getInternalLazyPythonClass(), type);
     }
 
     public boolean profileObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileClass(object.getLazyPythonClass(), type);
+        return profileClass(object.getInternalLazyPythonClass(), type);
 
     }
 

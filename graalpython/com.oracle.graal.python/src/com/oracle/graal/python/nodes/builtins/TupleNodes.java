@@ -43,13 +43,12 @@ package com.oracle.graal.python.nodes.builtins;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -58,6 +57,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateNodeFactory
 public abstract class TupleNodes {
@@ -65,29 +65,20 @@ public abstract class TupleNodes {
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructTupleNode extends PNodeWithContext {
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-        @Child private GetLazyClassNode getClassNode;
-
-        protected LazyPythonClass getClass(Object value) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode.execute(value);
-        }
 
         public final PTuple execute(VirtualFrame frame, Object value) {
             return execute(frame, PythonBuiltinClassType.PTuple, value);
         }
 
-        public abstract PTuple execute(VirtualFrame frame, LazyPythonClass cls, Object value);
+        public abstract PTuple execute(VirtualFrame frame, Object cls, Object value);
 
         @Specialization(guards = "isNoValue(none)")
-        PTuple tuple(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
+        PTuple tuple(Object cls, @SuppressWarnings("unused") PNone none) {
             return factory.createEmptyTuple(cls);
         }
 
         @Specialization
-        PTuple tuple(LazyPythonClass cls, String arg) {
+        PTuple tuple(Object cls, String arg) {
             Object[] values = new Object[arg.length()];
             for (int i = 0; i < arg.length(); i++) {
                 values[i] = String.valueOf(arg.charAt(i));
@@ -95,28 +86,30 @@ public abstract class TupleNodes {
             return factory.createTuple(cls, values);
         }
 
-        @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(getClass(iterable))"})
-        PTuple tuple(@SuppressWarnings("unused") LazyPythonClass cls, PTuple iterable) {
+        @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(plib.getLazyPythonClass(iterable))"}, limit = "2")
+        PTuple tuple(@SuppressWarnings("unused") Object cls, PTuple iterable,
+                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary plib) {
             return iterable;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
-        PTuple tuple(VirtualFrame frame, LazyPythonClass cls, Object iterable,
+        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable, plib)"}, limit = "2")
+        PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") CreateStorageFromIteratorNode storageNode) {
+                        @Cached("create()") CreateStorageFromIteratorNode storageNode,
+                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary plib) {
             Object iterObj = getIteratorNode.executeWith(frame, iterable);
             return factory.createTuple(cls, storageNode.execute(frame, iterObj));
         }
 
         @Fallback
-        public PTuple tuple(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
+        public PTuple tuple(@SuppressWarnings("unused") Object cls, Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("tuple does not support iterable object " + value);
         }
 
-        protected boolean createNewTuple(LazyPythonClass cls, Object iterable) {
+        protected boolean createNewTuple(Object cls, Object iterable, PythonObjectLibrary plib) {
             if (iterable instanceof PTuple) {
-                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(getClass(iterable)));
+                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(plib.getLazyPythonClass(iterable)));
             }
             return true;
         }

@@ -43,20 +43,20 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateUncached
 abstract class PGetDynamicTypeNode extends PNodeWithContext {
@@ -85,8 +85,8 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
     Object doGeneric(PythonNativeWrapper obj,
                     @Cached GetSulongTypeNode getSulongTypeNode,
                     @Cached AsPythonObjectNode getDelegate,
-                    @Cached GetLazyClassNode getLazyClassNode) {
-        return getSulongTypeNode.execute(getLazyClassNode.execute(getDelegate.execute(obj)));
+                    @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        return getSulongTypeNode.execute(lib.getLazyPythonClass(getDelegate.execute(obj)));
     }
 
     protected static Object getLongobjectType() {
@@ -105,7 +105,7 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 @GenerateUncached
 abstract class GetSulongTypeNode extends PNodeWithContext {
 
-    public abstract Object execute(LazyPythonClass clazz);
+    public abstract Object execute(Object clazz);
 
     @Specialization(guards = "clazz == cachedClass", limit = "10")
     Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,

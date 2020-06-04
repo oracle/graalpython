@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonOb
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.ProfileClassNodeGen;
@@ -69,7 +68,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -177,7 +175,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     public Object asIndexWithState(ThreadState threadState,
-                    @Exclusive @Cached GetLazyClassNode getClass,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
                     @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                     // arguments for super-implementation call
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
@@ -188,7 +186,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        if (isSubtypeNode.execute(getClass.execute(this), PythonBuiltinClassType.PInt)) {
+        if (isSubtypeNode.execute(plib.getLazyPythonClass(this), PythonBuiltinClassType.PInt)) {
             return this; // subclasses of 'int' should do early return
         } else {
             return asIndexWithState(threadState, lib, raise, callNode, isSubtype, lookupIndex, noIndex, resultProfile, gotState);
@@ -231,10 +229,10 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         }
 
         @Specialization(guards = "object == cachedObject.get()", limit = "1", assumptions = "singleContextAssumption")
-        static PythonAbstractClass getNativeClassCachedIdentity(PythonAbstractNativeObject object,
+        static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
                         @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(object)") PythonAbstractClass cachedClass) {
+                        @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just
@@ -243,10 +241,10 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         }
 
         @Specialization(guards = "isSame(referenceLibrary, cachedObject, object)", limit = "1", assumptions = "singleContextAssumption")
-        static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
+        static Object getNativeClassCached(PythonAbstractNativeObject object,
                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
                         @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(object)") PythonAbstractClass cachedClass,
+                        @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass,
                         @CachedLibrary("object.object") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
@@ -254,22 +252,22 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
         @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"}, limit = "1", rewriteOn = {UnknownIdentifierException.class,
                         UnsupportedMessageException.class})
-        static PythonAbstractClass getNativeClassByMember(PythonAbstractNativeObject object,
+        static Object getNativeClassByMember(PythonAbstractNativeObject object,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return classProfile.profile((PythonAbstractClass) toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
+            return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
         }
 
         @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember"})
-        static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
+        static Object getNativeClass(PythonAbstractNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode,
                         @Exclusive @Cached ProfileClassNode classProfile) {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return classProfile.profile((PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
+            return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
         }
 
         static WeakReference<PythonAbstractNativeObject> weak(PythonAbstractNativeObject object) {
@@ -284,7 +282,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return false;
         }
 
-        public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
+        public static Object getNativeClassUncached(PythonAbstractNativeObject object) {
             // do not wrap 'object.object' since that is really the native pointer object
             return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNodeGen.getUncached());
         }
@@ -306,28 +304,22 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         }
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isLazyPythonClass(
-                    @Cached TypeNodes.IsTypeNode isType) {
-        return isType.execute(this);
-    }
-
-    @ExportMessage
+    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
+    @ExportMessage(library = InteropLibrary.class)
     boolean isMetaObject(
-                    @Shared("isType") @Cached TypeNodes.IsTypeNode isType) {
+                    @Exclusive @Cached TypeNodes.IsTypeNode isType) {
         return isType.execute(this);
     }
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
-                    @Cached GetLazyClassNode getClass,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached IsSubtypeNode isSubtype) throws UnsupportedMessageException {
         if (!isType.execute(this)) {
             throw UnsupportedMessageException.create();
         }
-        return isSubtype.execute(getClass.execute(instance), this);
+        return isSubtype.execute(plib.getLazyPythonClass(instance), this);
     }
 
     @ExportMessage
