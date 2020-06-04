@@ -1,1 +1,1 @@
-*Test_Ignore.test_ignored
+*graalpython.lib-python.3.test.test_trace.Test_Ignore.test_ignored

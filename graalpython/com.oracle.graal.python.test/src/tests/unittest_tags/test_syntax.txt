@@ -1,6 +1,7 @@
-*SyntaxTestCase.test_assign_del
-*SyntaxTestCase.test_kwargs_last
-*SyntaxTestCase.test_kwargs_last2
-*SyntaxTestCase.test_kwargs_last3
-*SyntaxTestCase.test_return_outside_function
-*SyntaxTestCase.test_yield_outside_function
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_assign_call
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_assign_del
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_kwargs_last
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_kwargs_last2
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_kwargs_last3
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_return_outside_function
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_yield_outside_function

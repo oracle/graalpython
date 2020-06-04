@@ -1,2 +1,2 @@
-*TestMultipleFeatures.test_print_function
-*TestMultipleFeatures.test_unicode_literals
+*graalpython.lib-python.3.test.test_future5.TestMultipleFeatures.test_print_function
+*graalpython.lib-python.3.test.test_future5.TestMultipleFeatures.test_unicode_literals

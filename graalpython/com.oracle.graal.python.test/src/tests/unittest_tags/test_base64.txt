@@ -1,1 +1,1 @@
-*LegacyBase64TestCase.test_decode
+*graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_decode

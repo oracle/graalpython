@@ -1,1 +1,1 @@
-*Test_ISO2022_KR.test_chunkcoding
+*graalpython.lib-python.3.test.test_codecencodings_iso2022.Test_ISO2022_KR.test_chunkcoding

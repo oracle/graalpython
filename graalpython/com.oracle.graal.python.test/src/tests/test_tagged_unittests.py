@@ -187,25 +187,6 @@ if __name__ == "__main__":
             print(p.stderr)
 
             passing_tests = []
-            failed_tests = []
-
-            def get_pass_name(funcname, classname):
-                try:
-                    imported_test_module = __import__(testmod)
-                except Exception:
-                    pass
-                else:
-                    # try hard to get a most specific pattern
-                    classname = "".join(classname.rpartition(testmod)[1:])
-                    clazz = imported_test_module
-                    path_to_class = classname.split(".")[1:]
-                    for part in path_to_class:
-                        clazz = getattr(clazz, part, None)
-                    if clazz:
-                        func = getattr(clazz, funcname, None)
-                        if func:
-                            return func.__qualname__
-                return funcname
 
             stderr = p.stderr.replace("Please note: This Python implementation is in the very early stages, and can run little more than basic benchmarks at this point.\n", '')
 
@@ -215,30 +196,25 @@ if __name__ == "__main__":
                 # We consider skipped tests as passing in order to avoid a situation where a Linux run
                 # untags a Darwin-only test and vice versa
                 if result == 'ok' or result.startswith('skipped'):
-                    passing_tests.append("*" + get_pass_name(funcname, classname))
-                else:
-                    failed_tests.append("*" + get_pass_name(funcname, classname))
+                    passing_tests.append(f"*{classname}.{funcname}")
 
-            # n.b.: unittests uses the __qualname__ of the function as
-            # pattern, which we're trying to do as well. however, sometimes
-            # the same function is shared in multiple test classes, and
-            # fails in some. so we always subtract the failed patterns from
-            # the passed patterns
-            passing_only_patterns = set(passing_tests) - set(failed_tests)
             with open(tagfile, "w") as f:
-                for passing_test in sorted(passing_only_patterns):
+                for passing_test in sorted(passing_tests):
                     f.write(passing_test)
                     f.write("\n")
-            if not passing_only_patterns:
+            if not passing_tests:
                 os.unlink(tagfile)
                 print("No successful tests remaining")
                 break
 
             if p.returncode == 0:
-                print(f"Suite succeeded with {len(passing_only_patterns)} tests")
+                if repeat == 0 and maxrepeats > 1:
+                    print(f"Suite succeeded with {len(passing_tests)} tests, retrying to confirm tags are correct")
+                    continue
+                print(f"Suite succeeded with {len(passing_tests)} tests")
                 break
             else:
-                print(f"Suite failed, retrying with {len(passing_only_patterns)} tests")
+                print(f"Suite failed, retrying with {len(passing_tests)} tests")
 
         else:
             # we tried the last time and failed, so our tags don't work for

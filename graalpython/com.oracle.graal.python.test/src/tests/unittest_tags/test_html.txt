@@ -1,1 +1,1 @@
-*HtmlTests.test_escape
+*graalpython.lib-python.3.test.test_html.HtmlTests.test_escape

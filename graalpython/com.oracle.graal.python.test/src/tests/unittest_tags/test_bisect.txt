@@ -1,0 +1,17 @@
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_backcompatibility
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_keyword_args
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_large_pyrange
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_large_range
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_negative_lo
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_optionalSlicing
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_precomputed
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_random
+*graalpython.lib-python.3.test.test_bisect.TestDocExamplePython.test_colors
+*graalpython.lib-python.3.test.test_bisect.TestDocExamplePython.test_grades
+*graalpython.lib-python.3.test.test_bisect.TestErrorHandlingPython.test_arg_parsing
+*graalpython.lib-python.3.test.test_bisect.TestErrorHandlingPython.test_cmp_err
+*graalpython.lib-python.3.test.test_bisect.TestErrorHandlingPython.test_get_only
+*graalpython.lib-python.3.test.test_bisect.TestErrorHandlingPython.test_len_only
+*graalpython.lib-python.3.test.test_bisect.TestErrorHandlingPython.test_non_sequence
+*graalpython.lib-python.3.test.test_bisect.TestInsortPython.test_backcompatibility
+*graalpython.lib-python.3.test.test_bisect.TestInsortPython.test_listDerived

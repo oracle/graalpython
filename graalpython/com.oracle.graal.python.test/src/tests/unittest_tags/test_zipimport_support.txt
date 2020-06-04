@@ -1,1 +1,1 @@
-*ZipSupportTests.test_inspect_getsource_issue4223
+*graalpython.lib-python.3.test.test_zipimport_support.ZipSupportTests.test_inspect_getsource_issue4223

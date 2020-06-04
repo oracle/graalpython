@@ -1,1 +1,1 @@
-*CmdLineTest.test_nonexisting_script
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_nonexisting_script

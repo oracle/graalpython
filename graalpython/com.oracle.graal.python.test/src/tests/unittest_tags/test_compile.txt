@@ -1,2 +1,2 @@
-*TestSpecifics.test_annotation_limit
-*TestSpecifics.test_argument_order
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_annotation_limit
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_order

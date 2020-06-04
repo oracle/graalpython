@@ -1,6 +1,6 @@
-*OpcodeTest.test_compare_function_objects
-*OpcodeTest.test_do_not_recreate_annotations
-*OpcodeTest.test_modulo_of_string_subclasses
-*OpcodeTest.test_no_annotations_if_not_needed
-*OpcodeTest.test_raise_class_exceptions
-*OpcodeTest.test_try_inside_for_loop
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_compare_function_objects
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_do_not_recreate_annotations
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_modulo_of_string_subclasses
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_no_annotations_if_not_needed
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_raise_class_exceptions
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_try_inside_for_loop

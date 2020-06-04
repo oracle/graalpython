@@ -1,4 +1,4 @@
-*ConstructorTestCase.test_dot_new_with_str_key
-*ConstructorTestCase.test_with_str_key
-*TestVectorsTestCase.test_legacy_block_size_warnings
-*TestVectorsTestCase.test_with_digestmod_no_default
+*graalpython.lib-python.3.test.test_hmac.ConstructorTestCase.test_dot_new_with_str_key
+*graalpython.lib-python.3.test.test_hmac.ConstructorTestCase.test_with_str_key
+*graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_legacy_block_size_warnings
+*graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_with_digestmod_no_default

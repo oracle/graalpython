@@ -1,0 +1,3 @@
+*graalpython.lib-python.3.test.test_codecmaps_tw.TestBIG5Map.test_errorhandle
+*graalpython.lib-python.3.test.test_codecmaps_tw.TestBIG5Map.test_mapping_supplemental
+*graalpython.lib-python.3.test.test_codecmaps_tw.TestCP950Map.test_mapping_supplemental

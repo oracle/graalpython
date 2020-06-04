@@ -1,8 +1,8 @@
-*RangeTest.test_attributes
-*RangeTest.test_empty
-*RangeTest.test_invalid_invocation
-*RangeTest.test_issue11845
-*RangeTest.test_odd_bug
-*RangeTest.test_range
-*RangeTest.test_range_iterators_invocation
-*RangeTest.test_repr
+*graalpython.lib-python.3.test.test_range.RangeTest.test_attributes
+*graalpython.lib-python.3.test.test_range.RangeTest.test_empty
+*graalpython.lib-python.3.test.test_range.RangeTest.test_invalid_invocation
+*graalpython.lib-python.3.test.test_range.RangeTest.test_issue11845
+*graalpython.lib-python.3.test.test_range.RangeTest.test_odd_bug
+*graalpython.lib-python.3.test.test_range.RangeTest.test_range
+*graalpython.lib-python.3.test.test_range.RangeTest.test_range_iterators_invocation
+*graalpython.lib-python.3.test.test_range.RangeTest.test_repr

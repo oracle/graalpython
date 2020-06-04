@@ -1,1 +1,1 @@
-*AbstractHookTests.test_reducer_override_no_reference_cycle
+*test.pickletester.AbstractHookTests.test_reducer_override_no_reference_cycle

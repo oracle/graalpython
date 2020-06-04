@@ -1,3 +1,3 @@
-*TestFuture.test_floor_div_operator
-*TestFuture.test_nested_scopes
-*TestFuture.test_true_div_as_default
+*graalpython.lib-python.3.test.test_future3.TestFuture.test_floor_div_operator
+*graalpython.lib-python.3.test.test_future3.TestFuture.test_nested_scopes
+*graalpython.lib-python.3.test.test_future3.TestFuture.test_true_div_as_default

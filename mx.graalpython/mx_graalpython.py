@@ -229,17 +229,19 @@ def retag_unittests(args):
     parser = ArgumentParser('mx python-retag-unittests')
     parser.add_argument('--upload-results-to')
     parsed_args, remaining_args = parser.parse_known_args(args)
-    with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-        with _dev_pythonhome_context():
-            args = [
-                '--experimental-options=true',
-                '--python.CatchAllExceptions=true',
-                '--python.WithThread=true',
-                '--python.CAPI=' + _get_capi_home(),
-                'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
-                '--retag',
-            ]
-            mx.run([python_gvm()] + args + remaining_args)
+    env = os.environ.copy()
+    env.update(
+        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
+        PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
+    )
+    args = [
+        '--experimental-options=true',
+        '--python.CatchAllExceptions=true',
+        '--python.WithThread=true',
+        'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
+        '--retag',
+    ]
+    mx.run([python_gvm()] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
             filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
@@ -439,12 +441,14 @@ def _graalpytest_root():
     return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None, env=None):
     args = args or []
     args = ["--experimental-options=true",
             "--python.CatchAllExceptions=true"] + args
     exclude = exclude or []
     paths = paths or [_graalpytest_root()]
+    if env is None:
+        env = os.environ.copy()
 
     # list of excluded tests
     if aot_compatible:
@@ -484,13 +488,13 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         assert len(agent_args) < 1024
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
-        with set_env(JAVA_TOOL_OPTIONS=agent_args):
-            for testfile in testfiles:
-                mx.run([python_binary] + args + [testfile], nonZeroIsFatal=True)
+        env['JAVA_TOOL_OPTIONS'] = agent_args
+        for testfile in testfiles:
+            mx.run([python_binary] + args + [testfile], nonZeroIsFatal=True, env=env)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
-        return mx.run([python_binary] + args, nonZeroIsFatal=True)
+        return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
 
 
 def graalpython_gate_runner(args, tasks):
@@ -524,17 +528,19 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                # the tagged unittests must run in the dev_pythonhome and using
-                # the dev CAPI, because that's where the tags are
-                with _dev_pythonhome_context():
-                    run_python_unittests(
-                        python_gvm(),
-                        args=["-v",
-                              "--python.WithThread=true",
-                              "--python.CAPI=" + _get_capi_home()],
-                        paths=["test_tagged_unittests.py"]
-                    )
+            env = os.environ.copy()
+            env.update(
+                ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
+                ENABLE_THREADED_GRAALPYTEST="true",
+                PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
+            )
+            run_python_unittests(
+                python_gvm(),
+                args=["-v",
+                      "--python.WithThread=true"],
+                paths=["test_tagged_unittests.py"],
+                env=env,
+            )
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:

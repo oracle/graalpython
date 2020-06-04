@@ -1,6 +1,6 @@
-*TestHexOctBin.test_bin_baseline
-*TestHexOctBin.test_bin_unsigned
-*TestHexOctBin.test_hex_baseline
-*TestHexOctBin.test_hex_unsigned
-*TestHexOctBin.test_oct_baseline
-*TestHexOctBin.test_oct_unsigned
+*graalpython.lib-python.3.test.test_int_literal.TestHexOctBin.test_bin_baseline
+*graalpython.lib-python.3.test.test_int_literal.TestHexOctBin.test_bin_unsigned
+*graalpython.lib-python.3.test.test_int_literal.TestHexOctBin.test_hex_baseline
+*graalpython.lib-python.3.test.test_int_literal.TestHexOctBin.test_hex_unsigned
+*graalpython.lib-python.3.test.test_int_literal.TestHexOctBin.test_oct_baseline
+*graalpython.lib-python.3.test.test_int_literal.TestHexOctBin.test_oct_unsigned

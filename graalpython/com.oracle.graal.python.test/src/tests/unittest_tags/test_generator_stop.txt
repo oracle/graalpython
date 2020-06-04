@@ -1,1 +1,1 @@
-*TestPEP479.test_stopiteration_wrapping
+*graalpython.lib-python.3.test.test_generator_stop.TestPEP479.test_stopiteration_wrapping

@@ -1,6 +1,6 @@
-*ComparisonTest.test_comparisons
-*ComparisonTest.test_id_comparisons
-*ComparisonTest.test_ne_defaults_to_not_eq
-*ComparisonTest.test_ne_high_priority
-*ComparisonTest.test_ne_low_priority
-*ComparisonTest.test_other_delegation
+*graalpython.lib-python.3.test.test_compare.ComparisonTest.test_comparisons
+*graalpython.lib-python.3.test.test_compare.ComparisonTest.test_id_comparisons
+*graalpython.lib-python.3.test.test_compare.ComparisonTest.test_ne_defaults_to_not_eq
+*graalpython.lib-python.3.test.test_compare.ComparisonTest.test_ne_high_priority
+*graalpython.lib-python.3.test.test_compare.ComparisonTest.test_ne_low_priority
+*graalpython.lib-python.3.test.test_compare.ComparisonTest.test_other_delegation

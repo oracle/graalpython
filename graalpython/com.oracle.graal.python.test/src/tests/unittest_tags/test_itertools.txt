@@ -1,3 +1,5 @@
-*TestBasicOps.test_bug_7244
-*TestBasicOps.test_combinations_tuple_reuse
-*TestBasicOps.test_combinations_with_replacement_tuple_reuse
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_bug_7244
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_overflow
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_tuple_reuse
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_with_replacement_overflow
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_with_replacement_tuple_reuse

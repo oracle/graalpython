@@ -1,2 +1,2 @@
-*PlatformTest.test__comparable_version
-*PlatformTest.test_uname_win32_ARCHITEW6432
+*graalpython.lib-python.3.test.test_platform.PlatformTest.test__comparable_version
+*graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_win32_ARCHITEW6432

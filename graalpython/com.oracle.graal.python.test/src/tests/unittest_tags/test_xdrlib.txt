@@ -1,6 +1,6 @@
-*ConversionErrorTest.test_double
-*ConversionErrorTest.test_float
-*ConversionErrorTest.test_pack_int
-*ConversionErrorTest.test_pack_uint
-*ConversionErrorTest.test_uhyper
-*XDRTest.test_xdr
+*graalpython.lib-python.3.test.test_xdrlib.ConversionErrorTest.test_double
+*graalpython.lib-python.3.test.test_xdrlib.ConversionErrorTest.test_float
+*graalpython.lib-python.3.test.test_xdrlib.ConversionErrorTest.test_pack_int
+*graalpython.lib-python.3.test.test_xdrlib.ConversionErrorTest.test_pack_uint
+*graalpython.lib-python.3.test.test_xdrlib.ConversionErrorTest.test_uhyper
+*graalpython.lib-python.3.test.test_xdrlib.XDRTest.test_xdr

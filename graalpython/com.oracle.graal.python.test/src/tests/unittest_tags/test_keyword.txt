@@ -1,7 +1,7 @@
-*Test_iskeyword.test_all_keywords_fail_to_be_used_as_names
-*Test_iskeyword.test_async_and_await_are_keywords
-*Test_iskeyword.test_changing_the_kwlist_does_not_affect_iskeyword
-*Test_iskeyword.test_keywords_are_sorted
-*Test_iskeyword.test_none_value_is_not_a_keyword
-*Test_iskeyword.test_true_is_a_keyword
-*Test_iskeyword.test_uppercase_true_is_not_a_keyword
+*graalpython.lib-python.3.test.test_keyword.Test_iskeyword.test_all_keywords_fail_to_be_used_as_names
+*graalpython.lib-python.3.test.test_keyword.Test_iskeyword.test_async_and_await_are_keywords
+*graalpython.lib-python.3.test.test_keyword.Test_iskeyword.test_changing_the_kwlist_does_not_affect_iskeyword
+*graalpython.lib-python.3.test.test_keyword.Test_iskeyword.test_keywords_are_sorted
+*graalpython.lib-python.3.test.test_keyword.Test_iskeyword.test_none_value_is_not_a_keyword
+*graalpython.lib-python.3.test.test_keyword.Test_iskeyword.test_true_is_a_keyword
+*graalpython.lib-python.3.test.test_keyword.Test_iskeyword.test_uppercase_true_is_not_a_keyword
