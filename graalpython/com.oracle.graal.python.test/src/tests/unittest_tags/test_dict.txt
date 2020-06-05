@@ -17,6 +17,7 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_eq
 *graalpython.lib-python.3.test.test_dict.DictTest.test_equal_operator_modifying_operand
 *graalpython.lib-python.3.test.test_dict.DictTest.test_errors_in_view_containment_check
+*graalpython.lib-python.3.test.test_dict.DictTest.test_fromkeys
 *graalpython.lib-python.3.test.test_dict.DictTest.test_fromkeys_operator_modifying_dict_operand
 *graalpython.lib-python.3.test.test_dict.DictTest.test_fromkeys_operator_modifying_set_operand
 *graalpython.lib-python.3.test.test_dict.DictTest.test_get
@@ -47,6 +48,7 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_dynamic
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_literals
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_subtypes
+*graalpython.lib-python.3.test.test_dict.DictTest.test_update
 *graalpython.lib-python.3.test.test_dict.DictTest.test_values
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_bool
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_constructor
@@ -55,6 +57,7 @@
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_len
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_popitem
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_setdefault
+*graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_update
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_values
 *graalpython.lib-python.3.test.test_dict.SubclassMappingTests.test_bool
 *graalpython.lib-python.3.test.test_dict.SubclassMappingTests.test_constructor
@@ -63,4 +66,5 @@
 *graalpython.lib-python.3.test.test_dict.SubclassMappingTests.test_len
 *graalpython.lib-python.3.test.test_dict.SubclassMappingTests.test_popitem
 *graalpython.lib-python.3.test.test_dict.SubclassMappingTests.test_setdefault
+*graalpython.lib-python.3.test.test_dict.SubclassMappingTests.test_update
 *graalpython.lib-python.3.test.test_dict.SubclassMappingTests.test_values
