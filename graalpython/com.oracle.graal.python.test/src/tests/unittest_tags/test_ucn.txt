@@ -1,0 +1,3 @@
+*graalpython.lib-python.3.test.test_ucn.UnicodeNamesTest.test_cjk_unified_ideographs
+*graalpython.lib-python.3.test.test_ucn.UnicodeNamesTest.test_general
+*graalpython.lib-python.3.test.test_ucn.UnicodeNamesTest.test_misc_symbols

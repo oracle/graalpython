@@ -1,0 +1,1 @@
+*NormalizationTest.test_bug_834676
