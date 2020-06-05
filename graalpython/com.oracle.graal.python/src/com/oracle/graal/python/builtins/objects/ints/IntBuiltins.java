@@ -769,8 +769,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right < 0")
         @SuppressWarnings("unused")
-        double doLLLNeg(long left, long right, long mod) {
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.POW_SECOND_ARG_CANNOT_BE_NEGATIVE);
+        int doLLLNeg(long left, long right, long mod,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+            if (errorProfile.profile(left != 1)) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.POW_SECOND_ARG_CANNOT_BE_NEGATIVE);
+            }
+            return 1;
         }
 
         // see cpython://Objects/longobject.c#long_pow
