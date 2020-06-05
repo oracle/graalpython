@@ -1409,6 +1409,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
+        public int ord(PString chr) {
+            return ord(chr.getValue());
+        }
+
+        @Specialization
         public int ord(VirtualFrame frame, PIBytesLike chr,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
