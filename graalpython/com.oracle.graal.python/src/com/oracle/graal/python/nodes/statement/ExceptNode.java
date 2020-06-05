@@ -180,10 +180,9 @@ abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
     }
 
-    @Specialization(guards = {"emulateJython", "context.getEnv().isHostObject(type)"}, limit = "1")
+    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostObject(type)"})
     boolean isJavaException(@SuppressWarnings("unused") VirtualFrame frame, Object type,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython) {
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
         Object hostType = context.getEnv().asHostObject(type);
         return hostType instanceof Class && Throwable.class.isAssignableFrom((Class<?>) hostType);
     }
@@ -228,11 +227,10 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         return isSubtype.execute(frame, plib.getLazyPythonClass(e.getExceptionObject()), clause);
     }
 
-    @Specialization(guards = {"emulateJython", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"}, limit = "1")
+    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"})
     boolean matchJava(VirtualFrame frame, Throwable e, Object clause,
                     @Cached ValidExceptionNode isValidException,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython) {
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
         raiseIfNoException(frame, clause, isValidException);
         // cast must succeed due to ValidExceptionNode above
         Class<?> javaClause = (Class<?>) context.getEnv().asHostObject(clause);
@@ -240,19 +238,17 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         return javaClause.isInstance(hostException);
     }
 
-    @Specialization(guards = {"emulateJython", "context.getEnv().isHostObject(clause)"}, limit = "1")
+    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostObject(clause)"})
     boolean doNotMatchPython(VirtualFrame frame, @SuppressWarnings("unused") PException e, Object clause,
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython,
                     @Cached ValidExceptionNode isValidException) {
         raiseIfNoException(frame, clause, isValidException);
         return false;
     }
 
-    @Specialization(guards = {"emulateJython", "context.getEnv().isHostException(e)"}, limit = "1")
+    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostException(e)"})
     boolean doNotMatchJava(VirtualFrame frame, @SuppressWarnings("unused") Throwable e, LazyPythonClass clause,
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython,
                     @Cached ValidExceptionNode isValidException) {
         raiseIfNoException(frame, clause, isValidException);
         return false;
