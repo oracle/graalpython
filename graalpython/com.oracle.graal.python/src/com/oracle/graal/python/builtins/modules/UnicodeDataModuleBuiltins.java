@@ -158,7 +158,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        builtinConstants.put("version", getUnicodeVersion());
+        builtinConstants.put("unidata_version", getUnicodeVersion());
         PythonBuiltinClass objectType = core.lookupType(PythonBuiltinClassType.PythonObject);
         PythonObject ucd_3_2_0 = core.factory().createPythonObject(objectType);
         ucd_3_2_0.setAttribute("unidata_version", "3.2.0");
@@ -197,5 +197,37 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return normalize(form, unistr.getValue(), cachedForm, cachedNormForm);
         }
 
+    }
+
+    // unicodedata.is_normalized(form, unistr)
+    @Builtin(name = "is_normalized", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IsNormalizedNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        protected Normalizer.Form getForm(String form) {
+            try {
+                return Normalizer.Form.valueOf(form);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
+        @TruffleBoundary
+        public boolean isNormalized(@SuppressWarnings("unused") String form, String unistr,
+                        @SuppressWarnings("unused") @Cached("form") String cachedForm,
+                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
+            if (cachedNormForm == null) {
+                throw raise(ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
+            }
+            return Normalizer.isNormalized(unistr, cachedNormForm);
+        }
+
+        @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
+        public boolean normalize(String form, PString unistr,
+                        @Cached("form") String cachedForm,
+                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
+            return isNormalized(form, unistr.getValue(), cachedForm, cachedNormForm);
+        }
     }
 }
