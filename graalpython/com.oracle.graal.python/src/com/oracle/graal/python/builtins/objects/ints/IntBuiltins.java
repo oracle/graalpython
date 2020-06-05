@@ -667,6 +667,7 @@ public class IntBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @ReportPolymorphism
     abstract static class PowNode extends PythonTernaryBuiltinNode {
+
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
         static long doLLFast(long left, long right, @SuppressWarnings("unused") PNone none) {
             long result = 1;
@@ -736,20 +737,40 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "right >= 0")
-        long doLLLPos(long left, long right, long mod) {
+        @Specialization(guards = {"right >= 0", "mod > 0"})
+        static long doLLPosLPos(long left, long right, long mod) {
             try {
                 return PInt.longValueExact(op(left, right, mod));
             } catch (ArithmeticException e) {
-                // cannot happen since we took modulo long
+                // cannot happen since we took modulo long AND 'mod > 0'
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException();
+            }
+        }
+
+        @Specialization(guards = "right >= 0", replaces = "doLLPosLPos")
+        long doLLPosLGeneric(long left, long right, long mod,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile modNegativeProfile) {
+            if (errorProfile.profile(mod == 0)) {
+                throw raise(ValueError, ErrorMessages.POW_THIRD_ARG_CANNOT_BE_ZERO);
+            }
+            try {
+                if (modNegativeProfile.profile(mod < 0)) {
+                    return PInt.longValueExact(opNeg(left, right, mod));
+                }
+                return PInt.longValueExact(op(left, right, mod));
+            } catch (ArithmeticException e) {
+                // cannot happen since we took modulo long AND 'mod != 0'
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }
 
         @Specialization(guards = "right < 0")
+        @SuppressWarnings("unused")
         double doLLLNeg(long left, long right, long mod) {
-            return PInt.doubleValue(op(left, right, mod));
+            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.POW_SECOND_ARG_CANNOT_BE_NEGATIVE);
         }
 
         // see cpython://Objects/longobject.c#long_pow
@@ -809,6 +830,22 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static BigInteger op(long left, long right, long mod) {
             return BigInteger.valueOf(left).modPow(BigInteger.valueOf(right), BigInteger.valueOf(mod));
+        }
+
+        @TruffleBoundary
+        private static BigInteger opNeg(long left, long right, long mod) {
+            assert mod < 0;
+            BigInteger pow;
+            BigInteger modPos = BigInteger.valueOf(-mod);
+            if (right == 0) {
+                pow = BigInteger.ONE;
+            } else {
+                pow = BigInteger.valueOf(left).modPow(BigInteger.valueOf(right), modPos);
+            }
+            if (!BigInteger.ZERO.equals(pow)) {
+                return pow.subtract(modPos);
+            }
+            return pow;
         }
 
         @TruffleBoundary
