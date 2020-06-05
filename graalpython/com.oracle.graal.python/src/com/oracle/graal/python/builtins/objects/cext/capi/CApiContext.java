@@ -491,34 +491,37 @@ public final class CApiContext extends CExtContext {
         int id = CApiContext.idFromRefCnt(getObRefCntNode.execute(nativePtr));
 
         NativeObjectReference ref;
-        PythonAbstractNativeObject nativeObject;
 
         // If there is no mapping, we need to create a new one.
         if (newRefProfile.profile(id == 0)) {
-            nativeObject = createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
+            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
         } else if (validRefProfile.profile(id > 0)) {
+            PythonAbstractNativeObject nativeObject;
             ref = lookupNativeObjectReference(id);
-            nativeObject = ref.get();
-            if (resurrectProfile.profile(nativeObject == null)) {
-                // Bad luck: the mapping is still there and wasn't cleaned up but we need a new
-                // mapping. Therefore, we need to cancel the cleaner action and set a new native
-                // object reference.
-                ref.markAsResurrected();
-                nativeObject = new PythonAbstractNativeObject(nativePtr);
-                assert id == ref.id;
+            if (ref != null) {
+                nativeObject = ref.get();
+                if (resurrectProfile.profile(nativeObject == null)) {
+                    // Bad luck: the mapping is still there and wasn't cleaned up but we need a new
+                    // mapping. Therefore, we need to cancel the cleaner action and set a new native
+                    // object reference.
+                    ref.markAsResurrected();
+                    nativeObject = new PythonAbstractNativeObject(nativePtr);
+                    assert id == ref.id;
 
-                ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, ref.managedRefCount, id);
-                NativeObjectReference old = nativeObjectWrapperList.resurrect(id, ref);
-                assert isReferenceToSameNativeObject(old, ref) : "resurrected native object reference does not point to same native object";
+                    ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, ref.managedRefCount, id);
+                    NativeObjectReference old = nativeObjectWrapperList.resurrect(id, ref);
+                    assert isReferenceToSameNativeObject(old, ref) : "resurrected native object reference does not point to same native object";
+                }
+                if (steal) {
+                    ref.managedRefCount++;
+                }
+                return nativeObject;
             }
-            if (steal) {
-                ref.managedRefCount++;
-            }
+            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
         } else {
             LOGGER.warning(() -> String.format("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
-            nativeObject = new PythonAbstractNativeObject(nativePtr);
         }
-        return nativeObject;
+        return new PythonAbstractNativeObject(nativePtr);
     }
 
     PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal) {

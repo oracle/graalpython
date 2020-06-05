@@ -192,7 +192,7 @@ public final class NativeReferenceCache implements TruffleObject {
             if (wrapperExistsProfile.profile(idx > 0)) {
                 NativeObjectReference ref = cApiContext.lookupNativeObjectReference(idx);
 
-                PythonAbstractObject object = ref.get();
+                PythonAbstractObject object = ref != null ? ref.get() : null;
                 if (object != null) {
                     // If this is stealing the reference, we need to fixup the managed reference
                     // count.
