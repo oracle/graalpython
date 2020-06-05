@@ -117,6 +117,17 @@ class TestCase(object):
         self.passed = 0
         self.failed = 0
 
+    def get_useful_frame(self, tb):
+        from traceback import extract_tb
+        frame_summaries = extract_tb(tb)
+        frame_summaries.reverse()
+        for summary in frame_summaries:
+            # Skip frame summary entries that refer to this file. These summaries will mostly be there because of the
+            # assert functions and their location is not interesting.
+            if summary[0] != __file__:
+                return summary
+
+
     def run_safely(self, func, print_immediately=False):
         if verbose:
             with print_lock:
@@ -132,8 +143,7 @@ class TestCase(object):
                 code = func.__code__
                 _, _, tb = sys.exc_info()
                 try:
-                    from traceback import extract_tb
-                    filename, line, func, text = extract_tb(tb)[-1]
+                    filename, line, func, text = self.get_useful_frame(tb)
                     self.exceptions.append(
                         ("In test '%s': %s:%d (%s)" % (code.co_filename, filename, line, func), e)
                     )
