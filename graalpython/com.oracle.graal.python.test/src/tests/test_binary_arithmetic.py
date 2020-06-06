@@ -21,6 +21,9 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import sys
+
 def test_add_long_overflow():
     # max long value is written as long primitive
     val = 0x7fffffffffffffff
@@ -295,3 +298,74 @@ def test_lshift():
 def test_pow():
     # (0xffffffffffffffff >> 63) is used to produce a non-narrowed int
     assert 2**(0xffffffffffffffff >> 63) == 2
+
+    # try:
+    #     2 ** (2**128)
+    # except ArithmeticError:
+    #     assert True
+    # else:
+    #     assert False
+
+    # assert 2 ** -(2**128) == 0.0
+
+    # class X(float):
+    #     def __rpow__(self, other):
+    #         return 42
+
+    # assert 2 ** X() == 42
+
+    # try:
+    #     2.0 .__pow__(2, 2)
+    # except TypeError as e:
+    #     assert True
+    # else:
+    #     assert False
+
+    # try:
+    #     2.0 .__pow__(2.0, 2.0)
+    # except TypeError as e:
+    #     assert True
+    # else:
+    #     assert False
+
+    # assert 2 ** 2.0 == 4.0
+
+    # assert 2 .__pow__("a") == NotImplemented
+    # assert 2 .__pow__("a", 2) == NotImplemented
+    # assert 2 .__pow__(2**30, 2**128) == 0
+
+    # # crafted to try specializations
+    # def mypow(a, b, c):
+    #     return a.__pow__(b, c)
+
+    # values = [
+    #     [1, 2, None], # long
+    #     [1, 128, None], # BigInteger
+    #     [1, -2, None], # double result
+    #     [1, 0xffffffffffffffffffffffffffffffff & 0x8000, None], # narrow to long
+    #     [2, 0xffffffffffffffffffffffffffffffff & 0x8000, None], # cannot narrow
+    #     [2, -(0xffffffffffffffffffffffffffffffff & 0x8000), None], # double result
+    #     [2**128, 0, None], # narrow to long
+    #     [2**128, 1, None], # cannot narrow
+    #     [2**128, -2, None], # double
+    #     [2**128, 0xffffffffffffffffffffffffffffffff & 0x8000, None], # large
+    #     [2**128, -(0xffffffffffffffffffffffffffffffff & 0x8000), None], # double result
+    #     [1, 2, 3], # fast path
+    #     [2, 2**30, 2**128], # generic
+    #     ] + []
+
+    # if sys.version_info.minor >= 8:
+    #     values += [
+    #         [1, -2, 3], # fast path double
+    #     ]
+
+    # for args in values:
+    #     assert mypow(*args) == pow(*args), f"{args} -> {mypow(*args)} == {pow(*args)}"
+
+    # def mypow_rev(a, b, c):
+    #     return a.__pow__(b, c)
+
+    # for args in reversed(values):
+    #     assert mypow_rev(*args) == pow(*args), f"{args} -> {mypow(*args)} == {pow(*args)}"
+
+    # assert 2**1.0 == 2.0
