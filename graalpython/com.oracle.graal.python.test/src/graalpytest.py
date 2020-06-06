@@ -131,7 +131,7 @@ class TestCase(object):
     def run_safely(self, func, print_immediately=False):
         if verbose:
             with print_lock:
-                print(u"\n\t\u21B3 ", func.__name__, " ", end="")
+                print(u"\n\t\u21B3 ", func.__name__, " ", end="", flush=True)
         try:
             func()
         except BaseException as e:
