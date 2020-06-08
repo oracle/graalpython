@@ -38,13 +38,6 @@
 # SOFTWARE.
 
 
-def copy(self):
-    return self[:]
-
-
-list.copy = copy
-
-
 def sort(self, key=None, reverse=False):
     if reverse:
         if key:

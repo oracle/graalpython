@@ -419,6 +419,20 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
+    // list.copy()
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ListCopyNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(limit = "3")
+        PList copySequence(PList self,
+                        @Cached SequenceStorageNodes.CopyNode copy,
+                        @CachedLibrary("self") PythonObjectLibrary plib) {
+            return factory().createList(plib.getLazyPythonClass(self), copy.execute(self.getSequenceStorage()));
+        }
+
+    }
+
     // list.insert(i, x)
     @Builtin(name = "insert", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
