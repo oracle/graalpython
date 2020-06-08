@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -92,7 +92,7 @@ public final class PythonParserImpl implements PythonParser {
                                 ? chars.toString()
                                 : chars.subSequence(0, 197).toString() + "...");
             } else {
-                System.out.print("Parsing: " + source.getPath());
+                System.out.println("Parsing: " + source.getPath());
             }
         }
 
