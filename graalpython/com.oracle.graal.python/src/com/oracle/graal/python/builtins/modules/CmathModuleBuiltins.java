@@ -49,9 +49,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     static final double P12 = 0.5 * Math.PI;
     static final double P34 = 0.75 * Math.PI;
 
-    static final double largeDouble = Double.MAX_VALUE / 4.0;       // used to avoid overflow
-    static final double ln2 = 0.6931471805599453094;    // natural log of 2
-    static final double ln10 = 2.302585092994045684;    // natural log of 10
+    static final double LARGE_DOUBLE = Double.MAX_VALUE / 4.0;       // used to avoid overflow
+    static final double LN_2 = 0.6931471805599453094;    // natural log of 2
+    static final double LN_10 = 2.302585092994045684;    // natural log of 10
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -437,13 +437,13 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             double ax = Math.abs(real);
             double ay = Math.abs(imag);
 
-            if (ax > largeDouble || ay > largeDouble) {
-                return Math.log(Math.hypot(ax / 2.0, ay / 2.0)) + ln2;
+            if (ax > LARGE_DOUBLE || ay > LARGE_DOUBLE) {
+                return Math.log(Math.hypot(ax / 2.0, ay / 2.0)) + LN_2;
             }
             if (ax < Double.MIN_NORMAL && ay < Double.MIN_NORMAL) {
                 if (ax > 0.0 || ay > 0.0) {
                     final double scaleUp = 0x1.0p53;
-                    return Math.log(Math.hypot(ax * scaleUp, ay * scaleUp)) - 53 * ln2;
+                    return Math.log(Math.hypot(ax * scaleUp, ay * scaleUp)) - 53 * LN_2;
                 }
                 throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
@@ -467,7 +467,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         @Specialization
         PComplex doComplex(VirtualFrame frame, PComplex z) {
             PComplex r = logNode.executeComplex(frame, z, PNone.NO_VALUE);
-            return factory().createComplex(r.getReal() / ln10, r.getImag() / ln10);
+            return factory().createComplex(r.getReal() / LN_10, r.getImag() / LN_10);
         }
 
         @Specialization
@@ -559,9 +559,9 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
             double rreal;
             double rimag;
-            if (Math.abs(real) > largeDouble || Math.abs(imag) > largeDouble) {
+            if (Math.abs(real) > LARGE_DOUBLE || Math.abs(imag) > LARGE_DOUBLE) {
                 rreal = Math.atan2(Math.abs(imag), real);
-                double s = Math.log(Math.hypot(real / 2.0, imag / 2.0)) + ln2 * 2.0;
+                double s = Math.log(Math.hypot(real / 2.0, imag / 2.0)) + LN_2 * 2.0;
                 if (real < 0.0) {
                     rimag = -Math.copySign(s, imag);
                 } else {
