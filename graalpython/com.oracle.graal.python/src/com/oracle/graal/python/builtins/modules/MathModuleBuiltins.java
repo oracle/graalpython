@@ -96,7 +96,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public void checkMathRangeError(boolean con) {
             if (con) {
-                throw raise(OverflowError, ErrorMessages.MATH_RAGE_ERROR);
+                throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
         }
 
@@ -1108,7 +1108,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private double exceptInfinity(double result, double arg) {
             if (Double.isInfinite(result) && !Double.isInfinite(arg)) {
-                throw raise(OverflowError, ErrorMessages.MATH_RAGE_ERROR);
+                throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             } else {
                 return result;
             }
@@ -2021,7 +2021,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         if (left == 0) {
                             throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                         } else {
-                            throw raise(OverflowError, ErrorMessages.MATH_RAGE_ERROR);
+                            throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
                         }
                     }
                 }
