@@ -94,7 +94,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -262,23 +261,8 @@ public final class PythonContext {
         if (CompilerDirectives.inInterpreter()) {
             return getEnv().getOptions().get(key);
         } else {
-            return getOptionUnrolling(key);
+            return PythonOptions.getOptionUnrolling(this.optionValues, PythonOptions.getOptionKeys(), key);
         }
-    }
-
-    @ExplodeLoop
-    @SuppressWarnings("unchecked")
-    private <T> T getOptionUnrolling(OptionKey<T> key) {
-        OptionKey<?>[] optionKeys = PythonOptions.getOptionKeys();
-        CompilerAsserts.partialEvaluationConstant(optionKeys);
-        for (int i = 0; i < optionKeys.length; i++) {
-            CompilerAsserts.partialEvaluationConstant(optionKeys[i]);
-            if (optionKeys[i] == key) {
-                return (T) optionValues[i];
-            }
-        }
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("Using Python options with a non-Python option key");
     }
 
     public PythonLanguage getLanguage() {

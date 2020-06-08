@@ -51,6 +51,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -140,8 +141,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
 }
 
 interface EmulateJythonNode {
-    default boolean emulateJython(PythonContext context) {
-        return context.getOption(PythonOptions.EmulateJython);
+    default boolean emulateJython(PythonLanguage language) {
+        return language.getEngineOption(PythonOptions.EmulateJython);
     }
 }
 
@@ -180,8 +181,10 @@ abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
     }
 
-    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostObject(type)"})
+    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostObject(type)"})
+    @SuppressWarnings("unused")
     boolean isJavaException(@SuppressWarnings("unused") VirtualFrame frame, Object type,
+                    @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         Object hostType = context.getEnv().asHostObject(type);
         return hostType instanceof Class && Throwable.class.isAssignableFrom((Class<?>) hostType);
@@ -227,9 +230,11 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         return isSubtype.execute(frame, plib.getLazyPythonClass(e.getExceptionObject()), clause);
     }
 
-    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"})
+    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"})
+    @SuppressWarnings("unused")
     boolean matchJava(VirtualFrame frame, Throwable e, Object clause,
                     @Cached ValidExceptionNode isValidException,
+                    @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         raiseIfNoException(frame, clause, isValidException);
         // cast must succeed due to ValidExceptionNode above
@@ -238,17 +243,21 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         return javaClause.isInstance(hostException);
     }
 
-    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostObject(clause)"})
+    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostObject(clause)"})
+    @SuppressWarnings("unused")
     boolean doNotMatchPython(VirtualFrame frame, @SuppressWarnings("unused") PException e, Object clause,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLanguage PythonLanguage language,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached ValidExceptionNode isValidException) {
         raiseIfNoException(frame, clause, isValidException);
         return false;
     }
 
-    @Specialization(guards = {"emulateJython(context)", "context.getEnv().isHostException(e)"})
+    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostException(e)"})
+    @SuppressWarnings("unused")
     boolean doNotMatchJava(VirtualFrame frame, @SuppressWarnings("unused") Throwable e, LazyPythonClass clause,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLanguage PythonLanguage language,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached ValidExceptionNode isValidException) {
         raiseIfNoException(frame, clause, isValidException);
         return false;

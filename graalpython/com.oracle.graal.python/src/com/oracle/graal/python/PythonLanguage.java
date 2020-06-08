@@ -27,12 +27,14 @@ package com.oracle.graal.python;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.builtins.Python3Core;
@@ -144,6 +146,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     private Boolean isWithThread = null;
 
+    @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
+    @CompilationFinal private volatile OptionValues engineOptions;
+
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
@@ -197,7 +202,30 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Python3Core newCore = new Python3Core(new PythonParserImpl(env));
         final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
+
+        Object[] engineOptionsUnroll = this.engineOptionsStorage;
+        if (engineOptionsUnroll == null) {
+            this.engineOptionsStorage = engineOptionsUnroll = PythonOptions.createEngineOptionValuesStorage(env);
+        } else {
+            assert Arrays.equals(engineOptionsUnroll, PythonOptions.createEngineOptionValuesStorage(env)) : "invalid engine options";
+        }
+
+        OptionValues options = this.engineOptions;
+        if (options == null) {
+            this.engineOptions = options = PythonOptions.createEngineOptions(env);
+        } else {
+            assert options.equals(PythonOptions.createEngineOptions(env)) : "invalid engine options";
+        }
         return context;
+    }
+
+    public <T> T getEngineOption(OptionKey<T> key) {
+        assert engineOptions != null;
+        if (CompilerDirectives.inInterpreter()) {
+            return engineOptions.get(key);
+        } else {
+            return PythonOptions.getOptionUnrolling(this.engineOptionsStorage, PythonOptions.getEngineOptionKeys(), key);
+        }
     }
 
     @Override
@@ -550,4 +578,5 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void disposeThread(PythonContext context, Thread thread) {
         context.disposeThread(thread);
     }
+
 }
