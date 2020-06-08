@@ -577,6 +577,181 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "acosh", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AcoshNode extends CmathComplexUnaryBuiltinNode {
+
+        @Child private SqrtNode sqrtNode = SqrtNode.create();
+        @Child private MathModuleBuiltins.AsinhNode realAsinhNode = MathModuleBuiltins.AsinhNode.create();
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(INF, -P34), C(INF, -P),   C(INF, -P),   C(INF, P),   C(INF, P),   C(INF, P34), C(INF, NAN)},
+                {C(INF, -P12), null,         null,         null,        null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         C(0.0, -P12), C(0.0, P12), null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         C(0.0, -P12), C(0.0, P12), null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P12), null,         null,         null,        null,        C(INF, P12), C(NAN, NAN)},
+                {C(INF, -P14), C(INF, -0.0), C(INF, -0.),  C(INF, 0.0), C(INF, 0.0), C(INF, P14), C(INF, NAN)},
+                {C(INF, NAN),  C(NAN, NAN),  C(NAN, NAN),  C(NAN, NAN), C(NAN, NAN), C(INF, NAN), C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+            if (result != null) {
+                return result;
+            }
+            double rreal;
+            double rimag;
+            if (Math.abs(real) > LARGE_DOUBLE || Math.abs(imag) > LARGE_DOUBLE) {
+                rreal = Math.log(Math.hypot(real / 2.0, imag / 2.0)) + LN_2 * 2.0;
+                rimag = Math.atan2(imag, real);
+            } else {
+                PComplex s1 = sqrtNode.executeComplex(frame, factory().createComplex(real - 1.0, imag));
+                PComplex s2 = sqrtNode.executeComplex(frame, factory().createComplex(real + 1.0, imag));
+                rreal = realAsinhNode.executeObject(frame, s1.getReal() * s2.getReal() + s1.getImag() * s2.getImag());
+                rimag = 2.0 * Math.atan2(s1.getImag(), s2.getReal());
+            }
+            return factory().createComplex(rreal, rimag);
+        }
+    }
+
+    @Builtin(name = "asin", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AsinNode extends CmathComplexUnaryBuiltinNode {
+
+        @Child private AsinhNode asinhNode = AsinhNode.create();
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            PComplex s = asinhNode.executeComplex(frame, factory().createComplex(-imag, real));
+            return factory().createComplex(s.getImag(), -s.getReal());
+        }
+    }
+
+    @Builtin(name = "asinh", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AsinhNode extends CmathComplexUnaryBuiltinNode {
+
+        @Child private SqrtNode sqrtNode = SqrtNode.create();
+        @Child private MathModuleBuiltins.AsinhNode realAsinhNode = MathModuleBuiltins.AsinhNode.create();
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(-INF, -P14), C(-INF, -0.0), C(-INF, -0.0), C(-INF, 0.0), C(-INF, 0.0), C(-INF, P14), C(-INF, NAN)},
+                {C(-INF, -P12), null,          null,          null,         null,         C(-INF, P12), C(NAN, NAN)},
+                {C(-INF, -P12), null,          C(-0.0, -0.0), C(-0.0, 0.0), null,         C(-INF, P12), C(NAN, NAN)},
+                {C(INF, -P12),  null,          C(0.0, -0.0),  C(0.0, 0.0),  null,         C(INF, P12),  C(NAN, NAN)},
+                {C(INF, -P12),  null,          null,          null,         null,         C(INF, P12),  C(NAN, NAN)},
+                {C(INF, -P14),  C(INF, -0.0),  C(INF, -0.0),  C(INF, 0.0),  C(INF, 0.0),  C(INF, P14),  C(INF, NAN)},
+                {C(INF, NAN),   C(NAN, NAN),   C(NAN, -0.0),  C(NAN, 0.0),  C(NAN, NAN),  C(INF, NAN),  C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+            if (result != null) {
+                return result;
+            }
+            double rreal;
+            double rimag;
+            if (Math.abs(real) > LARGE_DOUBLE || Math.abs(imag) > LARGE_DOUBLE) {
+                double s = Math.log(Math.hypot(real / 2.0, imag / 2.0)) + LN_2 * 2.0;
+                if (imag >= 0.0) {
+                    rreal = Math.copySign(s, real);
+                } else {
+                    rreal = -Math.copySign(s, -real);
+                }
+                rimag = Math.atan2(imag, Math.abs(real));
+            } else {
+                PComplex s1 = sqrtNode.executeComplex(frame, factory().createComplex(1.0 + imag, -real));
+                PComplex s2 = sqrtNode.executeComplex(frame, factory().createComplex(1.0 - imag, real));
+                rreal = realAsinhNode.executeObject(frame, s1.getReal() * s2.getImag() - s2.getReal() * s1.getImag());
+                rimag = Math.atan2(imag, s1.getReal() * s2.getReal() - s1.getImag() * s2.getImag());
+            }
+            return factory().createComplex(rreal, rimag);
+        }
+
+        static AsinhNode create() {
+            return CmathModuleBuiltinsFactory.AsinhNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "atan", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AtanNode extends CmathComplexUnaryBuiltinNode {
+
+        @Child private AtanhNode atanhNode = AtanhNode.create();
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            PComplex s = atanhNode.executeComplex(frame, factory().createComplex(-imag, real));
+            return factory().createComplex(s.getImag(), -s.getReal());
+        }
+    }
+
+    @Builtin(name = "atanh", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AtanhNode extends CmathComplexUnaryBuiltinNode {
+
+        static final double SQRT_LARGE_DOUBLE = Math.sqrt(LARGE_DOUBLE);
+        static final double CM_SQRT_DBL_MIN = Math.sqrt(Double.MIN_NORMAL);
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(-0.0, -P12), C(-0.0, -P12), C(-0.0, -P12), C(-0.0, P12), C(-0.0, P12), C(-0.0, P12), C(-0.0, NAN)},
+                {C(-0.0, -P12), null,          null,          null,         null,         C(-0.0, P12), C(NAN, NAN)},
+                {C(-0.0, -P12), null,          C(-0.0, -0.0), C(-0.0, 0.0), null,         C(-0.0, P12), C(-0.0, NAN)},
+                {C(0.0, -P12),  null,          C(0.0, -0.0),  C(0.0, 0.0),  null,         C(0.0, P12),  C(0.0, NAN)},
+                {C(0.0, -P12),  null,          null,          null,         null,         C(0.0, P12),  C(NAN, NAN)},
+                {C(0.0, -P12),  C(0.0, -P12),  C(0.0, -P12),  C(0.0, P12),  C(0.0, P12),  C(0.0, P12),  C(0.0, NAN)},
+                {C(0.0, -P12),  C(NAN, NAN),   C(NAN, NAN),   C(NAN, NAN),  C(NAN, NAN),  C(0.0, P12),  C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+            if (result != null) {
+                return result;
+            }
+            if (real < 0.0) {
+                return computeWithRealPositive(-real, -imag, -1.0);
+            }
+            return computeWithRealPositive(real, imag, 1.0);
+        }
+
+        private PComplex computeWithRealPositive(double real, double imag, double resultScale) {
+            double rreal;
+            double rimag;
+            double ay = Math.abs(imag);
+            if (real > SQRT_LARGE_DOUBLE || ay > SQRT_LARGE_DOUBLE) {
+                double h = Math.hypot(real / 2.0, imag / 2.0);
+                rreal = real / 4.0 / h / h;
+                rimag = -Math.copySign(Math.PI / 2.0, -imag);
+            } else if (real == 1.0 && ay < CM_SQRT_DBL_MIN) {
+                if (ay == 0.0) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+                rreal = -Math.log(Math.sqrt(ay) / Math.sqrt(Math.hypot(ay, 2.0)));
+                rimag = Math.copySign(Math.atan2(2.0, -ay) / 2, imag);
+            } else {
+                rreal = Math.log1p(((4.0 * real) / ((1 - real) * (1 - real) + ay * ay))) / 4.0;
+                rimag = -Math.atan2(-2.0 * imag, (1 - real) * (1 + real) - ay * ay) / 2.0;
+            }
+            return factory().createComplex(resultScale * rreal, resultScale * rimag);
+        }
+
+        static AtanhNode create() {
+            return CmathModuleBuiltinsFactory.AtanhNodeFactory.create();
+        }
+    }
+
     @Builtin(name = "isclose", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, keywordOnlyNames = {"rel_tol", "abs_tol"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
