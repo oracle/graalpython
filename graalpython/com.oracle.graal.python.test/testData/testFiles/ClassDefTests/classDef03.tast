@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
       SideEffect:
         WriteNameNodeGen SourceSection: [0,108]`class MyClass:↵    "...`
           Identifier: MyClass
-          PythonCallNodeGen SourceSection: [0,108]`class MyClass:↵    "...`
-            CallNodeGen SourceSection: None
+          PythonCallBinary SourceSection: [0,108]`class MyClass:↵    "...`
+            CallBinaryMethodCachedNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: MyClass SourceSection: None
               Arguments: None
               KwArguments: None
@@ -112,5 +114,3 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None

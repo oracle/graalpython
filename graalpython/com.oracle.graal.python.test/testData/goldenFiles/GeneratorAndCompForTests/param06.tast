@@ -54,8 +54,11 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,a,Illegal]
-                        PythonCallNodeGen SourceSection: [28,77]`join(dir, file) for ...`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [28,77]`join(dir, file) for ...`
+                          CachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [44,77]`for dir in dirs for ...`
                             Name: fn.<locals>.<genexp>:param06:2
                             FrameDescriptor: 4 slots [file, dir, files, <return_val>]
@@ -83,17 +86,17 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                       ExpressionStatementNode SourceSection: [28,43]`join(dir, file)`
                                         YieldNode SourceSection: [28,43]`join(dir, file)`
                                           flagSlot: 0
-                                          PythonCallNodeGen SourceSection: [28,43]`join(dir, file)`
-                                            CallNodeGen SourceSection: None
+                                          PythonCallBinary SourceSection: [28,43]`join(dir, file)`
+                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`join`
+                                              Identifier: join
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [33,36]`dir`
                                               Frame: [1,dir,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [38,42]`file`
                                               Frame: [0,file,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`join`
-                                              Identifier: join
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: file
@@ -133,9 +136,6 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                 Frame: [1,dirs,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

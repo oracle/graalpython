@@ -90,13 +90,13 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26,35]`range(10)`
                             GetIteratorNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [26,35]`range(10)`
-                              CallNodeGen SourceSection: None
-                              IntegerLiteralNode SourceSection: [32,34]`10`
-                                Value: 10
+                            PythonCallUnary SourceSection: [26,35]`range(10)`
+                              CachedNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [26,31]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [32,34]`10`
+                                Value: 10
                           PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]

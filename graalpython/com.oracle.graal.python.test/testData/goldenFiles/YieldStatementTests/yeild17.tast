@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'yeild17'> SourceSection: [0,37]`generator = type((
       SideEffect:
         WriteNameNodeGen SourceSection: [0,37]`generator = type((la...`
           Identifier: generator
-          PythonCallNodeGen SourceSection: [12,37]`type((lambda: (yield...`
-            CallNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [12,37]`type((lambda: (yield...`
+            CachedNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [12,16]`type`
+              Identifier: type
             PythonCallNodeGen SourceSection: [17,36]`(lambda: (yield))()`
               CallNodeGen SourceSection: None
               GeneratorFunctionDefinitionNode Name: <lambda> SourceSection: None
@@ -56,5 +58,3 @@ ModuleRootNode Name: <module 'yeild17'> SourceSection: [0,37]`generator = type((
                       BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                       PRaiseNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: [12,16]`type`
-              Identifier: type

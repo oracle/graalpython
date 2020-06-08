@@ -5,8 +5,10 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,25]`foo(x for x in range...`
-    PythonCallNodeGen SourceSection: [0,25]`foo(x for x in range...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,25]`foo(x for x in range...`
+      CachedNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
+        Identifier: foo
       GeneratorExpressionNode SourceSection: [6,24]`for x in range(10)`
         Name: [].<locals>.<genexp>:generator08:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -56,12 +58,10 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(10)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [15,24]`range(10)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [21,23]`10`
-              Value: 10
+          PythonCallUnary SourceSection: [15,24]`range(10)`
+            CachedNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
+            IntegerLiteralNode SourceSection: [21,23]`10`
+              Value: 10
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: [0,3]`foo`
-        Identifier: foo

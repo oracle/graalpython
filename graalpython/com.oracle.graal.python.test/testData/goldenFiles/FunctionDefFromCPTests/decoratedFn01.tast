@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
       SideEffect:
         WriteNameNodeGen SourceSection: [0,27]`@staticmethod↵def f(...`
           Identifier: f
-          PythonCallNodeGen SourceSection: [0,13]`@staticmethod`
-            CallNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [0,13]`@staticmethod`
+            CachedNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
+              Identifier: staticmethod
             FunctionDefinitionNode Name: f SourceSection: None
               Arguments: None
               KwArguments: None
@@ -41,5 +43,3 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
-              Identifier: staticmethod

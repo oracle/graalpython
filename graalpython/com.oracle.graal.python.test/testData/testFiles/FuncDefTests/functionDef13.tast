@@ -77,15 +77,15 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                                       IntegerLiteralNode SourceSection: [55,56]`5`
                                         Value: 5
                                     ExpressionStatementNode SourceSection: [65,92]`print("Inner, local ...`
-                                      PythonCallNodeGen SourceSection: [65,92]`print("Inner, local ...`
-                                        CallNodeGen SourceSection: None
+                                      PythonCallBinary SourceSection: [65,92]`print("Inner, local ...`
+                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [65,70]`print`
+                                          Identifier: print
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [71,88]`"Inner, local x:"`
                                         ReadLocalVariableNode SourceSection: [90,91]`x`
                                           Frame: [0,x,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: [65,70]`print`
-                                          Identifier: print
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -96,15 +96,15 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                             Frame: [1,inner,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,137]`print("Outer, local ...`
-                        PythonCallNodeGen SourceSection: [110,137]`print("Outer, local ...`
-                          CallNodeGen SourceSection: None
+                        PythonCallBinary SourceSection: [110,137]`print("Outer, local ...`
+                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [110,115]`print`
+                            Identifier: print
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [116,133]`"Outer, local x:"`
                           ReadLocalVariableNode SourceSection: [135,136]`x`
                             Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [110,115]`print`
-                            Identifier: print
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

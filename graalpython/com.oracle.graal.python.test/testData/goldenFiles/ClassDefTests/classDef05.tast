@@ -38,8 +38,10 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                         Identifier: DerivedClassName
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,DerivedClassName,Illegal]
-                        PythonCallNodeGen SourceSection: [12,63]`class DerivedClassNa...`
-                          CallNodeGen SourceSection: None
+                        PythonCallTernary SourceSection: [12,63]`class DerivedClassNa...`
+                          CallTernaryMethodCachedNodeGen SourceSection: None
+                          GetCallAttributeNodeGen SourceSection: None
+                            BuiltinsLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: DerivedClassName SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -92,8 +94,6 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                             ReadGlobalOrBuiltinNodeGen SourceSection: [35,42]`modname`
                               Identifier: modname
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GetCallAttributeNodeGen SourceSection: None
-                            BuiltinsLiteralNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

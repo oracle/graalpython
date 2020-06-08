@@ -11,10 +11,14 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
       SideEffect:
         WriteNameNodeGen SourceSection: [0,33]`@class_decorator↵cla...`
           Identifier: foo
-          PythonCallNodeGen SourceSection: [0,16]`@class_decorator`
-            CallNodeGen SourceSection: None
-            PythonCallNodeGen SourceSection: [17,33]`class foo():pass`
-              CallNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [0,16]`@class_decorator`
+            CachedNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [0,16]`@class_decorator`
+              Identifier: class_decorator
+            PythonCallBinary SourceSection: [17,33]`class foo():pass`
+              CallBinaryMethodCachedNodeGen SourceSection: None
+              GetCallAttributeNodeGen SourceSection: None
+                BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: foo SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -59,7 +63,3 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
                             ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
-            ReadNameNodeGen SourceSection: [0,16]`@class_decorator`
-              Identifier: class_decorator

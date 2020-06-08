@@ -64,18 +64,21 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Index: 1
                   FunctionBodyNode SourceSection: [6305,6358]`heap.append(item)↵  ...`
                     ExpressionStatementNode SourceSection: [6305,6322]`heap.append(item)`
-                      PythonCallNodeGen SourceSection: [6305,6322]`heap.append(item)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [6317,6321]`item`
-                          Frame: [1,item,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [6305,6322]`heap.append(item)`
+                        CachedNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [6305,6309]`heap`
                             Frame: [0,heap,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [6317,6321]`item`
+                          Frame: [1,item,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [6327,6358]`_siftdown(heap, 0, l...`
-                      PythonCallNodeGen SourceSection: [6327,6358]`_siftdown(heap, 0, l...`
-                        CallNodeGen SourceSection: None
+                      PythonCallTernary SourceSection: [6327,6358]`_siftdown(heap, 0, l...`
+                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [6327,6336]`_siftdown`
+                          Identifier: _siftdown
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [6337,6341]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -84,19 +87,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         BinaryArithmeticExpression SourceSection: [6346,6357]`len(heap)-1`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __sub__
-                          PythonCallNodeGen SourceSection: [6346,6355]`len(heap)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [6350,6354]`heap`
-                              Frame: [0,heap,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [6346,6355]`len(heap)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6346,6349]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [6350,6354]`heap`
+                              Frame: [0,heap,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [6356,6357]`1`
                             Value: 1
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [6327,6336]`_siftdown`
-                          Identifier: _siftdown
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -168,16 +168,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [1,lastelt,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [6610,6626]`_siftup(heap, 0)`
-                          PythonCallNodeGen SourceSection: [6610,6626]`_siftup(heap, 0)`
-                            CallNodeGen SourceSection: None
+                          PythonCallBinary SourceSection: [6610,6626]`_siftup(heap, 0)`
+                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [6610,6617]`_siftup`
+                              Identifier: _siftup
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [6618,6622]`heap`
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [6624,6625]`0`
                               Value: 0
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [6610,6617]`_siftup`
-                              Identifier: _siftup
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [6635,6652]`return returnitem`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
@@ -258,16 +258,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [1,item,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [7247,7263]`_siftup(heap, 0)`
-                      PythonCallNodeGen SourceSection: [7247,7263]`_siftup(heap, 0)`
-                        CallNodeGen SourceSection: None
+                      PythonCallBinary SourceSection: [7247,7263]`_siftup(heap, 0)`
+                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [7247,7254]`_siftup`
+                          Identifier: _siftup
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [7255,7259]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [7261,7262]`0`
                           Value: 0
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [7247,7254]`_siftup`
-                          Identifier: _siftup
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [7268,7285]`return returnitem`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -376,16 +376,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [3,<>temp3,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [7454,7470]`_siftup(heap, 0)`
-                          PythonCallNodeGen SourceSection: [7454,7470]`_siftup(heap, 0)`
-                            CallNodeGen SourceSection: None
+                          PythonCallBinary SourceSection: [7454,7470]`_siftup(heap, 0)`
+                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [7454,7461]`_siftup`
+                              Identifier: _siftup
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [7462,7466]`heap`
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [7468,7469]`0`
                               Value: 0
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [7454,7461]`_siftup`
-                              Identifier: _siftup
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [7475,7486]`return item`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -434,14 +434,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Identifier: n
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,n,Illegal]
-                      PythonCallNodeGen SourceSection: [7579,7585]`len(x)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [7583,7584]`x`
-                          Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [7579,7585]`len(x)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [7579,7582]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [7583,7584]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     ElseNode SourceSection: [7961,8016]`for i in reversed(ra...`
                       ForNode SourceSection: None
                         ForRepeatingNode SourceSection: None
@@ -451,23 +451,29 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [2,i,Illegal]
                           ExpressionStatementNode SourceSection: [8001,8014]`_siftup(x, i)`
-                            PythonCallNodeGen SourceSection: [8001,8014]`_siftup(x, i)`
-                              CallNodeGen SourceSection: None
+                            PythonCallBinary SourceSection: [8001,8014]`_siftup(x, i)`
+                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8001,8008]`_siftup`
+                                Identifier: _siftup
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [8009,8010]`x`
                                 Frame: [0,x,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [8012,8013]`i`
                                 Frame: [2,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [8001,8008]`_siftup`
-                                Identifier: _siftup
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [7970,7991]`reversed(range(n//2)...`
                           GetIteratorNodeGen SourceSection: None
-                          PythonCallNodeGen SourceSection: [7970,7991]`reversed(range(n//2)...`
-                            CallNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [7979,7990]`range(n//2)`
-                              CallNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [7970,7991]`reversed(range(n//2)...`
+                            CachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [7970,7978]`reversed`
+                              Identifier: reversed
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [7979,7990]`range(n//2)`
+                              CachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [7979,7984]`range`
+                                Identifier: range
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BinaryArithmeticExpression SourceSection: [7985,7989]`n//2`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __floordiv__
@@ -476,12 +482,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [7988,7989]`2`
                                   Value: 2
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [7979,7984]`range`
-                                Identifier: range
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [7970,7978]`reversed`
-                              Identifier: reversed
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
@@ -554,16 +554,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [1,lastelt,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [8233,8253]`_siftup_max(heap, 0)...`
-                          PythonCallNodeGen SourceSection: [8233,8253]`_siftup_max(heap, 0)...`
-                            CallNodeGen SourceSection: None
+                          PythonCallBinary SourceSection: [8233,8253]`_siftup_max(heap, 0)...`
+                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [8233,8244]`_siftup_max`
+                              Identifier: _siftup_max
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [8245,8249]`heap`
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [8251,8252]`0`
                               Value: 0
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [8233,8244]`_siftup_max`
-                              Identifier: _siftup_max
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [8262,8279]`return returnitem`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
@@ -644,16 +644,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [1,item,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [8497,8517]`_siftup_max(heap, 0)...`
-                      PythonCallNodeGen SourceSection: [8497,8517]`_siftup_max(heap, 0)...`
-                        CallNodeGen SourceSection: None
+                      PythonCallBinary SourceSection: [8497,8517]`_siftup_max(heap, 0)...`
+                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [8497,8508]`_siftup_max`
+                          Identifier: _siftup_max
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [8509,8513]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [8515,8516]`0`
                           Value: 0
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [8497,8508]`_siftup_max`
-                          Identifier: _siftup_max
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [8522,8539]`return returnitem`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -701,14 +701,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Identifier: n
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,n,Illegal]
-                      PythonCallNodeGen SourceSection: [8640,8646]`len(x)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [8644,8645]`x`
-                          Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [8640,8646]`len(x)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [8640,8643]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [8644,8645]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     ElseNode SourceSection: [8651,8879]`for i in reversed(ra...`
                       ForNode SourceSection: None
                         ForRepeatingNode SourceSection: None
@@ -718,23 +718,29 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [2,i,Illegal]
                           ExpressionStatementNode SourceSection: [8691,8708]`_siftup_max(x, i)`
-                            PythonCallNodeGen SourceSection: [8691,8708]`_siftup_max(x, i)`
-                              CallNodeGen SourceSection: None
+                            PythonCallBinary SourceSection: [8691,8708]`_siftup_max(x, i)`
+                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8691,8702]`_siftup_max`
+                                Identifier: _siftup_max
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [8703,8704]`x`
                                 Frame: [0,x,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [8706,8707]`i`
                                 Frame: [2,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [8691,8702]`_siftup_max`
-                                Identifier: _siftup_max
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [8660,8681]`reversed(range(n//2)...`
                           GetIteratorNodeGen SourceSection: None
-                          PythonCallNodeGen SourceSection: [8660,8681]`reversed(range(n//2)...`
-                            CallNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [8669,8680]`range(n//2)`
-                              CallNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [8660,8681]`reversed(range(n//2)...`
+                            CachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [8660,8668]`reversed`
+                              Identifier: reversed
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [8669,8680]`range(n//2)`
+                              CachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8669,8674]`range`
+                                Identifier: range
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BinaryArithmeticExpression SourceSection: [8675,8679]`n//2`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __floordiv__
@@ -743,12 +749,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [8678,8679]`2`
                                   Value: 2
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [8669,8674]`range`
-                                Identifier: range
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [8660,8668]`reversed`
-                              Identifier: reversed
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
@@ -944,14 +944,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Identifier: endpos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,endpos,Illegal]
-                      PythonCallNodeGen SourceSection: [11380,11389]`len(heap)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [11384,11388]`heap`
-                          Frame: [0,heap,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [11380,11389]`len(heap)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [11380,11383]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [11384,11388]`heap`
+                          Frame: [0,heap,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [11394,11408]`startpos = pos`
                       Identifier: startpos
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1102,8 +1102,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [4,newitem,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [12045,12075]`_siftdown(heap, star...`
-                      PythonCallNodeGen SourceSection: [12045,12075]`_siftdown(heap, star...`
-                        CallNodeGen SourceSection: None
+                      PythonCallTernary SourceSection: [12045,12075]`_siftdown(heap, star...`
+                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [12045,12054]`_siftdown`
+                          Identifier: _siftdown
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [12055,12059]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1113,9 +1116,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [12071,12074]`pos`
                           Frame: [1,pos,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [12045,12054]`_siftdown`
-                          Identifier: _siftdown
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1310,14 +1310,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Identifier: endpos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,endpos,Illegal]
-                      PythonCallNodeGen SourceSection: [12589,12598]`len(heap)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [12593,12597]`heap`
-                          Frame: [0,heap,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [12589,12598]`len(heap)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [12589,12592]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [12593,12597]`heap`
+                          Frame: [0,heap,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12603,12617]`startpos = pos`
                       Identifier: startpos
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1468,8 +1468,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [4,newitem,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [13251,13285]`_siftdown_max(heap, ...`
-                      PythonCallNodeGen SourceSection: [13251,13285]`_siftdown_max(heap, ...`
-                        CallNodeGen SourceSection: None
+                      PythonCallTernary SourceSection: [13251,13285]`_siftdown_max(heap, ...`
+                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [13251,13264]`_siftdown_max`
+                          Identifier: _siftdown_max
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [13265,13269]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1479,9 +1482,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [13281,13284]`pos`
                           Frame: [1,pos,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [13251,13264]`_siftdown_max`
-                          Identifier: _siftdown_max
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1652,8 +1652,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [11,it,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [14413,14456]`h_append([next(), or...`
-                                      PythonCallNodeGen SourceSection: [14413,14456]`h_append([next(), or...`
-                                        CallNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [14413,14456]`h_append([next(), or...`
+                                        CachedNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [14413,14421]`h_append`
+                                          Frame: [4,h_append,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                         ListLiteralNode SourceSection: [14422,14455]`[next(), order * dir...`
                                           PythonCallNodeGen SourceSection: [14423,14429]`next()`
                                             CallNodeGen SourceSection: None
@@ -1673,9 +1676,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             Frame: [9,next,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: [14413,14421]`h_append`
-                                          Frame: [4,h_append,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
                                   ExceptNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [14507,14511]`pass`
                                       EmptyNode SourceSection: [14507,14511]`pass`
@@ -1685,31 +1685,31 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [14312,14343]`enumerate(map(iter, ...`
                               GetIteratorNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [14312,14343]`enumerate(map(iter, ...`
-                                CallNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [14322,14342]`map(iter, iterables)...`
-                                  CallNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [14312,14343]`enumerate(map(iter, ...`
+                                CachedNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [14312,14321]`enumerate`
+                                  Identifier: enumerate
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                PythonCallBinary SourceSection: [14322,14342]`map(iter, iterables)...`
+                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14322,14325]`map`
+                                    Identifier: map
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14326,14330]`iter`
                                     Identifier: iter
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: [14332,14341]`iterables`
                                     Frame: [0,iterables,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14322,14325]`map`
-                                    Identifier: map
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [14312,14321]`enumerate`
-                                  Identifier: enumerate
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         ExpressionStatementNode SourceSection: [14520,14531]`_heapify(h)`
-                          PythonCallNodeGen SourceSection: [14520,14531]`_heapify(h)`
-                            CallNodeGen SourceSection: None
-                            ReadGeneratorFrameVariableNode SourceSection: [14529,14530]`h`
-                              Frame: [3,h,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [14520,14531]`_heapify(h)`
+                            CachedNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [14520,14528]`_heapify`
                               Frame: [5,_heapify,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [14529,14530]`h`
+                              Frame: [3,h,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         ElseNode SourceSection: [14540,14946]`while len(h) > 1:↵  ...`
                           GeneratorWhileNode SourceSection: None
@@ -1792,16 +1792,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             Frame: [9,next,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [14787,14805]`_heapreplace(h, s)`
-                                        PythonCallNodeGen SourceSection: [14787,14805]`_heapreplace(h, s)`
-                                          CallNodeGen SourceSection: None
+                                        PythonCallBinary SourceSection: [14787,14805]`_heapreplace(h, s)`
+                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: [14787,14799]`_heapreplace`
+                                            Frame: [7,_heapreplace,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [14800,14801]`h`
                                             Frame: [3,h,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [14803,14804]`s`
                                             Frame: [13,s,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [14787,14799]`_heapreplace`
-                                            Frame: [7,_heapreplace,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
@@ -1810,13 +1810,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   BlockNode SourceSection: None
                                 ExceptNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [14886,14897]`_heappop(h)`
-                                    PythonCallNodeGen SourceSection: [14886,14897]`_heappop(h)`
-                                      CallNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: [14895,14896]`h`
-                                        Frame: [3,h,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    PythonCallUnary SourceSection: [14886,14897]`_heappop(h)`
+                                      CachedNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNode SourceSection: [14886,14894]`_heappop`
                                         Frame: [6,_heappop,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [14895,14896]`h`
+                                        Frame: [3,h,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14855,14868]`StopIteration`
                                     Identifier: StopIteration
@@ -1828,14 +1828,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               BinaryComparisonNodeGen SourceSection: [14546,14556]`len(h) > 1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __gt__
-                                PythonCallNodeGen SourceSection: [14546,14552]`len(h)`
-                                  CallNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: [14550,14551]`h`
-                                    Frame: [3,h,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonCallUnary SourceSection: [14546,14552]`len(h)`
+                                  CachedNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14546,14549]`len`
                                     Identifier: len
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNode SourceSection: [14550,14551]`h`
+                                    Frame: [3,h,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [14555,14556]`1`
                                   Value: 1
                             GeneratorAccessNode SourceSection: None
@@ -1966,16 +1966,19 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Frame: [9,next,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 ExpressionStatementNode SourceSection: [15264,15318]`h_append([key(value)...`
-                                  PythonCallNodeGen SourceSection: [15264,15318]`h_append([key(value)...`
-                                    CallNodeGen SourceSection: None
+                                  PythonCallUnary SourceSection: [15264,15318]`h_append([key(value)...`
+                                    CachedNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [15264,15272]`h_append`
+                                      Frame: [4,h_append,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     ListLiteralNode SourceSection: [15273,15317]`[key(value), order *...`
-                                      PythonCallNodeGen SourceSection: [15274,15284]`key(value)`
-                                        CallNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: [15278,15283]`value`
-                                          Frame: [12,value,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [15274,15284]`key(value)`
+                                        CachedNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [15274,15277]`key`
                                           Frame: [1,key,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [15278,15283]`value`
+                                          Frame: [12,value,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       BinaryArithmeticExpression SourceSection: [15286,15303]`order * direction`
                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -1993,9 +1996,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [9,next,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: [15264,15272]`h_append`
-                                      Frame: [4,h_append,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                               ExceptNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [15361,15365]`pass`
                                   EmptyNode SourceSection: [15361,15365]`pass`
@@ -2005,31 +2005,31 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [15148,15179]`enumerate(map(iter, ...`
                           GetIteratorNodeGen SourceSection: None
-                          PythonCallNodeGen SourceSection: [15148,15179]`enumerate(map(iter, ...`
-                            CallNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [15158,15178]`map(iter, iterables)...`
-                              CallNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [15148,15179]`enumerate(map(iter, ...`
+                            CachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [15148,15157]`enumerate`
+                              Identifier: enumerate
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonCallBinary SourceSection: [15158,15178]`map(iter, iterables)...`
+                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [15158,15161]`map`
+                                Identifier: map
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15162,15166]`iter`
                                 Identifier: iter
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [15168,15177]`iterables`
                                 Frame: [0,iterables,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [15158,15161]`map`
-                                Identifier: map
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [15148,15157]`enumerate`
-                              Identifier: enumerate
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [15370,15381]`_heapify(h)`
-                      PythonCallNodeGen SourceSection: [15370,15381]`_heapify(h)`
-                        CallNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [15379,15380]`h`
-                          Frame: [3,h,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [15370,15381]`_heapify(h)`
+                        CachedNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [15370,15378]`_heapify`
                           Frame: [5,_heapify,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [15379,15380]`h`
+                          Frame: [3,h,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     ElseNode SourceSection: [15386,15713]`while len(h) > 1:↵  ...`
                       GeneratorWhileNode SourceSection: None
@@ -2126,13 +2126,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [15575,15576]`0`
                                       Value: 0
-                                    PythonCallNodeGen SourceSection: [15580,15590]`key(value)`
-                                      CallNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: [15584,15589]`value`
-                                        Frame: [12,value,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    PythonCallUnary SourceSection: [15580,15590]`key(value)`
+                                      CachedNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNode SourceSection: [15580,15583]`key`
                                         Frame: [1,key,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15584,15589]`value`
+                                        Frame: [12,value,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   SetItemNodeGen SourceSection: [15607,15619]`s[2] = value`
                                     ReadGeneratorFrameVariableNode SourceSection: None
@@ -2144,16 +2144,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Frame: [12,value,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   ExpressionStatementNode SourceSection: [15636,15654]`_heapreplace(h, s)`
-                                    PythonCallNodeGen SourceSection: [15636,15654]`_heapreplace(h, s)`
-                                      CallNodeGen SourceSection: None
+                                    PythonCallBinary SourceSection: [15636,15654]`_heapreplace(h, s)`
+                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15636,15648]`_heapreplace`
+                                        Frame: [7,_heapreplace,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNode SourceSection: [15649,15650]`h`
                                         Frame: [3,h,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNode SourceSection: [15652,15653]`s`
                                         Frame: [13,s,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: [15636,15648]`_heapreplace`
-                                        Frame: [7,_heapreplace,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                 YesNodeGen SourceSection: None
@@ -2162,13 +2162,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               BlockNode SourceSection: None
                             ExceptNode SourceSection: None
                               ExpressionStatementNode SourceSection: [15697,15708]`_heappop(h)`
-                                PythonCallNodeGen SourceSection: [15697,15708]`_heappop(h)`
-                                  CallNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: [15706,15707]`h`
-                                    Frame: [3,h,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonCallUnary SourceSection: [15697,15708]`_heappop(h)`
+                                  CachedNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: [15697,15705]`_heappop`
                                     Frame: [6,_heappop,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNode SourceSection: [15706,15707]`h`
+                                    Frame: [3,h,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15670,15683]`StopIteration`
                                 Identifier: StopIteration
@@ -2180,14 +2180,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           BinaryComparisonNodeGen SourceSection: [15392,15402]`len(h) > 1`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
-                            PythonCallNodeGen SourceSection: [15392,15398]`len(h)`
-                              CallNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [15396,15397]`h`
-                                Frame: [3,h,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [15392,15398]`len(h)`
+                              CachedNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15392,15395]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [15396,15397]`h`
+                                Frame: [3,h,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [15401,15402]`1`
                               Value: 1
                         GeneratorAccessNode SourceSection: None
@@ -2366,14 +2366,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: it
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,it,Illegal]
-                          PythonCallNodeGen SourceSection: [19176,19190]`iter(iterable)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [19181,19189]`iterable`
-                              Frame: [1,iterable,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [19176,19190]`iter(iterable)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19176,19180]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [19181,19189]`iterable`
+                              Frame: [1,iterable,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19199,19218]`sentinel = object()`
                           Identifier: sentinel
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2466,14 +2466,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: size
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [6,size,Illegal]
-                          PythonCallNodeGen SourceSection: [19487,19500]`len(iterable)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [19491,19499]`iterable`
-                              Frame: [1,iterable,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [19487,19500]`len(iterable)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19487,19490]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [19491,19499]`iterable`
+                              Frame: [1,iterable,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [19549,19553]`pass`
                             EmptyNode SourceSection: [19549,19553]`pass`
@@ -2542,20 +2542,23 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: it
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,it,Illegal]
-                          PythonCallNodeGen SourceSection: [19716,19730]`iter(iterable)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [19721,19729]`iterable`
-                              Frame: [1,iterable,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [19716,19730]`iter(iterable)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19716,19720]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [19721,19729]`iterable`
+                              Frame: [1,iterable,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19852,19905]`result = [(elem, i) ...`
                           Identifier: result
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,result,Illegal]
-                          PythonCallNodeGen SourceSection: [19862,19904]`(elem, i) for i, ele...`
-                            CallNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [19862,19904]`(elem, i) for i, ele...`
+                            CachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: list
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GeneratorExpressionNode SourceSection: [19872,19904]`for i, elem in zip(r...`
                               Name: nsmallest.<locals>.<genexp>:heapq:491
                               FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
@@ -2629,26 +2632,23 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [19887,19904]`zip(range(n), it)`
                                 GetIteratorNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [19887,19904]`zip(range(n), it)`
-                                  CallNodeGen SourceSection: None
-                                  PythonCallNodeGen SourceSection: [19891,19899]`range(n)`
-                                    CallNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [19897,19898]`n`
-                                      Frame: [0,n,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: [19891,19896]`range`
-                                      Identifier: range
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [19901,19903]`it`
-                                    Frame: [3,it,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonCallBinary SourceSection: [19887,19904]`zip(range(n), it)`
+                                  CallBinaryMethodCachedNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [19887,19890]`zip`
                                     Identifier: zip
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  PythonCallUnary SourceSection: [19891,19899]`range(n)`
+                                    CachedNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [19891,19896]`range`
+                                      Identifier: range
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [19897,19898]`n`
+                                      Frame: [0,n,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [19901,19903]`it`
+                                    Frame: [3,it,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: list
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [19914,19963]`if not result:↵     ...`
                           NotNodeGen SourceSection: [19917,19927]`not result`
                             ReadLocalVariableNode SourceSection: [19921,19927]`result`
@@ -2664,14 +2664,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         ExpressionStatementNode SourceSection: [19963,19983]`_heapify_max(result)...`
-                          PythonCallNodeGen SourceSection: [19963,19983]`_heapify_max(result)...`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [19976,19982]`result`
-                              Frame: [5,result,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [19963,19983]`_heapify_max(result)...`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19963,19975]`_heapify_max`
                               Identifier: _heapify_max
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [19976,19982]`result`
+                              Frame: [5,result,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19992,20010]`top = result[0][0]`
                           Identifier: top
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2720,8 +2720,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [20136,20171]`_heapreplace(result,...`
-                                    PythonCallNodeGen SourceSection: [20136,20171]`_heapreplace(result,...`
-                                      CallNodeGen SourceSection: None
+                                    PythonCallBinary SourceSection: [20136,20171]`_heapreplace(result,...`
+                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [20136,20148]`_heapreplace`
+                                        Frame: [9,_heapreplace,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [20149,20155]`result`
                                         Frame: [5,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -2733,9 +2736,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [20136,20148]`_heapreplace`
-                                        Frame: [9,_heapreplace,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: [20188,20211]`top, _order = result...`
                                     GetItemNodeGen SourceSection: [20202,20211]`result[0]`
                                       ReadLocalVariableNode SourceSection: None
@@ -2794,8 +2794,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [14,<return_val>,Illegal]
-                            PythonCallNodeGen SourceSection: [20277,20309]`elem for (elem, orde...`
-                              CallNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [20277,20309]`elem for (elem, orde...`
+                              CachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: list
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [20282,20309]`for (elem, order) in...`
                                 Name: nsmallest.<locals>.<genexp>:heapq:504
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
@@ -2868,28 +2871,28 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [5,result,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: list
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [20351,20370]`it = iter(iterable)`
                       Identifier: it
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,it,Illegal]
-                      PythonCallNodeGen SourceSection: [20356,20370]`iter(iterable)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [20361,20369]`iterable`
-                          Frame: [1,iterable,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [20356,20370]`iter(iterable)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [20356,20360]`iter`
                           Identifier: iter
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [20361,20369]`iterable`
+                          Frame: [1,iterable,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [20375,20439]`result = [(key(elem)...`
                       Identifier: result
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,result,Illegal]
-                      PythonCallNodeGen SourceSection: [20385,20438]`(key(elem), i, elem)...`
-                        CallNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [20385,20438]`(key(elem), i, elem)...`
+                        CachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: list
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [20406,20438]`for i, elem in zip(r...`
                           Name: nsmallest.<locals>.<genexp>:heapq:508
                           FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
@@ -2917,16 +2920,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     YieldNode SourceSection: [20385,20405]`(key(elem), i, elem)...`
                                       flagSlot: 0
                                       TupleLiteralNode SourceSection: [20385,20405]`(key(elem), i, elem)...`
-                                        PythonCallNodeGen SourceSection: [20386,20395]`key(elem)`
-                                          CallNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [20390,20394]`elem`
-                                            Frame: [1,elem,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                        PythonCallUnary SourceSection: [20386,20395]`key(elem)`
+                                          CachedNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [20386,20389]`key`
                                             ReadGeneratorFrameVariableNode SourceSection: None
                                               Frame: [2,key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: [20390,20394]`elem`
+                                            Frame: [1,elem,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [20397,20398]`i`
                                           Frame: [0,i,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -2973,26 +2976,23 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [20421,20438]`zip(range(n), it)`
                             GetIteratorNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [20421,20438]`zip(range(n), it)`
-                              CallNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [20425,20433]`range(n)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [20431,20432]`n`
-                                  Frame: [0,n,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [20425,20430]`range`
-                                  Identifier: range
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [20435,20437]`it`
-                                Frame: [3,it,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallBinary SourceSection: [20421,20438]`zip(range(n), it)`
+                              CallBinaryMethodCachedNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [20421,20424]`zip`
                                 Identifier: zip
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [20425,20433]`range(n)`
+                                CachedNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [20425,20430]`range`
+                                  Identifier: range
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [20431,20432]`n`
+                                  Frame: [0,n,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [20435,20437]`it`
+                                Frame: [3,it,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: list
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [20444,20485]`if not result:↵     ...`
                       NotNodeGen SourceSection: [20447,20457]`not result`
                         ReadLocalVariableNode SourceSection: [20451,20457]`result`
@@ -3008,14 +3008,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [20485,20505]`_heapify_max(result)...`
-                      PythonCallNodeGen SourceSection: [20485,20505]`_heapify_max(result)...`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [20498,20504]`result`
-                          Frame: [5,result,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [20485,20505]`_heapify_max(result)...`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [20485,20497]`_heapify_max`
                           Identifier: _heapify_max
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [20498,20504]`result`
+                          Frame: [5,result,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [20510,20528]`top = result[0][0]`
                       Identifier: top
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3056,16 +3056,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: k
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [12,k,Illegal]
-                              PythonCallNodeGen SourceSection: [20611,20620]`key(elem)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [20615,20619]`elem`
-                                  Frame: [11,elem,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [20611,20620]`key(elem)`
+                                CachedNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [20611,20614]`key`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [2,key,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [20615,20619]`elem`
+                                  Frame: [11,elem,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [20629,20762]`if k < top:↵        ...`
                               YesNodeGen SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [20632,20639]`k < top`
@@ -3079,8 +3079,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [20653,20691]`_heapreplace(result,...`
-                                  PythonCallNodeGen SourceSection: [20653,20691]`_heapreplace(result,...`
-                                    CallNodeGen SourceSection: None
+                                  PythonCallBinary SourceSection: [20653,20691]`_heapreplace(result,...`
+                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [20653,20665]`_heapreplace`
+                                      Frame: [9,_heapreplace,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [20666,20672]`result`
                                       Frame: [5,result,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3095,9 +3098,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [11,elem,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [20653,20665]`_heapreplace`
-                                      Frame: [9,_heapreplace,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                 DestructuringAssignmentNodeGen SourceSection: [20704,20734]`top, _order, _elem =...`
                                   GetItemNodeGen SourceSection: [20725,20734]`result[0]`
                                     ReadLocalVariableNode SourceSection: None
@@ -3167,8 +3167,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [14,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [20788,20823]`elem for (k, order, ...`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [20788,20823]`elem for (k, order, ...`
+                          CachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [20793,20823]`for (k, order, elem)...`
                             Name: nsmallest.<locals>.<genexp>:heapq:522
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
@@ -3252,9 +3255,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [5,result,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -3322,14 +3322,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: it
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,it,Illegal]
-                          PythonCallNodeGen SourceSection: [21055,21069]`iter(iterable)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [21060,21068]`iterable`
-                              Frame: [1,iterable,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [21055,21069]`iter(iterable)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [21055,21059]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [21060,21068]`iterable`
+                              Frame: [1,iterable,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [21078,21097]`sentinel = object()`
                           Identifier: sentinel
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3422,14 +3422,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: size
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [6,size,Illegal]
-                          PythonCallNodeGen SourceSection: [21366,21379]`len(iterable)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [21370,21378]`iterable`
-                              Frame: [1,iterable,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [21366,21379]`len(iterable)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [21366,21369]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [21370,21378]`iterable`
+                              Frame: [1,iterable,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [21428,21432]`pass`
                             EmptyNode SourceSection: [21428,21432]`pass`
@@ -3500,20 +3500,23 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: it
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,it,Illegal]
-                          PythonCallNodeGen SourceSection: [21609,21623]`iter(iterable)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [21614,21622]`iterable`
-                              Frame: [1,iterable,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [21609,21623]`iter(iterable)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [21609,21613]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [21614,21622]`iterable`
+                              Frame: [1,iterable,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [21632,21693]`result = [(elem, i) ...`
                           Identifier: result
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,result,Illegal]
-                          PythonCallNodeGen SourceSection: [21642,21692]`(elem, i) for i, ele...`
-                            CallNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [21642,21692]`(elem, i) for i, ele...`
+                            CachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: list
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GeneratorExpressionNode SourceSection: [21652,21692]`for i, elem in zip(r...`
                               Name: nlargest.<locals>.<genexp>:heapq:552
                               FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
@@ -3587,10 +3590,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [21667,21692]`zip(range(0, -n, -1)...`
                                 GetIteratorNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [21667,21692]`zip(range(0, -n, -1)...`
-                                  CallNodeGen SourceSection: None
-                                  PythonCallNodeGen SourceSection: [21671,21687]`range(0, -n, -1)`
-                                    CallNodeGen SourceSection: None
+                                PythonCallBinary SourceSection: [21667,21692]`zip(range(0, -n, -1)...`
+                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21667,21670]`zip`
+                                    Identifier: zip
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  PythonCallTernary SourceSection: [21671,21687]`range(0, -n, -1)`
+                                    CallTernaryMethodCachedNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [21671,21676]`range`
+                                      Identifier: range
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21677,21678]`0`
                                       Value: 0
                                     UnaryArithmeticExpression SourceSection: [21680,21682]`-n`
@@ -3601,19 +3610,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21684,21686]`-1`
                                       Value: -1
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: [21671,21676]`range`
-                                      Identifier: range
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [21689,21691]`it`
                                     Frame: [3,it,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21667,21670]`zip`
-                                    Identifier: zip
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: list
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [21702,21751]`if not result:↵     ...`
                           NotNodeGen SourceSection: [21705,21715]`not result`
                             ReadLocalVariableNode SourceSection: [21709,21715]`result`
@@ -3629,14 +3629,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         ExpressionStatementNode SourceSection: [21751,21766]`heapify(result)`
-                          PythonCallNodeGen SourceSection: [21751,21766]`heapify(result)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [21759,21765]`result`
-                              Frame: [5,result,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [21751,21766]`heapify(result)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [21751,21758]`heapify`
                               Identifier: heapify
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [21759,21765]`result`
+                              Frame: [5,result,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [21775,21793]`top = result[0][0]`
                           Identifier: top
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3688,8 +3688,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [21915,21950]`_heapreplace(result,...`
-                                    PythonCallNodeGen SourceSection: [21915,21950]`_heapreplace(result,...`
-                                      CallNodeGen SourceSection: None
+                                    PythonCallBinary SourceSection: [21915,21950]`_heapreplace(result,...`
+                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [21915,21927]`_heapreplace`
+                                        Frame: [9,_heapreplace,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [21928,21934]`result`
                                         Frame: [5,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -3701,9 +3704,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [21915,21927]`_heapreplace`
-                                        Frame: [9,_heapreplace,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: [21967,21990]`top, _order = result...`
                                     GetItemNodeGen SourceSection: [21981,21990]`result[0]`
                                       ReadLocalVariableNode SourceSection: None
@@ -3768,8 +3768,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [14,<return_val>,Illegal]
-                            PythonCallNodeGen SourceSection: [22068,22100]`elem for (elem, orde...`
-                              CallNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [22068,22100]`elem for (elem, orde...`
+                              CachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: list
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [22073,22100]`for (elem, order) in...`
                                 Name: nlargest.<locals>.<genexp>:heapq:565
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
@@ -3842,28 +3845,28 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [5,result,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: list
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22142,22161]`it = iter(iterable)`
                       Identifier: it
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,it,Illegal]
-                      PythonCallNodeGen SourceSection: [22147,22161]`iter(iterable)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [22152,22160]`iterable`
-                          Frame: [1,iterable,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [22147,22161]`iter(iterable)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [22147,22151]`iter`
                           Identifier: iter
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [22152,22160]`iterable`
+                          Frame: [1,iterable,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22166,22238]`result = [(key(elem)...`
                       Identifier: result
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,result,Illegal]
-                      PythonCallNodeGen SourceSection: [22176,22237]`(key(elem), i, elem)...`
-                        CallNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [22176,22237]`(key(elem), i, elem)...`
+                        CachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: list
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [22197,22237]`for i, elem in zip(r...`
                           Name: nlargest.<locals>.<genexp>:heapq:569
                           FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
@@ -3891,16 +3894,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     YieldNode SourceSection: [22176,22196]`(key(elem), i, elem)...`
                                       flagSlot: 0
                                       TupleLiteralNode SourceSection: [22176,22196]`(key(elem), i, elem)...`
-                                        PythonCallNodeGen SourceSection: [22177,22186]`key(elem)`
-                                          CallNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [22181,22185]`elem`
-                                            Frame: [1,elem,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                        PythonCallUnary SourceSection: [22177,22186]`key(elem)`
+                                          CachedNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [22177,22180]`key`
                                             ReadGeneratorFrameVariableNode SourceSection: None
                                               Frame: [2,key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: [22181,22185]`elem`
+                                            Frame: [1,elem,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [22188,22189]`i`
                                           Frame: [0,i,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -3947,10 +3950,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [22212,22237]`zip(range(0, -n, -1)...`
                             GetIteratorNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [22212,22237]`zip(range(0, -n, -1)...`
-                              CallNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [22216,22232]`range(0, -n, -1)`
-                                CallNodeGen SourceSection: None
+                            PythonCallBinary SourceSection: [22212,22237]`zip(range(0, -n, -1)...`
+                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [22212,22215]`zip`
+                                Identifier: zip
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              PythonCallTernary SourceSection: [22216,22232]`range(0, -n, -1)`
+                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [22216,22221]`range`
+                                  Identifier: range
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [22222,22223]`0`
                                   Value: 0
                                 UnaryArithmeticExpression SourceSection: [22225,22227]`-n`
@@ -3961,19 +3970,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [22229,22231]`-1`
                                   Value: -1
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [22216,22221]`range`
-                                  Identifier: range
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [22234,22236]`it`
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [22212,22215]`zip`
-                                Identifier: zip
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: list
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [22243,22284]`if not result:↵     ...`
                       NotNodeGen SourceSection: [22246,22256]`not result`
                         ReadLocalVariableNode SourceSection: [22250,22256]`result`
@@ -3989,14 +3989,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [22284,22299]`heapify(result)`
-                      PythonCallNodeGen SourceSection: [22284,22299]`heapify(result)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [22292,22298]`result`
-                          Frame: [5,result,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [22284,22299]`heapify(result)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [22284,22291]`heapify`
                           Identifier: heapify
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [22292,22298]`result`
+                          Frame: [5,result,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22304,22322]`top = result[0][0]`
                       Identifier: top
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4040,16 +4040,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: k
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [12,k,Illegal]
-                              PythonCallNodeGen SourceSection: [22401,22410]`key(elem)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [22405,22409]`elem`
-                                  Frame: [11,elem,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [22401,22410]`key(elem)`
+                                CachedNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [22401,22404]`key`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [2,key,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [22405,22409]`elem`
+                                  Frame: [11,elem,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [22419,22552]`if top < k:↵        ...`
                               YesNodeGen SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [22422,22429]`top < k`
@@ -4063,8 +4063,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [22443,22481]`_heapreplace(result,...`
-                                  PythonCallNodeGen SourceSection: [22443,22481]`_heapreplace(result,...`
-                                    CallNodeGen SourceSection: None
+                                  PythonCallBinary SourceSection: [22443,22481]`_heapreplace(result,...`
+                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [22443,22455]`_heapreplace`
+                                      Frame: [9,_heapreplace,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [22456,22462]`result`
                                       Frame: [5,result,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -4079,9 +4082,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [11,elem,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [22443,22455]`_heapreplace`
-                                      Frame: [9,_heapreplace,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                 DestructuringAssignmentNodeGen SourceSection: [22494,22524]`top, _order, _elem =...`
                                   GetItemNodeGen SourceSection: [22515,22524]`result[0]`
                                     ReadLocalVariableNode SourceSection: None
@@ -4157,8 +4157,11 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [14,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [22590,22625]`elem for (k, order, ...`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [22590,22625]`elem for (k, order, ...`
+                          CachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [22595,22625]`for (k, order, elem)...`
                             Name: nlargest.<locals>.<genexp>:heapq:583
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
@@ -4242,9 +4245,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [5,result,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4330,13 +4330,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   ImportNode SourceSection: None
                     Module: doctest
               ExpressionStatementNode SourceSection: [22991,23015]`print(doctest.testmo...`
-                PythonCallNodeGen SourceSection: [22991,23015]`print(doctest.testmo...`
-                  CallNodeGen SourceSection: None
+                PythonCallUnary SourceSection: [22991,23015]`print(doctest.testmo...`
+                  CachedNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [22991,22996]`print`
+                    Identifier: print
                   PythonCallNodeGen SourceSection: [22997,23014]`doctest.testmod()`
                     CallNodeGen SourceSection: None
                     GetCallAttributeNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [22997,23004]`doctest`
                         Identifier: doctest
-                  ReadNameNodeGen SourceSection: [22991,22996]`print`
-                    Identifier: print
             BlockNode SourceSection: None

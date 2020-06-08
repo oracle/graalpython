@@ -85,14 +85,14 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                         Identifier: f
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [2,f,Illegal]
-                      PythonCallNodeGen SourceSection: [36,46]`open(path)`
-                        CallNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [41,45]`path`
-                          Frame: [0,path,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [36,46]`open(path)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [36,40]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [41,45]`path`
+                          Frame: [0,path,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None

@@ -13,10 +13,8 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
             Key: d
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
-          PythonCallNodeGen SourceSection: [0,10]`a().b.c(x)`
-            CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: [8,9]`x`
-              Identifier: x
+          PythonCallUnary SourceSection: [0,10]`a().b.c(x)`
+            CachedNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNodeGen SourceSection: [0,5]`a().b`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -27,3 +25,5 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
                   CallNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [0,1]`a`
                     Identifier: a
+            ReadNameNodeGen SourceSection: [8,9]`x`
+              Identifier: x

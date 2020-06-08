@@ -60,10 +60,10 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
             PRaiseNodeGen SourceSection: None
       GetIteratorExpressionNodeGen SourceSection: [14,23]`range(10)`
         GetIteratorNodeGen SourceSection: None
-        PythonCallNodeGen SourceSection: [14,23]`range(10)`
-          CallNodeGen SourceSection: None
-          IntegerLiteralNode SourceSection: [20,22]`10`
-            Value: 10
+        PythonCallUnary SourceSection: [14,23]`range(10)`
+          CachedNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [14,19]`range`
             Identifier: range
+          IntegerLiteralNode SourceSection: [20,22]`10`
+            Value: 10
       PythonObjectFactoryNodeGen SourceSection: None

@@ -109,8 +109,10 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
           ReadNameNodeGen SourceSection: [130,133]`fnc`
             Identifier: fnc
       ExpressionStatementNode SourceSection: [144,175]`print("free > ", c.c...`
-        PythonCallNodeGen SourceSection: [144,175]`print("free > ", c.c...`
-          CallNodeGen SourceSection: None
+        PythonCallBinary SourceSection: [144,175]`print("free > ", c.c...`
+          CallBinaryMethodCachedNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [144,149]`print`
+            Identifier: print
           StringLiteralNode SourceSection: [150,159]`"free > "`
           GetAttributeNodeGen SourceSection: [161,174]`c.co_freevars`
             GetFixedAttributeNodeGen SourceSection: None
@@ -119,10 +121,10 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [161,162]`c`
               Identifier: c
-          ReadNameNodeGen SourceSection: [144,149]`print`
-            Identifier: print
-      PythonCallNodeGen SourceSection: [176,207]`print("cell > ", c.c...`
-        CallNodeGen SourceSection: None
+      PythonCallBinary SourceSection: [176,207]`print("cell > ", c.c...`
+        CallBinaryMethodCachedNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [176,181]`print`
+          Identifier: print
         StringLiteralNode SourceSection: [182,191]`"cell > "`
         GetAttributeNodeGen SourceSection: [193,206]`c.co_cellvars`
           GetFixedAttributeNodeGen SourceSection: None
@@ -131,5 +133,3 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
               Op: __getattribute__
           ReadNameNodeGen SourceSection: [193,194]`c`
             Identifier: c
-        ReadNameNodeGen SourceSection: [176,181]`print`
-          Identifier: print

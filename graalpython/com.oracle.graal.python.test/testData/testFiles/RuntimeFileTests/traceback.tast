@@ -144,15 +144,15 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           PythonCallNodeGen SourceSection: [801,848]`StackSummary.from_li...`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [801,839]`StackSummary.from_li...`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [824,838]`extracted_list`
-                                  Frame: [0,extracted_list,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [801,839]`StackSummary.from_li...`
+                                CachedNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [801,813]`StackSummary`
                                     Identifier: StackSummary
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [824,838]`extracted_list`
+                                  Frame: [0,extracted_list,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
@@ -197,15 +197,15 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         PythonCallNodeGen SourceSection: [1379,1426]`StackSummary.from_li...`
                           CallNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [1379,1417]`StackSummary.from_li...`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [1402,1416]`extracted_list`
-                                Frame: [0,extracted_list,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [1379,1417]`StackSummary.from_li...`
+                              CachedNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [1379,1391]`StackSummary`
                                   Identifier: StackSummary
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [1402,1416]`extracted_list`
+                                Frame: [0,extracted_list,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -407,14 +407,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           Frame: [2,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [2557,2603]`StackSummary.extract...`
                           CallNodeGen SourceSection: None
-                          PythonCallNodeGen SourceSection: [2578,2589]`walk_tb(tb)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [2586,2588]`tb`
-                              Frame: [0,tb,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [2578,2589]`walk_tb(tb)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2578,2585]`walk_tb`
                               Identifier: walk_tb
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [2586,2588]`tb`
+                              Frame: [0,tb,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
                             KeywordLiteralNode SourceSection: None
                               ReadLocalVariableNode SourceSection: [2597,2602]`limit`
@@ -569,14 +569,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             GetCallAttributeNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [3745,3813]`TracebackException(↵...`
                                 CallNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [3777,3788]`type(value)`
-                                  CallNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [3782,3787]`value`
-                                    Frame: [1,value,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonCallUnary SourceSection: [3777,3788]`type(value)`
+                                  CachedNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3777,3781]`type`
                                     Identifier: type
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [3782,3787]`value`
+                                    Frame: [1,value,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [3790,3795]`value`
                                   Frame: [1,value,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -666,8 +666,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [5,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [4567,4657]`list(TracebackExcept...`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [4567,4657]`list(TracebackExcept...`
+                          CachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [4567,4571]`list`
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [4572,4656]`TracebackException(↵...`
                             CallNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
@@ -681,14 +684,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             GetCallAttributeNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [4572,4636]`TracebackException(↵...`
                                 CallNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [4600,4611]`type(value)`
-                                  CallNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [4605,4610]`value`
-                                    Frame: [1,value,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonCallUnary SourceSection: [4600,4611]`type(value)`
+                                  CachedNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [4600,4604]`type`
                                     Identifier: type
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [4605,4610]`value`
+                                    Frame: [1,value,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [4613,4618]`value`
                                   Frame: [1,value,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -706,9 +709,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4572,4590]`TracebackException`
                                   Identifier: TracebackException
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [4567,4571]`list`
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -757,13 +757,19 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [5255,5323]`list(TracebackExcept...`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [5255,5323]`list(TracebackExcept...`
+                          CachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [5255,5259]`list`
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [5260,5322]`TracebackException(e...`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [5260,5298]`TracebackException(e...`
-                                CallNodeGen SourceSection: None
+                              PythonCallTernary SourceSection: [5260,5298]`TracebackException(e...`
+                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [5260,5278]`TracebackException`
+                                  Identifier: TracebackException
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [5279,5284]`etype`
                                   Frame: [0,etype,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -771,12 +777,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Frame: [1,value,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ObjectLiteralNode SourceSection: [5293,5297]`None`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [5260,5278]`TracebackException`
-                                  Identifier: TracebackException
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [5255,5259]`list`
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -824,14 +824,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                       Identifier: valuestr
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,valuestr,Illegal]
-                      PythonCallNodeGen SourceSection: [5449,5465]`_some_str(value)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [5459,5464]`value`
-                          Frame: [1,value,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [5449,5465]`_some_str(value)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [5449,5458]`_some_str`
                           Identifier: _some_str
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [5459,5464]`value`
+                          Frame: [1,value,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [5470,5594]`if value is None or ...`
                       YesNodeGen SourceSection: None
                         OrNode SourceSection: [5473,5502]`value is None or not...`
@@ -922,14 +922,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
-                            PythonCallNodeGen SourceSection: [5653,5663]`str(value)`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [5657,5662]`value`
-                                Frame: [0,value,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [5653,5663]`str(value)`
+                              CachedNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [5653,5656]`str`
                                 Identifier: str
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [5657,5662]`value`
+                                Frame: [0,value,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           FrameReturnNode SourceSection: [5684,5739]`return '<unprintable...`
                             WriteLocalVariableNodeGen SourceSection: None
@@ -945,14 +945,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     Key: __name__
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                  PythonCallNodeGen SourceSection: [5719,5730]`type(value)`
-                                    CallNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [5724,5729]`value`
-                                      Frame: [0,value,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  PythonCallUnary SourceSection: [5719,5730]`type(value)`
+                                    CachedNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [5719,5723]`type`
                                       Identifier: type
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [5724,5729]`value`
+                                      Frame: [0,value,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
@@ -1087,8 +1087,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [6044,6112]`"".join(format_excep...`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [6044,6112]`"".join(format_excep...`
+                          CachedNodeGen SourceSection: None
+                          GetCallAttributeNodeGen SourceSection: None
+                            StringLiteralNode SourceSection: [6044,6046]`""`
                           PythonCallNodeGen SourceSection: [6052,6111]`format_exception(*sy...`
                             CallNodeGen SourceSection: None
                             PositionalArgumentsNode SourceSection: None
@@ -1114,8 +1116,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6052,6068]`format_exception`
                               Identifier: format_exception
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GetCallAttributeNodeGen SourceSection: None
-                            StringLiteralNode SourceSection: [6044,6046]`""`
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1171,22 +1171,22 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   FunctionBodyNode SourceSection: [6290,6480]`if not hasattr(sys, ...`
                     IfNode SourceSection: [6290,6374]`if not hasattr(sys, ...`
                       NotNodeGen SourceSection: [6293,6322]`not hasattr(sys, "la...`
-                        PythonCallNodeGen SourceSection: [6297,6322]`hasattr(sys, "last_t...`
-                          CallNodeGen SourceSection: None
+                        PythonCallBinary SourceSection: [6297,6322]`hasattr(sys, "last_t...`
+                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [6297,6304]`hasattr`
+                            Identifier: hasattr
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6305,6308]`sys`
                             Identifier: sys
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [6310,6321]`"last_type"`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [6297,6304]`hasattr`
-                            Identifier: hasattr
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [6332,6369]`raise ValueError("no...`
-                        PythonCallNodeGen SourceSection: [6338,6369]`ValueError("no last ...`
-                          CallNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [6349,6368]`"no last exception"`
+                        PythonCallUnary SourceSection: [6338,6369]`ValueError("no last ...`
+                          CachedNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6338,6348]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [6349,6368]`"no last exception"`
                         NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [6374,6480]`print_exception(sys....`
@@ -1407,8 +1407,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [7105,7147]`format_list(extract_...`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [7105,7147]`format_list(extract_...`
+                          CachedNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [7105,7116]`format_list`
+                            Identifier: format_list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [7117,7146]`extract_stack(f, lim...`
                             CallNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [7131,7132]`f`
@@ -1425,9 +1428,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7117,7130]`extract_stack`
                               Identifier: extract_stack
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [7105,7116]`format_list`
-                            Identifier: format_list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1502,14 +1502,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Frame: [2,stack,Illegal]
                       PythonCallNodeGen SourceSection: [7636,7684]`StackSummary.extract...`
                         CallNodeGen SourceSection: None
-                        PythonCallNodeGen SourceSection: [7657,7670]`walk_stack(f)`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [7668,7669]`f`
-                            Frame: [0,f,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [7657,7670]`walk_stack(f)`
+                          CachedNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7657,7667]`walk_stack`
                             Identifier: walk_stack
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [7668,7669]`f`
+                            Frame: [0,f,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             ReadLocalVariableNode SourceSection: [7678,7683]`limit`
@@ -1621,8 +1621,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [8040,10444]`class FrameSummary:↵...`
         Identifier: FrameSummary
-        PythonCallNodeGen SourceSection: [8040,10444]`class FrameSummary:↵...`
-          CallNodeGen SourceSection: None
+        PythonCallBinary SourceSection: [8040,10444]`class FrameSummary:↵...`
+          CallBinaryMethodCachedNodeGen SourceSection: None
+          GetCallAttributeNodeGen SourceSection: None
+            BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: FrameSummary SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1818,8 +1820,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           ReadLocalVariableNode SourceSection: [9450,9456]`locals`
                                             Frame: [6,locals,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        PythonCallNodeGen SourceSection: [9408,9445]`k: repr(v) for k, v ...`
-                                          CallNodeGen SourceSection: None
+                                        PythonCallUnary SourceSection: [9408,9445]`k: repr(v) for k, v ...`
+                                          CachedNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            Identifier: dict
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [9419,9445]`for k, v in locals.i...`
                                             Name: __init__.<locals>.<genexp>:traceback:256
                                             FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
@@ -1850,14 +1855,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           ReadGeneratorFrameVariableNode SourceSection: [9408,9409]`k`
                                                             Frame: [0,k,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          PythonCallNodeGen SourceSection: [9411,9418]`repr(v)`
-                                                            CallNodeGen SourceSection: None
-                                                            ReadGeneratorFrameVariableNode SourceSection: [9416,9417]`v`
-                                                              Frame: [1,v,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                          PythonCallUnary SourceSection: [9411,9418]`repr(v)`
+                                                            CachedNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9411,9415]`repr`
                                                               Identifier: repr
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [9416,9417]`v`
+                                                              Frame: [1,v,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
                                                     DestructuringAssignmentNodeGen SourceSection: None
@@ -1905,9 +1910,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [6,locals,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                            Identifier: dict
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ObjectLiteralNode SourceSection: [9462,9466]`None`
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [9,<return_val>,Illegal]
@@ -1957,16 +1959,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   FunctionBodyNode SourceSection: [9505,9891]`if isinstance(other,...`
                                     IfNode SourceSection: [9505,9754]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        PythonCallNodeGen SourceSection: [9508,9539]`isinstance(other, Fr...`
-                                          CallNodeGen SourceSection: None
+                                        PythonCallBinary SourceSection: [9508,9539]`isinstance(other, Fr...`
+                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [9508,9518]`isinstance`
+                                            Identifier: isinstance
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9519,9524]`other`
                                             Frame: [1,other,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9526,9538]`FrameSummary`
                                             Identifier: FrameSummary
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: [9508,9518]`isinstance`
-                                            Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [9553,9745]`return (self.filenam...`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -2058,16 +2060,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9754,9870]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        PythonCallNodeGen SourceSection: [9757,9781]`isinstance(other, tu...`
-                                          CallNodeGen SourceSection: None
+                                        PythonCallBinary SourceSection: [9757,9781]`isinstance(other, tu...`
+                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [9757,9767]`isinstance`
+                                            Identifier: isinstance
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9768,9773]`other`
                                             Frame: [1,other,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9775,9780]`tuple`
                                             Identifier: tuple
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: [9757,9767]`isinstance`
-                                            Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [9795,9861]`return (self.filenam...`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -2255,8 +2257,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
-                                        PythonCallNodeGen SourceSection: [10036,10092]`iter([self.filename,...`
-                                          CallNodeGen SourceSection: None
+                                        PythonCallUnary SourceSection: [10036,10092]`iter([self.filename,...`
+                                          CachedNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [10036,10040]`iter`
+                                            Identifier: iter
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ListLiteralNode SourceSection: [10041,10091]`[self.filename, self...`
                                             GetAttributeNodeGen SourceSection: [10042,10055]`self.filename`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -2291,9 +2296,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: [10036,10040]`iter`
-                                            Identifier: iter
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2380,8 +2382,17 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        PythonCallNodeGen SourceSection: [10276,10285]`@property`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [10276,10285]`@property`
+                          CachedNodeGen SourceSection: None
+                          ReadClassAttributeNodeGen SourceSection: [10276,10285]`@property`
+                            GetItemNodeGen SourceSection: None
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: property
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: line SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2432,8 +2443,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           PythonCallNodeGen SourceSection: [10362,10415]`linecache.getline(se...`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: [10362,10407]`linecache.getline(se...`
-                                                CallNodeGen SourceSection: None
+                                              PythonCallBinary SourceSection: [10362,10407]`linecache.getline(se...`
+                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                GetCallAttributeNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [10362,10371]`linecache`
+                                                    Identifier: linecache
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [10380,10393]`self.filename`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: filename
@@ -2450,10 +2465,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [10395,10399]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetCallAttributeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [10362,10371]`linecache`
-                                                    Identifier: linecache
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [10424,10441]`return self._line`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -2471,15 +2482,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadClassAttributeNodeGen SourceSection: [10276,10285]`@property`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: property
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     SetItemNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
@@ -2490,8 +2492,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [10444,10824]`def walk_stack(f):↵ ...`
         Identifier: walk_stack
         GeneratorFunctionDefinitionNode Name: walk_stack SourceSection: None
@@ -2693,8 +2693,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 PRaiseNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11144,15801]`class StackSummary(l...`
         Identifier: StackSummary
-        PythonCallNodeGen SourceSection: [11144,15801]`class StackSummary(l...`
-          CallNodeGen SourceSection: None
+        PythonCallTernary SourceSection: [11144,15801]`class StackSummary(l...`
+          CallTernaryMethodCachedNodeGen SourceSection: None
+          GetCallAttributeNodeGen SourceSection: None
+            BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: StackSummary SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2738,8 +2740,17 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        PythonCallNodeGen SourceSection: [11204,11216]`@classmethod`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [11204,11216]`@classmethod`
+                          CachedNodeGen SourceSection: None
+                          ReadClassAttributeNodeGen SourceSection: [11204,11216]`@classmethod`
+                            GetItemNodeGen SourceSection: None
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: classmethod
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: extract SourceSection: None
                             Arguments: None
                             KwArguments:
@@ -2821,16 +2832,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             Identifier: limit
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,limit,Illegal]
-                                            PythonCallNodeGen SourceSection: [11956,11992]`getattr(sys, 'traceb...`
-                                              CallNodeGen SourceSection: None
+                                            PythonCallTernary SourceSection: [11956,11992]`getattr(sys, 'traceb...`
+                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [11956,11963]`getattr`
+                                                Identifier: getattr
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11964,11967]`sys`
                                                 Identifier: sys
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [11969,11985]`'tracebacklimit'`
                                               ObjectLiteralNode SourceSection: [11987,11991]`None`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: [11956,11963]`getattr`
-                                                Identifier: getattr
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           IfNode SourceSection: [12005,12075]`if limit is not None...`
                                             YesNodeGen SourceSection: None
                                               AndNode SourceSection: [12008,12039]`limit is not None an...`
@@ -2878,18 +2889,18 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             Identifier: frame_gen
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,frame_gen,Illegal]
-                                            PythonCallNodeGen SourceSection: [12152,12186]`itertools.islice(fra...`
-                                              CallNodeGen SourceSection: None
+                                            PythonCallBinary SourceSection: [12152,12186]`itertools.islice(fra...`
+                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              GetCallAttributeNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [12152,12161]`itertools`
+                                                  Identifier: itertools
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [12169,12178]`frame_gen`
                                                 Frame: [1,frame_gen,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [12180,12185]`limit`
                                                 Frame: [3,limit,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetCallAttributeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [12152,12161]`itertools`
-                                                  Identifier: itertools
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [12221,12276]`frame_gen = collecti...`
                                             Identifier: frame_gen
                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2998,18 +3009,22 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [8,co,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [12469,12489]`fnames.add(filename)...`
-                                                PythonCallNodeGen SourceSection: [12469,12489]`fnames.add(filename)...`
-                                                  CallNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [12480,12488]`filename`
-                                                    Frame: [9,filename,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [12469,12489]`fnames.add(filename)...`
+                                                  CachedNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [12469,12475]`fnames`
                                                       Frame: [7,fnames,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [12480,12488]`filename`
+                                                    Frame: [9,filename,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [12502,12544]`linecache.lazycache(...`
-                                                PythonCallNodeGen SourceSection: [12502,12544]`linecache.lazycache(...`
-                                                  CallNodeGen SourceSection: None
+                                                PythonCallBinary SourceSection: [12502,12544]`linecache.lazycache(...`
+                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [12502,12511]`linecache`
+                                                      Identifier: linecache
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [12522,12530]`filename`
                                                     Frame: [9,filename,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3021,10 +3036,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadLocalVariableNode SourceSection: [12532,12533]`f`
                                                       Frame: [12,f,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetCallAttributeNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [12502,12511]`linecache`
-                                                      Identifier: linecache
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IfNode SourceSection: [12628,12747]`if capture_locals:↵ ...`
                                                 YesNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [12631,12645]`capture_locals`
@@ -3048,8 +3059,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [11,f_locals,Illegal]
                                                   ObjectLiteralNode SourceSection: [12730,12734]`None`
                                               ExpressionStatementNode SourceSection: [12747,12851]`result.append(FrameS...`
-                                                PythonCallNodeGen SourceSection: [12747,12851]`result.append(FrameS...`
-                                                  CallNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [12747,12851]`result.append(FrameS...`
+                                                  CachedNodeGen SourceSection: None
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [12747,12753]`result`
+                                                      Frame: [6,result,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [12761,12850]`FrameSummary(↵      ...`
                                                     CallNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [12791,12799]`filename`
@@ -3074,10 +3089,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12761,12773]`FrameSummary`
                                                       Identifier: FrameSummary
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  GetCallAttributeNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [12747,12753]`result`
-                                                      Frame: [6,result,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [12351,12360]`frame_gen`
                                             GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12351,12360]`frame_gen`
@@ -3093,15 +3104,15 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [9,filename,Illegal]
                                             ExpressionStatementNode SourceSection: [12896,12926]`linecache.checkcache...`
-                                              PythonCallNodeGen SourceSection: [12896,12926]`linecache.checkcache...`
-                                                CallNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [12917,12925]`filename`
-                                                  Frame: [9,filename,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [12896,12926]`linecache.checkcache...`
+                                                CachedNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12896,12905]`linecache`
                                                     Identifier: linecache
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12917,12925]`filename`
+                                                  Frame: [9,filename,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [12876,12882]`fnames`
                                             GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12876,12882]`fnames`
@@ -3148,7 +3159,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [17,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadClassAttributeNodeGen SourceSection: [11204,11216]`@classmethod`
+                      SetItemNodeGen SourceSection: [13095,13954]`@classmethod↵    def...`
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                        StringLiteralNode SourceSection: None
+                        PythonCallUnary SourceSection: [13095,13107]`@classmethod`
+                          CachedNodeGen SourceSection: None
+                          ReadClassAttributeNodeGen SourceSection: [13095,13107]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -3157,13 +3175,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [13095,13954]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        PythonCallNodeGen SourceSection: [13095,13107]`@classmethod`
-                          CallNodeGen SourceSection: None
                           FunctionDefinitionNode Name: from_list SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3221,27 +3232,27 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Frame: [7,frame,Illegal]
                                             IfNode SourceSection: [13704,13935]`if isinstance(frame,...`
                                               YesNodeGen SourceSection: None
-                                                PythonCallNodeGen SourceSection: [13707,13738]`isinstance(frame, Fr...`
-                                                  CallNodeGen SourceSection: None
+                                                PythonCallBinary SourceSection: [13707,13738]`isinstance(frame, Fr...`
+                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [13707,13717]`isinstance`
+                                                    Identifier: isinstance
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [13718,13723]`frame`
                                                     Frame: [7,frame,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13725,13737]`FrameSummary`
                                                     Identifier: FrameSummary
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [13707,13717]`isinstance`
-                                                    Identifier: isinstance
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [13756,13776]`result.append(frame)...`
-                                                PythonCallNodeGen SourceSection: [13756,13776]`result.append(frame)...`
-                                                  CallNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [13770,13775]`frame`
-                                                    Frame: [7,frame,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [13756,13776]`result.append(frame)...`
+                                                  CachedNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [13756,13762]`result`
                                                       Frame: [2,result,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [13770,13775]`frame`
+                                                    Frame: [7,frame,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                                 DestructuringAssignmentNodeGen SourceSection: [13811,13847]`filename, lineno, na...`
                                                   ReadLocalVariableNode SourceSection: [13842,13847]`frame`
@@ -3292,8 +3303,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Frame: [12,<>temp12,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [13864,13926]`result.append(FrameS...`
-                                                  PythonCallNodeGen SourceSection: [13864,13926]`result.append(FrameS...`
-                                                    CallNodeGen SourceSection: None
+                                                  PythonCallUnary SourceSection: [13864,13926]`result.append(FrameS...`
+                                                    CachedNodeGen SourceSection: None
+                                                    GetCallAttributeNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [13864,13870]`result`
+                                                        Frame: [2,result,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                                     PythonCallNodeGen SourceSection: [13878,13925]`FrameSummary(filenam...`
                                                       CallNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [13891,13899]`filename`
@@ -3316,10 +3331,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [13878,13890]`FrameSummary`
                                                         Identifier: FrameSummary
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    GetCallAttributeNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [13864,13870]`result`
-                                                        Frame: [2,result,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [13684,13690]`a_list`
                                             GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [13684,13690]`a_list`
@@ -3337,15 +3348,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [13,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadClassAttributeNodeGen SourceSection: [13095,13107]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [13954,15801]`def format(self):↵  ...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -3512,13 +3514,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         IntegerLiteralNode SourceSection: [14925,14926]`3`
                                                           Value: 3
                                                     ExpressionStatementNode SourceSection: [14948,15015]`result.append(f'  [P...`
-                                                      PythonCallNodeGen SourceSection: [14948,15015]`result.append(f'  [P...`
-                                                        CallNodeGen SourceSection: None
-                                                        FormatStringLiteralNode SourceSection: [14962,15014]`f'  [Previous line r...`
+                                                      PythonCallUnary SourceSection: [14948,15015]`result.append(f'  [P...`
+                                                        CachedNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [14948,14954]`result`
                                                             Frame: [1,result,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                                        FormatStringLiteralNode SourceSection: [14962,15014]`f'  [Previous line r...`
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [15032,15058]`last_file = frame.fi...`
                                                     Identifier: last_file
@@ -3581,10 +3583,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ListLiteralNode SourceSection: [15235,15237]`[]`
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [15250,15359]`row.append('  File "...`
-                                                PythonCallNodeGen SourceSection: [15250,15359]`row.append('  File "...`
-                                                  CallNodeGen SourceSection: None
-                                                  PythonCallNodeGen SourceSection: [15261,15358]`'  File "{}", line {...`
-                                                    CallNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [15250,15359]`row.append('  File "...`
+                                                  CachedNodeGen SourceSection: None
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [15250,15253]`row`
+                                                      Frame: [6,row,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonCallTernary SourceSection: [15261,15358]`'  File "{}", line {...`
+                                                    CallTernaryMethodCachedNodeGen SourceSection: None
+                                                    GetCallAttributeNodeGen SourceSection: None
+                                                      StringLiteralNode SourceSection: [15261,15292]`'  File "{}", line {...`
                                                     GetAttributeNodeGen SourceSection: [15317,15331]`frame.filename`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: filename
@@ -3609,12 +3617,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [15347,15352]`frame`
                                                         Frame: [9,frame,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    GetCallAttributeNodeGen SourceSection: None
-                                                      StringLiteralNode SourceSection: [15261,15292]`'  File "{}", line {...`
-                                                  GetCallAttributeNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [15250,15253]`row`
-                                                      Frame: [6,row,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                               IfNode SourceSection: [15372,15465]`if frame.line:↵     ...`
                                                 YesNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [15375,15385]`frame.line`
@@ -3626,10 +3628,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Frame: [9,frame,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [15403,15452]`row.append('    {}\n...`
-                                                  PythonCallNodeGen SourceSection: [15403,15452]`row.append('    {}\n...`
-                                                    CallNodeGen SourceSection: None
-                                                    PythonCallNodeGen SourceSection: [15414,15451]`'    {}\n'.format(fr...`
-                                                      CallNodeGen SourceSection: None
+                                                  PythonCallUnary SourceSection: [15403,15452]`row.append('    {}\n...`
+                                                    CachedNodeGen SourceSection: None
+                                                    GetCallAttributeNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [15403,15406]`row`
+                                                        Frame: [6,row,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonCallUnary SourceSection: [15414,15451]`'    {}\n'.format(fr...`
+                                                      CachedNodeGen SourceSection: None
+                                                      GetCallAttributeNodeGen SourceSection: None
+                                                        StringLiteralNode SourceSection: [15414,15424]`'    {}\n'`
                                                       PythonCallNodeGen SourceSection: [15432,15450]`frame.line.strip()`
                                                         CallNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
@@ -3641,12 +3649,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                             ReadLocalVariableNode SourceSection: [15432,15437]`frame`
                                                               Frame: [9,frame,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetCallAttributeNodeGen SourceSection: None
-                                                        StringLiteralNode SourceSection: [15414,15424]`'    {}\n'`
-                                                    GetCallAttributeNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [15403,15406]`row`
-                                                        Frame: [6,row,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
                                               IfNode SourceSection: [15465,15647]`if frame.locals:↵   ...`
                                                 YesNodeGen SourceSection: None
@@ -3686,8 +3688,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                               Frame: [12,<>temp12,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                       ExpressionStatementNode SourceSection: [15567,15634]`row.append('    {nam...`
-                                                        PythonCallNodeGen SourceSection: [15567,15634]`row.append('    {nam...`
-                                                          CallNodeGen SourceSection: None
+                                                        PythonCallUnary SourceSection: [15567,15634]`row.append('    {nam...`
+                                                          CachedNodeGen SourceSection: None
+                                                          GetCallAttributeNodeGen SourceSection: None
+                                                            ReadLocalVariableNode SourceSection: [15567,15570]`row`
+                                                              Frame: [6,row,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                           PythonCallNodeGen SourceSection: [15578,15633]`'    {name} = {value...`
                                                             CallNodeGen SourceSection: None
                                                             KeywordArgumentsNodeGen SourceSection: None
@@ -3704,14 +3710,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                                 EmptyNode SourceSection: None
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               StringLiteralNode SourceSection: [15578,15602]`'    {name} = {value...`
-                                                          GetCallAttributeNodeGen SourceSection: None
-                                                            ReadLocalVariableNode SourceSection: [15567,15570]`row`
-                                                              Frame: [6,row,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [15517,15545]`sorted(frame.locals....`
                                                       GetIteratorNodeGen SourceSection: None
-                                                      PythonCallNodeGen SourceSection: [15517,15545]`sorted(frame.locals....`
-                                                        CallNodeGen SourceSection: None
+                                                      PythonCallUnary SourceSection: [15517,15545]`sorted(frame.locals....`
+                                                        CachedNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [15517,15523]`sorted`
+                                                          Identifier: sorted
+                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                         PythonCallNodeGen SourceSection: [15524,15544]`frame.locals.items()...`
                                                           CallNodeGen SourceSection: None
                                                           GetCallAttributeNodeGen SourceSection: None
@@ -3723,24 +3728,21 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                               ReadLocalVariableNode SourceSection: [15524,15529]`frame`
                                                                 Frame: [9,frame,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [15517,15523]`sorted`
-                                                          Identifier: sorted
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                 BlockNode SourceSection: None
                                               ExpressionStatementNode SourceSection: [15647,15674]`result.append(''.joi...`
-                                                PythonCallNodeGen SourceSection: [15647,15674]`result.append(''.joi...`
-                                                  CallNodeGen SourceSection: None
-                                                  PythonCallNodeGen SourceSection: [15661,15673]`''.join(row)`
-                                                    CallNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [15669,15672]`row`
-                                                      Frame: [6,row,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    GetCallAttributeNodeGen SourceSection: None
-                                                      StringLiteralNode SourceSection: [15661,15663]`''`
+                                                PythonCallUnary SourceSection: [15647,15674]`result.append(''.joi...`
+                                                  CachedNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [15647,15653]`result`
                                                       Frame: [1,result,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonCallUnary SourceSection: [15661,15673]`''.join(row)`
+                                                    CachedNodeGen SourceSection: None
+                                                    GetCallAttributeNodeGen SourceSection: None
+                                                      StringLiteralNode SourceSection: [15661,15663]`''`
+                                                    ReadLocalVariableNode SourceSection: [15669,15672]`row`
+                                                      Frame: [6,row,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [14633,14637]`self`
                                           GetIteratorNodeGen SourceSection: None
@@ -3759,13 +3761,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           IntegerLiteralNode SourceSection: [15694,15695]`3`
                                             Value: 3
                                       ExpressionStatementNode SourceSection: [15709,15776]`result.append(f'  [P...`
-                                        PythonCallNodeGen SourceSection: [15709,15776]`result.append(f'  [P...`
-                                          CallNodeGen SourceSection: None
-                                          FormatStringLiteralNode SourceSection: [15723,15775]`f'  [Previous line r...`
+                                        PythonCallUnary SourceSection: [15709,15776]`result.append(f'  [P...`
+                                          CachedNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [15709,15715]`result`
                                               Frame: [1,result,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                          FormatStringLiteralNode SourceSection: [15723,15775]`f'  [Previous line r...`
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [15785,15798]`return result`
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -3790,16 +3792,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [11163,11167]`list`
             Identifier: list
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
         SideEffect:
           WriteNameNodeGen SourceSection: [15801,23096]`class TracebackExcep...`
             Identifier: TracebackException
-            PythonCallNodeGen SourceSection: [15801,23096]`class TracebackExcep...`
-              CallNodeGen SourceSection: None
+            PythonCallBinary SourceSection: [15801,23096]`class TracebackExcep...`
+              CallBinaryMethodCachedNodeGen SourceSection: None
+              GetCallAttributeNodeGen SourceSection: None
+                BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: TracebackException SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -3954,19 +3956,19 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                         ExpressionStatementNode SourceSection: [17524,17548]`_seen.add(id(exc_val...`
-                                          PythonCallNodeGen SourceSection: [17524,17548]`_seen.add(id(exc_val...`
-                                            CallNodeGen SourceSection: None
-                                            PythonCallNodeGen SourceSection: [17534,17547]`id(exc_value)`
-                                              CallNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [17537,17546]`exc_value`
-                                                Frame: [2,exc_value,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: [17534,17536]`id`
-                                                Identifier: id
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          PythonCallUnary SourceSection: [17524,17548]`_seen.add(id(exc_val...`
+                                            CachedNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [17524,17529]`_seen`
                                                 Frame: [8,_seen,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [17534,17547]`id(exc_value)`
+                                              CachedNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [17534,17536]`id`
+                                                Identifier: id
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [17537,17546]`exc_value`
+                                                Frame: [2,exc_value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [17699,18163]`if (exc_value and ex...`
                                           YesNodeGen SourceSection: None
@@ -3995,8 +3997,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [17796,17801]`_seen`
                                                     Frame: [8,_seen,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  PythonCallNodeGen SourceSection: [17765,17788]`id(exc_value.__cause...`
-                                                    CallNodeGen SourceSection: None
+                                                  PythonCallUnary SourceSection: [17765,17788]`id(exc_value.__cause...`
+                                                    CachedNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [17765,17767]`id`
+                                                      Identifier: id
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [17768,17787]`exc_value.__cause__`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __cause__
@@ -4005,9 +4010,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [17768,17777]`exc_value`
                                                         Frame: [2,exc_value,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [17765,17767]`id`
-                                                      Identifier: id
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [17816,18115]`cause = TracebackExc...`
                                             Identifier: cause
@@ -4015,8 +4017,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               Frame: [9,cause,Illegal]
                                             PythonCallNodeGen SourceSection: [17824,18115]`TracebackException(↵...`
                                               CallNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: [17860,17885]`type(exc_value.__cau...`
-                                                CallNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [17860,17885]`type(exc_value.__cau...`
+                                                CachedNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [17860,17864]`type`
+                                                  Identifier: type
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [17865,17884]`exc_value.__cause__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __cause__
@@ -4025,9 +4030,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [17865,17874]`exc_value`
                                                     Frame: [2,exc_value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [17860,17864]`type`
-                                                  Identifier: type
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [17903,17922]`exc_value.__cause__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __cause__
@@ -4102,8 +4104,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [18264,18269]`_seen`
                                                     Frame: [8,_seen,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  PythonCallNodeGen SourceSection: [18231,18256]`id(exc_value.__conte...`
-                                                    CallNodeGen SourceSection: None
+                                                  PythonCallUnary SourceSection: [18231,18256]`id(exc_value.__conte...`
+                                                    CachedNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [18231,18233]`id`
+                                                      Identifier: id
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [18234,18255]`exc_value.__context_...`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __context__
@@ -4112,9 +4117,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [18234,18243]`exc_value`
                                                         Frame: [2,exc_value,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [18231,18233]`id`
-                                                      Identifier: id
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [18284,18591]`context = TracebackE...`
                                             Identifier: context
@@ -4122,8 +4124,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               Frame: [10,context,Illegal]
                                             PythonCallNodeGen SourceSection: [18294,18591]`TracebackException(↵...`
                                               CallNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: [18330,18357]`type(exc_value.__con...`
-                                                CallNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [18330,18357]`type(exc_value.__con...`
+                                                CachedNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [18330,18334]`type`
+                                                  Identifier: type
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [18335,18356]`exc_value.__context_...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __context__
@@ -4132,9 +4137,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [18335,18344]`exc_value`
                                                     Frame: [2,exc_value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [18330,18334]`type`
-                                                  Identifier: type
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [18375,18396]`exc_value.__context_...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __context__
@@ -4232,14 +4234,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [18892,19032]`StackSummary.extract...`
                                             CallNodeGen SourceSection: None
-                                            PythonCallNodeGen SourceSection: [18926,18948]`walk_tb(exc_tracebac...`
-                                              CallNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [18934,18947]`exc_traceback`
-                                                Frame: [3,exc_traceback,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [18926,18948]`walk_tb(exc_tracebac...`
+                                              CachedNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [18926,18933]`walk_tb`
                                                 Identifier: walk_tb
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [18934,18947]`exc_traceback`
+                                                Frame: [3,exc_traceback,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                             KeywordArgumentsNodeGen SourceSection: None
                                               KeywordLiteralNode SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [18956,18961]`limit`
@@ -4273,30 +4275,30 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           ReadLocalVariableNode SourceSection: [19201,19205]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          PythonCallNodeGen SourceSection: [19213,19233]`_some_str(exc_value)...`
-                                            CallNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [19223,19232]`exc_value`
-                                              Frame: [2,exc_value,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                          PythonCallUnary SourceSection: [19213,19233]`_some_str(exc_value)...`
+                                            CachedNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [19213,19222]`_some_str`
                                               Identifier: _some_str
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [19223,19232]`exc_value`
+                                              Frame: [2,exc_value,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [19242,19560]`if exc_type and issu...`
                                           YesNodeGen SourceSection: None
                                             AndNode SourceSection: [19245,19291]`exc_type and issubcl...`
                                               ReadLocalVariableNode SourceSection: [19245,19253]`exc_type`
                                                 Frame: [1,exc_type,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: [19258,19291]`issubclass(exc_type,...`
-                                                CallNodeGen SourceSection: None
+                                              PythonCallBinary SourceSection: [19258,19291]`issubclass(exc_type,...`
+                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [19258,19268]`issubclass`
+                                                  Identifier: issubclass
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [19269,19277]`exc_type`
                                                   Frame: [1,exc_type,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [19279,19290]`SyntaxError`
                                                   Identifier: SyntaxError
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [19258,19268]`issubclass`
-                                                  Identifier: issubclass
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -4318,8 +4320,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [19397,19401]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: [19411,19432]`str(exc_value.lineno...`
-                                                CallNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [19411,19432]`str(exc_value.lineno...`
+                                                CachedNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [19411,19414]`str`
+                                                  Identifier: str
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [19415,19431]`exc_value.lineno`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: lineno
@@ -4328,9 +4333,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [19415,19424]`exc_value`
                                                     Frame: [2,exc_value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [19411,19414]`str`
-                                                  Identifier: str
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             SetAttributeNodeGen SourceSection: [19445,19471]`self.text = exc_valu...`
                                               Attribute: text
                                               ReadLocalVariableNode SourceSection: [19445,19449]`self`
@@ -4392,8 +4394,17 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 0
                             StringLiteralNode SourceSection: None
-                            PythonCallNodeGen SourceSection: [19613,19625]`@classmethod`
-                              CallNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [19613,19625]`@classmethod`
+                              CachedNodeGen SourceSection: None
+                              ReadClassAttributeNodeGen SourceSection: [19613,19625]`@classmethod`
+                                GetItemNodeGen SourceSection: None
+                                  ArgumentExpressionNode SourceSection: None
+                                    ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
+                                  StringLiteralNode SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: classmethod
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               FunctionDefinitionNode Name: from_exception SourceSection: None
                                 Arguments: None
                                 KwArguments: None
@@ -4455,14 +4466,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               PythonCallNodeGen SourceSection: [19753,19808]`cls(type(exc), exc, ...`
                                                 CallNodeGen SourceSection: None
                                                 PositionalArgumentsNode SourceSection: None
-                                                  PythonCallNodeGen SourceSection: [19757,19766]`type(exc)`
-                                                    CallNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [19762,19765]`exc`
-                                                      Frame: [1,exc,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonCallUnary SourceSection: [19757,19766]`type(exc)`
+                                                    CachedNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [19757,19761]`type`
                                                       Identifier: type
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [19762,19765]`exc`
+                                                      Frame: [1,exc,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [19768,19771]`exc`
                                                     Frame: [1,exc,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -4490,15 +4501,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadClassAttributeNodeGen SourceSection: [19613,19625]`@classmethod`
-                                GetItemNodeGen SourceSection: None
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  StringLiteralNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: classmethod
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [19814,20108]`def _load_lines(self...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -4782,8 +4784,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ExpressionStatementNode SourceSection: [20794,20839]`yield _format_final_...`
                                               YieldNode SourceSection: [20794,20839]`yield _format_final_...`
                                                 flagSlot: 0
-                                                PythonCallNodeGen SourceSection: [20800,20839]`_format_final_exc_li...`
-                                                  CallNodeGen SourceSection: None
+                                                PythonCallBinary SourceSection: [20800,20839]`_format_final_exc_li...`
+                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [20800,20822]`_format_final_exc_li...`
+                                                    Identifier: _format_final_exc_line
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ObjectLiteralNode SourceSection: [20823,20827]`None`
                                                   GetAttributeNodeGen SourceSection: [20829,20838]`self._str`
                                                     GetFixedAttributeNodeGen SourceSection: None
@@ -4793,9 +4798,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadGeneratorFrameVariableNode SourceSection: [20829,20833]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [20800,20822]`_format_final_exc_li...`
-                                                    Identifier: _format_final_exc_line
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             ReturnNode SourceSection: [20852,20858]`return`
                                             GeneratorAccessNode SourceSection: None
@@ -4868,8 +4870,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         GeneratorIfNode SourceSection: [21040,21249]`if not issubclass(se...`
                                           GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [21043,21085]`not issubclass(self....`
-                                            PythonCallNodeGen SourceSection: [21047,21085]`issubclass(self.exc_...`
-                                              CallNodeGen SourceSection: None
+                                            PythonCallBinary SourceSection: [21047,21085]`issubclass(self.exc_...`
+                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [21047,21057]`issubclass`
+                                                Identifier: issubclass
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [21058,21071]`self.exc_type`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: exc_type
@@ -4881,15 +4886,15 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21073,21084]`SyntaxError`
                                                 Identifier: SyntaxError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: [21047,21057]`issubclass`
-                                                Identifier: issubclass
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorBlockNode SourceSection: None
                                             ExpressionStatementNode SourceSection: [21099,21145]`yield _format_final_...`
                                               YieldNode SourceSection: [21099,21145]`yield _format_final_...`
                                                 flagSlot: 3
-                                                PythonCallNodeGen SourceSection: [21105,21145]`_format_final_exc_li...`
-                                                  CallNodeGen SourceSection: None
+                                                PythonCallBinary SourceSection: [21105,21145]`_format_final_exc_li...`
+                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21105,21127]`_format_final_exc_li...`
+                                                    Identifier: _format_final_exc_line
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: [21128,21133]`stype`
                                                     Frame: [1,stype,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -4901,9 +4906,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadGeneratorFrameVariableNode SourceSection: [21135,21139]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21105,21127]`_format_final_exc_li...`
-                                                    Identifier: _format_final_exc_line
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             ReturnNode SourceSection: [21158,21164]`return`
                                             GeneratorAccessNode SourceSection: None
@@ -4928,8 +4930,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [4,lineno,Illegal]
                                           OrNode SourceSection: [21305,21328]`str(self.lineno) or ...`
-                                            PythonCallNodeGen SourceSection: [21305,21321]`str(self.lineno)`
-                                              CallNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [21305,21321]`str(self.lineno)`
+                                              CachedNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [21305,21308]`str`
+                                                Identifier: str
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [21309,21320]`self.lineno`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: lineno
@@ -4938,24 +4943,21 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadGeneratorFrameVariableNode SourceSection: [21309,21313]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: [21305,21308]`str`
-                                                Identifier: str
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [21325,21328]`'?'`
                                             YesNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [21337,21392]`yield '  File "{}", ...`
                                           YieldNode SourceSection: [21337,21392]`yield '  File "{}", ...`
                                             flagSlot: 6
-                                            PythonCallNodeGen SourceSection: [21343,21392]`'  File "{}", line {...`
-                                              CallNodeGen SourceSection: None
+                                            PythonCallBinary SourceSection: [21343,21392]`'  File "{}", line {...`
+                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              GetCallAttributeNodeGen SourceSection: None
+                                                StringLiteralNode SourceSection: [21343,21367]`'  File "{}", line {...`
                                               ReadGeneratorFrameVariableNode SourceSection: [21375,21383]`filename`
                                                 Frame: [3,filename,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [21385,21391]`lineno`
                                                 Frame: [4,lineno,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetCallAttributeNodeGen SourceSection: None
-                                                StringLiteralNode SourceSection: [21343,21367]`'  File "{}", line {...`
                                             GeneratorAccessNode SourceSection: None
                                         WriteGeneratorFrameVariableNodeGen SourceSection: [21402,21421]`badline = self.text`
                                           Identifier: badline
@@ -4993,16 +4995,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ExpressionStatementNode SourceSection: [21495,21535]`yield '    {}\n'.for...`
                                               YieldNode SourceSection: [21495,21535]`yield '    {}\n'.for...`
                                                 flagSlot: 7
-                                                PythonCallNodeGen SourceSection: [21501,21535]`'    {}\n'.format(ba...`
-                                                  CallNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [21501,21535]`'    {}\n'.format(ba...`
+                                                  CachedNodeGen SourceSection: None
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    StringLiteralNode SourceSection: [21501,21511]`'    {}\n'`
                                                   PythonCallNodeGen SourceSection: [21519,21534]`badline.strip()`
                                                     CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadGeneratorFrameVariableNode SourceSection: [21519,21526]`badline`
                                                         Frame: [5,badline,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetCallAttributeNodeGen SourceSection: None
-                                                    StringLiteralNode SourceSection: [21501,21511]`'    {}\n'`
                                                 GeneratorAccessNode SourceSection: None
                                             GeneratorIfNode SourceSection: [21548,21964]`if offset is not Non...`
                                               GeneratorAccessNode SourceSection: None
@@ -5017,13 +5019,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Identifier: caretspace
                                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                     Frame: [7,caretspace,Illegal]
-                                                  PythonCallNodeGen SourceSection: [21600,21620]`badline.rstrip('\n')...`
-                                                    CallNodeGen SourceSection: None
-                                                    StringLiteralNode SourceSection: [21615,21619]`'\n'`
+                                                  PythonCallUnary SourceSection: [21600,21620]`badline.rstrip('\n')...`
+                                                    CachedNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadGeneratorFrameVariableNode SourceSection: [21600,21607]`badline`
                                                         Frame: [5,badline,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                    StringLiteralNode SourceSection: [21615,21619]`'\n'`
                                                 WriteGeneratorFrameVariableNodeGen SourceSection: [21637,21678]`offset = min(len(car...`
                                                   Identifier: offset
                                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -5031,22 +5033,22 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   BinaryArithmeticExpression SourceSection: [21646,21678]`min(len(caretspace),...`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __sub__
-                                                    PythonCallNodeGen SourceSection: [21646,21674]`min(len(caretspace),...`
-                                                      CallNodeGen SourceSection: None
-                                                      PythonCallNodeGen SourceSection: [21650,21665]`len(caretspace)`
-                                                        CallNodeGen SourceSection: None
-                                                        ReadGeneratorFrameVariableNode SourceSection: [21654,21664]`caretspace`
-                                                          Frame: [7,caretspace,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [21650,21653]`len`
-                                                          Identifier: len
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      ReadGeneratorFrameVariableNode SourceSection: [21667,21673]`offset`
-                                                        Frame: [6,offset,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonCallBinary SourceSection: [21646,21674]`min(len(caretspace),...`
+                                                      CallBinaryMethodCachedNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [21646,21649]`min`
                                                         Identifier: min
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                      PythonCallUnary SourceSection: [21650,21665]`len(caretspace)`
+                                                        CachedNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [21650,21653]`len`
+                                                          Identifier: len
+                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                        ReadGeneratorFrameVariableNode SourceSection: [21654,21664]`caretspace`
+                                                          Frame: [7,caretspace,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                      ReadGeneratorFrameVariableNode SourceSection: [21667,21673]`offset`
+                                                        Frame: [6,offset,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [21677,21678]`1`
                                                       Value: 1
                                                 WriteGeneratorFrameVariableNodeGen SourceSection: [21695,21736]`caretspace = caretsp...`
@@ -5138,17 +5140,17 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ExpressionStatementNode SourceSection: [21910,21955]`yield '    {}^\n'.fo...`
                                                   YieldNode SourceSection: [21910,21955]`yield '    {}^\n'.fo...`
                                                     flagSlot: 8
-                                                    PythonCallNodeGen SourceSection: [21916,21955]`'    {}^\n'.format('...`
-                                                      CallNodeGen SourceSection: None
-                                                      PythonCallNodeGen SourceSection: [21935,21954]`''.join(caretspace)`
-                                                        CallNodeGen SourceSection: None
+                                                    PythonCallUnary SourceSection: [21916,21955]`'    {}^\n'.format('...`
+                                                      CachedNodeGen SourceSection: None
+                                                      GetCallAttributeNodeGen SourceSection: None
+                                                        StringLiteralNode SourceSection: [21916,21927]`'    {}^\n'`
+                                                      PythonCallUnary SourceSection: [21935,21954]`''.join(caretspace)`
+                                                        CachedNodeGen SourceSection: None
+                                                        GetCallAttributeNodeGen SourceSection: None
+                                                          StringLiteralNode SourceSection: [21935,21937]`''`
                                                         ReadGeneratorFrameVariableNode SourceSection: [21943,21953]`caretspace`
                                                           Frame: [7,caretspace,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        GetCallAttributeNodeGen SourceSection: None
-                                                          StringLiteralNode SourceSection: [21935,21937]`''`
-                                                      GetCallAttributeNodeGen SourceSection: None
-                                                        StringLiteralNode SourceSection: [21916,21927]`'    {}^\n'`
                                                     GeneratorAccessNode SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                               BlockNode SourceSection: None
@@ -5172,16 +5174,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ExpressionStatementNode SourceSection: [22014,22049]`yield "{}: {}\n".for...`
                                           YieldNode SourceSection: [22014,22049]`yield "{}: {}\n".for...`
                                             flagSlot: 13
-                                            PythonCallNodeGen SourceSection: [22020,22049]`"{}: {}\n".format(st...`
-                                              CallNodeGen SourceSection: None
+                                            PythonCallBinary SourceSection: [22020,22049]`"{}: {}\n".format(st...`
+                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              GetCallAttributeNodeGen SourceSection: None
+                                                StringLiteralNode SourceSection: [22020,22030]`"{}: {}\n"`
                                               ReadGeneratorFrameVariableNode SourceSection: [22038,22043]`stype`
                                                 Frame: [1,stype,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [22045,22048]`msg`
                                                 Frame: [8,msg,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetCallAttributeNodeGen SourceSection: None
-                                                StringLiteralNode SourceSection: [22020,22030]`"{}: {}\n"`
                                             GeneratorAccessNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: None
@@ -5430,5 +5432,3 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None

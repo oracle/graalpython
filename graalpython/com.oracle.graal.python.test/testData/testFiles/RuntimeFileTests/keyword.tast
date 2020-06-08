@@ -60,12 +60,12 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
             Key: __contains__
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
-          PythonCallNodeGen SourceSection: [966,983]`frozenset(kwlist)`
-            CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: [976,982]`kwlist`
-              Identifier: kwlist
+          PythonCallUnary SourceSection: [966,983]`frozenset(kwlist)`
+            CachedNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [966,975]`frozenset`
               Identifier: frozenset
+            ReadNameNodeGen SourceSection: [976,982]`kwlist`
+              Identifier: kwlist
       WriteNameNodeGen SourceSection: [998,2207]`def main():↵    impo...`
         Identifier: main
         FunctionDefinitionNode Name: main SourceSection: None
@@ -147,14 +147,14 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         BinaryComparisonNodeGen SourceSection: [1115,1128]`len(args) > 1`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __gt__
-                          PythonCallNodeGen SourceSection: [1115,1124]`len(args)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [1119,1123]`args`
-                              Frame: [2,args,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [1115,1124]`len(args)`
+                            CachedNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [1115,1118]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [1119,1123]`args`
+                              Frame: [2,args,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [1127,1128]`1`
                             Value: 1
                       WriteLocalVariableNodeGen SourceSection: [1130,1147]`optfile = args[1]`
@@ -231,8 +231,11 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                               Value: 0
                           SliceLiteralNodeGen SourceSection: [1381,1404]`len(format[0].strip(...`
                             PythonObjectFactoryNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [1381,1403]`len(format[0].strip(...`
-                              CallNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [1381,1403]`len(format[0].strip(...`
+                              CachedNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [1381,1384]`len`
+                                Identifier: len
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [1385,1402]`format[0].strip()`
                                 CallNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
@@ -242,9 +245,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [1392,1393]`0`
                                       Value: 0
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [1381,1384]`len`
-                                Identifier: len
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             EmptyNode SourceSection: None
                             EmptyNode SourceSection: None
                         StringLiteralNode SourceSection: [1421,1425]`'\n'`
@@ -254,13 +254,13 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           Identifier: strprog
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [8,strprog,Illegal]
-                          PythonCallNodeGen SourceSection: [1515,1538]`re.compile('"([^"]+)...`
-                            CallNodeGen SourceSection: None
-                            StringLiteralNode SourceSection: [1526,1537]`'"([^"]+)"'`
+                          PythonCallUnary SourceSection: [1515,1538]`re.compile('"([^"]+)...`
+                            CachedNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [1515,1517]`re`
                                 Frame: [1,re,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                            StringLiteralNode SourceSection: [1526,1537]`'"([^"]+)"'`
                         WriteLocalVariableNodeGen SourceSection: [1547,1557]`lines = []`
                           Identifier: lines
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -290,23 +290,27 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                     Identifier: match
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [10,match,Illegal]
-                                    PythonCallNodeGen SourceSection: [1638,1658]`strprog.search(line)...`
-                                      CallNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [1653,1657]`line`
-                                        Frame: [11,line,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    PythonCallUnary SourceSection: [1638,1658]`strprog.search(line)...`
+                                      CachedNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1638,1645]`strprog`
                                           Frame: [8,strprog,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [1653,1657]`line`
+                                        Frame: [11,line,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
                                   IfNode SourceSection: [1675,1764]`if match:↵          ...`
                                     YesNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [1678,1683]`match`
                                         Frame: [10,match,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [1705,1759]`lines.append("      ...`
-                                      PythonCallNodeGen SourceSection: [1705,1759]`lines.append("      ...`
-                                        CallNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [1705,1759]`lines.append("      ...`
+                                        CachedNodeGen SourceSection: None
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [1705,1710]`lines`
+                                            Frame: [9,lines,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         BinaryArithmeticExpression SourceSection: [1718,1758]`"        '" + match....`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __add__
@@ -317,21 +321,17 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __add__
                                               StringLiteralNode SourceSection: [1718,1729]`"        '"`
-                                              PythonCallNodeGen SourceSection: [1732,1746]`match.group(1)`
-                                                CallNodeGen SourceSection: None
-                                                IntegerLiteralNode SourceSection: [1744,1745]`1`
-                                                  Value: 1
+                                              PythonCallUnary SourceSection: [1732,1746]`match.group(1)`
+                                                CachedNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [1732,1737]`match`
                                                     Frame: [10,match,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                IntegerLiteralNode SourceSection: [1744,1745]`1`
+                                                  Value: 1
                                             StringLiteralNode SourceSection: [1749,1753]`"',"`
                                           ReadLocalVariableNode SourceSection: [1756,1758]`nl`
                                             Frame: [7,nl,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [1705,1710]`lines`
-                                            Frame: [9,lines,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                 BlockNode SourceSection: None
@@ -345,14 +345,14 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         Identifier: fp
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [6,fp,Illegal]
-                      PythonCallNodeGen SourceSection: [1476,1489]`open(iptfile)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [1481,1488]`iptfile`
-                          Frame: [3,iptfile,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [1476,1489]`open(iptfile)`
+                        CachedNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1476,1480]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [1481,1488]`iptfile`
+                          Frame: [3,iptfile,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
@@ -382,8 +382,12 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                             BinaryArithmeticExpression SourceSection: [1856,1900]`format.index("#--sta...`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __add__
-                              PythonCallNodeGen SourceSection: [1856,1896]`format.index("#--sta...`
-                                CallNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [1856,1896]`format.index("#--sta...`
+                                CachedNodeGen SourceSection: None
+                                GetCallAttributeNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [1856,1862]`format`
+                                    Frame: [5,format,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                                 BinaryArithmeticExpression SourceSection: [1869,1895]`"#--start keywords--...`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __add__
@@ -391,28 +395,24 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                   ReadLocalVariableNode SourceSection: [1893,1895]`nl`
                                     Frame: [7,nl,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetCallAttributeNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [1856,1862]`format`
-                                    Frame: [5,format,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [1899,1900]`1`
                                 Value: 1
                           WriteLocalVariableNodeGen SourceSection: [1909,1953]`end = format.index("...`
                             Identifier: end
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [13,end,Illegal]
-                            PythonCallNodeGen SourceSection: [1915,1953]`format.index("#--end...`
-                              CallNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [1915,1953]`format.index("#--end...`
+                              CachedNodeGen SourceSection: None
+                              GetCallAttributeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [1915,1921]`format`
+                                  Frame: [5,format,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                               BinaryArithmeticExpression SourceSection: [1928,1952]`"#--end keywords--" ...`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __add__
                                 StringLiteralNode SourceSection: [1928,1947]`"#--end keywords--"`
                                 ReadLocalVariableNode SourceSection: [1950,1952]`nl`
                                   Frame: [7,nl,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              GetCallAttributeNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [1915,1921]`format`
-                                  Frame: [5,format,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [1962,1987]`format[start:end] = ...`
                             ReadLocalVariableNode SourceSection: None
@@ -433,9 +433,8 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         ExceptNode SourceSection: None
                           BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [2019,2079]`sys.stderr.write("ta...`
-                              PythonCallNodeGen SourceSection: [2019,2079]`sys.stderr.write("ta...`
-                                CallNodeGen SourceSection: None
-                                StringLiteralNode SourceSection: [2036,2078]`"target does not con...`
+                              PythonCallUnary SourceSection: [2019,2079]`sys.stderr.write("ta...`
+                                CachedNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNodeGen SourceSection: [2019,2029]`sys.stderr`
                                     GetFixedAttributeNodeGen SourceSection: None
@@ -445,30 +444,31 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                     ReadLocalVariableNode SourceSection: [2019,2022]`sys`
                                       Frame: [0,sys,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                StringLiteralNode SourceSection: [2036,2078]`"target does not con...`
                             ExpressionStatementNode SourceSection: [2088,2099]`sys.exit(1)`
-                              PythonCallNodeGen SourceSection: [2088,2099]`sys.exit(1)`
-                                CallNodeGen SourceSection: None
-                                IntegerLiteralNode SourceSection: [2097,2098]`1`
-                                  Value: 1
+                              PythonCallUnary SourceSection: [2088,2099]`sys.exit(1)`
+                                CachedNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [2088,2091]`sys`
                                     Frame: [0,sys,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [2097,2098]`1`
+                                  Value: 1
                           ReadGlobalOrBuiltinNodeGen SourceSection: [1999,2009]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     WithNode SourceSection: [2133,2207]`with open(optfile, '...`
                       ExpressionStatementNode SourceSection: [2184,2205]`fp.writelines(format...`
-                        PythonCallNodeGen SourceSection: [2184,2205]`fp.writelines(format...`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [2198,2204]`format`
-                            Frame: [5,format,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [2184,2205]`fp.writelines(format...`
+                          CachedNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2184,2186]`fp`
                               Frame: [6,fp,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2198,2204]`format`
+                            Frame: [5,format,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: fp
                         WriteLocalFrameSlotNodeGen SourceSection: None

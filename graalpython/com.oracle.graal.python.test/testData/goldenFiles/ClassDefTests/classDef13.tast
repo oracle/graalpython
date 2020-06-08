@@ -8,8 +8,10 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
     ExpressionWithSideEffects SourceSection: [0,54]`class Point:↵  x = 0...`
       WriteNameNodeGen SourceSection: [0,29]`class Point:↵  x = 0...`
         Identifier: Point
-        PythonCallNodeGen SourceSection: [0,29]`class Point:↵  x = 0...`
-          CallNodeGen SourceSection: None
+        PythonCallBinary SourceSection: [0,29]`class Point:↵  x = 0...`
+          CallBinaryMethodCachedNodeGen SourceSection: None
+          GetCallAttributeNodeGen SourceSection: None
+            BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Point SourceSection: None
             Arguments: None
             KwArguments: None
@@ -66,8 +68,6 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [29,40]`p = Point()`
         Identifier: p
         PythonCallNodeGen SourceSection: [33,40]`Point()`

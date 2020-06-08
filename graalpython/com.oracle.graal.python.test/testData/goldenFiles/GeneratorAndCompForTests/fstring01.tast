@@ -46,8 +46,10 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [24,64]`', '.join(f'{name}' ...`
-                            CallNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [24,64]`', '.join(f'{name}' ...`
+                            CachedNodeGen SourceSection: None
+                            GetCallAttributeNodeGen SourceSection: None
+                              StringLiteralNode SourceSection: [24,28]`', '`
                             GeneratorExpressionNode SourceSection: [44,63]`for name in someset`
                               Name: fn.<locals>.<genexp>:fstring01:1
                               FrameDescriptor: 2 slots [name, <return_val>]
@@ -99,8 +101,6 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                   Frame: [0,someset,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                            GetCallAttributeNodeGen SourceSection: None
-                              StringLiteralNode SourceSection: [24,28]`', '`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

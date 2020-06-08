@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,16]`{x for x in seq}`
-    PythonCallNodeGen SourceSection: [0,16]`{x for x in seq}`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,16]`{x for x in seq}`
+      CachedNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: set
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,15]`for x in seq`
         Name: [].<locals>.<genexp>:setComprehensions01:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -59,6 +62,3 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
           ReadNameNodeGen SourceSection: [12,15]`seq`
             Identifier: seq
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

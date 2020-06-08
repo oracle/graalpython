@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,34]`[ b for a in d1 if d...`
-    PythonCallNodeGen SourceSection: [0,34]`[ b for a in d1 if d...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,34]`[ b for a in d1 if d...`
+      CachedNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: list
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [4,33]`for a in d1 if d1 fo...`
         Name: [].<locals>.<genexp>:issueGR18309:1
         FrameDescriptor: 3 slots [b, a, <return_val>]
@@ -80,6 +83,3 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
           ReadNameNodeGen SourceSection: [13,15]`d1`
             Identifier: d1
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

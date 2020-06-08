@@ -41,8 +41,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                     GeneratorBlockNode SourceSection: None
                       WithNode SourceSection: [14,44]`with a:↵    bla(p1, ...`
                         ExpressionStatementNode SourceSection: [26,41]`bla(p1, p2, p3)`
-                          PythonCallNodeGen SourceSection: [26,41]`bla(p1, p2, p3)`
-                            CallNodeGen SourceSection: None
+                          PythonCallTernary SourceSection: [26,41]`bla(p1, p2, p3)`
+                            CallTernaryMethodCachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [26,29]`bla`
+                              Identifier: bla
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [30,32]`p1`
                               Identifier: p1
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -51,9 +54,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [38,40]`p3`
                               Identifier: p3
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [26,29]`bla`
-                              Identifier: bla
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
                           Frame: [0,a,Illegal]

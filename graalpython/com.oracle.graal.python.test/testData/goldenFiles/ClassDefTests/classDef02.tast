@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
       SideEffect:
         WriteNameNodeGen SourceSection: [0,22]`class foo(object):pa...`
           Identifier: foo
-          PythonCallNodeGen SourceSection: [0,22]`class foo(object):pa...`
-            CallNodeGen SourceSection: None
+          PythonCallTernary SourceSection: [0,22]`class foo(object):pa...`
+            CallTernaryMethodCachedNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: foo SourceSection: None
               Arguments: None
               KwArguments: None
@@ -59,5 +61,3 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [10,16]`object`
               Identifier: object
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None

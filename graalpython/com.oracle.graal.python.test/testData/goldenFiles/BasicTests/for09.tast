@@ -21,36 +21,36 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
                     BinaryComparisonNodeGen SourceSection: [30,42]`call01(i)==0`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __eq__
-                      PythonCallNodeGen SourceSection: [30,39]`call01(i)`
-                        CallNodeGen SourceSection: None
-                        ReadNameNodeGen SourceSection: [37,38]`i`
-                          Identifier: i
+                      PythonCallUnary SourceSection: [30,39]`call01(i)`
+                        CachedNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [30,36]`call01`
                           Identifier: call01
+                        ReadNameNodeGen SourceSection: [37,38]`i`
+                          Identifier: i
                       IntegerLiteralNode SourceSection: [41,42]`0`
                         Value: 0
                   BreakNode SourceSection: [52,57]`break`
                   BlockNode SourceSection: None
                 ExpressionStatementNode SourceSection: [62,70]`print(i)`
-                  PythonCallNodeGen SourceSection: [62,70]`print(i)`
-                    CallNodeGen SourceSection: None
-                    ReadNameNodeGen SourceSection: [68,69]`i`
-                      Identifier: i
+                  PythonCallUnary SourceSection: [62,70]`print(i)`
+                    CachedNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [62,67]`print`
                       Identifier: print
+                    ReadNameNodeGen SourceSection: [68,69]`i`
+                      Identifier: i
             GetIteratorExpressionNodeGen SourceSection: [9,21]`range(1, 10)`
               GetIteratorNodeGen SourceSection: None
-              PythonCallNodeGen SourceSection: [9,21]`range(1, 10)`
-                CallNodeGen SourceSection: None
+              PythonCallBinary SourceSection: [9,21]`range(1, 10)`
+                CallBinaryMethodCachedNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [9,14]`range`
+                  Identifier: range
                 IntegerLiteralNode SourceSection: [15,16]`1`
                   Value: 1
                 IntegerLiteralNode SourceSection: [18,20]`10`
                   Value: 10
-                ReadNameNodeGen SourceSection: [9,14]`range`
-                  Identifier: range
           ExpressionStatementNode SourceSection: [81,94]`print("test")`
-            PythonCallNodeGen SourceSection: [81,94]`print("test")`
-              CallNodeGen SourceSection: None
-              StringLiteralNode SourceSection: [87,93]`"test"`
+            PythonCallUnary SourceSection: [81,94]`print("test")`
+              CachedNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [81,86]`print`
                 Identifier: print
+              StringLiteralNode SourceSection: [87,93]`"test"`

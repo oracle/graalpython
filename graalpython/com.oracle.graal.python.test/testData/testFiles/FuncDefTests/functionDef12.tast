@@ -65,16 +65,16 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                   BlockNode SourceSection: None
                                   FunctionBodyNode SourceSection: [39,48]`print(x )`
                                     ExpressionStatementNode SourceSection: [39,48]`print(x )`
-                                      PythonCallNodeGen SourceSection: [39,48]`print(x )`
-                                        CallNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [39,48]`print(x )`
+                                        CachedNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [39,44]`print`
+                                          Identifier: print
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [45,46]`x`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [0,x,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: [39,44]`print`
-                                          Identifier: print
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

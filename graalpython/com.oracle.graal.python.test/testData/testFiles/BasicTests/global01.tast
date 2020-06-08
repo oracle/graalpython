@@ -48,14 +48,14 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                         IntegerLiteralNode SourceSection: [61,62]`2`
                           Value: 2
                     ExpressionStatementNode SourceSection: [84,109]`print("Inside add():...`
-                      PythonCallNodeGen SourceSection: [84,109]`print("Inside add():...`
-                        CallNodeGen SourceSection: None
+                      PythonCallBinary SourceSection: [84,109]`print("Inside add():...`
+                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [84,89]`print`
+                          Identifier: print
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [90,105]`"Inside add():"`
                         ReadGlobalOrBuiltinNodeGen SourceSection: [107,108]`c`
                           Identifier: c
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [84,89]`print`
-                          Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
@@ -65,10 +65,10 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [111,114]`add`
             Identifier: add
-      PythonCallNodeGen SourceSection: [117,137]`print("In main:", c)...`
-        CallNodeGen SourceSection: None
+      PythonCallBinary SourceSection: [117,137]`print("In main:", c)...`
+        CallBinaryMethodCachedNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [117,122]`print`
+          Identifier: print
         StringLiteralNode SourceSection: [123,133]`"In main:"`
         ReadNameNodeGen SourceSection: [135,136]`c`
           Identifier: c
-        ReadNameNodeGen SourceSection: [117,122]`print`
-          Identifier: print

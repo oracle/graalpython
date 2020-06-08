@@ -71,8 +71,10 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                       Identifier: C
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,C,Illegal]
-                                      PythonCallNodeGen SourceSection: [64,190]`class C(object):â†µ   ...`
-                                        CallNodeGen SourceSection: None
+                                      PythonCallTernary SourceSection: [64,190]`class C(object):â†µ   ...`
+                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          BuiltinsLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: C SourceSection: None
                                           Arguments: None
                                           KwArguments: None
@@ -178,8 +180,6 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [72,78]`object`
                                           Identifier: object
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          BuiltinsLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [190,210]`return C.a_local_var...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>

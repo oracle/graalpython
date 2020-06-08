@@ -18,8 +18,10 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
         SideEffect:
           WriteNameNodeGen SourceSection: [0,35]`class A:↵    class B...`
             Identifier: A
-            PythonCallNodeGen SourceSection: [0,35]`class A:↵    class B...`
-              CallNodeGen SourceSection: None
+            PythonCallBinary SourceSection: [0,35]`class A:↵    class B...`
+              CallBinaryMethodCachedNodeGen SourceSection: None
+              GetCallAttributeNodeGen SourceSection: None
+                BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: A SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -57,8 +59,10 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 0
                             StringLiteralNode SourceSection: None
-                            PythonCallNodeGen SourceSection: [13,35]`class B:↵        pas...`
-                              CallNodeGen SourceSection: None
+                            PythonCallBinary SourceSection: [13,35]`class B:↵        pas...`
+                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              GetCallAttributeNodeGen SourceSection: None
+                                BuiltinsLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: B SourceSection: None
                                 Arguments: None
                                 KwArguments: None
@@ -103,8 +107,6 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ObjectLiteralNode SourceSection: None
                               StringLiteralNode SourceSection: None
-                              GetCallAttributeNodeGen SourceSection: None
-                                BuiltinsLiteralNode SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -115,5 +117,3 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                             ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None

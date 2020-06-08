@@ -63,8 +63,11 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [42,67]`test(msg, self.strin...`
-                            CallNodeGen SourceSection: None
+                          PythonCallTernary SourceSection: [42,67]`test(msg, self.strin...`
+                            CallTernaryMethodCachedNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [42,46]`test`
+                              Identifier: test
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [47,50]`msg`
                               Frame: [1,msg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -78,9 +81,6 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [65,66]`1`
                               Value: 1
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [42,46]`test`
-                              Identifier: test
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

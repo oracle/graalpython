@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,25]`[x**y for x in range...`
-    PythonCallNodeGen SourceSection: [0,25]`[x**y for x in range...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,25]`[x**y for x in range...`
+      CachedNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: list
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,24]`for x in range(20)`
         Name: [].<locals>.<genexp>:list01:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -62,13 +65,10 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(20)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [15,24]`range(20)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [21,23]`20`
-              Value: 20
+          PythonCallUnary SourceSection: [15,24]`range(20)`
+            CachedNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
+            IntegerLiteralNode SourceSection: [21,23]`20`
+              Value: 20
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
