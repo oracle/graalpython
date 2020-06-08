@@ -36,6 +36,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 import java.util.List;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 @CoreFunctions(defineModule = "cmath")
@@ -50,6 +51,7 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     static final double P34 = 0.75 * Math.PI;
 
     static final double LARGE_DOUBLE = Double.MAX_VALUE / 4.0;       // used to avoid overflow
+    static final double LOG_LARGE_DOUBLE = Math.log(LARGE_DOUBLE);
     static final double LN_2 = 0.6931471805599453094;    // natural log of 2
     static final double LN_10 = 2.302585092994045684;    // natural log of 10
 
@@ -749,6 +751,245 @@ public class CmathModuleBuiltins extends PythonBuiltins {
 
         static AtanhNode create() {
             return CmathModuleBuiltinsFactory.AtanhNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "exp", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ExpNode extends CmathComplexUnaryBuiltinNode {
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(0.0, 0.0), null,        C(0.0, -0.0), C(0.0, 0.0), null,        C(0.0, 0.0), C(0.0, 0.0)},
+                {C(NAN, NAN), null,        null,         null,        null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(NAN, NAN), null,        C(1.0, -0.0), C(1.0, 0.0), null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(NAN, NAN), null,        C(1.0, -0.0), C(1.0, 0.0), null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(NAN, NAN), null,        null,         null,        null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(INF, NAN), null,        C(INF, -0.0), C(INF, 0.0), null,        C(INF, NAN), C(INF, NAN)},
+                {C(NAN, NAN), C(NAN, NAN), C(NAN, -0.0), C(NAN, 0.0), C(NAN, NAN), C(NAN, NAN), C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            if (!Double.isFinite(real) || !Double.isFinite(imag)) {
+                PComplex r;
+                if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
+                    if (real > 0) {
+                        r = factory().createComplex(Math.copySign(INF, Math.cos(imag)), Math.copySign(INF, Math.sin(imag)));
+                    } else {
+                        r = factory().createComplex(Math.copySign(0.0, Math.cos(imag)), Math.copySign(0.0, Math.sin(imag)));
+                    }
+                } else {
+                    r = specialValue(factory(), SPECIAL_VALUES, real, imag);
+                }
+                if (Double.isInfinite(imag) && (Double.isFinite(real) || (Double.isInfinite(real) && real > 0))) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+                return r;
+            }
+
+            double rreal, rimag;
+            if (real > LOG_LARGE_DOUBLE) {
+                double l = Math.exp(real - 1.0);
+                rreal = l * Math.cos(imag) * Math.E;
+                rimag = l * Math.sin(imag) * Math.E;
+            } else {
+                double l = Math.exp(real);
+                rreal = l * Math.cos(imag);
+                rimag = l * Math.sin(imag);
+            }
+            if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
+                throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+            }
+            return factory().createComplex(rreal, rimag);
+        }
+    }
+
+    @Builtin(name = "cos", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CosNode extends CmathComplexUnaryBuiltinNode {
+
+        @Child private CoshNode coshNode = CoshNode.create();
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            return coshNode.executeComplex(frame, factory().createComplex(-imag, real));
+        }
+    }
+
+    @Builtin(name = "cosh", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CoshNode extends CmathComplexUnaryBuiltinNode {
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(INF, NAN), null,        C(INF, 0.0),  C(INF, -0.0), null,        C(INF, NAN), C(INF, NAN)},
+                {C(NAN, NAN), null,        null,         null,         null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(NAN, 0.0), null,        C(1.0, 0.0),  C(1.0, -0.0), null,        C(NAN, 0.0), C(NAN, 0.0)},
+                {C(NAN, 0.0), null,        C(1.0, -0.0), C(1.0, 0.0),  null,        C(NAN, 0.0), C(NAN, 0.0)},
+                {C(NAN, NAN), null,        null,         null,         null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(INF, NAN), null,        C(INF, -0.0), C(INF, 0.0),  null,        C(INF, NAN), C(INF, NAN)},
+                {C(NAN, NAN), C(NAN, NAN), C(NAN, 0.0),  C(NAN, 0.0),  C(NAN, NAN), C(NAN, NAN), C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            if (!Double.isFinite(real) || !Double.isFinite(imag)) {
+                if (Double.isInfinite(imag) && !Double.isNaN(real)) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+                if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
+                    double r = Math.copySign(INF, Math.sin(imag));
+                    return factory().createComplex(Math.copySign(INF, Math.cos(imag)), real > 0 ? r : -r);
+                } else {
+                    return specialValue(factory(), SPECIAL_VALUES, real, imag);
+                }
+            }
+
+            double rreal, rimag;
+            if (Math.abs(real) > LOG_LARGE_DOUBLE) {
+                double x_minus_one = real - Math.copySign(1.0, real);
+                rreal = Math.cos(imag) * Math.cosh(x_minus_one) * Math.E;
+                rimag = Math.sin(imag) * Math.sinh(x_minus_one) * Math.E;
+            } else {
+                rreal = Math.cos(imag) * Math.cosh(real);
+                rimag = Math.sin(imag) * Math.sinh(real);
+            }
+            if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
+                throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+            }
+            return factory().createComplex(rreal, rimag);
+        }
+
+        static CoshNode create() {
+            return CmathModuleBuiltinsFactory.CoshNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "sin", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SinNode extends CmathComplexUnaryBuiltinNode {
+
+        @Child private SinhNode sinhNode = SinhNode.create();
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            PComplex s = sinhNode.executeComplex(frame, factory().createComplex(-imag, real));
+            return factory().createComplex(s.getImag(), -s.getReal());
+        }
+    }
+
+    @Builtin(name = "sinh", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SinhNode extends CmathComplexUnaryBuiltinNode {
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(INF, NAN), null,        C(-INF, -0.0), C(-INF, 0.0), null,        C(INF, NAN), C(INF, NAN)},
+                {C(NAN, NAN), null,        null,          null,         null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(0.0, NAN), null,        C(-0.0, -0.0), C(-0.0, 0.0), null,        C(0.0, NAN), C(0.0, NAN)},
+                {C(0.0, NAN), null,        C(0.0, -0.0),  C(0.0, 0.0),  null,        C(0.0, NAN), C(0.0, NAN)},
+                {C(NAN, NAN), null,        null,          null,         null,        C(NAN, NAN), C(NAN, NAN)},
+                {C(INF, NAN), null,        C(INF, -0.0),  C(INF, 0.0),  null,        C(INF, NAN), C(INF, NAN)},
+                {C(NAN, NAN), C(NAN, NAN), C(NAN, -0.0),  C(NAN, 0.0),  C(NAN, NAN), C(NAN, NAN), C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            if (!Double.isFinite(real) || !Double.isFinite(imag)) {
+                if (Double.isInfinite(imag) && !Double.isNaN(real)) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+                if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
+                    double r = Math.copySign(INF, Math.cos(imag));
+                    return factory().createComplex(real > 0 ? r : -r, Math.copySign(INF, Math.sin(imag)));
+                } else {
+                    return specialValue(factory(), SPECIAL_VALUES, real, imag);
+                }
+            }
+
+            double rreal, rimag;
+            if (Math.abs(real) > LOG_LARGE_DOUBLE) {
+                double x_minus_one = real - Math.copySign(1.0, real);
+                rreal = Math.cos(imag) * Math.sinh(x_minus_one) * Math.E;
+                rimag = Math.sin(imag) * Math.cosh(x_minus_one) * Math.E;
+            } else {
+                rreal = Math.cos(imag) * Math.sinh(real);
+                rimag = Math.sin(imag) * Math.cosh(real);
+            }
+            if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
+                throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+            }
+            return factory().createComplex(rreal, rimag);
+        }
+
+        static SinhNode create() {
+            return CmathModuleBuiltinsFactory.SinhNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "tan", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class TanNode extends CmathComplexUnaryBuiltinNode {
+
+        @Child private TanhNode tanhNode = TanhNode.create();
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            PComplex s = tanhNode.executeComplex(frame, factory().createComplex(-imag, real));
+            return factory().createComplex(s.getImag(), -s.getReal());
+        }
+    }
+
+    @Builtin(name = "tanh", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class TanhNode extends CmathComplexUnaryBuiltinNode {
+
+        // @formatter:off
+        @CompilerDirectives.CompilationFinal(dimensions = 2)
+        private static final ComplexConstant[][] SPECIAL_VALUES = {
+                {C(-1.0, 0.0), null,        C(-1.0, -0.0), C(-1.0, 0.0), null,        C(-1.0, 0.0), C(-1.0, 0.0)},
+                {C(NAN, NAN),  null,        null,          null,         null,        C(NAN, NAN),  C(NAN, NAN)},
+                {C(NAN, NAN),  null,        C(-0.0, -0.0), C(-0.0, 0.0), null,        C(NAN, NAN),  C(NAN, NAN)},
+                {C(NAN, NAN),  null,        C(0.0, -0.0),  C(0.0, 0.0),  null,        C(NAN, NAN),  C(NAN, NAN)},
+                {C(NAN, NAN),  null,        null,          null,         null,        C(NAN, NAN),  C(NAN, NAN)},
+                {C(1.0, 0.0),  null,        C(1.0, -0.0),  C(1.0, 0.0),  null,        C(1.0, 0.0),  C(1.0, 0.0)},
+                {C(NAN, NAN),  C(NAN, NAN), C(NAN, -0.0),  C(NAN, 0.0),  C(NAN, NAN), C(NAN, NAN),  C(NAN, NAN)},
+        };
+        // @formatter:on
+
+        @Override
+        PComplex compute(VirtualFrame frame, double real, double imag) {
+            if (!Double.isFinite(real) || !Double.isFinite(imag)) {
+                if (Double.isInfinite(imag) && Double.isFinite(real)) {
+                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                }
+                if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
+                    return factory().createComplex(real > 0 ? 1.0 : -1.0, Math.copySign(0.0, 2.0 * Math.sin(imag) * Math.cos(imag)));
+                } else {
+                    return specialValue(factory(), SPECIAL_VALUES, real, imag);
+                }
+            }
+            if (Math.abs(real) > LOG_LARGE_DOUBLE) {
+                return factory().createComplex(Math.copySign(1.0, real),
+                                4.0 * Math.sin(imag) * Math.cos(imag) * Math.exp(-20. * Math.abs(real)));
+            }
+            double tx = Math.tanh(real);
+            double ty = Math.tan(imag);
+            double cx = 1.0 / Math.cosh(real);
+            double txty = tx * ty;
+            double denom = 1.0 + txty * txty;
+            return factory().createComplex(tx * (1.0 + ty * ty) / denom, ((ty / denom) * cx) * cx);
+        }
+
+        static TanhNode create() {
+            return CmathModuleBuiltinsFactory.TanhNodeFactory.create();
         }
     }
 
