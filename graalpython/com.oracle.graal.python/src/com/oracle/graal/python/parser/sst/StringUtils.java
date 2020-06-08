@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 
@@ -61,8 +62,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.source.Source;
-import java.util.HashMap;
-import java.util.Map;
 
 public class StringUtils {
 
@@ -351,7 +350,7 @@ public class StringUtils {
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
         // name) in the
-        int cp = CodePointNamesTable.getCodePoint(charName);
+        int cp = getCodePoint(charName);
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
@@ -360,139 +359,20 @@ public class StringUtils {
         return closeIndex;
     }
 
-    // This class class uses a cache table due supporting JDK 8. From JDK 1.9 there is
-    // Character.codePointOf​(String name) method available that can replace it.
-    private static class CodePointNamesTable {
-        private static final Map<String, Integer> NAME_MAP = new HashMap<>();
-        private static int lastCodePoint = 0;
-        private static final String BLOCK_CJK_UNIFIED_IDEOGRAPH_NAME = "CJK UNIFIED IDEOGRAPH-";
-        private static final String[][] HANGUL_SYLLABLES = new String[][]{
-                        {"G", "A", ""},
-                        {"GG", "AE", "G"},
-                        {"N", "YA", "GG"},
-                        {"D", "YAE", "GS"},
-                        {"DD", "EO", "N",},
-                        {"R", "E", "NJ"},
-                        {"M", "YEO", "NH"},
-                        {"B", "YE", "D"},
-                        {"BB", "O", "L"},
-                        {"S", "WA", "LG"},
-                        {"SS", "WAE", "LM"},
-                        {"", "OE", "LB"},
-                        {"J", "YO", "LS"},
-                        {"JJ", "U", "LT"},
-                        {"C", "WEO", "LP"},
-                        {"K", "WE", "LH"},
-                        {"T", "WI", "M"},
-                        {"P", "YU", "B"},
-                        {"H", "EU", "BS"},
-                        {null, "YI", "S"},
-                        {null, "I", "SS"},
-                        {null, null, "NG"},
-                        {null, null, "J"},
-                        {null, null, "C"},
-                        {null, null, "K"},
-                        {null, null, "T"},
-                        {null, null, "P"},
-                        {null, null, "H"}
-        };
-
-        private static int findSyllable(String partName, int maxIndex, int column) {
-            int value = -1;
-            int len = -1;
-            String part;
-            int partLen;
-            for (int i = 0; i < maxIndex; i++) {
-                part = HANGUL_SYLLABLES[i][column];
-                if (part != null) {
-                    partLen = part.length();
-                    if (partName.startsWith(part) && len < partLen) {
-                        value = i;
-                        len = partLen;
-                    }
-                }
-            }
-            return value;
+    @CompilerDirectives.TruffleBoundary
+    public static int getCodePoint(String charName) {
+        int possibleChar = UCharacter.getCharFromName(charName);
+        if (possibleChar > -1) {
+            return possibleChar;
         }
-
-        public static int getCodePoint(String name) {
-            if (NAME_MAP.isEmpty()) {
-                // This is initialization of the table. Some names JDK 8 doesn't
-                // support all alliases and sequention names as CPython
-                NAME_MAP.put("LATIN CAPITAL LETTER GHA", 0x01A2);  // as LATIN CAPITAL LETTER OI.
-            }
-            if (name.startsWith("HANGUL SYLLABLE ")) {
-                // handling HANGUL SYLLABLE block
-                // java uses names composed from the name of this block and the unicode.
-                // For example HANGUL SYLLABLES B3D0 is HANGUL SYLLABLE DOLS in CPython
-                // this algorigtm is inspired from CPython
-                String part = name.substring(16); // length of 'HANGUL SYLLABLE ' string
-                int value1 = findSyllable(part, 19, 0);
-                if (value1 > -1) {
-                    part = part.substring(HANGUL_SYLLABLES[value1][0].length());
-                    int value2 = findSyllable(part, 21, 1);
-                    if (value2 > -1) {
-                        part = part.substring(HANGUL_SYLLABLES[value2][1].length());
-                        int value3 = findSyllable(part, 28, 2);
-                        if (value3 > -1 && part.length() == HANGUL_SYLLABLES[value3][2].length()) {
-                            int code = 0xAC00 + (value1 * 21 + value2) * 28 + value3;
-                            return code;
-                        }
-                    }
-                }
-            }
-            if (name.startsWith(BLOCK_CJK_UNIFIED_IDEOGRAPH_NAME)) {
-                // this block has the number in the character name
-                // Java uses names of these blocks like 'CJK Unified Ideographs Extension A 3401`
-                // etc.
-                String tNumber = name.substring(BLOCK_CJK_UNIFIED_IDEOGRAPH_NAME.length());
-                try {
-                    int number = Integer.parseInt(tNumber, 16);
-                    if ((0x3400 <= number && number <= 0x4DBF) // CJK Unified Ideographs Extension A
-                                    || (0x4E00 <= number && number <= 0x9FFF) // CJK Unified
-                                                                              // Ideographs
-                                    || (0x20000 <= number && number <= 0x2A6DF) // CJK Unified
-                                                                                // Ideographs
-                                                                                // Extension B
-                                    || (0x2A700 <= number && number <= 0x2B73F) // CJK Unified
-                                                                                // Ideographs
-                                                                                // Extension C
-                                    || (0x2B740 <= number && number <= 0x2B81F) // CJK Unified
-                                                                                // Ideographs
-                                                                                // Extension D
-                                    || (0x2B820 <= number && number <= 0x2CEAF) // CJK Unified
-                                                                                // Ideographs
-                                                                                // Extension E
-                                    || (0x2CEB0 <= number && number <= 0x2EBEF) // CJK Unified
-                                                                                // Ideographs
-                                                                                // Extension F
-                    ) {
-                        return number;
-                    }
-                } catch (NumberFormatException e) {
-                    // do nothing
-                }
-            }
-            Integer possibleChar = NAME_MAP.get(name);
-            if (possibleChar == null && lastCodePoint < Character.MAX_CODE_POINT) {
-                // fill the table with jdk names
-                while (lastCodePoint < Character.MAX_CODE_POINT) {
-                    String charName = Character.getName(lastCodePoint);
-                    if (charName != null) {
-                        NAME_MAP.put(charName, lastCodePoint);
-                        if (name.equals(charName)) {
-                            lastCodePoint++;
-                            return lastCodePoint - 1;
-                        }
-                    }
-                    lastCodePoint++;
-                }
-            }
-            if (possibleChar != null) {
-                return possibleChar;
-            }
-
-            return -1;
+        possibleChar = UCharacter.getCharFromExtendedName(charName);
+        if (possibleChar > -1) {
+            return possibleChar;
         }
+        possibleChar = UCharacter.getCharFromNameAlias(charName);
+        if (possibleChar > -1) {
+            return possibleChar;
+        }
+        return -1;
     }
 }
