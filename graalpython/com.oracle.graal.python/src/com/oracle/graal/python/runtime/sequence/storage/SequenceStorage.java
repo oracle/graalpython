@@ -25,7 +25,16 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+
 public abstract class SequenceStorage {
+
+    // Mutations lock
+    protected boolean lock;
+    @CompilationFinal private boolean lockingEnabled = false;
 
     public enum ListStorageType {
         Uninitialized,
@@ -58,6 +67,26 @@ public abstract class SequenceStorage {
                     return other == Uninitialized || other == Empty || other == Byte || other == Int;
                 default:
                     return true;
+            }
+        }
+    }
+
+    public final void setLock() {
+        if (!lockingEnabled) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lockingEnabled = true;
+        }
+        this.lock = true;
+    }
+
+    public final void releaseLock() {
+        this.lock = false;
+    }
+
+    protected final void checkLock() {
+        if (lockingEnabled) {
+            if (lock) {
+                PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError);
             }
         }
     }
