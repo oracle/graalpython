@@ -368,7 +368,11 @@ public final class PythonOptions {
 
         @SuppressWarnings("unchecked")
         public <T> T get(OptionKey<T> optionKey) {
-            return (T) engineOptions.get(optionKey);
+            if (engineOptions.containsKey(optionKey)) {
+                return (T) engineOptions.get(optionKey);
+            } else {
+                return optionKey.getDefaultValue();
+            }
         }
 
         public boolean hasBeenSet(OptionKey<?> optionKey) {
