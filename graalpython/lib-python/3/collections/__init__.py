@@ -1121,6 +1121,7 @@ class UserList(_collections_abc.MutableSequence):
             self.data.extend(other.data)
         else:
             self.data.extend(other)
+    def _sort(self, /, *args, **kwds): self.data._sort(*args, **kwds) # XXX to be removed once sorting is implemented internally (mq)
 
 
 

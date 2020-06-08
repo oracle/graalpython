@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 
-def sort(self, key=None, reverse=False):
+def _sort(self, key=None, reverse=False):
     if reverse:
         if key:
             lt = lambda a,b: key(a) > key(b)
@@ -56,4 +56,4 @@ def sort(self, key=None, reverse=False):
     return None
 
 
-list.sort = sort
+list._sort = _sort
