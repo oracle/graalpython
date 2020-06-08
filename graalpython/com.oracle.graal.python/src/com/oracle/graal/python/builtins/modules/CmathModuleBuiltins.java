@@ -14,8 +14,10 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
@@ -517,6 +519,58 @@ public class CmathModuleBuiltins extends PythonBuiltins {
                 return factory().createComplex(s, Math.copySign(d, imag));
             }
             return factory().createComplex(d, Math.copySign(s, imag));
+        }
+    }
+
+    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, keywordOnlyNames = {"rel_tol", "abs_tol"})
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    abstract static class IsCloseNode extends PythonQuaternaryBuiltinNode {
+
+        private static final double DEFAULT_REL_TOL = 1e-09;
+        private static final double DEFAULT_ABS_TOL = 0;
+
+        @Child ComplexBuiltins.AbsNode abs = ComplexBuiltins.AbsNode.create();
+
+        @Specialization
+        boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj) {
+            return isClose(a, b, relTolObj, absTolObj);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj) {
+            return isClose(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL);
+        }
+
+        @Specialization(limit = "2")
+        boolean doGeneral(VirtualFrame frame, Object aObj, Object bObj, Object relTolObj, Object absTolObj,
+                        @Cached CoerceToComplexNode coerceAToComplex,
+                        @Cached CoerceToComplexNode coerceBToComplex,
+                        @CachedLibrary("relTolObj") PythonObjectLibrary relTolLib,
+                        @CachedLibrary("absTolObj") PythonObjectLibrary absTolLib) {
+            PComplex a = coerceAToComplex.execute(frame, aObj);
+            PComplex b = coerceBToComplex.execute(frame, bObj);
+            double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relTolLib.asJavaDouble(relTolObj);
+            double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absTolLib.asJavaDouble(absTolObj);
+            return isClose(a, b, relTol, absTol);
+        }
+
+        private boolean isClose(PComplex a, PComplex b, double relTol, double absTol) {
+            if (relTol < 0.0 || absTol < 0.0) {
+                throw raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
+            }
+            if (a.getReal() == b.getReal() && a.getImag() == b.getImag()) {
+                return true;
+            }
+            if (Double.isInfinite(a.getReal()) || Double.isInfinite(a.getImag()) ||
+                            Double.isInfinite(b.getReal()) || Double.isInfinite(b.getImag())) {
+                return false;
+            }
+            PComplex diff = factory().createComplex(a.getReal() - b.getReal(), a.getImag() - b.getImag());
+            double len = abs.executeDouble(diff);
+            return len <= absTol || len <= relTol * abs.executeDouble(b) || len <= relTol * abs.executeDouble(a);
         }
     }
 }
