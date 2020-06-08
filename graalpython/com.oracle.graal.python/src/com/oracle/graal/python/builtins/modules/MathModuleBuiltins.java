@@ -1568,12 +1568,35 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AsinhNode extends MathDoubleUnaryBuiltinNode {
 
+        private static final double LN_2 = 6.93147180559945286227e-01;
+        private static final double TWO_POW_P28 = 0x1.0p28;
+        private static final double TWO_POW_M28 = 0x1.0p-28;
+
         @Override
+        @TruffleBoundary
         public double count(double value) {
-            if (Double.isInfinite(value)) {
+            double absx = Math.abs(value);
+
+            if (Double.isNaN(value) || Double.isInfinite(value)) {
+                return value + value;
+            }
+            if (absx < TWO_POW_M28) {
                 return value;
             }
-            return Math.log(value + Math.sqrt(value * value + 1.0));
+            double w;
+            if (absx > TWO_POW_P28) {
+                w = Math.log(absx) + LN_2;
+            } else if (absx > 2.0) {
+                w = Math.log(2.0 * absx + 1.0 / (Math.sqrt(value * value + 1.0) + absx));
+            } else {
+                double t = value * value;
+                w = Math.log1p(absx + t / (1.0 + Math.sqrt(1.0 + t)));
+            }
+            return Math.copySign(w, value);
+        }
+
+        public static AsinhNode create() {
+            return MathModuleBuiltinsFactory.AsinhNodeFactory.create();
         }
     }
 
