@@ -328,9 +328,7 @@ public class StringUtils {
     private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
 
     /**
-     * Replace '/N{Unicode Character Name}' with the code point of the character. In JDK some
-     * characters use different naming. The subset is bigger in JDK 9 than in JDK 8 etc. Also the
-     * subset doesn't have to match with CPython.
+     * Replace '/N{Unicode Character Name}' with the code point of the character.
      * 
      * @param text a text that contains /N{...} escape sequence
      * @param sb string builder where the result code point will be written
