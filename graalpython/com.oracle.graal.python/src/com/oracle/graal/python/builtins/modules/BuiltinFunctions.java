@@ -70,11 +70,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
 import java.math.BigInteger;
-import java.nio.CharBuffer;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -154,6 +150,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -271,7 +268,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @TruffleBoundary
         protected String longToString(long x) {
-            return Long.toBinaryString(Math.abs(x));
+            return Long.toBinaryString(x);
         }
 
         @TruffleBoundary
@@ -280,8 +277,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        String doL(long x) {
-            return buildString(x < 0, longToString(x));
+        String doL(long x,
+                        @Cached ConditionProfile isMinLong) {
+            if (isMinLong.profile(x == Long.MIN_VALUE)) {
+                return buildString(true, bigToString(PInt.longToBigInteger(x)));
+            }
+            return buildString(x < 0, longToString(Math.abs(x)));
         }
 
         @Specialization
@@ -299,7 +300,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached ConditionProfile isMinLong,
                         @Cached IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached BranchProfile isInt,
@@ -309,10 +311,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
-                    return doL(lib.asSize(index));
+                    return doL(lib.asSize(index), isMinLong);
                 } else if (index instanceof Long) {
                     isLong.enter();
-                    return doL((long) index);
+                    return doL((long) index, isMinLong);
                 } else if (index instanceof PInt) {
                     isPInt.enter();
                     return doPI((PInt) index);
@@ -1229,7 +1231,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object maxSequence(VirtualFrame frame, PythonObject arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
+        Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
@@ -1240,7 +1242,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object minmaxSequenceWithKey(VirtualFrame frame, PythonObject arg1, @SuppressWarnings("unused") Object[] args, PythonObject keywordArg,
+        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
@@ -1295,7 +1297,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length != 0")
-        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, PythonObject keywordArg,
+        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached CallNode keyCall,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
@@ -1340,7 +1342,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        private static Object applyKeyFunction(VirtualFrame frame, PythonObject keywordArg, CallNode keyCall, Object currentValue) {
+        private static Object applyKeyFunction(VirtualFrame frame, Object keywordArg, CallNode keyCall, Object currentValue) {
             return keyCall == null ? currentValue : keyCall.execute(frame, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
         }
     }
@@ -1409,30 +1411,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public int ord(VirtualFrame frame, PIBytesLike chr,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
+        public long ord(VirtualFrame frame, PIBytesLike chr,
+                        @Cached CastToJavaLongExactNode castNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             int len = lenNode.execute(chr.getSequenceStorage());
             if (len != 1) {
                 throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
-
-            Object element = getItemNode.execute(frame, chr.getSequenceStorage(), 0);
-            if (element instanceof Long) {
-                long e = (long) element;
-                if (e >= Byte.MIN_VALUE && e <= Byte.MAX_VALUE) {
-                    return (int) e;
-                }
-            } else if (element instanceof Integer) {
-                int e = (int) element;
-                if (e >= Byte.MIN_VALUE && e <= Byte.MAX_VALUE) {
-                    return e;
-                }
-            } else if (element instanceof Byte) {
-                return (byte) element;
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("got a bytes-like with non-byte elements");
+            return castNode.execute(getItemNode.execute(frame, chr.getSequenceStorage(), 0));
         }
     }
 
@@ -1634,8 +1621,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization
+        Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
+                        @Shared("callNode") @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, x, PNone.NONE);
+        }
+
+        @Specialization(guards = "!isNoValue(n)")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
+                        @Shared("callNode") @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, x, n);
         }
     }
@@ -1795,46 +1788,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 value = add.executeObject(frame, value, nextValue);
             }
-        }
-    }
-
-    @Builtin(name = "input", parameterNames = {"prompt"})
-    @GenerateNodeFactory
-    abstract static class InputNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        String input(@SuppressWarnings("unused") PNone prompt) {
-            CharBuffer buf = CharBuffer.allocate(1000);
-            try {
-                InputStream stdin = getContext().getStandardIn();
-                int read = stdin.read();
-                while (read != -1 && read != '\n') {
-                    if (buf.remaining() == 0) {
-                        CharBuffer newBuf = CharBuffer.allocate(buf.capacity() * 2);
-                        newBuf.put(buf);
-                        buf = newBuf;
-                    }
-                    buf.put((char) read);
-                    read = stdin.read();
-                }
-                buf.limit(buf.position());
-                buf.rewind();
-                return buf.toString();
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.EOFError, e);
-            }
-        }
-
-        @Specialization
-        String inputPrompt(PString prompt) {
-            return inputPrompt(prompt.getValue());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        String inputPrompt(String prompt) {
-            new PrintStream(getContext().getStandardOut()).println(prompt);
-            return input(null);
         }
     }
 

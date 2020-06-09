@@ -82,9 +82,40 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
 public class GeneratorBuiltins extends PythonBuiltins {
 
+    /**
+     * Creates a fresh copy of the generator arguments to be used for the next invocation of the
+     * generator. This is necessary to avoid persisting caller state. For example: If the generator
+     * is invoked using {@code next(g)} outside of any {@code except} handler but the generator
+     * requests the exception state, then the exception state will be written into the arguments. If
+     * we now use the same arguments array every time, the next invocation would think that there is
+     * not excepion but in fact, the a subsequent call ot {@code next} may have a different
+     * exception state.
+     * 
+     * <pre>
+     *     g = my_generator()
+     *
+     *     # invoke without any exception context
+     *     next(g)
+     *
+     *     try:
+     *         raise ValueError
+     *     except ValueError:
+     *         # invoke with exception context
+     *         next(g)
+     * </pre>
+     *
+     * This is necessary for correct chaining of exceptions.
+     */
+    private static Object[] prepareArguments(PGenerator self) {
+        Object[] generatorArguments = self.getArguments();
+        Object[] arguments = new Object[generatorArguments.length];
+        PythonUtils.arraycopy(generatorArguments, 0, arguments, 0, arguments.length);
+        return arguments;
+    }
+
     private static Object resumeGenerator(PGenerator self) {
         try {
-            return self.getCurrentCallTarget().call(self.getArguments());
+            return self.getCurrentCallTarget().call(prepareArguments(self));
         } catch (PException e) {
             self.markAsFinished();
             throw e;
@@ -133,8 +164,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 throw raise(StopIteration);
             }
             try {
-                Object[] arguments = self.getArguments();
-                return call.execute(frame, null, null, arguments);
+                return call.execute(frame, null, null, prepareArguments(self));
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
@@ -150,8 +180,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 throw raise(StopIteration);
             }
             try {
-                Object[] arguments = self.getArguments();
-                return call.execute(frame, self.getCurrentCallTarget(), arguments);
+                return call.execute(frame, self.getCurrentCallTarget(), prepareArguments(self));
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;

@@ -183,26 +183,21 @@ public final class DictBuiltins extends PythonBuiltins {
             }
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(arg1)", limit = "3")
-        public Object pop(VirtualFrame frame, PDict dict, Object arg0, PNone arg1,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            return popDefault(frame, dict, arg0, PNone.NONE, updatedStorage, hasFrame, lib);
-        }
-
         @Specialization(limit = "3")
         public Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Cached BranchProfile updatedStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasKey,
+                        @Cached ConditionProfile hasDefault,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
             Object retVal = lib.getItemWithFrame(dict.getDictStorage(), key, hasFrame, frame);
-            if (retVal != null) {
+            if (hasKey.profile(retVal != null)) {
                 removeItem(frame, dict, key, lib, hasFrame, updatedStorage);
                 return retVal;
-            } else {
+            } else if (hasDefault.profile(defaultValue != PNone.NO_VALUE)) {
                 return defaultValue;
+            } else {
+                throw raise(PythonBuiltinClassType.KeyError, "%s", key);
             }
         }
     }

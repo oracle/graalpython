@@ -229,10 +229,11 @@ def breakpointhook(*args, **kws):
         hook = getattr(module, funcname)
     except:
         warnings.warn(
-            'Ignoring unimportable $PYTHONBREAKPOINT: {}'.format(
+            'Ignoring unimportable $PYTHONBREAKPOINT: "{}"'.format(
                 hookname),
             RuntimeWarning)
-    return hook(*args, **kws)
+    else:
+        return hook(*args, **kws)
 
 
 __breakpointhook__ = breakpointhook
