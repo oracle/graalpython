@@ -283,7 +283,7 @@ public abstract class ListNodes {
      */
     @GenerateUncached
     public abstract static class AppendNode extends PNodeWithContext {
-        private static final BranchProfile[] DISABLED = new BranchProfile[] { BranchProfile.getUncached() };
+        private static final BranchProfile[] DISABLED = new BranchProfile[]{BranchProfile.getUncached()};
 
         public abstract void execute(PList list, Object value);
 
