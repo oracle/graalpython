@@ -346,6 +346,7 @@ public abstract class ErrorMessages {
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = "'%p' object cannot be interpreted as an int";
     public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%s' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
+    public static final String P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%p' object does not support item assignment";
     public static final String OBJ_DOESNT_SUPPORT_DELETION = "'%p' object doesn't support item deletion";
     public static final String OBJ_HAS_NO_LEN = "object of type '%p' has no len()";
     public static final String OBJ_ISNT_CALLABLE = "'%p' object is not callable";

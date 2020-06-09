@@ -34,6 +34,12 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
 import static com.oracle.graal.python.nodes.BuiltinNames.CLASSMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENUMERATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
@@ -2670,63 +2676,63 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_keys", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysView, isPublic = false)
+    @Builtin(name = DICT_KEYS, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_keys'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_KEYS));
         }
     }
 
-    @Builtin(name = "dict_keysiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysIterator, isPublic = false)
+    @Builtin(name = DICT_KEYITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_keysiterator'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_KEYITERATOR));
         }
     }
 
-    @Builtin(name = "dict_values", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesView, isPublic = false)
+    @Builtin(name = DICT_VALUES, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_values'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_VALUES));
         }
     }
 
-    @Builtin(name = "dict_valuesiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesIterator, isPublic = false)
+    @Builtin(name = DICT_VALUEITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_valuesiterator'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_VALUEITERATOR));
         }
     }
 
-    @Builtin(name = "dict_items", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsView, isPublic = false)
+    @Builtin(name = DICT_ITEMS, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_items'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_ITEMS));
         }
     }
 
-    @Builtin(name = "dict_itemsiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsIterator, isPublic = false)
+    @Builtin(name = DICT_ITEMITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_itemsiterator'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_ITEMITERATOR));
         }
     }
 
@@ -3181,5 +3187,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         PMap doit(LazyPythonClass self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createMap(self);
         }
+    }
+
+    @TruffleBoundary
+    private static String parentheses(String str) {
+        return new StringBuilder("'").append(str).append("'").toString();
     }
 }
