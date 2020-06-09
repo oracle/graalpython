@@ -265,13 +265,20 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         String sourceText = source.getCharacters().toString();
         // Preprocessing
-        // Check that declared encoding (if any) is valid. The file detector picks an encoding for
-        // the file, but it doesn't have a means of communicating that the declared encoding wasn't
-        // valid or supported, so in that case it defaults to Latin-1 and we have to recheck it here
-        try {
-            PythonFileDetector.findEncodingStrict(sourceText);
-        } catch (PythonFileDetector.InvalidEncodingException e) {
-            throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
+
+        // Check that declared encoding (if any) is valid. The file detector picks an encoding
+        // for the file, but it doesn't have a means of communicating that the declared encoding
+        // wasn't valid or supported, so in that case it defaults to Latin-1 and we have to
+        // recheck it here.
+        // msimacek: The encoding check should happen only when the source encoding was
+        // determined by PythonFileDetector. But we currently have no way to tell, so we
+        // assume that it is the case when it is a file.
+        if (source.getURI().getScheme().equals("file")) {
+            try {
+                PythonFileDetector.findEncodingStrict(sourceText);
+            } catch (PythonFileDetector.InvalidEncodingException e) {
+                throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
+            }
         }
         // ANTLR parsing
         Python3Parser parser = getPython3Parser(source, errors);
