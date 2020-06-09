@@ -297,7 +297,7 @@ public abstract class ErrorMessages {
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
     public static final String MALFORMED_STR_FOR_COMPLEX = "malformed string for complex() %s";
     public static final String MATH_DOMAIN_ERROR = "math domain error";
-    public static final String MATH_RAGE_ERROR = "math range error";
+    public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
     public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
