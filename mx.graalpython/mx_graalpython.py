@@ -412,16 +412,8 @@ def python_so(args):
         return _python_graalvm_launcher((args or []) + ["svm"])
 
 
-def _build_graalvm_launcher(mx_args):
-    mx.logv("Building GraalVM launcher with %s" % mx_args)
-    with set_env(LINKY_LAYOUT="*.jar"):
-        mx.run_mx(mx_args + ["build"])
-
-
 def _python_graalvm_launcher(args, extra_dy=None):
     dy = "/vm,/tools"
-    if extra_dy is None:
-        extra_dy = ",".join(("/" + dy[0]) if dy[1] else dy[0] for dy in mx.get_dynamic_imports())
     if extra_dy:
         dy += "," + extra_dy
     if "sandboxed" in args:
@@ -431,11 +423,11 @@ def _python_graalvm_launcher(args, extra_dy=None):
         args.remove("svm")
         dy += ",/substratevm"
     dy = ["--dynamicimports", dy]
-    _build_graalvm_launcher(dy)
+    mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
-    mx.run_mx(dy + ["graalvm-home"], out=out)
+    mx.run_mx(dy + ["graalvm-home"], out=mx.TeeOutputCapture(out))
     launcher = os.path.join(out.data.strip(), "bin", "graalpython").split("\n")[-1].strip()
-    mx.logv(launcher)
+    mx.log(launcher)
     if args:
         mx.run([launcher] + args)
     return launcher
