@@ -70,8 +70,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the keys
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictKeysIterator extends PHashingStorageIterator<Object> {
-        public PDictKeysIterator(Object clazz, DynamicObject storage, PHashingCollection dict) {
+    public static final class PDictKeyIterator extends PHashingStorageIterator<Object> {
+        public PDictKeyIterator(Object clazz, DynamicObject storage, PHashingCollection dict) {
             super(clazz, storage, dict.keys().iterator());
         }
     }
@@ -88,8 +88,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the values
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictValuesIterator extends PHashingStorageIterator<Object> {
-        public PDictValuesIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator) {
+    public static final class PDictValueIterator extends PHashingStorageIterator<Object> {
+        public PDictValueIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator) {
             super(clazz, storage, iterator);
         }
     }
@@ -106,8 +106,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the items
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictItemsIterator extends PHashingStorageIterator<DictEntry> {
-        public PDictItemsIterator(Object clazz, DynamicObject storage, HashingStorageIterator<DictEntry> iterator) {
+    public static final class PDictItemIterator extends PHashingStorageIterator<DictEntry> {
+        public PDictItemIterator(Object clazz, DynamicObject storage, HashingStorageIterator<DictEntry> iterator) {
             super(clazz, storage, iterator);
         }
     }

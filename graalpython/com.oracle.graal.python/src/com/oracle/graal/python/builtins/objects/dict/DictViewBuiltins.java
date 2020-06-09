@@ -120,14 +120,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getKeysViewIter(PDictKeysView self) {
-            return factory().createDictKeysIterator(self.getWrappedDict());
+            return factory().createDictKeyIterator(self.getWrappedDict());
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getItemsViewIter(PDictItemsView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictItemsIterator(lib.entries(getStore.execute(self.getWrappedDict())).iterator());
+            return factory().createDictItemIterator(lib.entries(getStore.execute(self.getWrappedDict())).iterator());
         }
     }
 

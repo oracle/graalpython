@@ -77,7 +77,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         Object doPDictValuesView(PDictValuesView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictValuesIterator(lib.values(getStore.execute(self.getWrappedDict())).iterator());
+            return factory().createDictValueIterator(lib.values(getStore.execute(self.getWrappedDict())).iterator());
         }
     }
 

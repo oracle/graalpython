@@ -350,7 +350,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(PDict self) {
-            return factory().createDictKeysIterator(self);
+            return factory().createDictKeyIterator(self);
         }
     }
 
