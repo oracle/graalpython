@@ -283,35 +283,40 @@ public abstract class ListNodes {
      */
     @GenerateUncached
     public abstract static class AppendNode extends PNodeWithContext {
+        private static final BranchProfile[] DISABLED = new BranchProfile[] { BranchProfile.getUncached() };
 
         public abstract void execute(PList list, Object value);
 
-        protected static boolean[] flagContainer(boolean flag) {
-            boolean[] container = new boolean[1];
-            container[0] = flag;
-            return container;
+        static BranchProfile[] getUpdateStoreProfile() {
+            return new BranchProfile[1];
+        }
+
+        static BranchProfile[] getUpdateStoreProfileUncached() {
+            return DISABLED;
         }
 
         @Specialization
         public void appendObjectGeneric(PList list, Object value,
-                        @Cached SequenceStorageNodes.AppendNode appendInInterpreterNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @Cached(value = "flagContainer(false)", uncached = "flagContainer(true)", dimensions = 1) boolean[] triedToCompile,
-                        @Cached BranchProfile updateStoreProfile) {
-            if (CompilerDirectives.inInterpreter() && !triedToCompile[0] && list.getOrigin() != null) {
-                SequenceStorage newStore = appendInInterpreterNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+                        @Cached(value = "getUpdateStoreProfile()", uncached = "getUpdateStoreProfileUncached()", dimensions = 1) BranchProfile[] updateStoreProfile) {
+            if (updateStoreProfile[0] == null) {
+                // Executed for the first time. We don't pollute the AppendNode specializations,
+                // yet, in case we're transitioning exactly once, because we'll pontentially pass
+                // that information on to the list origin and it'll never happen again.
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                SequenceStorage newStore = SequenceStorageNodes.AppendNode.getUncached().execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+                updateStoreProfile[0] = BranchProfile.create();
                 list.setSequenceStorage(newStore);
                 if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
                     list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
                 }
             } else {
-                if (!triedToCompile[0]) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    triedToCompile[0] = true;
-                }
                 SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
-                if (list.getSequenceStorage() != newStore) {
-                    updateStoreProfile.enter();
+                if (CompilerDirectives.inInterpreter() && list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
+                    list.setSequenceStorage(newStore);
+                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
+                } else if (list.getSequenceStorage() != newStore) {
+                    updateStoreProfile[0].enter();
                     list.setSequenceStorage(newStore);
                 }
             }
