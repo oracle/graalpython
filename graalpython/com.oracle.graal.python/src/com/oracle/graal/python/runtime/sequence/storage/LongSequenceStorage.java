@@ -146,7 +146,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         }
 
         values[idx] = value;
-        length++;
+        incLength();
     }
 
     @Override
@@ -176,7 +176,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         // range is the whole sequence?
         if (sameLengthProfile.profile(start == 0 && stop == length)) {
             values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
+            setNewLength(otherLength);
             minimizeCapacity();
             return;
         }
@@ -187,12 +187,12 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
             values[i] = sequence.values[j];
         }
 
-        length = length > stop ? length : stop;
+        setNewLength(length > stop ? length : stop);
     }
 
     public long popLong() {
         long pop = values[length - 1];
-        length--;
+        decLength();
         return pop;
     }
 
@@ -209,7 +209,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     public void appendLong(long value) {
         ensureCapacity(length + 1);
         values[length] = value;
-        length++;
+        incLength();
     }
 
     public void extendWithLongStorage(LongSequenceStorage other) {
@@ -221,7 +221,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
             values[i] = otherValues[j];
         }
 
-        length = extendedLength;
+        setNewLength(extendedLength);
     }
 
     @Override

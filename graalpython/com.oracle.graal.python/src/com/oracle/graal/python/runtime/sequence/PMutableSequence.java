@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -77,7 +78,7 @@ public abstract class PMutableSequence extends PSequence {
                     @Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
         final int len = lenNode.execute(getSequenceStorageNode.execute(this));
         try {
-            normalize.execute(index, len, IndexNodes.NormalizeIndexNode.INDEX_OUT_OF_BOUNDS);
+            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
         } catch (PException e) {
             return false;
         }
@@ -99,7 +100,7 @@ public abstract class PMutableSequence extends PSequence {
                     @Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
         final int len = lenNode.execute(getSequenceStorageNode.execute(this));
         try {
-            normalize.execute(index, len, IndexNodes.NormalizeIndexNode.INDEX_OUT_OF_BOUNDS);
+            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
         } catch (PException e) {
             return false;
         }

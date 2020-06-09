@@ -89,7 +89,7 @@ public final class PythonParserImpl implements PythonParser {
                                 ? chars.toString()
                                 : chars.subSequence(0, 197).toString() + "...");
             } else {
-                System.out.print("Parsing: " + source.getPath());
+                System.out.println("Parsing: " + source.getPath());
             }
         }
 
