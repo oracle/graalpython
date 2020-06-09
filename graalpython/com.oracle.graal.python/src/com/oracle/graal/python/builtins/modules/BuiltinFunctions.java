@@ -731,6 +731,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
+                // CPython adds a newline and we need to do the same in order to produce
+                // SyntaxError with the same offset when the line is incomplete
                 if (!code.endsWith("\n")) {
                     code += '\n';
                 }

@@ -185,6 +185,9 @@ def make_excepthook():
         try:
             import traceback
             lines = traceback.format_exception(typ, value, tb)
+            # CPython's C traceback printer diverges from traceback.print_exception in this small detail.
+            # We'd like to contribute to CPython to fix the divergence, but for now we do just
+            # a string substitution to pass the tests
             lines[-1] = lines[-1].replace(f'<unprintable {typ.__name__} object>', f'<exception str() failed>')
             for line in lines:
                 print(line, file=stderr, end="")
