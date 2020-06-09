@@ -135,7 +135,11 @@ public class ComplexBuiltins extends PythonBuiltins {
                     final double scaledH = Math.sqrt(scaledX * scaledX + scaledY * scaledY);
 
                     // remove scaling
-                    return scalb(scaledH, middleExp);
+                    double r = scalb(scaledH, middleExp);
+                    if (Double.isInfinite(r)) {
+                        throw raise(PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
+                    }
+                    return r;
                 }
             }
         }
