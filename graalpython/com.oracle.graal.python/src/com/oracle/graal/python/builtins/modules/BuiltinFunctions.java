@@ -71,8 +71,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.util.List;
 
+import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -719,9 +721,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract PCode execute(VirtualFrame frame, Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
 
         @Specialization
-        PCode compile(VirtualFrame frame, PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+        PCode compile(VirtualFrame frame, PBytes pBytes, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return compile(createString(toBytesNode.execute(frame, source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
+            try {
+                byte[] bytes = toBytesNode.execute(frame, pBytes);
+                Charset charset = PythonFileDetector.findEncodingStrict(bytes);
+                return compile(createString(bytes, charset), filename, mode, kwFlags, kwDontInherit, kwOptimize);
+            } catch (PythonFileDetector.InvalidEncodingException e) {
+                throw handleInvalidEncoding(filename, e);
+            }
+        }
+
+        @TruffleBoundary
+        private RuntimeException handleInvalidEncoding(String filename, PythonFileDetector.InvalidEncodingException e) {
+            PythonContext context = getContext();
+            // Create non-empty source to avoid overwriting the message with "unexpected EOF"
+            Source source = PythonLanguage.newSource(context, " ", filename, mayBeFromFile);
+            throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
         }
 
         @SuppressWarnings("unused")
@@ -766,8 +782,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String createString(byte[] bytes) {
-            return new String(bytes);
+        private static String createString(byte[] bytes, Charset charset) {
+            return new String(bytes, charset);
 
         }
 

@@ -41,7 +41,9 @@
 package com.oracle.graal.python;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +51,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 
 public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
@@ -79,7 +82,7 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
         }
     }
 
-    public static Charset tryGetCharsetFromLine(String line) {
+    private static Charset tryGetCharsetFromLine(String line) {
         if (line == null) {
             return null;
         }
@@ -94,6 +97,7 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
         return null;
     }
 
+    @TruffleBoundary
     public static Charset findEncodingStrict(BufferedReader reader) throws IOException {
         Charset charset;
         if ((charset = tryGetCharsetFromLine(reader.readLine())) != null) {
@@ -105,6 +109,7 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
         return StandardCharsets.UTF_8;
     }
 
+    @TruffleBoundary
     public static Charset findEncodingStrict(TruffleFile file) throws IOException {
         // Using Latin-1 to read the header avoids exceptions on non-ascii characters
         try (BufferedReader reader = file.newBufferedReader(StandardCharsets.ISO_8859_1)) {
@@ -112,8 +117,20 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
         }
     }
 
+    @TruffleBoundary
     public static Charset findEncodingStrict(String source) {
         try (BufferedReader reader = new BufferedReader(new StringReader(source))) {
+            return findEncodingStrict(reader);
+        } catch (IOException e) {
+            // Shouldn't happen on a string
+            throw new RuntimeException(e);
+        }
+    }
+
+    @TruffleBoundary
+    public static Charset findEncodingStrict(byte[] source) {
+        // Using Latin-1 to read the header avoids exceptions on non-ascii characters
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(source), StandardCharsets.ISO_8859_1))) {
             return findEncodingStrict(reader);
         } catch (IOException e) {
             // Shouldn't happen on a string
