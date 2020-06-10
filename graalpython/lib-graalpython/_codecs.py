@@ -119,7 +119,11 @@ def __codec_info_for_truffle(encoding):
     class StreamReader(TruffleCodec, codecs.StreamReader):
         pass
 
-    return codecs.CodecInfo(
+    class TruffleCodecInfo(codecs.CodecInfo):
+        def __reduce__(self):
+            return __codec_info_for_truffle, (encoding,)
+
+    return TruffleCodecInfo(
         name=encoding,
         encode=TruffleCodec().encode,
         decode=TruffleCodec().decode,
