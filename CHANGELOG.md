@@ -3,6 +3,10 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 20.2
+
+* Escaping Unicode characters using the character names in strings like "\N{GREEK CAPITAL LETTER DELTA}".
+
 ## Version 20.1.0
 
 * Update language support target and standard library to 3.8.2

@@ -1158,7 +1158,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(StringLiteralSSTNode node) {
-        PNode result = StringUtils.parseString(node.values, nodeFactory, errors);
+        PNode result = StringUtils.parseString(source, node, nodeFactory, errors);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }

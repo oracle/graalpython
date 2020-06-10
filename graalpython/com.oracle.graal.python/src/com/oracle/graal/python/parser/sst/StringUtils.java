@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.parser.sst;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+import com.ibm.icu.lang.UCharacter;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,9 +55,13 @@ import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.source.Source;
 
 public class StringUtils {
 
@@ -108,12 +114,12 @@ public class StringUtils {
         }
     }
 
-    public static PNode parseString(String[] strings, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
+    public static PNode parseString(Source source, StringLiteralSSTNode node, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
         List<FormatStringLiteralNode.StringPart> formatStrings = null;
-        for (String text : strings) {
+        for (String text : node.values) {
             boolean isRaw = false;
             boolean isBytes = false;
             boolean isFormat = false;
@@ -146,7 +152,7 @@ public class StringUtils {
             text = text.substring(strStartIndex, strEndIndex);
             if (isBytes) {
                 if (sb != null || isFormatString) {
-                    throw errors.raise(SyntaxError, CANNOT_MIX_MESSAGE);
+                    throw errors.raiseInvalidSyntax(source, source.createSection(node.startOffset, node.endOffset - node.startOffset), CANNOT_MIX_MESSAGE);
                 }
                 if (bb == null) {
                     bb = new BytesBuilder();
@@ -158,10 +164,17 @@ public class StringUtils {
                 }
             } else {
                 if (bb != null) {
-                    throw errors.raise(SyntaxError, CANNOT_MIX_MESSAGE);
+                    throw errors.raiseInvalidSyntax(source, source.createSection(node.startOffset, node.endOffset - node.startOffset), CANNOT_MIX_MESSAGE);
                 }
                 if (!isRaw) {
-                    text = unescapeJavaString(text);
+                    try {
+                        text = unescapeJavaString(text);
+                    } catch (PException e) {
+                        e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
+                        String message = e.getMessage();
+                        message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
+                        throw errors.raiseInvalidSyntax(source, source.createSection(node.startOffset, node.endOffset - node.startOffset), message);
+                    }
                 }
                 if (isFormat) {
                     isFormatString = true;
@@ -293,6 +306,10 @@ public class StringUtils {
                         sb.append(Character.toChars(hexCode));
                         i += 3;
                         continue;
+                    case 'N':
+                        // a character from Unicode Data Database
+                        i = doCharacterName(st, sb, i + 2);
+                        continue;
                     default:
                         sb.append(ch);
                         sb.append(nextChar);
@@ -304,5 +321,56 @@ public class StringUtils {
             sb.append(ch);
         }
         return sb.toString();
+    }
+
+    private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
+    private static final String MALFORMED_ERROR = " malformed \\N character escape";
+    private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
+
+    /**
+     * Replace '/N{Unicode Character Name}' with the code point of the character.
+     * 
+     * @param text a text that contains /N{...} escape sequence
+     * @param sb string builder where the result code point will be written
+     * @param offset this is offset of the open brace
+     * @return offset of the close brace
+     */
+    @CompilerDirectives.TruffleBoundary
+    private static int doCharacterName(String text, StringBuilder sb, int offset) {
+        char ch = text.charAt(offset);
+        if (ch != '{') {
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+        }
+        int closeIndex = text.indexOf("}", offset + 1);
+        if (closeIndex == -1) {
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
+        }
+        String charName = text.substring(offset + 1, closeIndex).toUpperCase();
+        // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
+        // name) in the
+        int cp = getCodePoint(charName);
+        if (cp >= 0) {
+            sb.append(Character.toChars(cp));
+        } else {
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
+        }
+        return closeIndex;
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public static int getCodePoint(String charName) {
+        int possibleChar = UCharacter.getCharFromName(charName);
+        if (possibleChar > -1) {
+            return possibleChar;
+        }
+        possibleChar = UCharacter.getCharFromExtendedName(charName);
+        if (possibleChar > -1) {
+            return possibleChar;
+        }
+        possibleChar = UCharacter.getCharFromNameAlias(charName);
+        if (possibleChar > -1) {
+            return possibleChar;
+        }
+        return -1;
     }
 }
