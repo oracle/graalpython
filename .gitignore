@@ -80,3 +80,5 @@ Python3.g4.stamp
 *.jfr
 
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/.antlr/
+graalpython/lib-python/3/test/data
+!graalpython/lib-python/3/test/data/README
