@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.For
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -134,7 +135,6 @@ public abstract class HashingStorage {
 
         public abstract HashingStorage execute(VirtualFrame frame, Object mapping, PKeyword[] kwargs);
 
-        @Child private GetNextNode nextNode;
         @Child private LookupInheritedAttributeNode lookupKeysAttributeNode;
 
         protected boolean isEmpty(PKeyword[] kwargs) {
@@ -186,112 +186,34 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
-        HashingStorage doMapping(VirtualFrame frame, Object mapping, @SuppressWarnings("unused") PKeyword[] kwargs,
+        HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(false, 0);
-            // That call must work since 'hasKeysAttribute' checks if it has the 'keys' attribute
-            // before.
-            Object keysIterable = callKeysNode.executeObject(frame, mapping);
-            Object keysIt = getIteratorNode.executeWith(frame, keysIterable);
-            while (true) {
-                try {
-                    Object keyObj = getNextNode().execute(frame, keysIt);
-                    Object valueObj = callGetItemNode.executeObject(frame, mapping, keyObj);
-
-                    curStorage = lib.setItem(curStorage, keyObj, valueObj);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-            }
-            if (kwargs.length > 0) {
-                curStorage = lib.addAllToOther(new KeywordsStorage(kwargs), curStorage);
-            }
-            return curStorage;
-        }
-
-        private GetNextNode getNextNode() {
-            if (nextNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nextNode = insert(GetNextNode.create());
-            }
-            return nextNode;
+            return addMappingToStorage(frame, mapping, kwargs, curStorage, callKeysNode, callGetItemNode, getIteratorNode, nextNode, errorProfile, lib);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
         HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") FastConstructListNode createListNode,
+                        @Cached GetIteratorNode getIterator,
+                        @Cached GetNextNode nextNode,
+                        @Cached FastConstructListNode createListNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Cached("create()") SequenceNodes.LenNode seqLenNode,
+                        @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("create()") IsBuiltinClassProfile isTypeErrorProfile) {
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinClassProfile isTypeErrorProfile) {
 
-            Object it = getIterator.executeWith(frame, iterable);
-
-            ArrayList<PSequence> elements = new ArrayList<>();
-            boolean isStringKey = false;
-            try {
-                while (true) {
-                    Object next = getNextNode().execute(frame, it);
-                    PSequence element = null;
-                    int len = 1;
-                    element = createListNode.execute(next);
-                    assert element != null;
-                    // This constructs a new list using the builtin type. So, the object cannot
-                    // be subclassed and we can directly call 'len()'.
-                    len = seqLenNode.execute(element);
-
-                    if (lengthTwoProfile.profile(len != 2)) {
-                        throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, arrayListSize(elements), len);
-                    }
-
-                    // really check for Java String since PString can be subclassed
-                    isStringKey = isStringKey || getItemNode.executeObject(frame, element, 0) instanceof String;
-
-                    arrayListAdd(elements, element);
-                }
-            } catch (PException e) {
-                if (isTypeErrorProfile.profileException(e, TypeError)) {
-                    throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, arrayListSize(elements));
-                } else {
-                    e.expectStopIteration(errorProfile);
-                }
-            }
-
-            HashingStorage storage = PDict.createNewStorage(isStringKey, arrayListSize(elements) + kwargs.length);
-            for (int j = 0; j < arrayListSize(elements); j++) {
-                PSequence element = arrayListGet(elements, j);
-                Object key = getItemNode.executeObject(frame, element, 0);
-                Object value = getItemNode.executeObject(frame, element, 1);
-                storage = lib.setItem(storage, key, value);
-            }
-            if (kwargs.length > 0) {
-                storage = lib.addAllToOther(new KeywordsStorage(kwargs), storage);
-            }
+            StorageSupplier newStorage = (boolean isStringKey, int length) -> PDict.createNewStorage(isStringKey, length);
+            HashingStorage storage = addSequenceToStorage(frame, iterable, kwargs, newStorage,
+                            getIterator, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile, errorProfile, lib);
             return storage;
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static PSequence arrayListGet(ArrayList<PSequence> elements, int j) {
-            return elements.get(j);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static boolean arrayListAdd(ArrayList<PSequence> elements, PSequence element) {
-            return elements.add(element);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static int arrayListSize(ArrayList<PSequence> elements) {
-            return elements.size();
         }
 
         public static InitNode create() {
@@ -679,5 +601,100 @@ public abstract class HashingStorage {
             return getHash(key, lib);
         }
         return lib.hashWithState(key, state);
+    }
+
+    /**
+     * Adds all items from the given mapping object to storage. It is the caller responsibility to
+     * ensure, that mapping has the 'keys' attribute.
+     */
+    public static HashingStorage addMappingToStorage(VirtualFrame frame, Object mapping, PKeyword[] kwargs, HashingStorage storage,
+                    LookupAndCallUnaryNode callKeysNode, LookupAndCallBinaryNode callGetItemNode,
+                    GetIteratorNode getIteratorNode, GetNextNode nextNode,
+                    IsBuiltinClassProfile errorProfile, HashingStorageLibrary lib) {
+        Object keysIterable = callKeysNode.executeObject(frame, mapping);
+        Object keysIt = getIteratorNode.executeWith(frame, keysIterable);
+        HashingStorage curStorage = storage;
+        while (true) {
+            try {
+                Object keyObj = nextNode.execute(frame, keysIt);
+                Object valueObj = callGetItemNode.executeObject(frame, mapping, keyObj);
+
+                curStorage = lib.setItem(curStorage, keyObj, valueObj);
+            } catch (PException e) {
+                e.expectStopIteration(errorProfile);
+                break;
+            }
+        }
+        if (kwargs.length > 0) {
+            curStorage = lib.addAllToOther(new KeywordsStorage(kwargs), curStorage);
+        }
+        return curStorage;
+    }
+
+    @FunctionalInterface
+    public interface StorageSupplier {
+        HashingStorage get(boolean isStringKey, int length);
+    }
+
+    public static HashingStorage addSequenceToStorage(VirtualFrame frame, Object iterable, PKeyword[] kwargs, StorageSupplier storageSupplier,
+                    GetIteratorNode getIterator, GetNextNode nextNode, FastConstructListNode createListNode, LenNode seqLenNode,
+                    ConditionProfile lengthTwoProfile, PRaiseNode raise, LookupAndCallBinaryNode getItemNode, IsBuiltinClassProfile isTypeErrorProfile,
+                    IsBuiltinClassProfile errorProfile, HashingStorageLibrary lib) throws PException {
+        Object it = getIterator.executeWith(frame, iterable);
+        ArrayList<PSequence> elements = new ArrayList<>();
+        boolean isStringKey = false;
+        try {
+            while (true) {
+                Object next = nextNode.execute(frame, it);
+                PSequence element = null;
+                int len = 1;
+                element = createListNode.execute(next);
+                assert element != null;
+                // This constructs a new list using the builtin type. So, the object cannot
+                // be subclassed and we can directly call 'len()'.
+                len = seqLenNode.execute(element);
+
+                if (lengthTwoProfile.profile(len != 2)) {
+                    throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, arrayListSize(elements), len);
+                }
+
+                // really check for Java String since PString can be subclassed
+                isStringKey = isStringKey || getItemNode.executeObject(frame, element, 0) instanceof String;
+
+                arrayListAdd(elements, element);
+            }
+        } catch (PException e) {
+            if (isTypeErrorProfile.profileException(e, TypeError)) {
+                throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, arrayListSize(elements));
+            } else {
+                e.expectStopIteration(errorProfile);
+            }
+        }
+        HashingStorage storage = storageSupplier.get(isStringKey, arrayListSize(elements) + kwargs.length);
+        for (int j = 0; j < arrayListSize(elements); j++) {
+            PSequence element = arrayListGet(elements, j);
+            Object key = getItemNode.executeObject(frame, element, 0);
+            Object value = getItemNode.executeObject(frame, element, 1);
+            storage = lib.setItem(storage, key, value);
+        }
+        if (kwargs.length > 0) {
+            storage = lib.addAllToOther(new KeywordsStorage(kwargs), storage);
+        }
+        return storage;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static PSequence arrayListGet(ArrayList<PSequence> elements, int j) {
+        return elements.get(j);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static boolean arrayListAdd(ArrayList<PSequence> elements, PSequence element) {
+        return elements.add(element);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static int arrayListSize(ArrayList<PSequence> elements) {
+        return elements.size();
     }
 }

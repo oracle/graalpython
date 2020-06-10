@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.Crea
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
@@ -80,9 +81,11 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -91,6 +94,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -417,6 +421,20 @@ public class ListBuiltins extends PythonBuiltins {
         public static ListExtendNode create() {
             return ListBuiltinsFactory.ListExtendNodeFactory.create();
         }
+    }
+
+    // list.copy()
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ListCopyNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(limit = "3")
+        PList copySequence(PList self,
+                        @Cached SequenceStorageNodes.CopyNode copy,
+                        @CachedLibrary("self") PythonObjectLibrary plib) {
+            return factory().createList(plib.getLazyPythonClass(self), copy.execute(self.getSequenceStorage()));
+        }
+
     }
 
     // list.insert(i, x)
@@ -823,6 +841,65 @@ public class ListBuiltins extends PythonBuiltins {
 
         public static ListReverseNode create() {
             return ListReverseNodeFactory.create();
+        }
+    }
+
+    // list.sort(key=, reverse=)
+    @Builtin(name = "sort", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
+    @GenerateNodeFactory
+    public abstract static class ListSortNode extends PythonVarargsBuiltinNode {
+
+        protected static final String SORT = "_sort";
+        protected static final String KEY = "key";
+
+        protected static boolean isSortable(PList list, SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(list.getSequenceStorage()) > 1;
+        }
+
+        protected static boolean maySideEffect(PList list, PKeyword[] keywords) {
+            if (PGuards.isObjectStorage(list)) {
+                return true;
+            }
+            if (keywords.length > 0) {
+                if (keywords[0].getName().equals(KEY)) {
+                    return true;
+                }
+                if (keywords.length > 1 && keywords[1].getName().equals(KEY)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Specialization(guards = "!isSortable(list, lenNode)")
+        @SuppressWarnings("unused")
+        Object none(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isSortable(list, lenNode)", "maySideEffect(list, keywords)"})
+        Object withKey(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+                        @Cached("create(SORT)") GetAttributeNode sort,
+                        @Cached CallNode callSort,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
+            list.getSequenceStorage().setLock();
+            try {
+                defaultSort(frame, list, arguments, keywords, sort, callSort, lenNode);
+            } finally {
+                list.getSequenceStorage().releaseLock();
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keywords)"})
+        Object defaultSort(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+                        @Cached("create(SORT)") GetAttributeNode sort,
+                        @Cached CallNode callSort,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
+            Object sortMethod = sort.executeObject(frame, list);
+            callSort.execute(sortMethod, arguments, keywords);
+            return PNone.NONE;
         }
     }
 

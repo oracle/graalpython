@@ -40,7 +40,18 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     @Override
     public void setNewLength(int length) {
+        checkLock();
         this.length = length;
+    }
+
+    protected final void incLength() {
+        checkLock();
+        this.length++;
+    }
+
+    protected final void decLength() {
+        checkLock();
+        this.length--;
     }
 
     public final int capacity() {
@@ -76,4 +87,5 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     public void minimizeCapacity() {
         capacity = length;
     }
+
 }

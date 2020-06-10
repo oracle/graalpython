@@ -69,12 +69,12 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PCell("cell"),
     PComplex("complex", BuiltinNames.BUILTINS),
     PDict("dict", BuiltinNames.BUILTINS),
-    PDictKeysView("dict_keys"),
-    PDictItemsIterator("dict_itemsiterator"),
-    PDictItemsView("dict_items"),
-    PDictKeysIterator("dict_keysiterator"),
-    PDictValuesIterator("dict_valuesiterator"),
-    PDictValuesView("dict_values"),
+    PDictKeysView(BuiltinNames.DICT_KEYS),
+    PDictItemsIterator(BuiltinNames.DICT_ITEMITERATOR),
+    PDictItemsView(BuiltinNames.DICT_ITEMS),
+    PDictKeysIterator(BuiltinNames.DICT_KEYITERATOR),
+    PDictValuesIterator(BuiltinNames.DICT_VALUEITERATOR),
+    PDictValuesView(BuiltinNames.DICT_VALUES),
     PEllipsis("ellipsis"),
     PEnumerate("enumerate", BuiltinNames.BUILTINS),
     PMap("map", BuiltinNames.BUILTINS),
@@ -122,6 +122,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PLZMACompressor("LZMACompressor", "_lzma"),
     PLZMADecompressor("LZMADecompressor", "_lzma"),
     LsprofProfiler("Profiler", "_lsprof"),
+    PStruct("Struct", "_struct"),
 
     // Errors and exceptions:
 

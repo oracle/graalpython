@@ -587,6 +587,7 @@ class ExceptionTests(unittest.TestCase):
             del e
         self.assertNotIn('e', locals())
 
+    @support.impl_detail("refcounting", graalvm=False)
     def testExceptionCleanupState(self):
         # Make sure exception state is cleaned up as soon as the except
         # block is left. See #2507
@@ -831,6 +832,7 @@ class ExceptionTests(unittest.TestCase):
         gc_collect()
         self.assertEqual(sys.exc_info(), (None, None, None))
 
+    @support.impl_detail("refcounting", graalvm=False)
     def _check_generator_cleanup_exc_state(self, testfunc):
         # Issue #12791: exception state is cleaned up as soon as a generator
         # is closed (reference cycles are broken).
@@ -893,6 +895,7 @@ class ExceptionTests(unittest.TestCase):
                 self.fail("should have raised StopIteration")
         self._check_generator_cleanup_exc_state(do_send)
 
+    @support.impl_detail("refcounting", graalvm=False)
     def test_3114(self):
         # Bug #3114: in its destructor, MyObject retrieves a pointer to
         # obsolete and/or deallocated objects.
@@ -1163,6 +1166,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(wr(), None)
 
     @no_tracing
+    @support.impl_detail("refcounting", graalvm=False)
     def test_recursion_error_cleanup(self):
         # Same test as above, but with "recursion exceeded" errors
         class C:
@@ -1188,6 +1192,7 @@ class ExceptionTests(unittest.TestCase):
             os.listdir(__file__)
         self.assertEqual(cm.exception.errno, errno.ENOTDIR, cm.exception)
 
+    @support.impl_detail("refcounting", graalvm=False)
     def test_unraisable(self):
         # Issue #22836: PyErr_WriteUnraisable() should give sensible reports
         class BrokenDel:

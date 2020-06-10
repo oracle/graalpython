@@ -31,7 +31,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
@@ -42,10 +44,12 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 /**
  * The options for Python. Note that some options have an effect on the AST structure, and thus must
@@ -232,6 +236,13 @@ public final class PythonOptions {
     }
 
     /**
+     * A CompilationFinal array of engine option keys defined here. Do not modify!
+     */
+    public static OptionKey<?>[] getEngineOptionKeys() {
+        return ENGINE_OPTION_KEYS;
+    }
+
+    /**
      * Copy values into an array for compilation final storage and unrolling lookup.
      */
     public static Object[] createOptionValuesStorage(Env env) {
@@ -240,6 +251,33 @@ public final class PythonOptions {
             values[i] = env.getOptions().get(OPTION_KEYS[i]);
         }
         return values;
+    }
+
+    public static Object[] createEngineOptionValuesStorage(Env env) {
+        Object[] values = new Object[ENGINE_OPTION_KEYS.length];
+        for (int i = 0; i < ENGINE_OPTION_KEYS.length; i++) {
+            values[i] = env.getOptions().get(ENGINE_OPTION_KEYS[i]);
+        }
+        return values;
+    }
+
+    public static OptionValues createEngineOptions(Env env) {
+        return new EngineOptionValues(env.getOptions());
+    }
+
+    @ExplodeLoop
+    @SuppressWarnings("unchecked")
+    public static <T> T getOptionUnrolling(Object[] optionValuesStorage, OptionKey<?>[] optionKeys, OptionKey<T> key) {
+        assert optionValuesStorage.length == optionKeys.length;
+        CompilerAsserts.partialEvaluationConstant(optionKeys);
+        for (int i = 0; i < optionKeys.length; i++) {
+            CompilerAsserts.partialEvaluationConstant(optionKeys[i]);
+            if (optionKeys[i] == key) {
+                return (T) optionValuesStorage[i];
+            }
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("Using Python options with a non-Python option key");
     }
 
     /**
@@ -296,5 +334,55 @@ public final class PythonOptions {
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
     @interface EngineOption {
+    }
+
+    private static final class EngineOptionValues implements OptionValues {
+
+        private final Map<OptionKey<?>, Object> engineOptions = new HashMap<>();
+
+        EngineOptionValues(OptionValues contextOptions) {
+            for (OptionKey<?> engineKey : ENGINE_OPTION_KEYS) {
+                if (contextOptions.hasBeenSet(engineKey)) {
+                    engineOptions.put(engineKey, contextOptions.get(engineKey));
+                }
+            }
+        }
+
+        public OptionDescriptors getDescriptors() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof EngineOptionValues)) {
+                return false;
+            }
+            EngineOptionValues other = (EngineOptionValues) obj;
+            return engineOptions.equals(other.engineOptions);
+        }
+
+        @Override
+        public int hashCode() {
+            return engineOptions.hashCode();
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T> T get(OptionKey<T> optionKey) {
+            if (engineOptions.containsKey(optionKey)) {
+                return (T) engineOptions.get(optionKey);
+            } else {
+                return optionKey.getDefaultValue();
+            }
+        }
+
+        public boolean hasBeenSet(OptionKey<?> optionKey) {
+            return engineOptions.containsKey(optionKey);
+        }
+
+        @SuppressWarnings("deprecation")
+        public <T> void set(OptionKey<T> optionKey, T value) {
+            throw new UnsupportedOperationException();
+        }
+
     }
 }

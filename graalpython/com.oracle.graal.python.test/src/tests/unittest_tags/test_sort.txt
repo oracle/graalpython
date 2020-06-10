@@ -13,3 +13,5 @@
 *graalpython.lib-python.3.test.test_sort.TestOptimizedCompares.test_unsafe_long_compare
 *graalpython.lib-python.3.test.test_sort.TestOptimizedCompares.test_unsafe_object_compare
 *graalpython.lib-python.3.test.test_sort.TestOptimizedCompares.test_unsafe_tuple_compare
+*graalpython.lib-python.3.test.test_sort.TestBugs.test_bug453523
+*graalpython.lib-python.3.test.test_sort.TestBugs.test_undetected_mutation

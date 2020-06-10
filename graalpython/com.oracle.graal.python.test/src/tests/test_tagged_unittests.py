@@ -92,7 +92,7 @@ for idx, working_test in enumerate(WORKING_TESTS):
             cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
             subprocess.check_call(cmd)
             print(working_test[0], "was finished.")
-            
+
         fun.__name__ = "%s[%d/%d]" % (working_test[0], idx + 1, len(WORKING_TESTS))
         return fun
 
@@ -142,6 +142,8 @@ if __name__ == "__main__":
         elif arg == "--help":
             print(sys.argv[0] + " [--retag] [--maxrepeats=n] [glob]")
         else:
+            if not (arg.endswith(".py") or arg.endswith("*")):
+                arg += ".py"
             glob_pattern = os.path.join(os.path.dirname(test.__file__), arg)
 
     p = subprocess.run(["/usr/bin/which", "timeout" if sys.platform != 'darwin' else 'gtimeout'], **kwargs)

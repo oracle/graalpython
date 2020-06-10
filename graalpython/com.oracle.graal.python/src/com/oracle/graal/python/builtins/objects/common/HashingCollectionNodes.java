@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -129,6 +130,32 @@ public abstract class HashingCollectionNodes {
 
         public static GetDictStorageNode getUncached() {
             return GetDictStorageNodeGen.getUncached();
+        }
+    }
+
+    @ImportStatic({PGuards.class})
+    @GenerateUncached
+    public abstract static class SetDictStorageNode extends PNodeWithContext {
+
+        public abstract void execute(PHashingCollection c, HashingStorage storage);
+
+        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
+        void setStorageCached(PHashingCollection c, HashingStorage storage,
+                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
+            cachedClass.cast(c).setDictStorage(storage);
+        }
+
+        @Specialization(replaces = "setStorageCached")
+        static void getStorageGeneric(PHashingCollection c, HashingStorage storage) {
+            c.setDictStorage(storage);
+        }
+
+        public static SetDictStorageNode create() {
+            return SetDictStorageNodeGen.create();
+        }
+
+        public static SetDictStorageNode getUncached() {
+            return SetDictStorageNodeGen.getUncached();
         }
     }
 }

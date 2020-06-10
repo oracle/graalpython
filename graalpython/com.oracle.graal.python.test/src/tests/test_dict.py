@@ -103,6 +103,24 @@ def test_fromkeys():
     assert set(d.keys()) == {'a', 'b', 'c'}
     assert set(d.values()) == {o}
 
+    class preset(dict):
+        def __init__(self):
+            self['a'] = 1
+    assert preset.fromkeys(['b']) == {'a':1, 'b':None}        
+        
+    class morethanoneinitargraiseserror(dict):        
+        def __init__(self, anotherArg):
+            self.__init__()        
+    assert_raises(TypeError, morethanoneinitargraiseserror.fromkeys, [1])
+    
+    class nosetitem:
+        pass
+
+    class nosetitem2(dict):
+        def __new__(cls):
+            return nosetitem()
+    assert_raises(TypeError, nosetitem2.fromkeys, [1])
+
 
 def test_init():
     d = dict(a=1, b=2, c=3)

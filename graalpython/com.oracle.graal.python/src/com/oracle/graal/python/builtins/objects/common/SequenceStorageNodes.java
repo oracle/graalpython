@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode.INDEX_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -621,7 +620,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization
@@ -629,7 +628,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization
@@ -637,7 +636,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization(guards = "!isPSlice(idx)")
@@ -645,7 +644,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization
@@ -912,7 +911,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -936,7 +935,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -955,7 +954,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -974,7 +973,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;

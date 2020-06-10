@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -55,13 +55,37 @@ public class DictTests {
     }
 
     @Test
+    public void dict() {
+        String source = "print(type({}))\n" +
+                        "print(type(iter({1: 'a', 2: 'b'})))\n" +
+                        "print({})\n" +
+                        "print({1: 'a'})\n" +
+                        "print({1: 'a', 2: 'b'})\n";
+
+        assertPrints("<class 'dict'>\n" +
+                        "<class 'dict_keyiterator'>\n" +
+                        "{}\n" +
+                        "{1: 'a'}\n" +
+                        "{1: 'a', 2: 'b'}\n", source);
+
+        source = "d = {1: 1}\n" +
+                        "d.__setitem__(2, d)\n" +
+                        "print(d)\n";
+        assertPrints("{1: 1, 2: {...}}\n", source);
+    }
+
+    @Test
     public void dictViewKeys() {
         String source = "print(type({}.keys()))\n" +
                         "print(type(iter({1: 'a', 2: 'b'}.keys())))\n" +
+                        "print({}.keys())\n" +
+                        "print({1: 'a'}.keys())\n" +
                         "print({1: 'a', 2: 'b'}.keys())\n";
 
         assertPrints("<class 'dict_keys'>\n" +
-                        "<class 'dict_keysiterator'>\n" +
+                        "<class 'dict_keyiterator'>\n" +
+                        "dict_keys([])\n" +
+                        "dict_keys([1])\n" +
                         "dict_keys([1, 2])\n", source);
     }
 
@@ -69,21 +93,39 @@ public class DictTests {
     public void dictViewValues() {
         String source = "print(type({}.values()))\n" +
                         "print(type(iter({1: 'a', 2: 'b'}.values())))\n" +
+                        "print({}.values())\n" +
+                        "print({1: 'a'}.values())\n" +
                         "print({1: 'a', 2: 'b'}.values())\n";
 
         assertPrints("<class 'dict_values'>\n" +
-                        "<class 'dict_valuesiterator'>\n" +
+                        "<class 'dict_valueiterator'>\n" +
+                        "dict_values([])\n" +
+                        "dict_values(['a'])\n" +
                         "dict_values(['a', 'b'])\n", source);
+
+        source = "d = {1: 1}\n" +
+                        "d.__setitem__(2, d)\n" +
+                        "print(d.values())\n";
+        assertPrints("dict_values([1, {1: 1, 2: {...}}])\n", source);
     }
 
     @Test
     public void dictViewItems() {
         String source = "print(type({}.items()))\n" +
                         "print(type(iter({1: 'a', 2: 'b'}.items())))\n" +
+                        "print({}.items())\n" +
+                        "print({1: 'a'}.items())\n" +
                         "print({1: 'a', 2: 'b'}.items())\n";
 
         assertPrints("<class 'dict_items'>\n" +
-                        "<class 'dict_itemsiterator'>\n" +
+                        "<class 'dict_itemiterator'>\n" +
+                        "dict_items([])\n" +
+                        "dict_items([(1, 'a')])\n" +
                         "dict_items([(1, 'a'), (2, 'b')])\n", source);
+
+        source = "d = {1: 1}\n" +
+                        "d.__setitem__(2, d)\n" +
+                        "print(d.items())\n";
+        assertPrints("dict_items([(1, 1), (2, {1: 1, 2: {...}})])\n", source);
     }
 }
