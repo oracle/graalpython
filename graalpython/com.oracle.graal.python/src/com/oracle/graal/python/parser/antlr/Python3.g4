@@ -768,7 +768,7 @@ flow_stmt
 	b='break' 
 	{
             if (loopState == null) {
-                throw new PythonRecognitionException("'break' outside loop", this, _input, _localctx, getCurrentToken());
+                throw new PythonRecognitionException("'break' outside loop", this, _input, _localctx, $b);
             }
             push(new SimpleSSTNode(SimpleSSTNode.Type.BREAK, getStartIndex($b), getStopIndex($b)));
             loopState.containsBreak = true;
@@ -776,7 +776,7 @@ flow_stmt
 	| c='continue'
 	{
 	        if (loopState == null) {
-	            throw new PythonRecognitionException("'continue' not properly in loop", this, _input, _localctx, getCurrentToken());
+	            throw new PythonRecognitionException("'continue' not properly in loop", this, _input, _localctx, $c);
 	        }
             push(new SimpleSSTNode(SimpleSSTNode.Type.CONTINUE, getStartIndex($c), getStopIndex($c)));
             loopState.containsContinue = true;
