@@ -310,12 +310,12 @@ def ascii_decode(string, errors=None):
 
 @__graalpython__.builtin
 def charmap_encode(string, errors=None, mapping=None):
-    return __truffle_encode(string, "cp437", errors)
+    raise NotImplementedError("charmap_encode")
 
 
 @__graalpython__.builtin
 def charmap_decode(string, errors=None, mapping=None):
-    return __truffle_decode(string, "cp437", errors)
+    raise NotImplementedError("charmap_decode")
 
 
 @__graalpython__.builtin
