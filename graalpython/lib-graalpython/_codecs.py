@@ -62,13 +62,17 @@ def lookup(encoding):
     if result:
         return result
 
-    # Next, scan the search functions in order of registration
-    for func in __codec_search_path__:
-        result = func(normalized_encoding)
-        if result:
-            if not (isinstance(result, tuple) and len(result) == 4):
-                raise TypeError("codec search functions must return 4-tuples %r")
-            break
+    # Next, try if we have a Java implementation of the encoding
+    if __truffle_lookup(normalized_encoding):
+        result = __codec_info_for_truffle(normalized_encoding)
+    else:
+        # Next, scan the search functions in order of registration
+        for func in __codec_search_path__:
+            result = func(normalized_encoding)
+            if result:
+                if not (isinstance(result, tuple) and len(result) == 4):
+                    raise TypeError("codec search functions must return 4-tuples %r")
+                break
 
     if result:
         # Cache and return the result
@@ -76,6 +80,40 @@ def lookup(encoding):
         return result
 
     raise LookupError("unknown encoding: %s" % encoding)
+
+
+def __codec_info_for_truffle(encoding):
+    import codecs
+    class TruffleCodec(codecs.Codec):
+        def encode(self, input, errors='strict'):
+            return __truffle_encode(input, encoding, errors)
+
+        def decode(self, input, errors='strict'):
+            return __truffle_decode(input, encoding, errors)
+
+    class IncrementalEncoder(codecs.IncrementalEncoder):
+        def encode(self, input, final=False):
+            return __truffle_encode(input, encoding, self.errors)[0]
+
+    class IncrementalDecoder(codecs.IncrementalDecoder):
+        def decode(self, input, final=False):
+            return __truffle_decode(input, encoding, self.errors)[0]
+
+    class StreamWriter(TruffleCodec, codecs.StreamWriter):
+        pass
+
+    class StreamReader(TruffleCodec, codecs.StreamReader):
+        pass
+
+    return codecs.CodecInfo(
+        name=encoding,
+        encode=TruffleCodec().encode,
+        decode=TruffleCodec().decode,
+        incrementalencoder=IncrementalEncoder,
+        incrementaldecoder=IncrementalDecoder,
+        streamreader=StreamReader,
+        streamwriter=StreamWriter,
+    )
 
 
 def _forget_codec(encoding):
@@ -321,10 +359,6 @@ import sys
 sys.path.append(__graalpython__.stdlib_home)
 try:
     import encodings
-    # we import the below two encodings, because they are often used so it's
-    # useful to have them available preloaded
-    import encodings.ascii
-    import encodings.utf_8
 finally:
     assert len(sys.path) == 1
     sys.path.pop()
