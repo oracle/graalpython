@@ -26,7 +26,7 @@ public class CharsetMapping {
     }
 
     private static String normalize(String encoding) {
-        return encoding.toLowerCase(Locale.ENGLISH).replaceAll("\\W+", "_");
+        return encoding.toLowerCase(Locale.ENGLISH).replaceAll("[^\\w.]+", "_");
     }
 
     private static Charset getJavaCharset(String name) {
