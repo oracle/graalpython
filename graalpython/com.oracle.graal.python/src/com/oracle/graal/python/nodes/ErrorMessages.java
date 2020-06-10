@@ -330,6 +330,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
+    public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
@@ -344,6 +345,8 @@ public abstract class ErrorMessages {
     public static final String NO_CURRENT_FRAME = "%s: no current frame";
     public static final String NO_FUNCTION_FOUND = "no function %s%s found in %s";
     public static final String NO_SUCH_FILE_OR_DIR = "No such file or directory: '%s:/%s'";
+    public static final String NONLOCAL_AND_GLOBAL = "name '%s' is nonlocal and global";
+    public static final String NONLOCAL_AT_MODULE_LEVEL = "nonlocal declaration not allowed at module level";
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";
     public static final String NON_STRING_IN_CODE_SLOT = "non-string found in code slot";
     public static final String NOT_A_ZIP_FILE = "not a Zip file: '%s'";

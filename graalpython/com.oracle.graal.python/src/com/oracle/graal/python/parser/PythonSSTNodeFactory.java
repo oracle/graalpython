@@ -129,6 +129,14 @@ public final class PythonSSTNodeFactory {
         ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
         ScopeInfo globalScope = scopeEnvironment.getGlobalScope();
         for (String name : names) {
+            if (scopeInfo.isExplicitNonlocalVariable(name)) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NONLOCAL_AND_GLOBAL, name);
+            }
+            if (scopeInfo.findFrameSlot(name) != null) {
+                // The expectation is that in the local context the variable can not have slot yet.
+                // The slot is created by assignment or declaration
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NAME_IS_ASSIGNED_BEFORE_GLOBAL, name);
+            }
             scopeInfo.addExplicitGlobalVariable(name);
             globalScope.createSlotIfNotPresent(name);
         }
@@ -137,7 +145,13 @@ public final class PythonSSTNodeFactory {
 
     public SSTNode registerNonLocal(String[] names, int startOffset, int endOffset) {
         ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
+        if (scopeInfo.getScopeKind() == ScopeKind.Module) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NONLOCAL_AT_MODULE_LEVEL);
+        }
         for (String name : names) {
+            if (scopeInfo.isExplicitGlobalVariable(name)) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NONLOCAL_AND_GLOBAL, name);
+            }
             if (scopeInfo.findFrameSlot(name) != null) {
                 // the expectation is that in the local context the variable can not have slot yet.
                 // The slot is created by assignment or declaration
