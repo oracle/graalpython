@@ -1422,6 +1422,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return ord(chr.getValue());
         }
 
+        @Specialization
         public long ord(VirtualFrame frame, PIBytesLike chr,
                         @Cached CastToJavaLongExactNode castNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
