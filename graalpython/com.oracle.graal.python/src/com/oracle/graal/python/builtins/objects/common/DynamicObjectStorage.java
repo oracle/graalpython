@@ -72,6 +72,7 @@ import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.List;
 
 /**
  * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
@@ -358,22 +359,31 @@ public final class DynamicObjectStorage extends HashingStorage {
         return new HashingStorageIterable<>(new KeysIterator(store, readNode));
     }
 
-    private static final class KeysIterator implements Iterator<Object> {
-        private final Iterator<Object> keyIter;
+    @ExportMessage
+    public HashingStorageIterable<Object> reverseKeys(
+                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+        return new HashingStorageIterable<>(new ReverseKeysIterator(store, readNode));
+    }
+
+    private abstract static class AbstractKeysIterator implements Iterator<Object> {
         private final DynamicObject store;
         private final ReadAttributeFromDynamicObjectNode readNode;
         private Object next = null;
 
-        public KeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
-            this.keyIter = store.getShape().getKeys().iterator();
+        public AbstractKeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
             this.store = store;
             this.readNode = readNode;
         }
 
+        protected abstract boolean hasNextKey();
+
+        protected abstract Object nextKey();
+
         @TruffleBoundary
+        @Override
         public boolean hasNext() {
-            while (next == null && keyIter.hasNext()) {
-                Object key = keyIter.next();
+            while (next == null && hasNextKey()) {
+                Object key = nextKey();
                 Object value = readNode.execute(store, key);
                 if (value != PNone.NO_VALUE) {
                     next = key;
@@ -382,6 +392,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             return next != null;
         }
 
+        @Override
         public Object next() {
             hasNext(); // find the next value
             if (next != null) {
@@ -392,6 +403,47 @@ public final class DynamicObjectStorage extends HashingStorage {
                 throw new NoSuchElementException();
             }
         }
+    }
+
+    private static final class KeysIterator extends AbstractKeysIterator {
+        private final Iterator<Object> keyIter;
+
+        public KeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
+            super(store, readNode);
+            this.keyIter = store.getShape().getKeys().iterator();
+        }
+
+        @Override
+        protected boolean hasNextKey() {
+            return keyIter.hasNext();
+        }
+
+        @Override
+        protected Object nextKey() {
+            return keyIter.next();
+        }
+    }
+
+    private static final class ReverseKeysIterator extends AbstractKeysIterator {
+        private final List<Object> keyList;
+        private int index;
+
+        public ReverseKeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
+            super(store, readNode);
+            this.keyList = store.getShape().getKeyList();
+            this.index = keyList.size() - 1;
+        }
+
+        @Override
+        protected boolean hasNextKey() {
+            return index >= 0;
+        }
+
+        @Override
+        protected Object nextKey() {
+            return keyList.get(index--);
+        }
+
     }
 
     @ExportMessage

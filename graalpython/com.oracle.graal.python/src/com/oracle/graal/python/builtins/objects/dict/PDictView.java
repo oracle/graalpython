@@ -71,8 +71,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictKeyIterator extends PHashingStorageIterator<Object> {
-        public PDictKeyIterator(Object clazz, DynamicObject storage, PHashingCollection dict) {
-            super(clazz, storage, dict.keys().iterator());
+        public PDictKeyIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator) {
+            super(clazz, storage, iterator);
         }
     }
 

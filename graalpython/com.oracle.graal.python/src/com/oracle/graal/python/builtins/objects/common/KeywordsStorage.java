@@ -278,27 +278,63 @@ public class KeywordsStorage extends HashingStorage {
         return new HashingStorageIterable<>(new KeysIterator(this));
     }
 
-    private static final class KeysIterator implements Iterator<Object> {
-        private final KeywordsStorage storage;
-        private int index;
+    @ExportMessage
+    @Override
+    public HashingStorageIterable<Object> reverseKeys() {
+        return new HashingStorageIterable<>(new ReverseKeysIterator(this));
+    }
 
-        public KeysIterator(KeywordsStorage keywordsStorage) {
-            this.index = 0;
+    private abstract static class AbstractKeysIterator implements Iterator<Object> {
+        protected final KeywordsStorage storage;
+        protected int index;
+
+        public AbstractKeysIterator(KeywordsStorage keywordsStorage, int initialIndex) {
+            this.index = initialIndex;
             this.storage = keywordsStorage;
         }
 
-        public boolean hasNext() {
-            return index < storage.length();
-        }
+        public abstract void nextIndex();
 
         public Object next() {
             if (hasNext()) {
                 Object result = storage.keywords[index].getName();
-                index += 1;
+                nextIndex();
                 return result;
             } else {
                 throw new NoSuchElementException();
             }
+        }
+    }
+
+    private static final class KeysIterator extends AbstractKeysIterator {
+        public KeysIterator(KeywordsStorage keywordsStorage) {
+            super(keywordsStorage, 0);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < storage.length();
+        }
+
+        @Override
+        public void nextIndex() {
+            index += 1;
+        }
+    }
+
+    private static final class ReverseKeysIterator extends AbstractKeysIterator {
+        public ReverseKeysIterator(KeywordsStorage keywordsStorage) {
+            super(keywordsStorage, keywordsStorage.keywords.length - 1);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index >= 0;
+        }
+
+        @Override
+        public void nextIndex() {
+            index -= 1;
         }
     }
 

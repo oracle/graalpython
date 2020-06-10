@@ -33,8 +33,10 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_mutating_iteration
 *graalpython.lib-python.3.test.test_dict.DictTest.test_mutating_lookup
 *graalpython.lib-python.3.test.test_dict.DictTest.test_object_set_item_single_instance_non_str_key
+*graalpython.lib-python.3.test.test_dict.DictTest.test_pop
 *graalpython.lib-python.3.test.test_dict.DictTest.test_reentrant_insertion
 *graalpython.lib-python.3.test.test_dict.DictTest.test_repr
+*graalpython.lib-python.3.test.test_dict.DictTest.test_repr_deep
 *graalpython.lib-python.3.test.test_dict.DictTest.test_resize1
 *graalpython.lib-python.3.test.test_dict.DictTest.test_resize2
 *graalpython.lib-python.3.test.test_dict.DictTest.test_setdefault

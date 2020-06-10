@@ -574,6 +574,12 @@ public class EconomicMapStorage extends HashingStorage {
         return new HashingStorageIterable<>(new KeysIterator(map.getKeys().iterator()));
     }
 
+    @Override
+    @ExportMessage
+    public HashingStorageIterable<Object> reverseKeys() {
+        return new HashingStorageIterable<>(new KeysIterator(map.reverseKeyIterator()));
+    }
+
     private static final class KeysIterator implements Iterator<Object> {
         private final Iterator<DictKey> keysIterator;
 
