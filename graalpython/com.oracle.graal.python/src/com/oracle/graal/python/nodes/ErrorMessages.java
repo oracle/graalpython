@@ -166,6 +166,7 @@ public abstract class ErrorMessages {
     public static final String COUNT_FUNC_MATH = "count function in Math";
     public static final String COVERAGE_TRACKER_NOT_RUNNING = "coverage tracker not running";
     public static final String CREATING_SOCKETS_NOT_ALLOWED = "creating sockets not allowed";
+    public static final String DEFAULT_EXCEPT_MUST_BE_LAST = "default 'except:' must be last";
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";

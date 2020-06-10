@@ -1180,6 +1180,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExceptNode[] exceptNodes = new ExceptNode[node.exceptNodes.length];
         for (int i = 0; i < exceptNodes.length; i++) {
             ExceptSSTNode exceptNode = node.exceptNodes[i];
+            if (exceptNode.test == null && i < exceptNodes.length - 1) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(exceptNode.startOffset, exceptNode.endOffset), ErrorMessages.DEFAULT_EXCEPT_MUST_BE_LAST);
+            }
             ExpressionNode exceptTest = exceptNode.test != null ? (ExpressionNode) exceptNode.test.accept(this) : null;
             StatementNode exceptBody = (StatementNode) exceptNode.body.accept(this);
             WriteNode exceptName = exceptNode.asName != null ? (WriteNode) scopeEnvironment.findVariable(exceptNode.asName).makeWriteNode(null) : null;
