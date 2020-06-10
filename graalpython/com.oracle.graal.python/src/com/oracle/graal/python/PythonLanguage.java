@@ -240,6 +240,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected CallTarget parse(ParsingRequest request) {
+        assert request.getArgumentNames().isEmpty() : "argument names not yet supported";
         PythonContext context = getCurrentContext(PythonLanguage.class);
         PythonCore core = context.getCore();
         Source source = request.getSource();
