@@ -118,10 +118,12 @@ public class EmptyStorage extends HashingStorage {
     }
 
     private static final Iterator<Object> KEYS_ITERATOR = new Iterator<Object>() {
+        @Override
         public boolean hasNext() {
             return false;
         }
 
+        @Override
         public Object next() {
             throw new NoSuchElementException();
         }
@@ -132,4 +134,11 @@ public class EmptyStorage extends HashingStorage {
     public HashingStorageIterable<Object> keys() {
         return new HashingStorageIterable<>(KEYS_ITERATOR);
     }
+
+    @ExportMessage
+    @Override
+    public HashingStorageIterable<Object> reverseKeys() {
+        return new HashingStorageIterable<>(KEYS_ITERATOR);
+    }
+
 }

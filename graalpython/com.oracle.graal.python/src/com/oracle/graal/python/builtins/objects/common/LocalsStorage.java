@@ -67,6 +67,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.List;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class LocalsStorage extends HashingStorage {
@@ -284,14 +285,21 @@ public class LocalsStorage extends HashingStorage {
         return new HashingStorageIterable<>(new LocalsIterator(frame));
     }
 
-    private static class LocalsIterator implements Iterator<Object> {
-        private final MaterializedFrame frame;
-        private Iterator<? extends FrameSlot> keys;
-        private FrameSlot nextFrameSlot = null;
+    @ExportMessage
+    @Override
+    public HashingStorageIterable<Object> reverseKeys() {
+        return new HashingStorageIterable<>(new ReverseLocalsIterator(frame));
+    }
 
-        LocalsIterator(MaterializedFrame frame) {
+    private abstract static class AbstractLocalsIterator implements Iterator<Object> {
+        protected final MaterializedFrame frame;
+        protected FrameSlot nextFrameSlot = null;
+
+        AbstractLocalsIterator(MaterializedFrame frame) {
             this.frame = frame;
         }
+
+        protected abstract boolean loadNext();
 
         @Override
         public boolean hasNext() {
@@ -320,8 +328,18 @@ public class LocalsStorage extends HashingStorage {
             throw new NoSuchElementException();
         }
 
+    }
+
+    private static final class LocalsIterator extends AbstractLocalsIterator {
+        private Iterator<? extends FrameSlot> keys;
+
+        LocalsIterator(MaterializedFrame frame) {
+            super(frame);
+        }
+
         @TruffleBoundary
-        private boolean loadNext() {
+        @Override
+        protected boolean loadNext() {
             while (keysIterator().hasNext()) {
                 FrameSlot nextCandidate = keysIterator().next();
                 Object identifier = nextCandidate.getIdentifier();
@@ -343,6 +361,38 @@ public class LocalsStorage extends HashingStorage {
                 keys = frame.getFrameDescriptor().getSlots().iterator();
             }
             return keys;
+        }
+    }
+
+    private static final class ReverseLocalsIterator extends AbstractLocalsIterator {
+        private List<? extends FrameSlot> slots;
+        private int index;
+
+        ReverseLocalsIterator(MaterializedFrame frame) {
+            super(frame);
+        }
+
+        @TruffleBoundary
+        @Override
+        protected boolean loadNext() {
+            if (slots == null) {
+                slots = frame.getFrameDescriptor().getSlots();
+                index = slots.size() - 1;
+            }
+            while (index >= 0) {
+                FrameSlot nextCandidate = slots.get(index--);
+                Object identifier = nextCandidate.getIdentifier();
+                if (identifier instanceof String) {
+                    if (FrameSlotIDs.isUserFrameSlot(identifier)) {
+                        Object nextValue = frame.getValue(nextCandidate);
+                        if (nextValue != null) {
+                            nextFrameSlot = nextCandidate;
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
     }
 }

@@ -276,6 +276,12 @@ public abstract class HashingStorage {
         throw new AbstractMethodError("HashingStorage.keys");
     }
 
+    @ExportMessage
+    public HashingStorageIterable<Object> reverseKeys() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError("HashingStorage.reverseKeys");
+    }
+
     @GenerateUncached
     protected abstract static class AddToOtherInjectNode extends InjectIntoNode {
         @Specialization
@@ -542,14 +548,19 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new HashingStorageIterable<>(new ValuesIterator(this, lib));
+        return new HashingStorageIterable<>(new ValuesIterator(this, lib.keys(this).iterator(), lib));
+    }
+
+    @ExportMessage
+    public HashingStorageIterable<Object> reverseValues(@CachedLibrary("this") HashingStorageLibrary lib) {
+        return new HashingStorageIterable<>(new ValuesIterator(this, lib.reverseKeys(this).iterator(), lib));
     }
 
     private static final class ValuesIterator implements Iterator<Object> {
         private final Iterator<DictEntry> entriesIterator;
 
-        ValuesIterator(HashingStorage self, HashingStorageLibrary lib) {
-            this.entriesIterator = new EntriesIterator(self, lib);
+        ValuesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageLibrary lib) {
+            this.entriesIterator = new EntriesIterator(self, keysIterator, lib);
         }
 
         @Override
@@ -564,8 +575,13 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new HashingStorageIterable<>(new EntriesIterator(this, lib));
+    public final HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib) {
+        return new HashingStorageIterable<>(new EntriesIterator(this, lib.keys(this).iterator(), lib));
+    }
+
+    @ExportMessage
+    public final HashingStorageIterable<DictEntry> reverseEntries(@CachedLibrary("this") HashingStorageLibrary lib) {
+        return new HashingStorageIterable<>(new EntriesIterator(this, lib.reverseKeys(this).iterator(), lib));
     }
 
     private static final class EntriesIterator implements Iterator<DictEntry> {
@@ -573,10 +589,10 @@ public abstract class HashingStorage {
         private final HashingStorage self;
         private final HashingStorageLibrary lib;
 
-        EntriesIterator(HashingStorage self, HashingStorageLibrary lib) {
+        EntriesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageLibrary lib) {
             this.self = self;
             this.lib = lib;
-            this.keysIterator = lib.keys(self).iterator();
+            this.keysIterator = keysIterator;
         }
 
         @Override

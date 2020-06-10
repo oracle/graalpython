@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -78,6 +79,17 @@ public final class DictValuesBuiltins extends PythonBuiltins {
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
             return factory().createDictValueIterator(lib.values(getStore.execute(self.getWrappedDict())).iterator());
+        }
+    }
+
+    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doPDictValuesView(PDictValuesView self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return factory().createDictReverseValueIterator(lib.reverseValues(getStore.execute(self.getWrappedDict())).iterator());
         }
     }
 

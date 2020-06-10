@@ -88,7 +88,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(PMappingproxy self) {
-            return factory().createDictKeyIterator(self);
+            return factory().createDictKeyIterator(self.keys().iterator());
         }
     }
 

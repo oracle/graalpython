@@ -625,13 +625,12 @@ final class PEMap implements Iterable<DictKey> {
         return result;
     }
 
-    private abstract class SparseMapIterator<E> implements Iterator<E> { //
+    private abstract class AbstractSparseMapIterator<E> implements Iterator<E> { //
 
         protected int current;
 
-        @Override
-        public boolean hasNext() {
-            return current < totalEntries;
+        AbstractSparseMapIterator(int current) {
+            this.current = current;
         }
 
         @Override
@@ -642,6 +641,28 @@ final class PEMap implements Iterable<DictKey> {
                 PEMap.this.findAndRemoveHash(getKey(current - 1), lib, lib, gotState, null);
             }
             current = PEMap.this.remove(current - 1);
+        }
+    }
+
+    private abstract class SparseMapIterator<E> extends AbstractSparseMapIterator<E> {
+        public SparseMapIterator() {
+            super(0);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return current < totalEntries;
+        }
+    }
+
+    private abstract class ReverseSparseMapIterator<E> extends AbstractSparseMapIterator<E> { //
+        public ReverseSparseMapIterator() {
+            super(totalEntries);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return current > 0;
         }
     }
 
@@ -796,6 +817,19 @@ final class PEMap implements Iterable<DictKey> {
             public DictKey next() {
                 DictKey result;
                 while ((result = getKey(current++)) == null) {
+                    // skip null entries
+                }
+                return result;
+            }
+        };
+    }
+
+    public Iterator<DictKey> reverseKeyIterator() {
+        return new ReverseSparseMapIterator<DictKey>() {
+            @Override
+            public DictKey next() {
+                DictKey result;
+                while ((result = getKey(--current)) == null) {
                     // skip null entries
                 }
                 return result;

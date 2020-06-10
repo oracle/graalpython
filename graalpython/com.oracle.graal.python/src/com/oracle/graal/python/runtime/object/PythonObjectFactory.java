@@ -767,12 +767,24 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDictItemIterator(PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictItemIterator.newInstance(), iterator));
     }
 
-    public PDictKeyIterator createDictKeyIterator(PHashingCollection dict) {
-        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.newInstance(), dict));
+    public PDictItemIterator createDictReverseItemIterator(HashingStorageIterator<DictEntry> iterator) {
+        return trace(new PDictItemIterator(PythonBuiltinClassType.PDictReverseItemIterator, PythonBuiltinClassType.PDictReverseItemIterator.newInstance(), iterator));
+    }
+
+    public PDictKeyIterator createDictKeyIterator(HashingStorageIterator<Object> iterator) {
+        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.newInstance(), iterator));
+    }
+
+    public PDictKeyIterator createDictReverseKeyIterator(HashingStorageIterator<Object> iterator) {
+        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictReverseKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator.newInstance(), iterator));
     }
 
     public PDictValueIterator createDictValueIterator(HashingStorageIterator<Object> iterator) {
         return trace(new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.newInstance(), iterator));
+    }
+
+    public PDictValueIterator createDictReverseValueIterator(HashingStorageIterator<Object> iterator) {
+        return trace(new PDictValueIterator(PythonBuiltinClassType.PDictReverseValueIterator, PythonBuiltinClassType.PDictReverseValueIterator.newInstance(), iterator));
     }
 
     public Object createSentinelIterator(Object callable, Object sentinel) {
