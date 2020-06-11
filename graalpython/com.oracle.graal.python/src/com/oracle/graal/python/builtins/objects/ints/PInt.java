@@ -320,7 +320,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static double doubleValue(BigInteger value) {
+    public static double doubleValue(BigInteger value) {
         return value.doubleValue();
     }
 
@@ -351,12 +351,12 @@ public final class PInt extends PythonBuiltinObject {
         return integer.longValue();
     }
 
-    public long longValueExact() {
+    public long longValueExact() throws ArithmeticException {
         return longValueExact(value);
     }
 
     @TruffleBoundary
-    static long longValueExact(BigInteger value) {
+    static long longValueExact(BigInteger value) throws ArithmeticException {
         return value.longValueExact();
     }
 

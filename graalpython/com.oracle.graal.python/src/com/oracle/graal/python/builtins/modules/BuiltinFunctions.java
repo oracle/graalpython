@@ -1693,7 +1693,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"x", "y", "z"})
+    @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode powNode = TernaryArithmetic.Pow.create();

@@ -21,6 +21,9 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import sys
+
 def test_add_long_overflow():
     # max long value is written as long primitive
     val = 0x7fffffffffffffff
@@ -295,3 +298,8 @@ def test_lshift():
 def test_pow():
     # (0xffffffffffffffff >> 63) is used to produce a non-narrowed int
     assert 2**(0xffffffffffffffff >> 63) == 2
+
+    if sys.version_info.minor >= 8:
+        # for some reason this hangs CPython on the CI even if it's just parsed
+        from pow_tests import test_pow
+        test_pow()
