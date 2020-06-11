@@ -490,5 +490,6 @@ public abstract class ErrorMessages {
     public static final String ZIPIMPORT_WRONG_CACHED_FILE_POS = "zipimport: wrong cached file position";
     public static final String ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED = "access to internal language %s is not permitted";
     public static final String POW_BASE_NOT_INVERTIBLE = "base is not invertible for the given modulus";
+    public static final String POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = "0.0 cannot be raised to a negative power";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
 }

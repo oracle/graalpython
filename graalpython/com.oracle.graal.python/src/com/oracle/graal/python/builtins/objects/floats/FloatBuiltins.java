@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -95,8 +96,10 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -106,6 +109,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFloat)
@@ -453,28 +458,101 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
         @Specialization
-        double doDL(double left, long right, @SuppressWarnings("unused") PNone none) {
+        double doDL(double left, long right, @SuppressWarnings("unused") PNone none,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
+            return doOperation(left, right, negativeRaise);
+        }
+
+        @Specialization
+        double doDPi(double left, PInt right, @SuppressWarnings("unused") PNone none,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
+            return doOperation(left, right.doubleValue(), negativeRaise);
+        }
+
+        /**
+         * The special cases we need to deal with always return 1, so 0 means no special case, not a
+         * result.
+         */
+        private double doSpecialCases(double left, double right, BranchProfile negativeRaise) {
+            // see cpython://Objects/floatobject.c#float_pow for special cases
+            if (Double.isNaN(right) && left == 1) {
+                // 1**nan = 1, unlike on Java
+                return 1;
+            }
+            if (Double.isInfinite(right) && (left == 1 || left == -1)) {
+                // v**(+/-)inf is 1.0 if abs(v) == 1, unlike on Java
+                return 1;
+            }
+            if (left == 0 && right < 0) {
+                negativeRaise.enter();
+                // 0**w is an error if w is negative, unlike Java
+                throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
+            }
+            return 0;
+        }
+
+        private double doOperation(double left, double right, BranchProfile negativeRaise) {
+            if (doSpecialCases(left, right, negativeRaise) == 1) {
+                return 1.0;
+            }
             return Math.pow(left, right);
         }
 
-        @Specialization
-        double doDPi(double left, PInt right, @SuppressWarnings("unused") PNone none) {
-            return Math.pow(left, right.doubleValue());
-        }
-
-        @Specialization
-        double doDD(double left, double right, @SuppressWarnings("unused") PNone none) {
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
+                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
+            if (doSpecialCases(left, right, negativeRaise) == 1) {
+                return 1.0;
+            }
+            if (left < 0 && (right % 1 != 0)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // Negative numbers raised to fractional powers become complex.
+                throw new UnexpectedResultException(callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none));
+            }
             return Math.pow(left, right);
         }
 
-        @Specialization
-        double doDL(long left, double right, @SuppressWarnings("unused") PNone none) {
+        @Specialization(replaces = "doDD")
+        Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
+                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
+            if (doSpecialCases(left, right, negativeRaise) == 1) {
+                return 1.0;
+            }
+            if (left < 0 && (right % 1 != 0)) {
+                // Negative numbers raised to fractional powers become complex.
+                return callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none);
+            }
             return Math.pow(left, right);
         }
 
-        @Specialization
-        double doDPi(PInt left, double right, @SuppressWarnings("unused") PNone none) {
-            return Math.pow(left.doubleValue(), right);
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        double doDL(VirtualFrame frame, long left, double right, PNone none,
+                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
+            return doDD(frame, left, right, none, callPow, negativeRaise);
+        }
+
+        @Specialization(replaces = "doDL")
+        Object doDLComplex(VirtualFrame frame, long left, double right, PNone none,
+                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
+            return doDDToComplex(frame, left, right, none, callPow, negativeRaise);
+        }
+
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        double doDPi(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
+                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
+            return doDD(frame, left.doubleValue(), right, none, callPow, negativeRaise);
+        }
+
+        @Specialization(replaces = "doDPi")
+        Object doDPiToComplex(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
+                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
+            return doDDToComplex(frame, left.doubleValue(), right, none, callPow, negativeRaise);
         }
 
         @Fallback
