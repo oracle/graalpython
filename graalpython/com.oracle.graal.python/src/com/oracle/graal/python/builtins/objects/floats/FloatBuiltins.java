@@ -105,6 +105,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -456,6 +457,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
+    @ReportPolymorphism
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
         @Specialization
         double doDL(double left, long right, @SuppressWarnings("unused") PNone none,
@@ -555,13 +557,31 @@ public final class FloatBuiltins extends PythonBuiltins {
             return doDDToComplex(frame, left.doubleValue(), right, none, callPow, negativeRaise);
         }
 
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right, Object mod) {
-            if (mod instanceof PNone) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            } else {
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
+                        @CachedLibrary(limit = "5") PythonObjectLibrary lib,
+                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
+            if (!(mod instanceof PNone)) {
                 throw raise(PythonBuiltinClassType.TypeError, "pow() 3rd argument not allowed unless all arguments are integers");
             }
+            double leftDouble;
+            double rightDouble;
+            if (lib.canBeJavaDouble(left)) {
+                leftDouble = lib.asJavaDouble(left);
+            } else if (left instanceof PInt) {
+                leftDouble = ((PInt) left).doubleValue();
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            if (lib.canBeJavaDouble(right)) {
+                rightDouble = lib.asJavaDouble(right);
+            } else if (right instanceof PInt) {
+                rightDouble = ((PInt) right).doubleValue();
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, callPow, negativeRaise);
         }
     }
 
