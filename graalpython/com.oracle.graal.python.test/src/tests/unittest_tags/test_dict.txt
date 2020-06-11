@@ -9,6 +9,7 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_copy_fuzz
 *graalpython.lib-python.3.test.test_dict.DictTest.test_copy_maintains_tracking
 *graalpython.lib-python.3.test.test_dict.DictTest.test_copy_noncompact
+*graalpython.lib-python.3.test.test_dict.DictTest.test_dict_copy_order
 *graalpython.lib-python.3.test.test_dict.DictTest.test_dictitems_contains_use_after_free
 *graalpython.lib-python.3.test.test_dict.DictTest.test_dictview_mixed_set_operations
 *graalpython.lib-python.3.test.test_dict.DictTest.test_dictview_set_operations_on_items
