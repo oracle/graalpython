@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_compare_error
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_constructors_not_callable
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_copy
+*graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_deeply_nested_repr
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_dict_items
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_dict_keys
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_dict_mixed_keys_items
@@ -10,3 +11,4 @@
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_items_set_operations
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_keys_set_operations
 *graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_pickle
+*graalpython.lib-python.3.test.test_dictviews.DictSetTest.test_recursive_repr
