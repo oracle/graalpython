@@ -187,6 +187,9 @@ public final class PythonSSTNodeFactory {
     }
 
     public SSTNode createAnnAssignment(SSTNode lhs, SSTNode type, SSTNode rhs, int start, int end) {
+        if (lhs instanceof CollectionSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), "only single target (not tuple) can be annotated");
+        }
         declareVar(lhs);
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
