@@ -10,17 +10,29 @@ ModuleRootNode Name: <module 'fnCall09'> SourceSection: [0,25]`foo(a, b, c, *arg
       PositionalArgumentsNode SourceSection: None
         ReadNameNodeGen SourceSection: [4,5]`a`
           Identifier: a
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ReadNameNodeGen SourceSection: [7,8]`b`
           Identifier: b
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ReadNameNodeGen SourceSection: [10,11]`c`
           Identifier: c
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ReadNameNodeGen SourceSection: [14,18]`args`
           Identifier: args
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ExecutePositionalStarargsNodeGen SourceSection: None
       KeywordArgumentsNodeGen SourceSection: None
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [22,24]`kw`
             Identifier: kw
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

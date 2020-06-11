@@ -11,9 +11,15 @@ ModuleRootNode Name: <module 'fnCall07'> SourceSection: [0,20]`foo(key=value, **
         KeywordLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [8,13]`value`
             Identifier: value
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [17,19]`kw`
             Identifier: kw
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

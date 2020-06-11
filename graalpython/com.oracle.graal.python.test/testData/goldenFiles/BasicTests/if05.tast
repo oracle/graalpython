@@ -11,8 +11,12 @@ ModuleRootNode Name: <module 'if05'> SourceSection: [0,14]`if not i: pass`
       SideEffect:
         IfNode SourceSection: [0,14]`if not i: pass`
           NotNodeGen SourceSection: [3,8]`not i`
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
             ReadNameNodeGen SourceSection: [7,8]`i`
               Identifier: i
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           ExpressionStatementNode SourceSection: [10,14]`pass`
             EmptyNode SourceSection: [10,14]`pass`
           BlockNode SourceSection: None

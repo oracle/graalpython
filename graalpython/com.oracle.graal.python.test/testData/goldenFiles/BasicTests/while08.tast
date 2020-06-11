@@ -13,16 +13,22 @@ ModuleRootNode Name: <module 'while08'> SourceSection: [0,86]`while True:↵  if
           WhileNode SourceSection: None
             WhileRepeatingNode SourceSection: None
               YesNodeGen SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 BooleanLiteralNode SourceSection: [6,10]`True`
               ContinueTargetNode SourceSection: None
                 BlockNode SourceSection: None
                   IfNode SourceSection: [14,36]`if False:↵    break↵...`
                     YesNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       BooleanLiteralNode SourceSection: [17,22]`False`
                     BreakNode SourceSection: [28,33]`break`
                     BlockNode SourceSection: None
                   IfNode SourceSection: [36,60]`if True:↵    continu...`
                     YesNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       BooleanLiteralNode SourceSection: [39,43]`True`
                     ContinueNode SourceSection: [49,57]`continue`
                     BlockNode SourceSection: None
@@ -33,4 +39,6 @@ ModuleRootNode Name: <module 'while08'> SourceSection: [0,86]`while True:↵  if
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [73,78]`print`
                 Identifier: print
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               StringLiteralNode SourceSection: [79,85]`'done'`

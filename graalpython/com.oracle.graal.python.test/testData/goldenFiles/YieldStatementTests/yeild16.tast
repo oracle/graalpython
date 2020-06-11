@@ -40,6 +40,8 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                     GeneratorIfNode SourceSection: [13,41]`if (yield):↵        ...`
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         YieldNode SourceSection: [17,22]`yield`
                           flagSlot: 0
                           EmptyNode SourceSection: None
@@ -54,6 +56,8 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

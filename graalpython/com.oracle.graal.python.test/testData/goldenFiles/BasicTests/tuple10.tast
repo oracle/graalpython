@@ -18,4 +18,6 @@ ModuleRootNode Name: <module 'tuple10'> SourceSection: [0,14]`t = 1, call1()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [7,12]`call1`
                 Identifier: call1
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None

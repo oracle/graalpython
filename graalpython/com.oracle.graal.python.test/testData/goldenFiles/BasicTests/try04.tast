@@ -19,9 +19,15 @@ ModuleRootNode Name: <module 'try04'> SourceSection: [0,63]`try:↵  pass↵exce
               TupleLiteralNode SourceSection: [19,55]`(RuntimeError, TypeE...`
                 ReadNameNodeGen SourceSection: [20,32]`RuntimeError`
                   Identifier: RuntimeError
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [34,43]`TypeError`
                   Identifier: TypeError
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [45,54]`NameError`
                   Identifier: NameError
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
             BlockNode SourceSection: None

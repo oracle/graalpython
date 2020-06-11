@@ -59,6 +59,8 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                   Key: __setitem__
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                 ReadClassAttributeNodeGen SourceSection: [52,56]`dict`
                                   GetItemNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
@@ -92,6 +94,8 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                       Identifier: dict_setitem
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,dict_setitem,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -101,6 +105,8 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                           CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [75,87]`dict_setitem`
                                             Frame: [0,dict_setitem,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [94,106]`dict.clear()`
                                         PythonCallNodeGen SourceSection: [94,106]`dict.clear()`
@@ -111,6 +117,8 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
@@ -119,8 +127,12 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                         StringLiteralNode SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [1,__class__,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [18,22]`dict`
               Identifier: dict
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None

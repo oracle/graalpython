@@ -19,3 +19,7 @@ ModuleRootNode Name: <module 'fromImport04'> SourceSection: [0,31]`from sys.path
           GetAnyAttributeNodeGen SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None

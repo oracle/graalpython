@@ -19,6 +19,8 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                 BlockNode SourceSection: None
                   IfNode SourceSection: [24,60]`if x % 2 == 0:â†µ     ...`
                     YesNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       BinaryComparisonNodeGen SourceSection: [27,37]`x % 2 == 0`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __eq__
@@ -27,6 +29,8 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                             Op: __mod__
                           ReadNameNodeGen SourceSection: [27,28]`x`
                             Identifier: x
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           IntegerLiteralNode SourceSection: [31,32]`2`
                             Value: 2
                         IntegerLiteralNode SourceSection: [36,37]`0`
@@ -38,14 +42,20 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                       CallUnaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [60,65]`print`
                         Identifier: print
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ReadNameNodeGen SourceSection: [66,67]`x`
                         Identifier: x
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [9,18]`range(10)`
               GetIteratorNodeGen SourceSection: None
               PythonCallUnary SourceSection: [9,18]`range(10)`
                 CallUnaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 IntegerLiteralNode SourceSection: [15,17]`10`
                   Value: 10
           BlockNode SourceSection: None

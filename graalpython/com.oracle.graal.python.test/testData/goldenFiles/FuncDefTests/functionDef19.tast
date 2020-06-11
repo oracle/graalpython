@@ -42,6 +42,8 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                         Identifier: func
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,func,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -49,6 +51,8 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                         Identifier: name
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,name,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -56,6 +60,8 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                         Identifier: bases
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,bases,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -63,6 +69,8 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                         Identifier: metaclass
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,metaclass,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -70,6 +78,8 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                         Identifier: kwargs
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,kwargs,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -78,4 +88,6 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                         EmptyNode SourceSection: [67,71]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

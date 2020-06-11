@@ -22,3 +22,7 @@ ModuleRootNode Name: <module 'fromImport10'> SourceSection: [0,41]`from sys.path
           GetAnyAttributeNodeGen SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None

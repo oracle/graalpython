@@ -14,5 +14,9 @@ ModuleRootNode Name: <module 'augassign06'> SourceSection: [0,6]`a %= b`
           LookupAndCallInplaceNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,1]`a`
               Identifier: a
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             ReadNameNodeGen SourceSection: [5,6]`b`
               Identifier: b
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None

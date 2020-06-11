@@ -10,17 +10,25 @@ ModuleRootNode Name: <module 'slice05'> SourceSection: [0,16]`a()[b():c():d()]`
         CallNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [0,1]`a`
           Identifier: a
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
       SliceLiteralNodeGen SourceSection: [4,15]`b():c():d()`
         PythonObjectFactoryNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [4,7]`b()`
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4,5]`b`
             Identifier: b
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
         PythonCallNodeGen SourceSection: [8,11]`c()`
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [8,9]`c`
             Identifier: c
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
         PythonCallNodeGen SourceSection: [12,15]`d()`
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [12,13]`d`
             Identifier: d
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None

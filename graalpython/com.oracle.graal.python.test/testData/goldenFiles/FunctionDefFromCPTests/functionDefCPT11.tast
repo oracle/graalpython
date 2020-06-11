@@ -39,6 +39,8 @@ ModuleRootNode Name: <module 'functionDefCPT11'> SourceSection: [0,30]`def f(a, 
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -46,6 +48,8 @@ ModuleRootNode Name: <module 'functionDefCPT11'> SourceSection: [0,30]`def f(a, 
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,b,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -53,6 +57,8 @@ ModuleRootNode Name: <module 'functionDefCPT11'> SourceSection: [0,30]`def f(a, 
                         Identifier: args
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,args,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -60,6 +66,8 @@ ModuleRootNode Name: <module 'functionDefCPT11'> SourceSection: [0,30]`def f(a, 
                         Identifier: kw
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,kw,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -68,4 +76,6 @@ ModuleRootNode Name: <module 'functionDefCPT11'> SourceSection: [0,30]`def f(a, 
                         EmptyNode SourceSection: [26,30]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

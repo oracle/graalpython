@@ -38,9 +38,13 @@ ModuleRootNode Name: <module 'basicInFn02'> SourceSection: [0,32]`def fn():↵  
                         Identifier: system
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,system,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ImportExpression SourceSection: None
                           ImportNode SourceSection: None
                             Module: sys
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

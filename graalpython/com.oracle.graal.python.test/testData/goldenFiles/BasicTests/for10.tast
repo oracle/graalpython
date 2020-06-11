@@ -23,6 +23,8 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                         Identifier: i
                     IfNode SourceSection: [57,84]`if True:↵         br...`
                       YesNodeGen SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         BooleanLiteralNode SourceSection: [60,64]`True`
                       BreakNode SourceSection: [75,80]`break`
                       BlockNode SourceSection: None
@@ -32,10 +34,14 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                       CallBinaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [37,42]`range`
                         Identifier: range
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       IntegerLiteralNode SourceSection: [43,44]`2`
                         Value: 2
                       ReadNameNodeGen SourceSection: [45,48]`num`
                         Identifier: num
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                 ExpressionStatementNode SourceSection: [96,100]`pass`
                   EmptyNode SourceSection: [96,100]`pass`
             GetIteratorExpressionNodeGen SourceSection: [11,23]`range(10,20)`
@@ -44,6 +50,8 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                 CallBinaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [11,16]`range`
                   Identifier: range
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 IntegerLiteralNode SourceSection: [17,19]`10`
                   Value: 10
                 IntegerLiteralNode SourceSection: [20,22]`20`

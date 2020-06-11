@@ -50,7 +50,11 @@ ModuleRootNode Name: <module 'asyncWith01'> SourceSection: [0,34]`async def f():
                         CallNodeGen SourceSection: None
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

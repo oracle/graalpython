@@ -39,15 +39,21 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
                     TupleLiteralNode SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                       BinaryArithmeticExpression SourceSection: [3,6]`x*x`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mul__
                         ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                           Frame: [0,x,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [5,6]`x`
                           Frame: [0,x,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                       PythonObjectFactoryNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
@@ -55,6 +61,8 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
                   Identifier: x
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,x,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -62,8 +70,12 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
@@ -74,6 +86,8 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [16,21]`range`
               Identifier: range
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             IntegerLiteralNode SourceSection: [22,24]`20`
               Value: 20
         PythonObjectFactoryNodeGen SourceSection: None

@@ -11,4 +11,6 @@ ModuleRootNode Name: <module 'assert01'> SourceSection: [0,11]`assert True`
       SideEffect:
         AssertNode SourceSection: [0,11]`assert True`
           YesNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
             BooleanLiteralNode SourceSection: [7,11]`True`

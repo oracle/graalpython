@@ -19,13 +19,19 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                   Key: to
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 GetAttributeNodeGen SourceSection: None
                   GetFixedAttributeNodeGen SourceSection: None
                     Key: path
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                   ReadNameNodeGen SourceSection: None
                     Identifier: some
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
             FunctionDefinitionNode Name: fn SourceSection: None
               Arguments: None
               KwArguments: None
@@ -53,4 +59,6 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                           EmptyNode SourceSection: [34,38]`pass`
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None

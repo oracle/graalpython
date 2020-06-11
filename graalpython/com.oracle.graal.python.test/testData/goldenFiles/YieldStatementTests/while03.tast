@@ -44,11 +44,15 @@ ModuleRootNode Name: <module 'while03'> SourceSection: [0,81]`def gen(x):↵   w
                           GeneratorBlockNode SourceSection: None
                             IfNode SourceSection: [29,61]`if x == 1:↵       co...`
                               YesNodeGen SourceSection: None
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [32,38]`x == 1`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __eq__
                                   ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
                                     Frame: [0,x,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [37,38]`1`
                                     Value: 1
@@ -58,11 +62,15 @@ ModuleRootNode Name: <module 'while03'> SourceSection: [0,81]`def gen(x):↵   w
                               Identifier: x
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [0,x,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               BinaryArithmeticExpression SourceSection: [65,68]`x-1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __sub__
                                 ReadGeneratorFrameVariableNode SourceSection: [65,66]`x`
                                   Frame: [0,x,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [67,68]`1`
                                   Value: 1
@@ -71,22 +79,32 @@ ModuleRootNode Name: <module 'while03'> SourceSection: [0,81]`def gen(x):↵   w
                                 flagSlot: 0
                                 ReadGeneratorFrameVariableNode SourceSection: [80,81]`x`
                                   Frame: [0,x,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [21,22]`x`
                             Frame: [0,x,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: x
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,x,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

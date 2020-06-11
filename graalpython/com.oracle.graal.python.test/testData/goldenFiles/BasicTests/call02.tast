@@ -9,5 +9,7 @@ ModuleRootNode Name: <module 'call02'> SourceSection: [0,6]`foo(1)`
       CallUnaryMethodNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       IntegerLiteralNode SourceSection: [4,5]`1`
         Value: 1

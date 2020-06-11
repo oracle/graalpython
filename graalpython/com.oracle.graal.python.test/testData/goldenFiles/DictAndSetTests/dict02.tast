@@ -9,5 +9,9 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,5]`{a:b}`
       PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [1,2]`a`
         Identifier: a
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [3,4]`b`
         Identifier: b
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

@@ -36,6 +36,8 @@ ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    
                     FunctionBodyNode SourceSection: [15,47]`assert len != 0, get...`
                       AssertNode SourceSection: [15,47]`assert len != 0, get...`
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [22,30]`len != 0`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __ne__
@@ -54,4 +56,6 @@ ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -83,6 +83,8 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                                     FunctionBodyNode SourceSection: [75,76]`"`
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [1,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
@@ -91,6 +93,8 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                         StringLiteralNode SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [1,__class__,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

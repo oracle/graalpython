@@ -39,6 +39,8 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                         Identifier: cls
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,cls,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -46,6 +48,8 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                         Identifier: abcs
                         ReadLocalVariableNode SourceSection: None
                           Frame: [1,abcs,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -59,9 +63,13 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                 Identifier: base
                                 ReadLocalVariableNode SourceSection: None
                                   Frame: [2,base,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [55,155]`if not any(issubclas...`
                               NotNodeGen SourceSection: [58,109]`not any(issubclass(b...`
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 PythonCallUnary SourceSection: [62,109]`any(issubclass(b, ba...`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [62,65]`any`
@@ -100,10 +108,14 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: [77,78]`b`
                                                     Frame: [0,b,Illegal]
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [80,84]`base`
                                                     ReadGeneratorFrameVariableNode SourceSection: None
                                                       Frame: [1,base,Illegal]
+                                                      IsBuiltinClassProfile SourceSection: None
+                                                        CachedDispatchFirst SourceSection: None
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadFromCellNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
@@ -111,6 +123,8 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                               Identifier: b
                                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                 Frame: [0,b,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
@@ -118,8 +132,12 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [2,<return_val>,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
@@ -131,8 +149,12 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           Key: __bases__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [95,98]`cls`
                                           Frame: [0,cls,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonObjectFactoryNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [123,150]`abstract_bases.appen...`
@@ -145,6 +167,8 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                   ReadLocalCellNodeGen SourceSection: [145,149]`base`
                                     ReadLocalVariableNode SourceSection: None
                                       Frame: [2,base,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadFromCellNodeGen SourceSection: None
                               BlockNode SourceSection: None
@@ -153,6 +177,8 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             ReadLocalCellNodeGen SourceSection: [41,45]`abcs`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,abcs,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadFromCellNodeGen SourceSection: None
                         BlockNode SourceSection: None
@@ -160,6 +186,8 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                         Identifier: other
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,other,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         PythonCallUnary SourceSection: [164,202]`mro(base, abcs=abcs)...`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -195,12 +223,16 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           CallNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [168,172]`base`
                                             Frame: [0,base,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
                                             KeywordLiteralNode SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [179,183]`abcs`
                                                 ReadGeneratorFrameVariableNode SourceSection: None
                                                   Frame: [1,abcs,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                             CompactKeywordsNodeGen SourceSection: None
@@ -214,6 +246,8 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       Identifier: base
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [0,base,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -221,8 +255,12 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
@@ -231,8 +269,12 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [197,202]`other`
                                 Frame: [3,other,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

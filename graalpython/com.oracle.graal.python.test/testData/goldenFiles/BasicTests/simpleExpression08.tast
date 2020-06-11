@@ -15,7 +15,11 @@ FunctionRootNode SourceSection: [0,8]`"\uD800"`
           Identifier: <return_val>
           WriteLocalFrameSlotNodeGen SourceSection: None
             Frame: [0,<return_val>,Illegal]
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [0,8]`"\uD800"`
       Return Expresssion: ReadLocalVariableNode SourceSection: None
         Frame: [0,<return_val>,Illegal]
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         ReadVariableFromFrameNodeGen SourceSection: None

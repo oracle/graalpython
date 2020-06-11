@@ -14,32 +14,46 @@ ModuleRootNode Name: <module 'starExpr05'> SourceSection: [0,19]`a, *b, c = rang
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [11,16]`range`
               Identifier: range
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             IntegerLiteralNode SourceSection: [17,18]`5`
               Value: 5
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp1
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [1,<>temp1,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp2
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [2,<>temp2,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: a
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: b
             ReadLocalVariableNode SourceSection: None
               Frame: [1,<>temp1,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: c
             ReadLocalVariableNode SourceSection: None
               Frame: [2,<>temp2,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None

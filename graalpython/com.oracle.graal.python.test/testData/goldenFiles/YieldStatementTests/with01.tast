@@ -68,10 +68,14 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,49]`def gen():↵  with
                       CallNodeGen SourceSection: None
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       GetClassNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

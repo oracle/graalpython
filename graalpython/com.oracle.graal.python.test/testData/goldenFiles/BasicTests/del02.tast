@@ -8,8 +8,14 @@ ModuleRootNode Name: <module 'del02'> SourceSection: [0,11]`del x, y, z`
     ExpressionWithSideEffects SourceSection: [0,11]`del x, y, z`
       DeleteNameNodeGen SourceSection: None
         Identifier: x
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       DeleteNameNodeGen SourceSection: None
         Identifier: y
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       DeleteNameNodeGen SourceSection: None
         Identifier: z
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       EmptyNode SourceSection: None

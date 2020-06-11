@@ -66,6 +66,8 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                                       Identifier: foo
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,foo,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -73,6 +75,8 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                                       Identifier: z
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,z,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadVarKeywordsNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -82,11 +86,17 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         IntegerLiteralNode SourceSection: [33,34]`0`
                                           Value: 0
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

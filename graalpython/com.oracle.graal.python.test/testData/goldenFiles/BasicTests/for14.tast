@@ -37,6 +37,8 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                       Identifier: sequences
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,sequences,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -49,6 +51,8 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                 Identifier: s1
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [2,s1,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                             BreakTargetNode SourceSection: [55,165]`for s2 in sequences:...`
                               ForNode SourceSection: None
                                 ForRepeatingNode SourceSection: None
@@ -57,15 +61,23 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                       Identifier: s2
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,s2,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                   IfNode SourceSection: [88,142]`if candidate in s2[1...`
                                     YesNodeGen SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ContainsNodeGen SourceSection: [91,110]`candidate in s2[1:]`
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __contains__
                                         YesNodeGen SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         GetItemNodeGen SourceSection: [104,110]`s2[1:]`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [1,s2,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           SliceLiteralNodeGen SourceSection: [107,109]`1:`
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -82,14 +94,20 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                   GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [65,74]`sequences`
                                     Frame: [0,sequences,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               BreakNode SourceSection: [160,165]`break`
                           GetIteratorExpressionNodeGen SourceSection: [36,45]`sequences`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [36,45]`sequences`
                               Frame: [0,sequences,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

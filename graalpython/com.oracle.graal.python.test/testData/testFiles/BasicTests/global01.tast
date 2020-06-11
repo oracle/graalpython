@@ -39,6 +39,8 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                       EmptyNode SourceSection: [40,48]`global c`
                     WriteGlobalNodeGen SourceSection: [53,62]`c = c + 2`
                       Identifier: c
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [57,62]`c + 2`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __add__
@@ -59,16 +61,24 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [111,116]`add()`
         PythonCallNodeGen SourceSection: [111,116]`add()`
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [111,114]`add`
             Identifier: add
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       PythonCallBinary SourceSection: [117,137]`print("In main:", c)...`
         CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [117,122]`print`
           Identifier: print
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         StringLiteralNode SourceSection: [123,133]`"In main:"`
         ReadNameNodeGen SourceSection: [135,136]`c`
           Identifier: c
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None

@@ -13,10 +13,16 @@ ModuleRootNode Name: <module 'call16'> SourceSection: [0,11]`a.b.c.foo()`
             Key: c
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           GetAttributeNodeGen SourceSection: [0,3]`a.b`
             GetFixedAttributeNodeGen SourceSection: None
               Key: b
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             ReadNameNodeGen SourceSection: [0,1]`a`
               Identifier: a
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None

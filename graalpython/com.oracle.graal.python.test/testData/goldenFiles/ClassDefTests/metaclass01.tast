@@ -11,6 +11,8 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
           Key: displayhook
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
       CallNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: [0,35]`class A:↵    class B...`
         Expression:
@@ -104,6 +106,8 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                                           StringLiteralNode SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [0,__class__,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ObjectLiteralNode SourceSection: None
                               StringLiteralNode SourceSection: None
@@ -114,6 +118,8 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                           StringLiteralNode SourceSection: None
                           ReadLocalVariableNode SourceSection: None
                             Frame: [1,__class__,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None

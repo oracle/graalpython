@@ -38,12 +38,16 @@ ModuleRootNode Name: <module 'listCompr'> SourceSection: [0,21]`[i for i in rang
                     flagSlot: 0
                     ReadGeneratorFrameVariableNode SourceSection: [1,2]`i`
                       Frame: [0,i,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: i
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,i,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -51,8 +55,12 @@ ModuleRootNode Name: <module 'listCompr'> SourceSection: [0,21]`[i for i in rang
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
@@ -63,6 +71,8 @@ ModuleRootNode Name: <module 'listCompr'> SourceSection: [0,21]`[i for i in rang
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [12,17]`range`
               Identifier: range
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             IntegerLiteralNode SourceSection: [18,19]`3`
               Value: 3
         PythonObjectFactoryNodeGen SourceSection: None

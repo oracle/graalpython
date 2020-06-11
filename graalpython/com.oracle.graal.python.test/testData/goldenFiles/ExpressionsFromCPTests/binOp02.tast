@@ -10,5 +10,9 @@ ModuleRootNode Name: <module 'binOp02'> SourceSection: [0,9]`foo - bar`
         Op: __sub__
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [6,9]`bar`
         Identifier: bar
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

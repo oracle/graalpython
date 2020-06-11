@@ -14,6 +14,8 @@ ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyb
             RaiseNodeGen SourceSection: [8,31]`raise KeyboardInterr...`
               ReadNameNodeGen SourceSection: [14,31]`KeyboardInterrupt`
                 Identifier: KeyboardInterrupt
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               NoValueNode SourceSection: None
             BlockNode SourceSection: None
           ExpressionStatementNode SourceSection: [44,68]`print('Goodbye, worl...`
@@ -21,4 +23,6 @@ ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyb
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [44,49]`print`
                 Identifier: print
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               StringLiteralNode SourceSection: [50,67]`'Goodbye, world!'`

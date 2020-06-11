@@ -36,15 +36,21 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
                       Op: __mul__
                     ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                       Frame: [0,x,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                       Frame: [0,x,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                   GeneratorAccessNode SourceSection: None
               WriteGeneratorFrameVariableNodeGen SourceSection: None
                 Identifier: x
                 WriteGeneraterFrameSlotNodeGen SourceSection: None
                   Frame: [0,x,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
               ArgumentExpressionNode SourceSection: None
                 ReadIndexedArgumentNodeGen SourceSection: None
                   Index: 0
@@ -52,8 +58,12 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
                 LookupAndCallUnaryNodeGen SourceSection: None
                   Op: __next__
               GeneratorAccessNode SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             ReadGeneratorFrameVariableNode SourceSection: None
               Frame: [1,<return_val>,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
             BlockNode SourceSection: None
             GeneratorAccessNode SourceSection: None
@@ -64,6 +74,8 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
           CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [14,19]`range`
             Identifier: range
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           IntegerLiteralNode SourceSection: [20,22]`10`
             Value: 10
       PythonObjectFactoryNodeGen SourceSection: None

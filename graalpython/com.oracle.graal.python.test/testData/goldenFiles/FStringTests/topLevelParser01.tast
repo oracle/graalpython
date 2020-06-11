@@ -11,6 +11,8 @@ ModuleRootNode Name: <module 'topLevelParser01'> SourceSection: [0,36]`name = 'P
           CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [14,19]`print`
             Identifier: print
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           FormatStringLiteralNode SourceSection: [20,35]`f"hello {name}"`
             Values: <f>hello {name}
       SideEffect:

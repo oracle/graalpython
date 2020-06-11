@@ -8,6 +8,8 @@ ModuleRootNode Name: <module 'tuple12'> SourceSection: [0,8]`a[1,3,4]`
     GetItemNodeGen SourceSection: [0,8]`a[1,3,4]`
       ReadNameNodeGen SourceSection: None
         Identifier: a
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       TupleLiteralNode SourceSection: [2,7]`1,3,4`
         IntegerLiteralNode SourceSection: [2,3]`1`
           Value: 1

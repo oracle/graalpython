@@ -15,16 +15,24 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
               Identifier: staticmethod
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             PythonCallUnary SourceSection: [14,30]`@funcattrs(x, y)`
               CallUnaryMethodNodeGen SourceSection: None
               PythonCallBinary SourceSection: [14,30]`@funcattrs(x, y)`
                 CallBinaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: None
                   Identifier: funcattrs
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [25,26]`x`
                   Identifier: x
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [28,29]`y`
                   Identifier: y
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
               FunctionDefinitionNode Name: f SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -52,4 +60,6 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
                             EmptyNode SourceSection: [40,44]`pass`
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [0,<return_val>,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None

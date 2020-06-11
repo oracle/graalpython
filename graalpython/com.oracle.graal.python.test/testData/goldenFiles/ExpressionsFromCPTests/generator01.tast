@@ -41,6 +41,8 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
                         Op: __pow__
                       ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [4,5]`3`
                         Value: 3
@@ -49,6 +51,8 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
                   Identifier: x
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,x,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -56,8 +60,12 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
@@ -68,6 +76,8 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             IntegerLiteralNode SourceSection: [21,23]`20`
               Value: 20
         PythonObjectFactoryNodeGen SourceSection: None

@@ -10,6 +10,8 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
         Identifier: SOMETHING
         ReadNameNodeGen SourceSection: [12,16]`NONE`
           Identifier: NONE
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [17,78]`def setup():↵  globa...`
         Identifier: setup
         FunctionDefinitionNode Name: setup SourceSection: None
@@ -39,13 +41,19 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                       EmptyNode SourceSection: [32,48]`global SOMETHING`
                     IfNode SourceSection: [51,77]`if True : SOMETHING ...`
                       YesNodeGen SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         BooleanLiteralNode SourceSection: [54,58]`True`
                       WriteGlobalNodeGen SourceSection: [61,77]`SOMETHING = True`
                         Identifier: SOMETHING
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         BooleanLiteralNode SourceSection: [73,77]`True`
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
@@ -78,6 +86,8 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                       FunctionBodyNode SourceSection: [95,114]`if SOMETHING : pass`
                         IfNode SourceSection: [95,114]`if SOMETHING : pass`
                           YesNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [98,107]`SOMETHING`
                               Identifier: SOMETHING
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -86,4 +96,6 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                           BlockNode SourceSection: None
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None

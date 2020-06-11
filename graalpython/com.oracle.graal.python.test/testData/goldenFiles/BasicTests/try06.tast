@@ -24,25 +24,37 @@ ModuleRootNode Name: <module 'try06'> SourceSection: [0,124]`for cls in (B, C, D
                       EmptyNode SourceSection: [66,70]`pass`
                     ReadNameNodeGen SourceSection: [55,56]`D`
                       Identifier: D
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                   ExceptNode SourceSection: None
                     ExpressionStatementNode SourceSection: [93,97]`pass`
                       EmptyNode SourceSection: [93,97]`pass`
                     ReadNameNodeGen SourceSection: [82,83]`C`
                       Identifier: C
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                   ExceptNode SourceSection: None
                     ExpressionStatementNode SourceSection: [120,124]`pass`
                       EmptyNode SourceSection: [120,124]`pass`
                     ReadNameNodeGen SourceSection: [109,110]`B`
                       Identifier: B
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                   BlockNode SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [11,20]`(B, C, D)`
               GetIteratorNodeGen SourceSection: None
               TupleLiteralNode SourceSection: [11,20]`(B, C, D)`
                 ReadNameNodeGen SourceSection: [12,13]`B`
                   Identifier: B
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [15,16]`C`
                   Identifier: C
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [18,19]`D`
                   Identifier: D
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
           BlockNode SourceSection: None
