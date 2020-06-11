@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
@@ -236,6 +237,7 @@ public final class Python3Core implements PythonCore {
                         "memoryview",
                         "list",
                         "_codecs",
+                        "_codecs_truffle",
                         "bytes",
                         "bytearray",
                         "time",
@@ -371,6 +373,7 @@ public final class Python3Core implements PythonCore {
                         new FunctoolsModuleBuiltins(),
                         new ErrnoModuleBuiltins(),
                         new CodecsModuleBuiltins(),
+                        new CodecsTruffleModuleBuiltins(),
                         new CollectionsModuleBuiltins(),
                         new JavaModuleBuiltins(),
                         new SREModuleBuiltins(),

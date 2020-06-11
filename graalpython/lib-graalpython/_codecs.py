@@ -78,7 +78,8 @@ def lookup(encoding):
 
     # Next, try if we have a Java implementation of the encoding
     if __truffle_lookup(normalized_encoding):
-        result = __codec_info_for_truffle(normalized_encoding)
+        import _codecs_truffle
+        result = _codecs_truffle.codec_info_for_truffle(normalized_encoding)
     else:
         # Next, scan the search functions in order of registration
         for func in __codec_search_path__:
@@ -94,44 +95,6 @@ def lookup(encoding):
         return result
 
     raise LookupError("unknown encoding: %s" % encoding)
-
-
-def __codec_info_for_truffle(encoding):
-    import codecs
-    class TruffleCodec(codecs.Codec):
-        def encode(self, input, errors='strict'):
-            return __truffle_encode(input, encoding, errors)
-
-        def decode(self, input, errors='strict'):
-            return __truffle_decode(input, encoding, errors)
-
-    class IncrementalEncoder(codecs.IncrementalEncoder):
-        def encode(self, input, final=False):
-            return __truffle_encode(input, encoding, self.errors)[0]
-
-    class IncrementalDecoder(codecs.IncrementalDecoder):
-        def decode(self, input, final=False):
-            return __truffle_decode(input, encoding, self.errors)[0]
-
-    class StreamWriter(TruffleCodec, codecs.StreamWriter):
-        pass
-
-    class StreamReader(TruffleCodec, codecs.StreamReader):
-        pass
-
-    class TruffleCodecInfo(codecs.CodecInfo):
-        def __reduce__(self):
-            return __codec_info_for_truffle, (encoding,)
-
-    return TruffleCodecInfo(
-        name=encoding,
-        encode=TruffleCodec().encode,
-        decode=TruffleCodec().decode,
-        incrementalencoder=IncrementalEncoder,
-        incrementaldecoder=IncrementalDecoder,
-        streamreader=StreamReader,
-        streamwriter=StreamWriter,
-    )
 
 
 def _forget_codec(encoding):
