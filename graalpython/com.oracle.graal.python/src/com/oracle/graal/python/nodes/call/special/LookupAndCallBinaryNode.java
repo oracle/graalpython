@@ -147,7 +147,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
         // this also serves as a branch profile
         if (reverseDispatchNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reverseDispatchNode = insert(CallBinaryMethodNode.createReversed());
+            reverseDispatchNode = insert(CallBinaryMethodNode.create());
         }
         return reverseDispatchNode;
     }

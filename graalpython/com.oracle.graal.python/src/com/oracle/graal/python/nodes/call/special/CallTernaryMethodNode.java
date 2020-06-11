@@ -58,11 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @GenerateUncached
 public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     public static CallTernaryMethodNode create() {
-        return CallTernaryMethodNodeGen.create(false);
-    }
-
-    static CallTernaryMethodNode createReversed() {
-        return CallTernaryMethodNodeGen.create(true);
+        return CallTernaryMethodNodeGen.create();
     }
 
     public static CallTernaryMethodNode getUncached() {

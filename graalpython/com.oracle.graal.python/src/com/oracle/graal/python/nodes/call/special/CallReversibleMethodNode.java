@@ -43,21 +43,10 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.dsl.NodeField;
 
-@NodeField(name = "forReverseBinaryOperation", type = boolean.class)
 abstract class CallReversibleMethodNode extends CallSpecialMethodNode {
-    protected abstract boolean isForReverseBinaryOperation();
-
-    protected boolean isForReverseBinaryOperation(PBuiltinFunction func) {
-        boolean isReverseOperationSlot = func.isReverseOperationSlot();
-        CompilerAsserts.partialEvaluationConstant(isReverseOperationSlot);
-        return isForReverseBinaryOperation() && isReverseOperationSlot;
-    }
-
     protected boolean isForReverseBinaryOperation(RootCallTarget ct) {
-        boolean isReverseOperationSlot = PBuiltinFunction.isReverseOperationSlot(ct);
-        CompilerAsserts.partialEvaluationConstant(isReverseOperationSlot);
-        return isForReverseBinaryOperation() && isReverseOperationSlot;
+        CompilerAsserts.neverPartOfCompilation();
+        return PBuiltinFunction.isReverseOperationSlot(ct);
     }
 }

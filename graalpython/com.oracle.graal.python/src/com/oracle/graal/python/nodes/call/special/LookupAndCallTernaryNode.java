@@ -125,7 +125,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
         // this also serves as a branch profile
         if (reverseDispatchNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reverseDispatchNode = insert(CallTernaryMethodNode.createReversed());
+            reverseDispatchNode = insert(CallTernaryMethodNode.create());
         }
         return reverseDispatchNode;
     }
