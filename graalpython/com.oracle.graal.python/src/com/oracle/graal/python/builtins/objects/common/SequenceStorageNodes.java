@@ -3942,7 +3942,7 @@ public abstract class SequenceStorageNodes {
         @Child private GetNextNode getNextNode = GetNextNode.create();
         @Child private GetElementType getElementType = GetElementType.create();
 
-        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         @CompilationFinal private ListStorageType expectedElementType = Uninitialized;
 
@@ -4024,7 +4024,7 @@ public abstract class SequenceStorageNodes {
 
         @Child private GetNextWithoutFrameNode getNextNode = GetNextWithoutFrameNodeGen.create();
 
-        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         @CompilationFinal private ListStorageType expectedElementType = Uninitialized;
 

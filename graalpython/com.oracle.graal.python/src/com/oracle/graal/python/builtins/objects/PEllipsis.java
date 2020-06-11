@@ -66,11 +66,6 @@ public final class PEllipsis extends PythonAbstractObject {
     }
 
     @Override
-    public Object getInternalLazyPythonClass() {
-        return getLazyPythonClass();
-    }
-
-    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object getLazyPythonClass() {

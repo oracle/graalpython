@@ -50,7 +50,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     @Child protected GetNextNode getNext = GetNextNode.create();
     @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
 
-    private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();

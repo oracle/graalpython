@@ -236,7 +236,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
-        private final IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
 
         @SuppressWarnings("unused")
         protected Object create(LazyPythonClass cls, byte[] barr) {
@@ -347,8 +347,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private LookupAndCallUnaryNode callComplexFunc;
 
-        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-        @CompilationFinal private IsBuiltinClassProfile isComplexTypeProfile;
+        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isComplexTypeProfile;
 
         private PComplex createComplex(LazyPythonClass cls, double real, double imaginary) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
@@ -525,7 +525,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private IsBuiltinClassProfile getIsComplexTypeProfile() {
             if (isComplexTypeProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isComplexTypeProfile = IsBuiltinClassProfile.create();
+                isComplexTypeProfile = insert(IsBuiltinClassProfile.create());
             }
             return isComplexTypeProfile;
         }
@@ -889,8 +889,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FloatNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
 
-        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-        @CompilationFinal private ConditionProfile isNanProfile;
+        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
+        private ConditionProfile isNanProfile;
 
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg);
 
@@ -1346,7 +1346,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return negative ? -value : value;
         }
 
-        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
         protected boolean isPrimitiveInt(LazyPythonClass cls) {
             return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PInt);
@@ -1861,7 +1861,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class StrNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode callDecodeNode;
 
-        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;

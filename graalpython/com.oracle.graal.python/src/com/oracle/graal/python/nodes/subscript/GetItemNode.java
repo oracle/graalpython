@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -129,7 +128,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         if (callGetitemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {
-                @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile;
+                @Child private IsBuiltinClassProfile isBuiltinClassProfile;
                 @Child private PRaiseNode raiseNode;
                 @Child private CallNode callClassGetItemNode;
                 @Child private GetAttributeNode getClassGetItemNode;
@@ -140,7 +139,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                         if (getClassGetItemNode == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
-                            isBuiltinClassProfile = IsBuiltinClassProfile.create();
+                            isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
                         }
                         Object classGetItem = null;
                         try {

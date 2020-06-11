@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -327,12 +326,7 @@ public abstract class PGuards {
     }
 
     public static boolean isBuiltinString(Object obj, IsBuiltinClassProfile profile) {
-        return obj instanceof String ||
-                        (obj instanceof PString && profile.profileClass(((PString) obj).getInternalLazyPythonClass(), PythonBuiltinClassType.PString));
-    }
-
-    public static boolean isBuiltinString(PString s, IsBuiltinClassProfile isBuiltinClassProfile, PythonObjectLibrary lib) {
-        return isBuiltinClassProfile.profileClass(lib.getLazyPythonClass(s), PythonBuiltinClassType.PString);
+        return obj instanceof String || profile.profileObject(obj, PythonBuiltinClassType.PString);
     }
 
     public static boolean isNativeString(PString x) {

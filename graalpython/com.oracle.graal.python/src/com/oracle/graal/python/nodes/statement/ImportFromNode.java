@@ -57,7 +57,7 @@ public class ImportFromNode extends AbstractImportNode {
     private final String importee;
     private final int level;
 
-    @CompilationFinal private final IsBuiltinClassProfile getAttrErrorProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile getAttrErrorProfile = IsBuiltinClassProfile.create();
     @CompilationFinal(dimensions = 1) private final String[] fromlist;
 
     public static ImportFromNode create(String importee, String[] fromlist, WriteNode[] readNodes, int level) {

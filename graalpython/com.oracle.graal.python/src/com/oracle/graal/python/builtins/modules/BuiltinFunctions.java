@@ -1713,9 +1713,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(__NEXT__);
         @Child private LookupAndCallBinaryNode add = BinaryArithmetic.Add.create();
 
-        private final IsBuiltinClassProfile errorProfile1 = IsBuiltinClassProfile.create();
-        private final IsBuiltinClassProfile errorProfile2 = IsBuiltinClassProfile.create();
-        private final IsBuiltinClassProfile errorProfile3 = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile errorProfile1 = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile errorProfile2 = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile errorProfile3 = IsBuiltinClassProfile.create();
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public int sumInt(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {

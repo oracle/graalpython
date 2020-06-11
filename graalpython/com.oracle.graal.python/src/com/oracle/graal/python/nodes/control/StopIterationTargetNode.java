@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -35,7 +35,7 @@ public final class StopIterationTargetNode extends StatementNode {
     @Child private StatementNode tryPart;
     @Child private StatementNode catchPart;
 
-    private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
     public StopIterationTargetNode(StatementNode tryPart, StatementNode catchPart) {
         this.tryPart = tryPart;
