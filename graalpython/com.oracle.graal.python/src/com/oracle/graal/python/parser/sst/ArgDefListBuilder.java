@@ -213,6 +213,10 @@ public final class ArgDefListBuilder {
         return splatIndex > -1;
     }
 
+    public boolean validateArgumentsAfterSplat() {
+        return !(splatIndex > -1 && args != null && args.get(splatIndex).name == null && paramNames.size() <= splatIndex);
+    }
+
     /**
      *
      * @return The index to the positional only argument marker ('/'). Which means that all

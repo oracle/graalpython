@@ -544,6 +544,11 @@ typedargslist [ArgDefListBuilder args]
             ( ',' ( kwargsparameter[args] ','? )? )?
 	| kwargsparameter[args] ','?
     )
+    {
+        if (!args.validateArgumentsAfterSplat()) {
+            throw new PythonRecognitionException("named arguments must follow bare *", this, _input, $ctx, getCurrentToken());
+        }
+    }
 ;
   
 defparameter [ArgDefListBuilder args]
@@ -609,6 +614,11 @@ varargslist returns [ArgDefListBuilder result]
                 ( ',' (vkwargsparameter[args] ','? )? )?
             | vkwargsparameter[args] ','?
 	)
+    {
+        if (!args.validateArgumentsAfterSplat()) {
+            throw new PythonRecognitionException("named arguments must follow bare *", this, _input, $ctx, getCurrentToken());
+        }
+    }
 	{ $result = args; }
 ;
 
