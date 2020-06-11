@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,12 +88,15 @@ public abstract class ConsoleHandler {
     public InputStream createInputStream() {
         return new InputStream() {
             byte[] buffer = null;
-            int pos = -1;
+            int pos = 0;
 
             @Override
             public int read() throws IOException {
-                if (buffer == null) {
+                if (pos < 0) {
                     pos = 0;
+                    return -1;
+                } else if (buffer == null) {
+                    assert pos == 0;
                     String line = readLine(false);
                     if (line == null) {
                         return -1;
@@ -102,6 +105,7 @@ public abstract class ConsoleHandler {
                 }
                 if (pos == buffer.length) {
                     buffer = null;
+                    pos = -1;
                     return '\n';
                 } else {
                     return buffer[pos++];

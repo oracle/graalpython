@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -33,12 +33,11 @@ class CommonTest(seq_tests.CommonTest):
         self.assertNotEqual(id(a), id(b))
         self.assertEqual(a, b)
     
-# TODO No assertRaiseRegex available
-#    def test_getitem_error(self):
-#        msg = "list indices must be integers or slices"
-#        with self.assertRaisesRegex(TypeError, msg):
-#            a = []
-#            a['a'] = "python"
+    def test_getitem_error(self):
+        msg = "list indices must be integers or slices"
+        with self.assertRaisesRegex(TypeError, msg):
+            a = []
+            a['a'] = "python"
     
     def test_repr(self):
         l0 = []
@@ -133,10 +132,9 @@ class CommonTest(seq_tests.CommonTest):
         a[-1] = 9
         self.assertEqual(a, self.type2test([5,6,7,8,9]))
     
-# TODO no assertRaisesRegex available now
-#        msg = "list indices must be integers or slices"
-#        with self.assertRaisesRegex(TypeError, msg):
-#            a['a'] = "python"
+        msg = "list indices must be integers or slices"
+        with self.assertRaisesRegex(TypeError, msg):
+            a['a'] = "python"
     
     def test_delitem(self):
         a = self.type2test([0, 1])
@@ -309,10 +307,10 @@ class CommonTest(seq_tests.CommonTest):
         self.assertEqual(a, [-1, 0])
         a.pop(0)
         self.assertEqual(a, [0])
-#        self.assertRaises(IndexError, a.pop, 5)
+        self.assertRaises(IndexError, a.pop, 5)
         a.pop(0)
         self.assertEqual(a, [])
-#        self.assertRaises(IndexError, a.pop)
+        self.assertRaises(IndexError, a.pop)
         self.assertRaises(TypeError, a.pop, 42, 42)
         a = self.type2test([0, 10, 20, 30, 40])
     

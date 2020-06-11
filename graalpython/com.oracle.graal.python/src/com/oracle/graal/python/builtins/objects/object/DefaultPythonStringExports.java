@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttri
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -71,7 +70,7 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") String value) {
+    static Object getLazyPythonClass(@SuppressWarnings("unused") String value) {
         return PythonBuiltinClassType.PString;
     }
 

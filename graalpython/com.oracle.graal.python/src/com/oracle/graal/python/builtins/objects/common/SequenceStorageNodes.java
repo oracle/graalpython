@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode.INDEX_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -110,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -123,7 +121,6 @@ import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode
 import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextWithoutFrameNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
@@ -153,6 +150,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -622,7 +620,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization
@@ -630,7 +628,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization
@@ -638,7 +636,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization(guards = "!isPSlice(idx)")
@@ -646,7 +644,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE));
         }
 
         @Specialization
@@ -913,7 +911,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -937,7 +935,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -956,7 +954,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -975,7 +973,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
-            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), ErrorMessages.INDEX_OUT_OF_RANGE);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -2297,18 +2295,9 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, Object iterable);
 
-        @Child private GetLazyClassNode getClassNode;
-
-        protected LazyPythonClass getClass(Object value) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode.execute(value);
-        }
-
-        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(getClass(seq))"})
+        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(lib.getLazyPythonClass(seq))"})
         SequenceStorage doWithStorage(SequenceStorage left, PSequence seq,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached LenNode lenNode,
                         @Cached PRaiseNode raiseNode,
@@ -2332,8 +2321,9 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(getClass(iterable))")
+        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(lib.getLazyPythonClass(iterable))")
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage s, Object iterable,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
@@ -3759,7 +3749,7 @@ public abstract class SequenceStorageNodes {
                                             array = elements;
                                         }
                                         elements[i++] = bvalue;
-                                    } catch (ArithmeticException e) {
+                                    } catch (OverflowException e) {
                                         throw new UnexpectedResultException(value);
                                     }
                                 } catch (PException e) {

@@ -51,6 +51,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.oracle.graal.python.util.OverflowException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -359,10 +360,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return requested;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(rewriteOn = OverflowException.class)
         PFrame countedLong(VirtualFrame frame, long num,
                         @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
+                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) throws OverflowException {
             return counted(frame, PInt.intValueExact(num), readCallerNode, callStackDepthProfile);
         }
 
@@ -372,7 +373,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
             try {
                 return counted(frame, PInt.intValueExact(num), readCallerNode, callStackDepthProfile);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseCallStackDepth();
             }
         }

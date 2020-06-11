@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttri
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -57,6 +56,7 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -74,7 +74,7 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static int asSize(Boolean value, @SuppressWarnings("unused") LazyPythonClass errorType) {
+    static int asSize(Boolean value, @SuppressWarnings("unused") Object errorType) {
         return asIndex(value);
     }
 
@@ -84,7 +84,7 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Boolean value) {
+    static Object getLazyPythonClass(@SuppressWarnings("unused") Boolean value) {
         return PythonBuiltinClassType.Boolean;
     }
 
@@ -166,9 +166,10 @@ final class DefaultPythonBooleanExports {
 
         @Specialization
         static int bF(Boolean receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltin.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
+            if (isBuiltin.profileIsAnyBuiltinClass(lib.getLazyPythonClass(other))) {
                 return (receiver && other.getValue() == 1 || receiver && other.getValue() == 0) ? 1 : 0;
             } else {
                 return -1;

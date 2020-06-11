@@ -42,6 +42,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -118,8 +120,13 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public byte asByte() {
-        return byteValueExact();
+    public byte asByte() throws UnsupportedMessageException {
+        try {
+            return byteValueExact();
+        } catch (ArithmeticException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
     }
 
     @ExportMessage(limit = "1")
@@ -136,6 +143,7 @@ public final class PInt extends PythonBuiltinObject {
         try {
             return interop.asShort(intValueExact());
         } catch (ArithmeticException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
     }
@@ -329,7 +337,7 @@ public final class PInt extends PythonBuiltinObject {
         return intValueExact(value);
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
+    @TruffleBoundary
     private static int intValueExact(BigInteger value) {
         return value.intValueExact();
     }
@@ -347,7 +355,7 @@ public final class PInt extends PythonBuiltinObject {
         return longValueExact(value);
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
+    @TruffleBoundary
     static long longValueExact(BigInteger value) {
         return value.longValueExact();
     }
@@ -398,25 +406,25 @@ public final class PInt extends PythonBuiltinObject {
         return right ? 1.0 : 0.0;
     }
 
-    public static int intValueExact(long val) {
+    public static int intValueExact(long val) throws OverflowException {
         if (!isIntRange(val)) {
-            throw new ArithmeticException();
+            throw OverflowException.INSTANCE;
         }
         return (int) val;
     }
 
-    public static char charValueExact(int val) {
+    public static char charValueExact(int val) throws OverflowException {
         char t = (char) val;
         if (t != val) {
-            throw new ArithmeticException();
+            throw OverflowException.INSTANCE;
         }
         return t;
     }
 
-    public static char charValueExact(long val) {
+    public static char charValueExact(long val) throws OverflowException {
         char t = (char) val;
         if (t != val) {
-            throw new ArithmeticException();
+            throw OverflowException.INSTANCE;
         }
         return t;
     }
@@ -429,16 +437,16 @@ public final class PInt extends PythonBuiltinObject {
         return val >= 0 && val < 256;
     }
 
-    public static byte byteValueExact(int val) {
+    public static byte byteValueExact(int val) throws OverflowException {
         if (!isByteRange(val)) {
-            throw new ArithmeticException();
+            throw OverflowException.INSTANCE;
         }
         return (byte) val;
     }
 
-    public static byte byteValueExact(long val) {
+    public static byte byteValueExact(long val) throws OverflowException {
         if (!isByteRange(val)) {
-            throw new ArithmeticException();
+            throw OverflowException.INSTANCE;
         }
         return (byte) val;
     }
@@ -447,7 +455,7 @@ public final class PInt extends PythonBuiltinObject {
         return byteValueExact(value);
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
+    @TruffleBoundary
     private static byte byteValueExact(BigInteger value) {
         return value.byteValueExact();
     }

@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "16810c92d8bef5dcd2c81c80d3cb1c624e717cf7",
+                "version": "56dbf766ace4a1cd5df495a882f44b09909455d4",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "16810c92d8bef5dcd2c81c80d3cb1c624e717cf7",
+                "version": "56dbf766ace4a1cd5df495a882f44b09909455d4",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "16810c92d8bef5dcd2c81c80d3cb1c624e717cf7",
+                "version": "56dbf766ace4a1cd5df495a882f44b09909455d4",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -113,7 +113,17 @@ suite = {
             ],
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
-        }
+        },
+        "ICU4J" : {
+            "moduleName" : "com.ibm.icu",
+            "sha1" : "72c7519b6d91f7a1f993bd44a99fe95d67211b27",
+            "sourceSha1" : "57d00b7135ca8fa82311d6b9fd345309e4c46f0b",
+            "maven" : {
+              "groupId" : "com.ibm.icu",
+              "artifactId" : "icu4j",
+              "version" : "66.1",
+            },
+        },
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -196,6 +206,7 @@ suite = {
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "XZ-1.8",
+                "ICU4J",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",

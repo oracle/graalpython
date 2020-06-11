@@ -34,6 +34,12 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
 import static com.oracle.graal.python.nodes.BuiltinNames.CLASSMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENUMERATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
@@ -136,6 +142,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -174,7 +181,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -189,6 +195,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -338,7 +345,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ComplexNode extends PythonBuiltinNode {
 
-        @Child private GetLazyClassNode getClassNode;
         @Child private LookupAndCallUnaryNode callComplexFunc;
 
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
@@ -404,10 +410,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, real.doubleValue(), 0);
         }
 
-        @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
+        @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"}, limit = "1")
         PComplex complexFromObject(VirtualFrame frame, LazyPythonClass cls, Object number, @SuppressWarnings("unused") PNone imag,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PComplex value = getComplexNumberFromObject(frame, number);
+                        @CachedLibrary("number") PythonObjectLibrary lib) {
+            PComplex value = getComplexNumberFromObject(frame, number, lib);
             if (value == null) {
                 if (lib.canBeJavaDouble(number)) {
                     return createComplex(cls, lib.asJavaDouble(number), 0.0);
@@ -433,10 +439,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, one - two.getImag(), two.getReal());
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = "!isString(one)", limit = "1")
         PComplex complexFromComplexLong(VirtualFrame frame, LazyPythonClass cls, Object one, long two,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+                        @CachedLibrary("one") PythonObjectLibrary lib) {
+            PComplex value = getComplexNumberFromObject(frame, one, lib);
             if (value == null) {
                 if (lib.canBeJavaDouble(one)) {
                     return createComplex(cls, lib.asJavaDouble(one), two);
@@ -447,10 +453,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = "!isString(one)", limit = "1")
         PComplex complexFromComplexDouble(VirtualFrame frame, LazyPythonClass cls, Object one, double two,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+                        @CachedLibrary("one") PythonObjectLibrary lib) {
+            PComplex value = getComplexNumberFromObject(frame, one, lib);
             if (value == null) {
                 if (lib.canBeJavaDouble(one)) {
                     return createComplex(cls, lib.asJavaDouble(one), two);
@@ -461,10 +467,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = "!isString(one)", limit = "1")
         PComplex complexFromComplexPInt(VirtualFrame frame, LazyPythonClass cls, Object one, PInt two,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+                        @CachedLibrary("one") PythonObjectLibrary lib) {
+            PComplex value = getComplexNumberFromObject(frame, one, lib);
             if (value == null) {
                 if (lib.canBeJavaDouble(one)) {
                     return createComplex(cls, lib.asJavaDouble(one), two.doubleValue());
@@ -475,10 +481,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, value.getReal(), value.getImag() + two.doubleValue());
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = "!isString(one)", limit = "1")
         PComplex complexFromComplexComplex(VirtualFrame frame, LazyPythonClass cls, Object one, PComplex two,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+                        @CachedLibrary("one") PythonObjectLibrary lib) {
+            PComplex value = getComplexNumberFromObject(frame, one, lib);
             if (value == null) {
                 if (lib.canBeJavaDouble(one)) {
                     return createComplex(cls, lib.asJavaDouble(one) - two.getImag(), two.getReal());
@@ -491,14 +497,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
         PComplex complexFromComplexObject(VirtualFrame frame, LazyPythonClass cls, Object one, Object two,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary firstArgLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary secondArgLib) {
-            PComplex oneValue = getComplexNumberFromObject(frame, one);
-            if (secondArgLib.canBeJavaDouble(two)) {
-                double twoValue = secondArgLib.asJavaDouble(two);
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            PComplex oneValue = getComplexNumberFromObject(frame, one, lib);
+            if (lib.canBeJavaDouble(two)) {
+                double twoValue = lib.asJavaDouble(two);
                 if (oneValue == null) {
-                    if (firstArgLib.canBeJavaDouble(one)) {
-                        return createComplex(cls, firstArgLib.asJavaDouble(one), twoValue);
+                    if (lib.canBeJavaDouble(one)) {
+                        return createComplex(cls, lib.asJavaDouble(one), twoValue);
                     } else {
                         throw raiseFirstArgError(one);
                     }
@@ -515,14 +520,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
             }
             return convertStringToComplex(real, cls);
-        }
-
-        private GetLazyClassNode getGetClassNode() {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode;
         }
 
         private IsBuiltinClassProfile getIsComplexTypeProfile() {
@@ -549,8 +546,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_NUMBER, "complex() second", x);
         }
 
-        private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
-            if (getIsComplexTypeProfile().profileClass(getGetClassNode().execute(object), PythonBuiltinClassType.PComplex)) {
+        private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object, PythonObjectLibrary lib) {
+            if (getIsComplexTypeProfile().profileClass(lib.getLazyPythonClass(object), PythonBuiltinClassType.PComplex)) {
                 return (PComplex) object;
             } else {
                 Object result = getCallComplexFunc().executeObject(frame, object);
@@ -857,16 +854,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createStringReverseIterator(cls, value);
         }
 
-        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
+        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "3")
         public Object reversed(VirtualFrame frame, LazyPythonClass cls, Object sequence,
-                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @CachedLibrary("sequence") PythonObjectLibrary lib,
                         @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
                         @Cached("create()") CallUnaryMethodNode callReversedNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
                         @Cached("create(__GETITEM__)") LookupAttributeInMRONode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile noReversedProfile,
                         @Cached("createBinaryProfile()") ConditionProfile noGetItemProfile) {
-            LazyPythonClass sequenceKlass = getClassNode.execute(sequence);
+            Object sequenceKlass = lib.getLazyPythonClass(sequence);
             Object reversed = reversedNode.execute(sequenceKlass);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
                 Object getItem = getItemNode.execute(sequenceKlass);
@@ -1812,14 +1809,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
 
-            throw raise(TypeError, ErrorMessages.RAGE_DOES_NOT_SUPPORT, start, stop, step);
+            throw raise(TypeError, ErrorMessages.RANGE_DOES_NOT_SUPPORT, start, stop, step);
         }
 
         @TruffleBoundary
         @Specialization(guards = "!isNumber(stop)")
         public PSequence rangeError(Object cls, Object start, Object stop, Object step) {
             CompilerDirectives.transferToInterpreter();
-            throw raise(TypeError, ErrorMessages.RAGE_DOES_NOT_SUPPORT, start, stop, step);
+            throw raise(TypeError, ErrorMessages.RANGE_DOES_NOT_SUPPORT, start, stop, step);
         }
 
         public static boolean isNumber(Object value) {
@@ -2132,7 +2129,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object type(VirtualFrame frame, LazyPythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
-                        @Cached GetLazyClassNode getMetaclassNode,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary nslib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary glib,
                         @Cached BranchProfile updatedStorage,
@@ -2143,7 +2140,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
             // Determine the proper metatype to deal with this
-            LazyPythonClass metaclass = calculate_metaclass(frame, cls, bases, getMetaclassNode);
+            Object metaclass = calculate_metaclass(frame, cls, bases, lib);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -2224,7 +2221,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @SuppressWarnings("try")
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, LazyPythonClass metaclass, HashingStorageLibrary nslib) {
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib) {
 
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
@@ -2500,13 +2497,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private LazyPythonClass calculate_metaclass(VirtualFrame frame, LazyPythonClass cls, PTuple bases, GetLazyClassNode getMetaclassNode) {
-            LazyPythonClass winner = cls;
+        private Object calculate_metaclass(VirtualFrame frame, LazyPythonClass cls, PTuple bases, PythonObjectLibrary lib) {
+            Object winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
                 if (!ensureIsAcceptableBaseNode().execute(base)) {
                     throw raise(TypeError, ErrorMessages.TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE, base);
                 }
-                LazyPythonClass typ = getMetaclassNode.execute(base);
+                Object typ = lib.getLazyPythonClass(base);
                 if (isSubType(frame, winner, typ)) {
                     continue;
                 } else if (isSubType(frame, typ, winner)) {
@@ -2518,7 +2515,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return winner;
         }
 
-        protected boolean isSubType(VirtualFrame frame, LazyPythonClass subclass, LazyPythonClass superclass) {
+        protected boolean isSubType(VirtualFrame frame, Object subclass, Object superclass) {
             if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSubtypeNode = insert(IsSubtypeNode.create());
@@ -2679,63 +2676,63 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_keys", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysView, isPublic = false)
+    @Builtin(name = DICT_KEYS, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_keys'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_KEYS));
         }
     }
 
-    @Builtin(name = "dict_keysiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysIterator, isPublic = false)
+    @Builtin(name = DICT_KEYITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_keysiterator'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_KEYITERATOR));
         }
     }
 
-    @Builtin(name = "dict_values", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesView, isPublic = false)
+    @Builtin(name = DICT_VALUES, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_values'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_VALUES));
         }
     }
 
-    @Builtin(name = "dict_valuesiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesIterator, isPublic = false)
+    @Builtin(name = DICT_VALUEITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_valuesiterator'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_VALUEITERATOR));
         }
     }
 
-    @Builtin(name = "dict_items", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsView, isPublic = false)
+    @Builtin(name = DICT_ITEMS, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_items'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_ITEMS));
         }
     }
 
-    @Builtin(name = "dict_itemsiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsIterator, isPublic = false)
+    @Builtin(name = DICT_ITEMITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'dict_itemsiterator'");
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, parentheses(DICT_ITEMITERATOR));
         }
     }
 
@@ -2827,12 +2824,40 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "traceback", constructsClass = PythonBuiltinClassType.PTraceback, isPublic = false)
+    @Builtin(name = "TracebackType", constructsClass = PythonBuiltinClassType.PTraceback, isPublic = false, minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame", "tb_lasti",
+                    "tb_lineno"})
     @GenerateNodeFactory
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
-        @Specialization
-        Object call() {
-            throw raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "traceback type");
+        @Specialization(limit = "1")
+        Object createTraceback(@SuppressWarnings("unused") LazyPythonClass cls, PTraceback next, PFrame frame, Object lasti, Object lineno,
+                        @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
+                        @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTraceback(frame, linenoLib.asSize(lineno), lastiLib.asSize(lasti), next);
+        }
+
+        @Specialization(limit = "1")
+        Object createTraceback(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") PNone next, PFrame frame, Object lasti, Object lineno,
+                        @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
+                        @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTraceback(frame, linenoLib.asSize(lineno), lastiLib.asSize(lasti), null);
+        }
+
+        @Specialization(guards = {"!isPTraceback(next)", "!isNone(next)"})
+        @SuppressWarnings("unused")
+        Object errorNext(LazyPythonClass cls, Object next, Object frame, Object lasti, Object lineno) {
+            throw raise(TypeError, "expected traceback object or None, got '%p'", next);
+        }
+
+        @Specialization(guards = "!isPFrame(frame)")
+        @SuppressWarnings("unused")
+        Object errorFrame(LazyPythonClass cls, Object next, Object frame, Object lasti, Object lineno) {
+            throw raise(TypeError, "TracebackType() argument 'tb_frame' must be frame, not %p", frame);
+        }
+
+        protected static boolean isPFrame(Object obj) {
+            return obj instanceof PFrame;
         }
     }
 
@@ -3162,5 +3187,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         PMap doit(LazyPythonClass self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createMap(self);
         }
+    }
+
+    @TruffleBoundary
+    private static String parentheses(String str) {
+        return new StringBuilder("'").append(str).append("'").toString();
     }
 }

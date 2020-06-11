@@ -204,11 +204,11 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       CallNodeGen SourceSection: None
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -356,11 +356,11 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       CallNodeGen SourceSection: None
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -491,11 +491,11 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       CallNodeGen SourceSection: None
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None

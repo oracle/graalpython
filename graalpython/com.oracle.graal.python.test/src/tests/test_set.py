@@ -64,24 +64,98 @@ def test_set_or_union():
     s2 = {4, 5, 6}
     s3 = {1, 2, 4}
     s4 = {1, 2, 3}
-
+    
+    sstr1 = {'a', 'b', 'c'}
+    sstr2 = {'d', 'e', 'f'}
+    sstr3 = {'a', 'b', 'd'}
+    sstr4 = {'a', 'b', 'c'}
+    
     or_result = s1 | s2
     union_result = s1.union(s2)
     assert or_result == {1, 2, 3, 4, 5, 6}
     assert union_result == {1, 2, 3, 4, 5, 6}
+    
+    or_result = s2 | s1
+    union_result = s2.union(s1)
+    assert or_result == {1, 2, 3, 4, 5, 6}
+    assert union_result == {1, 2, 3, 4, 5, 6}
 
+    or_result = sstr1 | sstr2
+    union_result = sstr1.union(sstr2)
+    assert or_result == {'a', 'b', 'c', 'd', 'e', 'f'}
+    assert union_result == {'a', 'b', 'c', 'd', 'e', 'f'}
+
+    or_result = s1 | sstr2
+    union_result = s1.union(sstr2)
+    assert or_result == {1, 2, 3, 'd', 'e', 'f'}
+    assert union_result == {1, 2, 3, 'd', 'e', 'f'}
+    
+    or_result = sstr1 | s1
+    union_result = sstr1.union(s1)
+    assert or_result == {1, 2, 3, 'a', 'b', 'c'}
+    assert union_result == {1, 2, 3, 'a', 'b', 'c'}
+    
     or_result = s1 | s3
     union_result = s1.union(s3)
     assert or_result == {1, 2, 3, 4}
     assert union_result == {1, 2, 3, 4}
+    
+    or_result = s3 | s1
+    union_result = s3.union(s1)
+    assert or_result == {1, 2, 3, 4}
+    assert union_result == {1, 2, 3, 4}
+    
+    or_result = sstr1 | sstr3
+    union_result = sstr1.union(sstr3)
+    assert or_result == {'a', 'b', 'c', 'd'}
+    assert union_result == {'a', 'b', 'c', 'd'}
+    
+    or_result = sstr3 | sstr1
+    union_result = sstr3.union(sstr1)
+    assert or_result == {'a', 'b', 'c', 'd'}
+    assert union_result == {'a', 'b', 'c', 'd'}
 
+    or_result = s1 | sstr3
+    union_result = s1.union(sstr3)
+    assert or_result == {1, 2, 3, 'a', 'b', 'd'}
+    assert union_result == {1, 2, 3, 'a', 'b', 'd'}
+
+    or_result = sstr1 | s3
+    union_result = sstr1.union(s3)
+    assert or_result == {1, 2, 4, 'a', 'b', 'c'}
+    assert union_result == {1, 2, 4, 'a', 'b', 'c'}
+    
     or_result = s1 | s4
     union_result = s1.union(s4)
     assert or_result == {1, 2, 3}
     assert union_result == {1, 2, 3}
+    
+    or_result = s4 | s1
+    union_result = s4.union(s1)
+    assert or_result == {1, 2, 3}
+    assert union_result == {1, 2, 3}
+    
+    or_result = sstr1 | sstr4
+    union_result = sstr1.union(sstr4)
+    assert or_result == {'a','b','c'}
+    assert union_result == {'a','b','c'}
+    
+    or_result = sstr4 | sstr1
+    union_result = sstr4.union(sstr1)
+    assert or_result == {'a','b','c'}
+    assert union_result == {'a','b','c'}
 
     assert frozenset((1,2)) | {1:2}.items() == {1, 2, (1, 2)}
     assert frozenset((1,2)) | {1:2}.keys() == {1, 2}
+    
+    assert frozenset(('a','b')) | {1:2}.keys() == {'a', 'b', 1}
+    assert frozenset(('a','b')) | {1:2, 3:4}.keys() == {'a', 'b', 1, 3}
+    assert frozenset((1,2)) | {'a':2, 'b':4}.keys() == {'a', 'b', 1, 2}
+    
+    assert {1,2} | {3:4, 5:6}.keys() == {1, 2, 3, 5}
+    assert {3:4, 5:6}.keys() | {1,2} == {1, 2, 3, 5}
+    assert {1,2} | {'a':1, 'b':2}.keys() == {1, 2, 'a', 'b'}
+    assert {'a','b'} | {1:'c', 2:'d'}.keys() == {1, 2, 'a', 'b'}
 
 def test_set_and():
     assert frozenset((1,2)) & {1:2}.items() == set()

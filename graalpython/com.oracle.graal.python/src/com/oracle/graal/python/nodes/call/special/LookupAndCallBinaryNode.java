@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -53,15 +51,20 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+// cpython://Objects/abstract.c#binary_op1
+// Order operations are tried until either a valid result or error: w.op(v,w)[*], v.op(v,w), w.op(v,w)
+//
+//       [*] only when v->ob_type != w->ob_type && w->ob_type is a subclass of v->ob_type
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
@@ -110,9 +113,9 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return LookupAndCallBinaryNodeGen.create(name, null, null);
     }
 
-    public static LookupAndCallBinaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
-        assert name.startsWith("__");
-        return LookupAndCallBinaryNodeGen.create(name, name.replaceFirst("__", "__r"), handlerFactory);
+    public static LookupAndCallBinaryNode createReversible(String name, String reverseName, Supplier<NotImplementedHandler> handlerFactory) {
+        assert name.startsWith("__") && reverseName.startsWith("__r");
+        return LookupAndCallBinaryNodeGen.create(name, reverseName, handlerFactory);
     }
 
     public static LookupAndCallBinaryNode create(String name, String rname) {
@@ -144,7 +147,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
         // this also serves as a branch profile
         if (reverseDispatchNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reverseDispatchNode = insert(CallBinaryMethodNode.create());
+            reverseDispatchNode = insert(CallBinaryMethodNode.createReversed());
         }
         return reverseDispatchNode;
     }
@@ -267,10 +270,16 @@ public abstract class LookupAndCallBinaryNode extends Node {
         }
     }
 
+    protected static boolean isReflectedObject(Object left, Object right, PythonObjectLibrary libLeft, PythonObjectLibrary libRight) {
+        return libLeft.isReflectedObject(left, left) || libRight.isReflectedObject(right, right);
+    }
+
     // Object, Object
 
-    @Specialization(guards = "!isReversible()")
+    @Specialization(guards = {"!isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @CachedLibrary("left") PythonObjectLibrary libLeft,
+                    @SuppressWarnings("unused") @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create(name)") LookupInheritedAttributeNode getattr) {
         Object leftCallable = getattr.execute(left);
         if (leftCallable == PNone.NO_VALUE) {
@@ -283,19 +292,29 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return ensureDispatch().executeObject(frame, leftCallable, left, right);
     }
 
-    @Specialization(guards = "isReversible()")
+    @Specialization(guards = {"isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name)") LookupAttributeInMRONode getattr,
                     @Cached("create(rname)") LookupAttributeInMRONode getattrR,
-                    @Cached("create()") GetLazyClassNode getClass,
-                    @Cached("create()") GetLazyClassNode getClassR,
+                    @CachedLibrary("left") PythonObjectLibrary libLeft,
+                    @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
+        // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
+        // (the structure is modelled closely on it), as well as the additional logic in
+        // cpython://Objects/typeobject.c#SLOT1BINFULL. The latter has the addition that it swaps
+        // the arguments around. The swapping of arguments is undone when the call ends up in a
+        // builtin function using a wrapper in CPython. We implement this reversal in our
+        // BuiltinFunctionRootNode. This is opposite to what CPython does (and more in line with
+        // what PyPy does), in that CPython always dispatches with the same argument order and has
+        // slot wrappers for heap types __r*__ methods to swap the arguments, but we don't wrap heap
+        // types' methods and instead have our swapping for the builtin types.
+
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        LazyPythonClass leftClass = getClass.execute(left);
+        Object leftClass = libLeft.getLazyPythonClass(left);
         Object leftCallable = getattr.execute(leftClass);
-        LazyPythonClass rightClass = getClassR.execute(right);
+        Object rightClass = libRight.getLazyPythonClass(right);
         Object rightCallable = getattrR.execute(rightClass);
         if (leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
@@ -320,6 +339,14 @@ public abstract class LookupAndCallBinaryNode extends Node {
             return runErrorHandler(left, right);
         }
         return result;
+    }
+
+    @Specialization(guards = "isReflectedObject(left, right, libLeft, libRight)", limit = "1")
+    Object callReflected(VirtualFrame frame, Object left, Object right,
+                    @CachedLibrary("left") PythonObjectLibrary libLeft,
+                    @CachedLibrary("right") PythonObjectLibrary libRight,
+                    @Cached("create(name, rname, handlerFactory)") LookupAndCallBinaryNode recursiveCall) {
+        return recursiveCall.executeObject(frame, libLeft.getReflectedObject(left), libRight.getReflectedObject(right));
     }
 
     private Object runErrorHandler(Object left, Object right) {

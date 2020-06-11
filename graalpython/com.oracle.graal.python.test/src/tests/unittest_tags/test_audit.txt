@@ -1,1 +1,1 @@
-*AuditTest.test_winreg
+*graalpython.lib-python.3.test.test_audit.AuditTest.test_winreg

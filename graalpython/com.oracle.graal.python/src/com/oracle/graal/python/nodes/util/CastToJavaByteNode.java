@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -64,47 +65,47 @@ public abstract class CastToJavaByteNode extends PNodeWithContext {
     public abstract byte execute(Object x);
 
     @Specialization
-    byte fromByte(byte x) {
+    static byte fromByte(byte x) {
         return x;
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    byte fromInt(int x) {
+    @Specialization(rewriteOn = OverflowException.class)
+    static byte fromInt(int x) throws OverflowException {
+        return PInt.byteValueExact(x);
+    }
+
+    @Specialization(rewriteOn = OverflowException.class)
+    static byte fromLong(long x) throws OverflowException {
         return PInt.byteValueExact(x);
     }
 
     @Specialization(rewriteOn = ArithmeticException.class)
-    byte fromLong(long x) {
-        return PInt.byteValueExact(x);
-    }
-
-    @Specialization(rewriteOn = ArithmeticException.class)
-    byte fromPInt(PInt x) {
+    static byte fromPInt(PInt x) {
         return x.byteValueExact();
     }
 
     @Specialization(replaces = "fromInt")
-    byte fromIntErr(int x,
+    static byte fromIntErr(int x,
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         try {
             return PInt.byteValueExact(x);
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
         }
     }
 
     @Specialization(replaces = "fromLong")
-    byte fromLongErr(long x,
+    static byte fromLongErr(long x,
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         try {
             return PInt.byteValueExact(x);
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
         }
     }
 
     @Specialization(replaces = "fromPInt")
-    byte fromPIntErr(PInt x,
+    static byte fromPIntErr(PInt x,
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         try {
             return x.byteValueExact();

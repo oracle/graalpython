@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -48,17 +51,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -68,8 +74,6 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
@@ -102,10 +106,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -121,7 +121,6 @@ import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -133,6 +132,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -518,7 +518,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Cached TypeNodes.GetMroNode getMroNode) {
 
         HashSet<String> keys = new HashSet<>();
-        PythonAbstractClass klass = getClass.execute(this);
+        Object klass = getClass.execute(this);
         for (PythonAbstractClass o : getMroNode.execute(klass)) {
             if (o instanceof PythonManagedClass) {
                 addKeysFromObject(keys, (PythonManagedClass) o, includeInternal);
@@ -588,7 +588,12 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public LazyPythonClass getLazyPythonClass() {
+    public Object getLazyPythonClass() {
+        CompilerDirectives.bailout("Abstract method");
+        throw new AbstractMethodError(getClass().getCanonicalName());
+    }
+
+    public Object getInternalLazyPythonClass() {
         CompilerDirectives.bailout("Abstract method");
         throw new AbstractMethodError(getClass().getCanonicalName());
     }
@@ -622,9 +627,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public boolean isSequence(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
+    public boolean isSequence(@CachedLibrary("this") PythonObjectLibrary plib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
-        return pythonTypeLibrary.isSequenceType(getClassNode.execute(this));
+        return pythonTypeLibrary.isSequenceType(plib.getLazyPythonClass(this));
     }
 
     @ExportMessage
@@ -658,9 +663,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public boolean isMapping(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
+    public boolean isMapping(@CachedLibrary("this") PythonObjectLibrary plib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
-        return pythonTypeLibrary.isMappingType(getClassNode.execute(this));
+        return pythonTypeLibrary.isMappingType(plib.getLazyPythonClass(this));
     }
 
     @ExportMessage
@@ -671,9 +676,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
                     @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
         if (isLazyClass.profile(this instanceof LazyPythonClass)) {
-            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed because of guard
-            if (lenProfile.profile(hasLenNode.execute(type, __LEN__) != PNone.NO_VALUE)) {
-                return getItemProfile.profile(hasGetItemNode.execute(type, __GETITEM__) != PNone.NO_VALUE);
+            if (lenProfile.profile(hasLenNode.execute(this, __LEN__) != PNone.NO_VALUE)) {
+                return getItemProfile.profile(hasGetItemNode.execute(this, __GETITEM__) != PNone.NO_VALUE);
             }
         }
         return false;
@@ -691,17 +695,15 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
         if (isSequenceType(hasGetItemNode, hasLenNode, isLazyClass, lenProfile, getItemProfile)) {
-            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed b/c it's a
-                                                           // sequence type
-            return profile.profile(hasKeysNode.execute(type, SpecialMethodNames.KEYS) != PNone.NO_VALUE &&
-                            hasItemsNode.execute(type, SpecialMethodNames.ITEMS) != PNone.NO_VALUE &&
-                            hasValuesNode.execute(type, SpecialMethodNames.VALUES) != PNone.NO_VALUE);
+            return profile.profile(hasKeysNode.execute(this, SpecialMethodNames.KEYS) != PNone.NO_VALUE &&
+                            hasItemsNode.execute(this, SpecialMethodNames.ITEMS) != PNone.NO_VALUE &&
+                            hasValuesNode.execute(this, SpecialMethodNames.VALUES) != PNone.NO_VALUE);
         }
         return false;
     }
 
     @ExportMessage
-    public final boolean isIterable(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
+    public final boolean isIterable(@CachedLibrary("this") PythonObjectLibrary plib,
                     @Exclusive @Cached LookupAttributeInMRONode.Dynamic getIterNode,
                     @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
                     @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
@@ -709,7 +711,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileIter,
                     @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileNext) {
-        LazyPythonClass klass = getClassNode.execute(this);
+        Object klass = plib.getLazyPythonClass(this);
         Object iterMethod = getIterNode.execute(klass, __ITER__);
         if (profileIter.profile(iterMethod != PNone.NO_VALUE && iterMethod != PNone.NONE)) {
             return true;
@@ -941,17 +943,17 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public int asFileDescriptorWithState(ThreadState state,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary("this") PythonObjectLibrary libThis,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary libResult,
                     @Exclusive @Cached CallNode callFileNoNode,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
-                    @Exclusive @Cached GetLazyClassNode getClassNode,
                     @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached ConditionProfile gotState,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
 
-        Object filenoFunc = lib.lookupAttribute(this, FILENO);
+        Object filenoFunc = libThis.lookupAttribute(this, FILENO);
         if (filenoFunc == PNone.NO_VALUE) {
             noFilenoMethodProfile.enter();
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
@@ -964,7 +966,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             result = callFileNoNode.execute(PArguments.frameForCall(state), filenoFunc);
         }
 
-        if (isIntProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
+        if (isIntProfile.profileClass(libResult.getLazyPythonClass(result), PythonBuiltinClassType.PInt)) {
             try {
                 return castToJavaIntNode.execute(result);
             } catch (PException e) {
@@ -1023,8 +1025,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached ConditionProfile gotState,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
-                    @Exclusive @Cached() ConditionProfile hasIntFunc) {
+                    @Exclusive @Cached ConditionProfile hasIndexFunc,
+                    @Exclusive @Cached ConditionProfile hasIntFunc) {
         Object result = PNone.NO_VALUE;
         if (hasIndexFunc.profile(lib.canBeIndex(this))) {
             result = lib.asIndex(this);
@@ -1049,7 +1051,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public int asSizeWithState(LazyPythonClass type, ThreadState state,
+    public int asSizeWithState(Object type, ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
@@ -1065,7 +1067,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
         try {
             return PInt.intValueExact(longResult);
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             overflow.enter();
             if (ignoreOverflow.profile(type != null)) {
                 throw raise.raiseNumberTooLarge(type, result);
@@ -1170,10 +1172,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     private static final String TIME_TYPE = "time";
     private static final String STRUCT_TIME_TYPE = "struct_time";
 
-    private static LazyPythonClass readType(ReadAttributeFromObjectNode readTypeNode, Object module, String typename) {
+    private static Object readType(ReadAttributeFromObjectNode readTypeNode, Object module, String typename) {
         Object type = readTypeNode.execute(module, typename);
         if (type instanceof LazyPythonClass) {
-            return (LazyPythonClass) type;
+            return type;
         } else {
             CompilerDirectives.transferToInterpreter();
             throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.PATCHED_DATETIME_CLASS, type);
@@ -1181,12 +1183,12 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public boolean isDate(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+    public boolean isDate(@CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
-        LazyPythonClass objType = getClassNode.execute(this);
+        Object objType = plib.getLazyPythonClass(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
         if (dateTimeModuleLoaded.profile(module != null)) {
@@ -1204,14 +1206,15 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public LocalDate asDate(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+    public LocalDate asDate(
+                    @CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
-        LazyPythonClass objType = getClassNode.execute(this);
+        Object objType = plib.getLazyPythonClass(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
         if (dateTimeModuleLoaded.profile(module != null)) {
@@ -1243,12 +1246,12 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public boolean isTime(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+    public boolean isTime(@CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
-        LazyPythonClass objType = getClassNode.execute(this);
+        Object objType = plib.getLazyPythonClass(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
         if (dateTimeModuleLoaded.profile(module != null)) {
@@ -1266,14 +1269,14 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public LocalTime asTime(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+    public LocalTime asTime(@CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
-        LazyPythonClass objType = getClassNode.execute(this);
+        Object objType = plib.getLazyPythonClass(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
         if (dateTimeModuleLoaded.profile(module != null)) {
@@ -1306,13 +1309,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public boolean isTimeZone(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+    public boolean isTimeZone(@CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @CachedLibrary(limit = "2") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
-        LazyPythonClass objType = getClassNode.execute(this);
+        Object objType = plib.getLazyPythonClass(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
         if (dateTimeModuleLoaded.profile(module != null)) {
@@ -1359,7 +1362,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public ZoneId asTimeZone(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+    public ZoneId asTimeZone(@CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
@@ -1369,7 +1372,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         if (!lib.isTimeZone(this)) {
             throw UnsupportedMessageException.create();
         }
-        LazyPythonClass objType = getClassNode.execute(this);
+        Object objType = plib.getLazyPythonClass(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
         if (dateTimeModuleLoaded.profile(module != null)) {
@@ -1480,7 +1483,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             int info = NONE;
             Object attr = PNone.NO_VALUE;
 
-            PythonAbstractClass klass = getClassNode.execute(object);
+            Object klass = getClassNode.execute(object);
 
             String attrKeyName = attrKey.execute(fieldName);
             if (attrKeyName == null) {
@@ -1558,9 +1561,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         public abstract boolean execute(Object object);
 
-        @Specialization
+        @Specialization(limit = "3")
         public boolean isImmutable(Object object,
-                        @Exclusive @Cached GetLazyClassNode getClass) {
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
             // TODO(fa) The first condition is too general; we should check if the object's type is
             // 'type'
             if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
@@ -1568,7 +1571,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             } else if (object instanceof PythonClass || object instanceof PythonModule) {
                 return false;
             } else {
-                LazyPythonClass klass = getClass.execute(object);
+                Object klass = lib.getLazyPythonClass(object);
                 return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || PGuards.isNativeClass(object);
             }
         }

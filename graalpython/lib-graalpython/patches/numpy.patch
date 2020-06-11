@@ -155,6 +155,19 @@ index f837df112..d3ce70ddd 100644
          src, obj = cmd._compile(body, None, None, 'c')
          cmd.temp_files.append("_configtest")
          cmd.compiler.link_executable([obj], "_configtest")
+diff --git a/numpy/core/setup.py b/numpy/core/setup.py
+index 8b2ded1f2..8a9295a27 100755
+--- a/numpy/core/setup.py
++++ b/numpy/core/setup.py
+@@ -755,7 +755,7 @@ def configuration(parent_package='',top_path=None):
+             join('src', 'common', 'numpyos.c'),
+             ]
+ 
+-    blas_info = get_info('blas_opt', 0)
++    blas_info = None # get_info('blas_opt', 0)
+     if blas_info and ('HAVE_CBLAS', None) in blas_info.get('define_macros', []):
+         extra_info = blas_info
+         # These files are also in MANIFEST.in so that they are always in
 diff --git a/numpy/core/src/multiarray/_multiarray_tests.c.src b/numpy/core/src/multiarray/_multiarray_tests.c.src
 index 9061c0518..bb1dcff0c 100644
 --- a/numpy/core/src/multiarray/_multiarray_tests.c.src

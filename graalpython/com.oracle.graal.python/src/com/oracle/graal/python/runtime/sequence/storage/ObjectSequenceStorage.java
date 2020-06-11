@@ -72,7 +72,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         }
 
         values[idx] = value;
-        length++;
+        incLength();
     }
 
     @Override
@@ -102,7 +102,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         // range is the whole sequence?
         if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
             values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
+            setNewLength(otherLength);
             minimizeCapacity();
             return;
         }
@@ -113,7 +113,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
             values[i] = sequence.values[j];
         }
 
-        length = length > stop ? length : stop;
+        setNewLength(length > stop ? length : stop);
     }
 
     @Override
@@ -150,7 +150,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
     public Object popObject() {
         Object pop = values[length - 1];
-        length--;
+        decLength();
         return pop;
     }
 

@@ -57,12 +57,12 @@ public class SuperObject extends PythonBuiltinObject {
         super(cls, storage);
     }
 
-    public void init(Object newType, PythonAbstractClass newObjecttype, Object newObject) {
+    public void init(Object newType, Object newObjecttype, Object newObject) {
         if (this.type != null) {
             neverReinitialized.invalidate();
         }
         this.type = newType;
-        this.objecttype = newObjecttype;
+        this.objecttype = PythonAbstractClass.cast(newObjecttype);
         this.object = newObject;
     }
 

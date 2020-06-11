@@ -101,7 +101,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
         RootCallTarget[] callTargets = new RootCallTarget[numYields + 1];
         callTargets[0] = callTarget;
         for (int i = 1; i < callTargets.length; i++) {
-            callTargets[i] = Truffle.getRuntime().createCallTarget((RootNode) callTarget.getRootNode().copy());
+            callTargets[i] = Truffle.getRuntime().createCallTarget(NodeUtil.cloneNode(callTarget.getRootNode()));
         }
         return callTargets;
     }

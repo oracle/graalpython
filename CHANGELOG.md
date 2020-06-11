@@ -3,7 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
-## Version 20.1.1
+## Version 20.2
+
+* Escaping Unicode characters using the character names in strings like "\N{GREEK CAPITAL LETTER DELTA}".
 * When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
 * Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now. 
 * Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.

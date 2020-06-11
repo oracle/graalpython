@@ -51,12 +51,23 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+/**
+ * CPython wraps built-in types' slots so the C can take the direct arguments. The slot wrappers for
+ * binary and ternay functions (wrap_unaryfunc, wrap_binaryfunc_r, wrap_ternaryfunc,
+ * wrap_ternaryfunc_r) extract the arguments using PyArg_UnpackTuple. For the reverse operations,
+ * they also swap arguments appropriately, so that in C they can use one function to implement both
+ * the operation and its reverse.
+ *
+ * This BuiltinFunctionRootNode similarly maps from an argument array to the signature of the Java
+ * execute method we want and cares about swapping arguments back if needed.
+ */
 public final class BuiltinFunctionRootNode extends PRootNode {
     private final Signature signature;
     private final Builtin builtin;
     private final String name;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
+    private final boolean reverseOp;
     private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
     @Child private BuiltinCallNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -169,7 +180,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
     }
 
-    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
+    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf, boolean isReverse) {
         super(language);
         CompilerAsserts.neverPartOfCompilation();
         this.signature = createSignature(factory, builtin, declaresExplicitSelf);
@@ -177,6 +188,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.name = builtin.name();
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
+        this.reverseOp = isReverse;
+        assert (!reverseOp || PythonBinaryBuiltinNode.class.isAssignableFrom(factory.getNodeClass()) ||
+                        PythonTernaryBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) : "reverse wrappers can only apply to binary and ternary nodes";
         if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
         }
@@ -313,18 +327,34 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 } else if (node instanceof PythonBinaryBuiltinNode) {
                     if (!declaresExplicitSelf) {
                         assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
-                        body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[1], argumentsList[2]));
+                        if (!reverseOp) {
+                            body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[1], argumentsList[2]));
+                        } else {
+                            body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[2], argumentsList[1]));
+                        }
                     } else {
                         assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
-                        body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]));
+                        if (!reverseOp) {
+                            body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]));
+                        } else {
+                            body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[1], argumentsList[0]));
+                        }
                     }
                 } else if (node instanceof PythonTernaryBuiltinNode) {
                     if (!declaresExplicitSelf) {
                         assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
-                        body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3]));
+                        if (!reverseOp) {
+                            body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3]));
+                        } else {
+                            body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[2], argumentsList[1], argumentsList[3]));
+                        }
                     } else {
                         assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
-                        body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
+                        if (!reverseOp) {
+                            body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
+                        } else {
+                            body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[1], argumentsList[0], argumentsList[2]));
+                        }
                     }
                 } else if (node instanceof PythonQuaternaryBuiltinNode) {
                     if (!declaresExplicitSelf) {
@@ -363,6 +393,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
         return factory;
+    }
+
+    public Builtin getBuiltin() {
+        return builtin;
     }
 
     @Override

@@ -1,6 +1,6 @@
-*CloseSocketTest.test_close
-*OtherNetworkTests.test_custom_headers
-*OtherNetworkTests.test_ftp
-*OtherNetworkTests.test_redirect_url_withfrag
-*OtherNetworkTests.test_sites_no_connection_close
-*OtherNetworkTests.test_urlwithfrag
+*graalpython.lib-python.3.test.test_urllib2net.CloseSocketTest.test_close
+*graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_custom_headers
+*graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_ftp
+*graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_redirect_url_withfrag
+*graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_sites_no_connection_close
+*graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_urlwithfrag

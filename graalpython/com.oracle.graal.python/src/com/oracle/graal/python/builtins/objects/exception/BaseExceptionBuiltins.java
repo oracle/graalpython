@@ -28,9 +28,11 @@ package com.oracle.graal.python.builtins.objects.exception;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SUPPRESS_CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.IllegalFormatException;
 import java.util.List;
@@ -40,17 +42,20 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -64,6 +69,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
@@ -83,6 +90,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization(guards = "args.length == 0")
         Object initNoArgs(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object[] args) {
+            self.setArgs(null);
             return PNone.NONE;
         }
 
@@ -97,24 +105,14 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ArgsNode extends PythonBuiltinNode {
 
-        @Child private GetLazyClassNode getClassNode;
-
         private final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
 
-        private GetLazyClassNode getGetClassNode() {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode;
-        }
-
         @TruffleBoundary
-        private String getFormattedMessage(String format, Object... args) {
+        private String getFormattedMessage(PythonObjectLibrary lib, String format, Object... args) {
             try {
                 // pre-format for custom error message formatter
                 if (ErrorMessageFormatter.containsCustomSpecifier(format)) {
-                    return formatter.format(getGetClassNode(), format, args);
+                    return formatter.format(lib, format, args);
                 }
                 return String.format(format, args);
             } catch (IllegalFormatException e) {
@@ -124,6 +122,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         public Object args(PBaseException self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile nullArgsProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasMessageFormat) {
             PTuple args = self.getArgs();
@@ -132,7 +131,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                     args = factory().createEmptyTuple();
                 } else {
                     // lazily format the exception message:
-                    args = factory().createTuple(new Object[]{getFormattedMessage(self.getMessageFormat(), self.getMessageArgs())});
+                    args = factory().createTuple(new Object[]{getFormattedMessage(lib, self.getMessageFormat(), self.getMessageArgs())});
                 }
                 self.setArgs(args);
             }
@@ -147,7 +146,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        public abstract Object executeObject(VirtualFrame frame, Object excObj);
+        public abstract Object executeObject(VirtualFrame frame, Object excObj, Object value);
+
+        public static ArgsNode create() {
+            return BaseExceptionBuiltinsFactory.ArgsNodeFactory.create(new ReadArgumentNode[]{});
+        }
     }
 
     @Builtin(name = __CAUSE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
@@ -226,7 +229,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             try {
                 self.setSuppressContext(castToJavaBooleanNode.execute(value));
             } catch (CannotCastException e) {
-                raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+                throw raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
             return PNone.NONE;
         }
@@ -275,6 +278,52 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         PBaseException doSetTraceback(PBaseException self, PTraceback tb) {
             self.setTraceback(tb);
             return self;
+        }
+    }
+
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class DictNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "1")
+        PNone dict(PBaseException self, PHashingCollection mapping,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, mapping);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(mapping)", limit = "1")
+        Object dict(PBaseException self, @SuppressWarnings("unused") PNone mapping,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
+                dict = factory().createDictFixedStorage(self);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            }
+            return dict;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "1")
+        Object reduce(VirtualFrame frame, PBaseException self,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached ArgsNode argsNode) {
+            Object clazz = lib.getLazyPythonClass(self);
+            Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
+            Object dict = lib.lookupAttribute(self, __DICT__);
+            return factory().createTuple(new Object[]{clazz, args, dict});
         }
     }
 }

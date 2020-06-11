@@ -54,11 +54,12 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
 public class ArrayBuiltins extends PythonBuiltins {
@@ -96,19 +98,15 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         PArray mul(VirtualFrame frame, PArray self, Object times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
             return factory().createArray(repeatNode.execute(frame, self.getSequenceStorage(), times));
         }
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
@@ -187,9 +185,66 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
-        @Specialization
+
         @TruffleBoundary
-        String str(PArray self) {
+        private static String itoString(int[] values) {
+            return Arrays.toString(values);
+        }
+
+        @TruffleBoundary
+        private static String btoString(byte[] values) {
+            return Arrays.toString(values);
+        }
+
+        @TruffleBoundary
+        private static String dtoString(double[] values) {
+            return Arrays.toString(values);
+        }
+
+        @TruffleBoundary
+        private static String format(String typeName, String typeCode, String array, int storagelen) {
+            if (storagelen == 0) {
+                return String.format("%s('%s')", typeName, typeCode);
+            } else {
+                return String.format("%s('%s', %s)", typeName, typeCode, array);
+            }
+        }
+
+        protected static String getTypeName(PArray self, GetNameNode getName, PythonObjectLibrary lib) {
+            return getName.execute(lib.getLazyPythonClass(self));
+        }
+
+        @Specialization(guards = "isIntStorage(self)", limit = "2")
+        String intstr(PArray self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached GetNameNode getName,
+                        @Cached("getTypeName(self, getName, lib)") String typeName) {
+            IntSequenceStorage sequenceStorage = (IntSequenceStorage) self.getSequenceStorage();
+            return format(typeName, "i", itoString(sequenceStorage.getInternalIntArray()), sequenceStorage.length());
+        }
+
+        @Specialization(guards = "isByteStorage(self)", limit = "2")
+        String bytestr(PArray self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached GetNameNode getName,
+                        @Cached("getTypeName(self, getName, lib)") String typeName) {
+            ByteSequenceStorage sequenceStorage = (ByteSequenceStorage) self.getSequenceStorage();
+            return format(typeName, "b", btoString(sequenceStorage.getInternalByteArray()), sequenceStorage.length());
+        }
+
+        @Specialization(guards = "isDoubleStorage(self)", limit = "2")
+        String doublestr(PArray self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached GetNameNode getName,
+                        @Cached("getTypeName(self, getName, lib)") String typeName) {
+            DoubleSequenceStorage sequenceStorage = (DoubleSequenceStorage) self.getSequenceStorage();
+            return format(typeName, "d", dtoString(sequenceStorage.getInternalDoubleArray()), sequenceStorage.length());
+        }
+
+        @TruffleBoundary
+        @Specialization(replaces = {"intstr", "bytestr", "doublestr"}, limit = "2")
+        String str(PArray self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
             // TODO: this needs to be enhanced, but it is slow path and not critical for now
             // mostly cosmetic
             String typeCode = "?";
@@ -197,15 +252,15 @@ public class ArrayBuiltins extends PythonBuiltins {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof IntSequenceStorage) {
                 typeCode = "i";
-                array = Arrays.toString(((IntSequenceStorage) sequenceStorage).getInternalIntArray());
+                array = itoString(((IntSequenceStorage) sequenceStorage).getInternalIntArray());
             } else if (sequenceStorage instanceof ByteSequenceStorage) {
                 typeCode = "b";
-                array = Arrays.toString(((ByteSequenceStorage) sequenceStorage).getInternalByteArray());
+                array = btoString(((ByteSequenceStorage) sequenceStorage).getInternalByteArray());
             } else if (sequenceStorage instanceof DoubleSequenceStorage) {
                 typeCode = "d";
-                array = Arrays.toString(((DoubleSequenceStorage) sequenceStorage).getInternalDoubleArray());
+                array = dtoString(((DoubleSequenceStorage) sequenceStorage).getInternalDoubleArray());
             }
-            String typeName = TypeNodes.GetNameNode.doSlowPath(self.getLazyPythonClass());
+            String typeName = TypeNodes.GetNameNode.doSlowPath(lib.getLazyPythonClass(self));
             if (sequenceStorage.length() == 0) {
                 return String.format("%s('%s')", typeName, typeCode);
             } else {
@@ -296,6 +351,12 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "isIntStorage(array)")
         public int lenInt(PArray array) {
             IntSequenceStorage store = (IntSequenceStorage) array.getSequenceStorage();
+            return store.length();
+        }
+
+        @Specialization(guards = "isByteStorage(array)")
+        public int lenByte(PArray array) {
+            ByteSequenceStorage store = (ByteSequenceStorage) array.getSequenceStorage();
             return store.length();
         }
 

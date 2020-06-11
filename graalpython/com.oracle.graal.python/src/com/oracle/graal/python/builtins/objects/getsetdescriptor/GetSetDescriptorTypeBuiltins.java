@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
@@ -53,6 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -61,14 +63,16 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -77,6 +81,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -97,27 +102,31 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class GetSetNode extends PythonTernaryBuiltinNode {
+    abstract static class DescriptorCheckNode extends PNodeWithContext {
 
         @Child private GetMroNode getMroNode;
         @Child private GetNameNode getNameNode;
         @Child private IsSameTypeNode isSameTypeNode;
-        @Child private GetLazyClassNode getLazyClassNode;
+        @Child private PRaiseNode raiseNode;
 
         private final IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
         private final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final BranchProfile errorBranch = BranchProfile.create();
 
+        public abstract boolean execute(LazyPythonClass descrType, String name, Object obj);
+
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj) {
+        @Specialization(limit = "3")
+        boolean descr_check(LazyPythonClass descrType, String name, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
             if (PGuards.isNone(obj)) {
                 // object's descriptors (__class__,...) need to work on every object including None
                 if (!isBuiltinPythonClassObject.profileClass(descrType, PythonBuiltinClassType.PythonObject)) {
                     return true;
                 }
             }
-            LazyPythonClass type = getLazyClass(obj);
+            Object type = lib.getLazyPythonClass(obj);
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
                 for (PythonAbstractClass o : getMro(type)) {
@@ -133,18 +142,10 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 }
             }
             errorBranch.enter();
-            throw raise(TypeError, ErrorMessages.DESC_S_FOR_S_DOESNT_APPLY_TO_S, name, getTypeName(descrType), getTypeName(type));
+            throw getRaiseNode().raise(TypeError, ErrorMessages.DESC_S_FOR_S_DOESNT_APPLY_TO_S, name, getTypeName(descrType), getTypeName(type));
         }
 
-        private LazyPythonClass getLazyClass(Object obj) {
-            if (getLazyClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getLazyClassNode = insert(GetLazyClassNode.create());
-            }
-            return getLazyClassNode.execute(obj);
-        }
-
-        private PythonAbstractClass[] getMro(LazyPythonClass clazz) {
+        private PythonAbstractClass[] getMro(Object clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -152,7 +153,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             return getMroNode.execute(clazz);
         }
 
-        protected Object getTypeName(LazyPythonClass descrType) {
+        private Object getTypeName(Object descrType) {
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());
@@ -167,18 +168,28 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             return isSameTypeNode.execute(left, right);
         }
+
+        private PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
     }
 
     @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class GetSetGetNode extends GetSetNode {
+    abstract static class GetSetGetNode extends PythonTernaryBuiltinNode {
+        @Child private GetNameNode getNameNode;
         private final BranchProfile branchProfile = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
         Object get(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached("create()") CallUnaryMethodNode callNode) {
-            if (descr_check(descr.getType(), descr.getName(), obj)) {
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached CallUnaryMethodNode callNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
             if (descr.getGet() != null) {
@@ -191,9 +202,10 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getSlot(HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            if (descr_check(descr.getType(), descr.getKey().getName(), obj)) {
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached ConditionProfile profile) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
                 return descr;
             }
             Object val = readNode.execute(obj, descr.getKey());
@@ -202,17 +214,27 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             throw raise(AttributeError, descr.getKey().getName());
         }
+
+        private Object getTypeName(LazyPythonClass descrType) {
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(GetNameNode.create());
+            }
+            return getNameNode.execute(descrType);
+        }
     }
 
     @Builtin(name = __SET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class GetSetSetNode extends GetSetNode {
+    abstract static class GetSetSetNode extends PythonTernaryBuiltinNode {
+        @Child private GetNameNode getNameNode;
         private final BranchProfile branchProfile = BranchProfile.create();
 
         @Specialization
         Object set(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
-                        @Cached("create()") CallBinaryMethodNode callNode) {
-            if (descr_check(descr.getType(), descr.getName(), obj)) {
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached CallBinaryMethodNode callNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
             if (descr.getSet() != null) {
@@ -225,11 +247,65 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setSlot(HiddenKeyDescriptor descr, Object obj, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            if (descr_check(descr.getType(), descr.getKey().getName(), obj)) {
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached WriteAttributeToObjectNode writeNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
                 return descr;
             }
             return writeNode.execute(obj, descr.getKey(), value);
+        }
+
+        private Object getTypeName(LazyPythonClass descrType) {
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(GetNameNode.create());
+            }
+            return getNameNode.execute(descrType);
+        }
+    }
+
+    @Builtin(name = __DELETE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GetSetDeleteNode extends PythonBinaryBuiltinNode {
+        @Child private GetNameNode getNameNode;
+        private final BranchProfile branchProfile = BranchProfile.create();
+
+        @Specialization
+        Object delete(VirtualFrame frame, GetSetDescriptor descr, Object obj,
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached CallBinaryMethodNode callNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
+                return descr;
+            }
+            if (descr.allowsDelete()) {
+                return callNode.executeObject(frame, descr.getSet(), obj, DescriptorDeleteMarker.INSTANCE);
+            } else {
+                branchProfile.enter();
+                if (descr.getSet() != null) {
+                    throw raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getTypeName(descr.getType()), descr.getName());
+                } else {
+                    throw raise(AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+                }
+            }
+        }
+
+        @Specialization
+        Object deleteSlot(HiddenKeyDescriptor descr, Object obj,
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached WriteAttributeToObjectNode writeNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
+                return descr;
+            }
+            writeNode.execute(obj, descr.getKey(), PNone.NO_VALUE);
+            return PNone.NONE;
+        }
+
+        private Object getTypeName(LazyPythonClass descrType) {
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(GetNameNode.create());
+            }
+            return getNameNode.execute(descrType);
         }
     }
 }

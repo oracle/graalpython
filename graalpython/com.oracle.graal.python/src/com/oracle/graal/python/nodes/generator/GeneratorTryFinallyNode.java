@@ -78,6 +78,17 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 e.markFrameEscaped();
                 tryChainPreexistingException(frame, e);
                 gen.setActiveException(frame, activeExceptionIndex, e);
+            } catch (Throwable e) {
+                exceptionProfile.enter();
+                PException pe = wrapJavaExceptionIfApplicable(e);
+                if (pe == null) {
+                    throw e;
+                }
+                activeException = pe;
+                pe.setCatchingFrameReference(frame);
+                pe.markFrameEscaped();
+                tryChainPreexistingException(frame, pe);
+                gen.setActiveException(frame, activeExceptionIndex, pe);
             }
             gen.setActive(frame, finallyFlag, true);
         }
@@ -88,6 +99,15 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
         try {
             executeFinalBody(frame);
         } catch (PException handlerException) {
+            if (activeException != null) {
+                tryChainExceptionFromHandler(handlerException, activeException);
+            }
+            throw handlerException;
+        } catch (Throwable e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
             if (activeException != null) {
                 tryChainExceptionFromHandler(handlerException, activeException);
             }

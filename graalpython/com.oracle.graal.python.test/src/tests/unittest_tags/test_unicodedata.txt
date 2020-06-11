@@ -1,3 +1,3 @@
-*UnicodeFunctionsTest.test_issue10254
-*UnicodeFunctionsTest.test_normalize
-*UnicodeFunctionsTest.test_pr29
+*graalpython.lib-python.3.test.test_unicodedata.UnicodeFunctionsTest.test_issue10254
+*graalpython.lib-python.3.test.test_unicodedata.UnicodeFunctionsTest.test_normalize
+*graalpython.lib-python.3.test.test_unicodedata.UnicodeFunctionsTest.test_pr29

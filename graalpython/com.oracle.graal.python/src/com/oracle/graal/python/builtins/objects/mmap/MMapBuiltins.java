@@ -102,6 +102,7 @@ import com.oracle.graal.python.nodes.util.ChannelNodes.WriteToChannelNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -179,14 +180,10 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBinaryBuiltinNode {
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
@@ -292,6 +289,8 @@ public class MMapBuiltins extends PythonBuiltins {
                 return factory().createBytes(s);
             } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError, e);
+            } catch (OverflowException e) {
+                throw raise(PythonBuiltinClassType.OverflowError, e);
             }
         }
     }
@@ -362,6 +361,8 @@ public class MMapBuiltins extends PythonBuiltins {
 
             } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError, e);
+            } catch (OverflowException e) {
+                throw raise(PythonBuiltinClassType.OverflowError, e);
             }
         }
 

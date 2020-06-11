@@ -1,2 +1,2 @@
-*TestPrint.test_print
-*TestPrint.test_print_flush
+*graalpython.lib-python.3.test.test_print.TestPrint.test_print
+*graalpython.lib-python.3.test.test_print.TestPrint.test_print_flush

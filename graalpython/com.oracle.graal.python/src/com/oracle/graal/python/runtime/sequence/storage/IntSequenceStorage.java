@@ -136,7 +136,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         }
 
         values[idx] = value;
-        length++;
+        incLength();
     }
 
     @Override
@@ -166,7 +166,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         // range is the whole sequence?
         if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
             values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
+            setNewLength(length);
             minimizeCapacity();
             return;
         }
@@ -177,12 +177,12 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
             values[i] = sequence.values[j];
         }
 
-        length = length > stop ? length : stop;
+        setNewLength(length > stop ? length : stop);
     }
 
     public int popInt() {
         int pop = values[length - 1];
-        length--;
+        decLength();
         return pop;
     }
 
@@ -199,7 +199,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     public void appendInt(int value) {
         ensureCapacity(length + 1);
         values[length] = value;
-        length++;
+        incLength();
     }
 
     public void extendWithIntStorage(IntSequenceStorage other) {
@@ -211,7 +211,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
             values[i] = otherValues[j];
         }
 
-        length = extendedLength;
+        setNewLength(extendedLength);
     }
 
     @Override

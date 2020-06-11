@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -97,7 +98,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
@@ -340,6 +340,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -451,16 +452,6 @@ public final class StringBuiltins extends PythonBuiltins {
             int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
             int rightLength = LazyString.length(right, rightProfile1, rightProfile2);
             return leftLength > 0 && rightLength > 0;
-        }
-    }
-
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doAll(VirtualFrame frame, Object left, Object right,
-                        @Cached AddNode addNode) {
-            return addNode.execute(frame, right, left);
         }
     }
 
@@ -730,7 +721,7 @@ public final class StringBuiltins extends PythonBuiltins {
         PDict doString(@SuppressWarnings("unused") VirtualFrame frame, Object from, Object to, @SuppressWarnings("unused") Object z,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
 
             String toStr = castToNode.cast(to, "argument 2 must be str, not %p", to);
             String fromStr = castFromNode.cast(from, "first maketrans argument must be a string if there is a second argument");
@@ -789,7 +780,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(VirtualFrame frame, Object self, Object table,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached GetItemNode getItemNode,
-                        @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached SpliceNode spliceNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "translate", self);
@@ -803,7 +794,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 try {
                     translated = getItemNode.execute(frame, table, (int) original);
                 } catch (PException e) {
-                    if (!isSubtypeNode.execute(null, getClassNode.execute(e.getExceptionObject()), PythonBuiltinClassType.LookupError)) {
+                    if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getExceptionObject()), PythonBuiltinClassType.LookupError)) {
                         throw e;
                     }
                 }
@@ -1448,7 +1439,8 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -1510,11 +1502,6 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
-    }
-
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ModNode extends PythonBinaryBuiltinNode {
@@ -1522,13 +1509,13 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         Object doStringObject(VirtualFrame frame, String self, Object right,
                         @Shared("callNode") @Cached CallNode callNode,
-                        @Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                         @Shared("lookupAttrNode") @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return new StringFormatter(context.getCore(), self).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
+                return new StringFormatter(context.getCore(), self).format(right, callNode, (object, key) -> lookupAttrNode.execute(plib.getLazyPythonClass(object), key), getItemNode);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
@@ -1538,13 +1525,13 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Shared("callNode") @Cached CallNode callNode,
-                        @Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                         @Shared("lookupAttrNode") @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
 
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __MOD__, self);
-            return doStringObject(frame, selfStr, right, callNode, getClassNode, lookupAttrNode, getItemNode, context);
+            return doStringObject(frame, selfStr, right, callNode, plib, lookupAttrNode, getItemNode, context);
         }
     }
 

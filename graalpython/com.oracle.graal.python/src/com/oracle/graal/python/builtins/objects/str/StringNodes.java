@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -65,7 +64,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -75,6 +73,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -85,6 +84,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -183,14 +183,14 @@ public abstract class StringNodes {
             return ncs.length();
         }
 
-        @Specialization
+        @Specialization(limit = "2")
         static int doNativeObject(PythonNativeObject x,
-                        @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary("x") PythonObjectLibrary plib,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PRaiseNode raiseNode) {
-            if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+            if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
                 // read the native data
                 Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;
@@ -258,9 +258,9 @@ public abstract class StringNodes {
         // This specialization is just for better interpreter performance.
         // IMPORTANT: only do this if the sequence is exactly list or tuple (not subclassed); for
         // semantics, see CPython's 'abstract.c' function 'PySequence_Fast'
-        @Specialization(guards = "isExactlyListOrTuple(getClassNode, tupleProfile, listProfile, sequence)")
+        @Specialization(guards = "isExactlyListOrTuple(plib, tupleProfile, listProfile, sequence)")
         static String doPSequence(VirtualFrame frame, String self, PSequence sequence,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile tupleProfile,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile listProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -348,8 +348,8 @@ public abstract class StringNodes {
             return sb.toString();
         }
 
-        static boolean isExactlyListOrTuple(GetLazyClassNode getClassNode, IsBuiltinClassProfile tupleProfile, IsBuiltinClassProfile listProfile, PSequence sequence) {
-            LazyPythonClass cls = getClassNode.execute(sequence);
+        static boolean isExactlyListOrTuple(PythonObjectLibrary lib, IsBuiltinClassProfile tupleProfile, IsBuiltinClassProfile listProfile, PSequence sequence) {
+            Object cls = lib.getLazyPythonClass(sequence);
             return tupleProfile.profileClass(cls, PythonBuiltinClassType.PTuple) || listProfile.profileClass(cls, PythonBuiltinClassType.PList);
         }
     }
@@ -365,7 +365,7 @@ public abstract class StringNodes {
             try {
                 translatedChars[i] = PInt.charValueExact(translated);
                 return translatedChars;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
             }
@@ -378,7 +378,7 @@ public abstract class StringNodes {
             try {
                 translatedChars[i] = PInt.charValueExact(translated);
                 return translatedChars;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
             }

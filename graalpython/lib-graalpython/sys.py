@@ -182,7 +182,13 @@ def make_excepthook():
     def __print_traceback__(typ, value, tb):
         try:
             import traceback
-            traceback.print_exception(typ, value, tb)
+            lines = traceback.format_exception(typ, value, tb)
+            # CPython's C traceback printer diverges from traceback.print_exception in this small detail.
+            # We'd like to contribute to CPython to fix the divergence, but for now we do just
+            # a string substitution to pass the tests
+            lines[-1] = lines[-1].replace(f'<unprintable {typ.__name__} object>', f'<exception str() failed>')
+            for line in lines:
+                print(line, file=stderr, end="")
         except BaseException as exc:
             print("Error in sys.excepthook:\n", file=stderr)
             simple_print_traceback(exc)
@@ -195,6 +201,19 @@ def make_excepthook():
 __excepthook__ = make_excepthook()
 excepthook = __excepthook__
 del make_excepthook
+
+
+def make_unraisablehook():
+    def __unraisablehook__(unraisable, /):
+        # We don't currently use it and there's no way to construct the parameter in python code (internal type)
+        pass
+
+    return __unraisablehook__
+
+
+__unraisablehook__ = make_unraisablehook()
+unraisablehook = __unraisablehook__
+del make_unraisablehook
 
 
 @__graalpython__.builtin
@@ -214,10 +233,11 @@ def breakpointhook(*args, **kws):
         hook = getattr(module, funcname)
     except:
         warnings.warn(
-            'Ignoring unimportable $PYTHONBREAKPOINT: {}'.format(
+            'Ignoring unimportable $PYTHONBREAKPOINT: "{}"'.format(
                 hookname),
             RuntimeWarning)
-    return hook(*args, **kws)
+    else:
+        return hook(*args, **kws)
 
 
 __breakpointhook__ = breakpointhook

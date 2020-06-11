@@ -1,1 +1,1 @@
-*TestImport.test_package_import__semantics
+*graalpython.lib-python.3.test.test_pkgimport.TestImport.test_package_import__semantics

@@ -1,7 +1,9 @@
-*MiscSourceEncodingTest.test_20731
-*MiscSourceEncodingTest.test_bad_coding2
-*MiscSourceEncodingTest.test_compilestring
-*MiscSourceEncodingTest.test_file_parse
-*MiscSourceEncodingTest.test_issue3297
-*MiscSourceEncodingTest.test_issue4626
-*MiscSourceEncodingTest.test_issue7820
+*graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_default_coding
+*graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_third_coding_line
+*graalpython.lib-python.3.test.test_source_encoding.MiscSourceEncodingTest.test_20731
+*graalpython.lib-python.3.test.test_source_encoding.MiscSourceEncodingTest.test_bad_coding2
+*graalpython.lib-python.3.test.test_source_encoding.MiscSourceEncodingTest.test_compilestring
+*graalpython.lib-python.3.test.test_source_encoding.MiscSourceEncodingTest.test_file_parse
+*graalpython.lib-python.3.test.test_source_encoding.MiscSourceEncodingTest.test_issue3297
+*graalpython.lib-python.3.test.test_source_encoding.MiscSourceEncodingTest.test_issue4626
+*graalpython.lib-python.3.test.test_source_encoding.MiscSourceEncodingTest.test_issue7820

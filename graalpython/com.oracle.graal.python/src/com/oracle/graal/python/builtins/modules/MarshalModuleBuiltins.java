@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -494,7 +495,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 if (isBuiltinProfile == null) {
                     isBuiltinProfile = IsBuiltinClassProfile.create();
                 }
-                if (isBuiltinProfile.profileClass((LazyPythonClass) v, PythonBuiltinClassType.StopIteration)) {
+                if (isBuiltinProfile.profileClass(v, PythonBuiltinClassType.StopIteration)) {
                     writeByte(TYPE_STOPITER, version, buffer);
                 } else {
                     writeByte(TYPE_UNKNOWN, version, buffer);
@@ -537,7 +538,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private int readByte() {
-            return data[index++];
+            if (index < data.length) {
+                return data[index++];
+            } else {
+                throw raise(EOFError, "EOF read where not expected");
+            }
         }
 
         private int readInt() {
@@ -642,7 +647,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                lib.setItem(newStorage, key, PNone.NO_VALUE);
+                newStorage = lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createSet(newStorage);
@@ -658,7 +663,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                lib.setItem(newStorage, key, PNone.NO_VALUE);
+                newStorage = lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createFrozenSet(newStorage);
@@ -738,7 +743,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             reset();
             this.data = dataBytes;
             Object state = IndirectCallContext.enter(frame, context, this);

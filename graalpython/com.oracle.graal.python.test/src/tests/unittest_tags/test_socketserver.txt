@@ -1,4 +1,4 @@
-*SocketServerTest.test_ForkingTCPServer
-*SocketServerTest.test_ForkingUDPServer
-*SocketServerTest.test_ForkingUnixDatagramServer
-*SocketServerTest.test_ForkingUnixStreamServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingTCPServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUDPServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUnixDatagramServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUnixStreamServer

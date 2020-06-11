@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -103,7 +102,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static int asSize(Object receiver, LazyPythonClass type,
+    static int asSize(Object receiver, Object type,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "2") InteropLibrary interopLib) {
         Object index = asIndex(receiver, raise, interopLib);
@@ -120,7 +119,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Object value) {
+    static Object getLazyPythonClass(@SuppressWarnings("unused") Object value) {
         return PythonBuiltinClassType.ForeignObject;
     }
 

@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -70,12 +69,12 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PCell("cell"),
     PComplex("complex", BuiltinNames.BUILTINS),
     PDict("dict", BuiltinNames.BUILTINS),
-    PDictKeysView("dict_keys"),
-    PDictItemsIterator("dict_itemsiterator"),
-    PDictItemsView("dict_items"),
-    PDictKeysIterator("dict_keysiterator"),
-    PDictValuesIterator("dict_valuesiterator"),
-    PDictValuesView("dict_values"),
+    PDictKeysView(BuiltinNames.DICT_KEYS),
+    PDictItemsIterator(BuiltinNames.DICT_ITEMITERATOR),
+    PDictItemsView(BuiltinNames.DICT_ITEMS),
+    PDictKeysIterator(BuiltinNames.DICT_KEYITERATOR),
+    PDictValuesIterator(BuiltinNames.DICT_VALUEITERATOR),
+    PDictValuesView(BuiltinNames.DICT_VALUES),
     PEllipsis("ellipsis"),
     PEnumerate("enumerate", BuiltinNames.BUILTINS),
     PMap("map", BuiltinNames.BUILTINS),
@@ -123,6 +122,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PLZMACompressor("LZMACompressor", "_lzma"),
     PLZMADecompressor("LZMADecompressor", "_lzma"),
     LsprofProfiler("Profiler", "_lsprof"),
+    PStruct("Struct", "_struct"),
 
     // Errors and exceptions:
 
@@ -512,7 +512,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     }
 
     @ExportMessage
-    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
+    static Object getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
         return PythonClass;
     }
 
@@ -542,15 +542,21 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isLazyPythonClass() {
+        return true;
+    }
+
+    @ExportMessage
     static boolean isMetaObject(@SuppressWarnings("unused") PythonBuiltinClassType self) {
         return true;
     }
 
     @ExportMessage
     static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
-                    @Cached GetLazyClassNode getClass,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                     @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(getClass.execute(instance), self);
+        return isSubtype.execute(lib.getLazyPythonClass(instance), self);
     }
 
     @ExportMessage

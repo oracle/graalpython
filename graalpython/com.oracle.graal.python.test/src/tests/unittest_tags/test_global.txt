@@ -1,1 +1,1 @@
-*GlobalTests.test4
+*graalpython.lib-python.3.test.test_global.GlobalTests.test4

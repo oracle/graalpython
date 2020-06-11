@@ -25,10 +25,12 @@
  */
 package com.oracle.graal.python.builtins;
 
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(value = Builtins.class)
 public @interface Builtin {
 
     String name() default "";
@@ -46,6 +48,8 @@ public @interface Builtin {
     boolean isGetter() default false;
 
     boolean isSetter() default false;
+
+    boolean allowsDelete() default false;
 
     boolean takesVarArgs() default false;
 
@@ -82,4 +86,13 @@ public @interface Builtin {
      * self argument, set this to true.
      */
     boolean declaresExplicitSelf() default false;
+
+    /**
+     * Declares that this builtin needs to reverse the first and second argument it receives. This
+     * implements the reverse operation wrappers from CPython. This only applies to binary and
+     * ternary nodes.
+     *
+     * @see com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode BuiltinFunctionRootNode
+     */
+    boolean reverseOperation() default false;
 }

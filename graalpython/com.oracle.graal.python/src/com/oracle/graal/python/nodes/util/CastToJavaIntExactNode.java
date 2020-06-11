@@ -40,10 +40,12 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -67,7 +69,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
     public int toInt(long x) {
         try {
             return PInt.intValueExact(x);
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreter();
             throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
         }

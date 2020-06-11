@@ -117,10 +117,21 @@ class TestCase(object):
         self.passed = 0
         self.failed = 0
 
+    def get_useful_frame(self, tb):
+        from traceback import extract_tb
+        frame_summaries = extract_tb(tb)
+        frame_summaries.reverse()
+        for summary in frame_summaries:
+            # Skip frame summary entries that refer to this file. These summaries will mostly be there because of the
+            # assert functions and their location is not interesting.
+            if summary[0] != __file__:
+                return summary
+
+
     def run_safely(self, func, print_immediately=False):
         if verbose:
             with print_lock:
-                print(u"\n\t\u21B3 ", func.__name__, " ", end="")
+                print(u"\n\t\u21B3 ", func.__name__, " ", end="", flush=True)
         try:
             func()
         except BaseException as e:
@@ -132,8 +143,7 @@ class TestCase(object):
                 code = func.__code__
                 _, _, tb = sys.exc_info()
                 try:
-                    from traceback import extract_tb
-                    filename, line, func, text = extract_tb(tb)[-1]
+                    filename, line, func, text = self.get_useful_frame(tb)
                     self.exceptions.append(
                         ("In test '%s': %s:%d (%s)" % (code.co_filename, filename, line, func), e)
                     )
@@ -152,18 +162,24 @@ class TestCase(object):
             pass
         else:
             def do_run():
+                start = time.monotonic()
                 r = self.run_safely(func)
+                end = time.monotonic() - start
                 with print_lock:
-                    self.success() if r else self.failure()
+                    self.success(end) if r else self.failure(end)
             ThreadPool.start(do_run)
 
-    def success(self):
+    def success(self, time):
         self.passed += 1
+        if verbose:
+            print("[%.3fs]" % time, end=" ")
         print(".", end="", flush=True)
 
-    def failure(self):
+    def failure(self, time):
         self.failed += 1
         fail_msg = FAIL + BOLD + "F" + ENDC if verbose else "F"
+        if verbose:
+            print("[%.3fs]" % time, end=" ")
         print(fail_msg, end="", flush=True)
 
     def assertIsInstance(self, value, cls):
@@ -212,6 +228,11 @@ class TestCase(object):
         if not msg:
             msg = "Expected '%r' to be greater than '%r'" % (actual, expected)
         assert expected > actual, msg
+
+    def assertGreaterEqual(self, expected, actual, msg=None):
+        if not msg:
+            msg = "Expected '%r' to be greater than or equal to '%r'" % (actual, expected)
+        assert expected >= actual, msg
 
     def assertSequenceEqual(self, expected, actual, msg=None):
         if not msg:

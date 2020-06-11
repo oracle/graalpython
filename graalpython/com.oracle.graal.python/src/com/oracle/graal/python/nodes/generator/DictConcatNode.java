@@ -66,7 +66,7 @@ public abstract class DictConcatNode extends ExpressionNode {
     @Specialization
     public Object concat(VirtualFrame frame,
                     @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary firstlib,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary firstlib,
                     @CachedLibrary(limit = "1") HashingStorageLibrary otherlib) {
         PDict first = null;
         PDict other;

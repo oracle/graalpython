@@ -1,2 +1,2 @@
-*TestCgitb.test_blanks
-*TestCgitb.test_fonts
+*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_blanks
+*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_fonts

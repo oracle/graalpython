@@ -71,8 +71,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.IntNodeFactory;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
@@ -243,6 +243,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -629,11 +630,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(Object errorMarker,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClassNode) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.getEscapedException();
-                return getClass.execute(exceptionObject);
+                // getClassNode acts as a branch profile
+                return getClassNode.execute(currentException.getExceptionObject());
             }
             return errorMarker;
         }
@@ -1185,12 +1186,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return obj.intValueExact();
                 } else if (obj.bitCount() <= 32) {
                     return obj.intValue();
-                } else {
-                    throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseTooLarge(frame, targetTypeSize);
+                // fall through
             }
+            return raiseTooLarge(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
@@ -1200,12 +1200,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return obj.longValueExact();
                 } else if (obj.bitCount() <= 64) {
                     return obj.longValue();
-                } else {
-                    throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseTooLarge(frame, targetTypeSize);
+                // fall through
             }
+            return raiseTooLarge(frame, targetTypeSize);
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
@@ -1582,13 +1581,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         long doPythonObject(PythonNativeWrapper nativeWrapper,
                         @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib) {
-            PythonAbstractClass pclass = getGetClassNode().execute(lib.getDelegate(nativeWrapper));
+            Object pclass = getGetClassNode().execute(lib.getDelegate(nativeWrapper));
             return getGetTypeFlagsNode().execute(pclass);
         }
 
         @Specialization
         long doPythonObject(PythonAbstractObject object) {
-            PythonAbstractClass pclass = getGetClassNode().execute(object);
+            Object pclass = getGetClassNode().execute(object);
             return getGetTypeFlagsNode().execute(pclass);
         }
 
@@ -1654,7 +1653,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
         Object call(Object get, Object set, String name, LazyPythonClass owner) {
-            return factory().createGetSetDescriptor(get, set, name, owner);
+            return factory().createGetSetDescriptor(get, set, name, owner, true);
         }
 
         @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
@@ -1664,7 +1663,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(get)", "!isNoValue(set)"})
         Object call(@SuppressWarnings("unused") PNone get, Object set, String name, LazyPythonClass owner) {
-            return factory().createGetSetDescriptor(null, set, name, owner);
+            return factory().createGetSetDescriptor(null, set, name, owner, true);
         }
     }
 
@@ -2098,8 +2097,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return factory().createBytes(new byte[size]);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        PBytes doLong(long size) {
+        @Specialization(rewriteOn = OverflowException.class)
+        PBytes doLong(long size) throws OverflowException {
             return doInt(PInt.intValueExact(size));
         }
 
@@ -2108,7 +2107,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(PInt.intValueExact(size));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raiseNumberTooLarge(IndexError, size);
             }
         }
@@ -2360,17 +2359,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     case 1:
                         rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
-                                        true);
+                                        true, false);
                         break;
                     case 2:
                         rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
                                         new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
-                                        true);
+                                        true, false);
                         break;
                     case 3:
                         rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
                                         new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
-                                        true);
+                                        true, false);
                         break;
                     default:
                         break;
@@ -2379,7 +2378,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (rootNode == null) {
                 rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
                                 new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
-                                true);
+                                true, false);
             }
 
             return factory().createBuiltinFunction(func.getName(), null, 0, Truffle.getRuntime().createCallTarget(rootNode));
@@ -2610,7 +2609,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             // we must do a bounds-check but we must not normalize the index
             if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
-                throw raise(IndexError, NormalizeIndexNode.TUPLE_OUT_OF_BOUNDS);
+                throw raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
             }
             return getItemNode.execute(frame, sequenceStorage, key);
         }

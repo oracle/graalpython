@@ -59,6 +59,7 @@ public abstract class BuiltinNames {
     public static final String DISPLAYHOOK = "displayhook";
     public static final String BREAKPOINTHOOK = "breakpointhook";
     public static final String EXCEPTHOOK = "excepthook";
+    public static final String UNRAISABLEHOOK = "unraisablehook";
     public static final String LAST_TYPE = "last_type";
     public static final String LAST_VALUE = "last_value";
     public static final String LAST_TRACEBACK = "last_traceback";
@@ -136,4 +137,11 @@ public abstract class BuiltinNames {
     public static final String SET = "set";
     public static final String BUILTINS = "builtins";
     public static final String __GRAALPYTHON__ = "__graalpython__";
+
+    public static final String DICT_KEYITERATOR = "dict_keyiterator";
+    public static final String DICT_VALUEITERATOR = "dict_valueiterator";
+    public static final String DICT_ITEMITERATOR = "dict_itemiterator";
+    public static final String DICT_KEYS = "dict_keys";
+    public static final String DICT_ITEMS = "dict_items";
+    public static final String DICT_VALUES = "dict_values";
 }

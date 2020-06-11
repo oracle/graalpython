@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 
@@ -57,11 +58,11 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -89,6 +91,7 @@ public class TopLevelExceptionHandler extends RootNode {
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
     @Child private CallNode exceptionHookCallNode = CallNode.create();
     @Child private GetExceptionTracebackNode getExceptionTracebackNode;
+    @Child private PythonObjectFactory pythonObjectFactory;
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
@@ -112,6 +115,14 @@ public class TopLevelExceptionHandler extends RootNode {
         return context.get();
     }
 
+    private PythonObjectFactory factory() {
+        if (pythonObjectFactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pythonObjectFactory = insert(PythonObjectFactory.create());
+        }
+        return pythonObjectFactory;
+    }
+
     @Override
     public Object execute(VirtualFrame frame) {
         if (exception != null) {
@@ -129,7 +140,15 @@ public class TopLevelExceptionHandler extends RootNode {
                     printStackTrace(e);
                 }
                 return null;
-            } catch (Exception | StackOverflowError e) {
+            } catch (StackOverflowError e) {
+                PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
+                PBaseException pythonException = pe.getExceptionObject();
+                printExc(frame, pythonException);
+                if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
+                    printStackTrace(e);
+                }
+                return null;
+            } catch (Exception e) {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
                     ExceptionUtils.printPythonLikeStackTrace(e);
@@ -155,12 +174,12 @@ public class TopLevelExceptionHandler extends RootNode {
         CompilerDirectives.transferToInterpreter();
         PythonContext theContext = getContext();
         PythonCore core = theContext.getCore();
-        if (IsBuiltinClassProfile.profileClassSlowPath(pythonException.getLazyPythonClass(), SystemExit)) {
+        if (IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), SystemExit)) {
             handleSystemExit(frame, pythonException);
         }
 
         PBaseException value = pythonException;
-        PythonAbstractClass type = value.getPythonClass();
+        Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(value);
         PTraceback execute = ensureGetTracebackNode().execute(frame, value);
         Object tb = execute != null ? execute : PNone.NONE;
 

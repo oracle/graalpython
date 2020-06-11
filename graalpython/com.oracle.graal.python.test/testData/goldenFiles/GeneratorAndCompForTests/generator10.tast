@@ -96,11 +96,11 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       CallNodeGen SourceSection: None
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None

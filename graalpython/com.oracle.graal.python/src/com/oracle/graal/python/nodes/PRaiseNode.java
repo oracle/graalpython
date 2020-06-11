@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -79,7 +78,7 @@ public abstract class PRaiseNode extends Node {
      * Raise an error saying that the {@code result} cannot fit into an index-sized integer. Use the
      * specified {@code type} as exception class.
      */
-    public final PException raiseNumberTooLarge(LazyPythonClass type, Object result) {
+    public final PException raiseNumberTooLarge(Object type, Object result) {
         return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[]{result});
     }
 
@@ -91,7 +90,7 @@ public abstract class PRaiseNode extends Node {
         return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, result);
     }
 
-    public final PException raise(LazyPythonClass exceptionType) {
+    public final PException raise(Object exceptionType) {
         throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, new Object[0]);
     }
 

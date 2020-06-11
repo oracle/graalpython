@@ -45,13 +45,13 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttri
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -82,17 +83,17 @@ final class DefaultPythonLongExports {
 
     @ExportMessage
     static class AsSize {
-        @Specialization(rewriteOn = ArithmeticException.class)
-        static int noOverflow(Long self, @SuppressWarnings("unused") LazyPythonClass type) {
+        @Specialization(rewriteOn = OverflowException.class)
+        static int noOverflow(Long self, @SuppressWarnings("unused") Object type) throws OverflowException {
             return PInt.intValueExact(self);
         }
 
         @Specialization(replaces = "noOverflow")
-        static int withOverflow(Long self, LazyPythonClass type,
+        static int withOverflow(Long self, Object type,
                         @Exclusive @Cached PRaiseNode raise) {
             try {
                 return PInt.intValueExact(self);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 if (type != null) {
                     throw raise.raiseNumberTooLarge(type, self);
                 } else {
@@ -103,7 +104,7 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Long value) {
+    static Object getLazyPythonClass(@SuppressWarnings("unused") Long value) {
         return PythonBuiltinClassType.PInt;
     }
 
@@ -183,9 +184,10 @@ final class DefaultPythonLongExports {
 
         @Specialization
         static int lF(Long receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltin.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
+            if (isBuiltin.profileIsAnyBuiltinClass(lib.getLazyPythonClass(other))) {
                 return receiver == other.getValue() ? 1 : 0;
             } else {
                 return -1;

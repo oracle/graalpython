@@ -50,14 +50,20 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
     private final Object get;
     private final Object set;
     private final String name;
+    private final boolean allowsDelete;
     private final LazyPythonClass type;
 
     public GetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {
+        this(get, set, name, type, false);
+    }
+
+    public GetSetDescriptor(Object get, Object set, String name, LazyPythonClass type, boolean allowsDelete) {
         super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
         this.get = get;
         this.set = set;
         this.name = name;
         this.type = type;
+        this.allowsDelete = allowsDelete;
     }
 
     public Object getGet() {
@@ -74,6 +80,10 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
 
     public LazyPythonClass getType() {
         return type;
+    }
+
+    public boolean allowsDelete() {
+        return allowsDelete;
     }
 
     public GetSetDescriptor boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {

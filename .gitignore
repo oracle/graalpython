@@ -78,3 +78,5 @@ Python3.g4.stamp
 /.*.csv*
 /graal_dumps
 *.jfr
+
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/.antlr/

@@ -1,0 +1,11 @@
+*graalpython.lib-python.3.test.test_stat.TestFilemodeCStat.test_fifo
+*graalpython.lib-python.3.test.test_stat.TestFilemodeCStat.test_file_attribute_constants
+*graalpython.lib-python.3.test.test_stat.TestFilemodeCStat.test_socket
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_devices
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_directory
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_fifo
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_file_attribute_constants
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_link
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_mode
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_module_attributes
+*graalpython.lib-python.3.test.test_stat.TestFilemodePyStat.test_socket

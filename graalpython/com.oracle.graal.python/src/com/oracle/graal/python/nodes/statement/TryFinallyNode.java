@@ -51,27 +51,44 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
             try {
                 body.executeVoid(frame);
             } catch (PException handledException) {
-                exceptionProfile.enter();
-                // any thrown Python exception is visible in the finally block
-                handledException.setCatchingFrameReference(frame);
-                tryChainPreexistingException(frame, handledException);
-                ExceptionState exceptionState = saveExceptionState(frame);
-                SetCaughtExceptionNode.execute(frame, handledException);
-                try {
-                    finalbody.executeVoid(frame);
-                } catch (PException handlerException) {
-                    tryChainExceptionFromHandler(handlerException, handledException);
-                    throw handlerException;
-                } finally {
-                    restoreExceptionState(frame, exceptionState);
-                }
-                throw handledException.getExceptionForReraise();
+                handleException(frame, handledException);
             } catch (ControlFlowException e) {
                 finalbody.executeVoid(frame);
                 throw e;
+            } catch (Throwable e) {
+                PException pe = wrapJavaExceptionIfApplicable(e);
+                if (pe == null) {
+                    throw e;
+                }
+                handleException(frame, pe);
             }
             finalbody.executeVoid(frame);
         }
+    }
+
+    private void handleException(VirtualFrame frame, PException handledException) {
+        exceptionProfile.enter();
+        // any thrown Python exception is visible in the finally block
+        handledException.setCatchingFrameReference(frame);
+        tryChainPreexistingException(frame, handledException);
+        ExceptionState exceptionState = saveExceptionState(frame);
+        SetCaughtExceptionNode.execute(frame, handledException);
+        try {
+            finalbody.executeVoid(frame);
+        } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, handledException);
+            throw handlerException;
+        } catch (Throwable e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
+            tryChainExceptionFromHandler(handlerException, handledException);
+            throw handlerException;
+        } finally {
+            restoreExceptionState(frame, exceptionState);
+        }
+        throw handledException.getExceptionForReraise();
     }
 
     public StatementNode getBody() {

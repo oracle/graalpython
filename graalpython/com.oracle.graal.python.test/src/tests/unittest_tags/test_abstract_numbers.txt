@@ -1,3 +1,3 @@
-*TestNumbers.test_complex
-*TestNumbers.test_float
-*TestNumbers.test_int
+*graalpython.lib-python.3.test.test_abstract_numbers.TestNumbers.test_complex
+*graalpython.lib-python.3.test.test_abstract_numbers.TestNumbers.test_float
+*graalpython.lib-python.3.test.test_abstract_numbers.TestNumbers.test_int

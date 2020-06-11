@@ -72,6 +72,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -461,7 +462,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        boolean doInt(int checkID) {
+        static boolean doInt(int checkID) {
             try {
                 return Check.getInstance(checkID) != null;
             } catch (UnsupportedOptionsException e) {
@@ -470,16 +471,16 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doLong(long checkID) {
+        static boolean doLong(long checkID) {
             try {
                 return doInt(PInt.intValueExact(checkID));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return false;
             }
         }
 
         @Specialization
-        boolean doLong(PInt checkID) {
+        static boolean doLong(PInt checkID) {
             try {
                 return doInt(checkID.intValueExact());
             } catch (ArithmeticException e) {

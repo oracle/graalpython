@@ -1,7 +1,7 @@
-*DictComprehensionTest.test_basics
-*DictComprehensionTest.test_evaluation_order
-*DictComprehensionTest.test_global_visibility
-*DictComprehensionTest.test_illegal_assignment
-*DictComprehensionTest.test_local_visibility
-*DictComprehensionTest.test_scope_isolation
-*DictComprehensionTest.test_scope_isolation_from_global
+*graalpython.lib-python.3.test.test_dictcomps.DictComprehensionTest.test_basics
+*graalpython.lib-python.3.test.test_dictcomps.DictComprehensionTest.test_evaluation_order
+*graalpython.lib-python.3.test.test_dictcomps.DictComprehensionTest.test_global_visibility
+*graalpython.lib-python.3.test.test_dictcomps.DictComprehensionTest.test_illegal_assignment
+*graalpython.lib-python.3.test.test_dictcomps.DictComprehensionTest.test_local_visibility
+*graalpython.lib-python.3.test.test_dictcomps.DictComprehensionTest.test_scope_isolation
+*graalpython.lib-python.3.test.test_dictcomps.DictComprehensionTest.test_scope_isolation_from_global

@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_FRAME;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LASTI;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LINENO;
@@ -45,6 +47,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -56,6 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
@@ -257,14 +261,48 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_NEXT, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = TB_NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetTracebackNextNode extends PythonBuiltinNode {
-        @Specialization
-        Object get(PTraceback tb,
+    public abstract static class GetTracebackNextNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        Object get(PTraceback self, @SuppressWarnings("unused") PNone none,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
-            materializeTruffleStacktraceNode.execute(tb);
-            return (tb.getNext() != null) ? tb.getNext() : PNone.NONE;
+            materializeTruffleStacktraceNode.execute(self);
+            return (self.getNext() != null) ? self.getNext() : PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(next)")
+        Object set(PTraceback self, PTraceback next,
+                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
+                        @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+            // Check for loops
+            PTraceback tb = next;
+            while (loopProfile.profile(tb != null)) {
+                if (tb == self) {
+                    throw raise(ValueError, "traceback loop detected");
+                }
+                tb = tb.getNext();
+            }
+            // Realize whatever was in the truffle stacktrace, so that we don't overwrite the
+            // user-set next later
+            materializeTruffleStacktraceNode.execute(self);
+            self.setNext(next);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNone(next)")
+        Object clear(PTraceback self, @SuppressWarnings("unused") PNone next,
+                        @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+            // Realize whatever was in the truffle stacktrace, so that we don't overwrite the
+            // user-set next later
+            materializeTruffleStacktraceNode.execute(self);
+            self.setNext(null);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isPNone(next)", "!isPTraceback(next)"})
+        Object setError(@SuppressWarnings("unused") PTraceback self, Object next) {
+            throw raise(TypeError, "expected traceback object, got '%p'", next);
         }
     }
 
@@ -272,8 +310,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
-        Object get(@SuppressWarnings("unused") PTraceback self) {
-            return -1;
+        Object get(PTraceback self) {
+            return self.getLasti();
         }
     }
 

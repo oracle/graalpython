@@ -1,1 +1,2 @@
-*ShlexTest.testCompat
+*graalpython.lib-python.3.test.test_shlex.ShlexTest.testCompat
+*graalpython.lib-python.3.test.test_shlex.ShlexTest.testJoin

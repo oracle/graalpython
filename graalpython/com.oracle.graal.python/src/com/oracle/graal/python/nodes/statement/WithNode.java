@@ -35,7 +35,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -105,7 +104,6 @@ public class WithNode extends ExceptionHandlingStatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        boolean gotException = false;
         Object withObject = getWithObject(frame);
         Object enterCallable = enterGetter.execute(withObject);
         if (enterCallable == PNone.NO_VALUE) {
@@ -121,20 +119,20 @@ public class WithNode extends ExceptionHandlingStatementNode {
         try {
             doBody(frame);
         } catch (PException exception) {
-            gotException = true;
             handleException(frame, withObject, exitCallable, exception);
+            return;
         } catch (ControlFlowException e) {
+            doLeave(frame, withObject, exitCallable);
             throw e;
-        } catch (Exception | StackOverflowError | AssertionError e) {
-            if (shouldCatchAllExceptions()) {
-                gotException = true;
-                handleException(frame, withObject, exitCallable, wrapJavaException(e));
-            } else {
+        } catch (Throwable e) {
+            PException pe = wrapJavaExceptionIfApplicable(e);
+            if (pe == null) {
                 throw e;
             }
-        } finally {
-            doLeave(frame, withObject, gotException, exitCallable);
+            handleException(frame, withObject, exitCallable, pe);
+            return;
         }
+        doLeave(frame, withObject, exitCallable);
     }
 
     /**
@@ -155,10 +153,8 @@ public class WithNode extends ExceptionHandlingStatementNode {
      * Leave the with-body. Call __exit__ if it hasn't already happened because of an exception, and
      * reset the exception state.
      */
-    protected void doLeave(VirtualFrame frame, Object withObject, boolean gotException, Object exitCallable) {
-        if (!gotException) {
-            exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
-        }
+    protected void doLeave(VirtualFrame frame, Object withObject, Object exitCallable) {
+        exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
     }
 
     /**
@@ -176,7 +172,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
         tryChainPreexistingException(frame, caughtException);
         ExceptionState savedExceptionState = saveExceptionState(frame);
         SetCaughtExceptionNode.execute(frame, pException);
-        PythonAbstractClass type = getClassNode.execute(caughtException);
+        Object type = getClassNode.execute(caughtException);
         LazyTraceback caughtTraceback = caughtException.getTraceback();
         PTraceback tb = getTraceback(caughtTraceback);
         // If exit handler returns 'true', suppress
@@ -186,6 +182,13 @@ public class WithNode extends ExceptionHandlingStatementNode {
                             new Object[]{withObject, type, caughtException, tb != null ? tb : PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
             handled = toBooleanNode.executeBoolean(frame, returnValue);
         } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, pException);
+            throw handlerException;
+        } catch (Throwable e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
             tryChainExceptionFromHandler(handlerException, pException);
             throw handlerException;
         } finally {

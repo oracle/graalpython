@@ -46,6 +46,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 
 import java.util.Iterator;
 
+import org.graalvm.collections.EconomicMap;
+import org.graalvm.collections.MapCursor;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
@@ -57,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -71,9 +73,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-
-import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.MapCursor;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EconomicMapStorage extends HashingStorage {
@@ -166,13 +165,12 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, getClassNode)"})
+        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, lib)"})
         static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Exclusive @Cached GetLazyClassNode getClassNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = EconomicMapStorage.toString(key, profile);
             return getItemString(self, k, state, findProfile, lib, gotState);
@@ -225,13 +223,12 @@ public class EconomicMapStorage extends HashingStorage {
             return self;
         }
 
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, getClassNode)"})
+        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, lib)"})
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Exclusive @Cached GetLazyClassNode getClassNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = EconomicMapStorage.toString(key, profile);
             return setItemString(self, k, value, state, findProfile, lib, gotState);
@@ -244,8 +241,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached GetLazyClassNode getClassNode) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             convertToSideEffectMap(self);
             return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
         }
@@ -257,8 +253,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached GetLazyClassNode getClassNode) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             convertToSideEffectMap(self);
             return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
         }
@@ -270,8 +265,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached GetLazyClassNode getClassNode) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             convertToSideEffectMap(self);
             return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
         }
@@ -326,13 +320,13 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         @TruffleBoundary
-        @Specialization(limit = "2")
+        @Specialization
         static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary("other") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                result = lib.setItem(other, cursor.getKey().value, cursor.getValue());
+                result = lib.setItem(result, cursor.getKey().value, cursor.getValue());
             }
             return result;
         }

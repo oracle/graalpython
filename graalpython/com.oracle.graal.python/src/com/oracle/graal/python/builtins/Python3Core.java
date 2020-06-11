@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictKeysIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
@@ -210,7 +211,6 @@ public final class Python3Core implements PythonCore {
                         "_descriptor",
                         "object",
                         "sys",
-                        "dict",
                         "_mappingproxy",
                         "str",
                         "type",
@@ -319,6 +319,7 @@ public final class Python3Core implements PythonCore {
                         new ForeignObjectBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
+                        new DictReprBuiltin(),
                         new DictViewBuiltins(),
                         new DictValuesBuiltins(),
                         new DictKeysIteratorBuiltins(),

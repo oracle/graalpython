@@ -27,14 +27,16 @@ package com.oracle.graal.python;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -56,7 +58,9 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropMap;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PFunctionArgsFinder;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -125,7 +129,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     private final NodeFactory nodeFactory;
-    public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
@@ -143,6 +147,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * here when a context is created.
      */
     private Boolean isWithThread = null;
+
+    @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
+    @CompilationFinal private volatile OptionValues engineOptions;
 
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
@@ -197,7 +204,30 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Python3Core newCore = new Python3Core(new PythonParserImpl(env));
         final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
+
+        Object[] engineOptionsUnroll = this.engineOptionsStorage;
+        if (engineOptionsUnroll == null) {
+            this.engineOptionsStorage = engineOptionsUnroll = PythonOptions.createEngineOptionValuesStorage(env);
+        } else {
+            assert Arrays.equals(engineOptionsUnroll, PythonOptions.createEngineOptionValuesStorage(env)) : "invalid engine options";
+        }
+
+        OptionValues options = this.engineOptions;
+        if (options == null) {
+            this.engineOptions = options = PythonOptions.createEngineOptions(env);
+        } else {
+            assert options.equals(PythonOptions.createEngineOptions(env)) : "invalid engine options";
+        }
         return context;
+    }
+
+    public <T> T getEngineOption(OptionKey<T> key) {
+        assert engineOptions != null;
+        if (CompilerDirectives.inInterpreter()) {
+            return engineOptions.get(key);
+        } else {
+            return PythonOptions.getOptionUnrolling(this.engineOptionsStorage, PythonOptions.getEngineOptionKeys(), key);
+        }
     }
 
     @Override
@@ -549,5 +579,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void disposeThread(PythonContext context, Thread thread) {
         context.disposeThread(thread);
+    }
+
+    public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
+        String key = builtin.name() + nodeClass.getName();
+        return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
     }
 }

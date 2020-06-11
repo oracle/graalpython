@@ -396,6 +396,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -435,23 +436,22 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class RMulNode extends MulNode {
-    }
-
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
-        private static final StringBuilder newStringBuilder() {
-            return new StringBuilder("b'");
+        private static StringBuilder newStringBuilder() {
+            return new StringBuilder();
         }
 
         @TruffleBoundary
-        private static final String sbFinishAndToString(StringBuilder sb) {
-            sb.append("'");
+        private static String sbToString(StringBuilder sb) {
             return sb.toString();
+        }
+
+        @TruffleBoundary
+        private static void sbAppend(StringBuilder sb, String s) {
+            sb.append(s);
         }
 
         @Specialization
@@ -461,16 +461,31 @@ public class BytesBuiltins extends PythonBuiltins {
             SequenceStorage store = self.getSequenceStorage();
             int len = lenNode.execute(store);
             StringBuilder sb = newStringBuilder();
+            sbAppend(sb, "b'");
             for (int i = 0; i < len; i++) {
                 BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(frame, store, i));
             }
-            return sbFinishAndToString(sb);
+            sbAppend(sb, "'");
+            return sbToString(sb);
         }
 
         @Specialization
-        public Object repr(PByteArray self, @Cached("create()") TypeNodes.GetNameNode getNameNode) {
-            String typeName = getNameNode.execute(self.getLazyPythonClass());
-            return self.formatByteArray(typeName);
+        public Object repr(VirtualFrame frame, PByteArray self,
+                        @Cached("create()") TypeNodes.GetNameNode getNameNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            String typeName = getNameNode.execute(lib.getLazyPythonClass(self));
+            SequenceStorage store = self.getSequenceStorage();
+            int len = lenNode.execute(store);
+            StringBuilder sb = newStringBuilder();
+            sb.append(typeName);
+            sb.append("(b'");
+            for (int i = 0; i < len; i++) {
+                BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(frame, store, i));
+            }
+            sb.append("')");
+            return sbToString(sb);
         }
     }
 

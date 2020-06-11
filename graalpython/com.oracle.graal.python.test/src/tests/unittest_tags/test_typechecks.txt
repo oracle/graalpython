@@ -1,6 +1,6 @@
-*TypeChecksTest.testIsInstanceActual
-*TypeChecksTest.testIsInstanceBuiltin
-*TypeChecksTest.testIsSubclassActual
-*TypeChecksTest.testIsSubclassBuiltin
-*TypeChecksTest.testIsSubclassInternal
-*TypeChecksTest.testSubclassBehavior
+*graalpython.lib-python.3.test.test_typechecks.TypeChecksTest.testIsInstanceActual
+*graalpython.lib-python.3.test.test_typechecks.TypeChecksTest.testIsInstanceBuiltin
+*graalpython.lib-python.3.test.test_typechecks.TypeChecksTest.testIsSubclassActual
+*graalpython.lib-python.3.test.test_typechecks.TypeChecksTest.testIsSubclassBuiltin
+*graalpython.lib-python.3.test.test_typechecks.TypeChecksTest.testIsSubclassInternal
+*graalpython.lib-python.3.test.test_typechecks.TypeChecksTest.testSubclassBehavior

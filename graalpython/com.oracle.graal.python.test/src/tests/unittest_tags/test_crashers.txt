@@ -1,1 +1,1 @@
-*CrasherTest.test_crashers_crash
+*graalpython.lib-python.3.test.test_crashers.CrasherTest.test_crashers_crash

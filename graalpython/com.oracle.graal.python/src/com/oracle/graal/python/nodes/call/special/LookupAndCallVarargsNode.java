@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,12 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupAndCallVarargsNode extends Node {
@@ -62,10 +63,10 @@ public abstract class LookupAndCallVarargsNode extends Node {
         this.name = name;
     }
 
-    @Specialization
+    @Specialization(limit = "3")
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
-                    @Cached("create()") GetLazyClassNode getClassNode,
+                    @CachedLibrary("callable") PythonObjectLibrary plib,
                     @Cached("create()") LookupAttributeInMRONode.Dynamic getattr) {
-        return dispatchNode.execute(frame, getattr.execute(getClassNode.execute(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
+        return dispatchNode.execute(frame, getattr.execute(plib.getLazyPythonClass(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

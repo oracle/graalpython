@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.Crea
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
@@ -80,9 +81,11 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -91,7 +94,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -113,6 +116,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -306,10 +310,18 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "lib.canBeIndex(key) || isPSlice(key)")
         protected Object doScalar(VirtualFrame frame, PList self, Object key,
-                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             return getItemNode.execute(frame, self.getSequenceStorage(), key);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!lib.canBeIndex(key)", "!isPSlice(key)"})
+        public Object doListError(VirtualFrame frame, PList primary, Object key,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
@@ -333,11 +345,19 @@ public class ListBuiltins extends PythonBuiltins {
 
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
-        @Specialization
+        @Specialization(guards = "lib.fitsInInt(key) || isPSlice(key)")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
             return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!lib.fitsInInt(key)", "!isPSlice(key)"})
+        public Object doListError(VirtualFrame frame, PList primary, Object key, Object value,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         @SuppressWarnings("unused")
@@ -401,6 +421,20 @@ public class ListBuiltins extends PythonBuiltins {
         public static ListExtendNode create() {
             return ListBuiltinsFactory.ListExtendNodeFactory.create();
         }
+    }
+
+    // list.copy()
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ListCopyNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(limit = "3")
+        PList copySequence(PList self,
+                        @Cached SequenceStorageNodes.CopyNode copy,
+                        @CachedLibrary("self") PythonObjectLibrary plib) {
+            return factory().createList(plib.getLazyPythonClass(self), copy.execute(self.getSequenceStorage()));
+        }
+
     }
 
     // list.insert(i, x)
@@ -810,6 +844,65 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
+    // list.sort(key=, reverse=)
+    @Builtin(name = "sort", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
+    @GenerateNodeFactory
+    public abstract static class ListSortNode extends PythonVarargsBuiltinNode {
+
+        protected static final String SORT = "_sort";
+        protected static final String KEY = "key";
+
+        protected static boolean isSortable(PList list, SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(list.getSequenceStorage()) > 1;
+        }
+
+        protected static boolean maySideEffect(PList list, PKeyword[] keywords) {
+            if (PGuards.isObjectStorage(list)) {
+                return true;
+            }
+            if (keywords.length > 0) {
+                if (keywords[0].getName().equals(KEY)) {
+                    return true;
+                }
+                if (keywords.length > 1 && keywords[1].getName().equals(KEY)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Specialization(guards = "!isSortable(list, lenNode)")
+        @SuppressWarnings("unused")
+        Object none(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isSortable(list, lenNode)", "maySideEffect(list, keywords)"})
+        Object withKey(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+                        @Cached("create(SORT)") GetAttributeNode sort,
+                        @Cached CallNode callSort,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
+            list.getSequenceStorage().setLock();
+            try {
+                defaultSort(frame, list, arguments, keywords, sort, callSort, lenNode);
+            } finally {
+                list.getSequenceStorage().releaseLock();
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keywords)"})
+        Object defaultSort(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+                        @Cached("create(SORT)") GetAttributeNode sort,
+                        @Cached CallNode callSort,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
+            Object sortMethod = sort.executeObject(frame, list);
+            callSort.execute(sortMethod, arguments, keywords);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
@@ -824,12 +917,12 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         PList doPList(PList left, PList other,
-                        @Cached("create()") GetLazyClassNode getLazyClassNode,
+                        @CachedLibrary("left") PythonObjectLibrary plib,
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
-            return factory().createList(getLazyClassNode.execute(left), newStore);
+            return factory().createList(plib.getLazyPythonClass(left), newStore);
         }
 
         @Specialization(guards = "!isList(right)")
@@ -863,6 +956,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -909,19 +1003,42 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
-    }
-
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        protected static boolean isObjectStorage(PList left, PList right) {
+            return PGuards.isObjectStorage(left) || PGuards.isObjectStorage(right);
+        }
+
+        @Specialization(guards = "!isObjectStorage(left, right)")
         boolean doPList(VirtualFrame frame, PList left, PList right,
                         @Cached("createEq()") SequenceStorageNodes.CmpNode neNode) {
             return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+        }
+
+        /**
+         * This is a fix for the bpo-38588 bug. See
+         * {@code test_list.py: ListTest.test_equal_operator_modifying_operand}
+         *
+         */
+        @Specialization(guards = "isObjectStorage(left, right)")
+        boolean doPListObjectStorage(VirtualFrame frame, PList left, PList right,
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode neNode) {
+            final SequenceStorage leftStorage = left.getSequenceStorage();
+            final SequenceStorage rightStorage = right.getSequenceStorage();
+            final boolean result = neNode.execute(frame, leftStorage, rightStorage);
+            /**
+             * This will check if the underlying storage has been modified and if so, we do the
+             * check again.
+             */
+            if (leftStorage == left.getSequenceStorage() && rightStorage == right.getSequenceStorage()) {
+                return result;
+            }
+            /**
+             * To avoid possible infinite recursion case, we call the default specialization.
+             */
+            return doPList(frame, left, right, neNode);
         }
 
         @Fallback

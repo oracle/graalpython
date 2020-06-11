@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -74,10 +75,8 @@ import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -329,11 +328,11 @@ public abstract class PGuards {
 
     public static boolean isBuiltinString(Object obj, IsBuiltinClassProfile profile) {
         return obj instanceof String ||
-                        (obj instanceof PString && profile.profileClass(((PString) obj).getLazyPythonClass(), PythonBuiltinClassType.PString));
+                        (obj instanceof PString && profile.profileClass(((PString) obj).getInternalLazyPythonClass(), PythonBuiltinClassType.PString));
     }
 
-    public static boolean isBuiltinString(PString s, IsBuiltinClassProfile isBuiltinClassProfile, GetLazyClassNode getClassNode) {
-        return isBuiltinClassProfile.profileClass(getClassNode.execute(s), PythonBuiltinClassType.PString);
+    public static boolean isBuiltinString(PString s, IsBuiltinClassProfile isBuiltinClassProfile, PythonObjectLibrary lib) {
+        return isBuiltinClassProfile.profileClass(lib.getLazyPythonClass(s), PythonBuiltinClassType.PString);
     }
 
     public static boolean isNativeString(PString x) {
@@ -384,6 +383,10 @@ public abstract class PGuards {
         return obj instanceof PTuple;
     }
 
+    public static boolean isPSequence(Object obj) {
+        return obj instanceof PSequence;
+    }
+
     public static boolean isPCode(Object obj) {
         return obj instanceof PCode;
     }
@@ -424,6 +427,14 @@ public abstract class PGuards {
         return obj instanceof PDictView;
     }
 
+    public static boolean isDictKeysView(Object obj) {
+        return obj instanceof PDictView.PDictKeysView;
+    }
+
+    public static boolean isDictItemsView(Object obj) {
+        return obj instanceof PDictView.PDictItemsView;
+    }
+
     public static boolean isPSlice(Object obj) {
         return obj instanceof PSlice;
     }
@@ -460,11 +471,11 @@ public abstract class PGuards {
      * Tests if the class of a Python object is a builtin class, i.e., any magic methods cannot be
      * overridden.
      */
-    public static boolean cannotBeOverridden(LazyPythonClass clazz) {
+    public static boolean cannotBeOverridden(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
-    public static boolean isKindOfBuiltinClass(LazyPythonClass clazz) {
+    public static boolean isKindOfBuiltinClass(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 }

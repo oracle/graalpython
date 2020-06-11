@@ -1,2 +1,2 @@
-*TestUnicodeFiles.test_directories
-*TestUnicodeFiles.test_single_files
+*graalpython.lib-python.3.test.test_unicode_file.TestUnicodeFiles.test_directories
+*graalpython.lib-python.3.test.test_unicode_file.TestUnicodeFiles.test_single_files

@@ -1,1 +1,1 @@
-*BaseTestCase.test_basic
+*graalpython.lib-python.3.test.test_index.BaseTestCase.test_basic

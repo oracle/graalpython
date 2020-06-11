@@ -103,6 +103,24 @@ def test_fromkeys():
     assert set(d.keys()) == {'a', 'b', 'c'}
     assert set(d.values()) == {o}
 
+    class preset(dict):
+        def __init__(self):
+            self['a'] = 1
+    assert preset.fromkeys(['b']) == {'a':1, 'b':None}        
+        
+    class morethanoneinitargraiseserror(dict):        
+        def __init__(self, anotherArg):
+            self.__init__()        
+    assert_raises(TypeError, morethanoneinitargraiseserror.fromkeys, [1])
+    
+    class nosetitem:
+        pass
+
+    class nosetitem2(dict):
+        def __new__(cls):
+            return nosetitem()
+    assert_raises(TypeError, nosetitem2.fromkeys, [1])
+
 
 def test_init():
     d = dict(a=1, b=2, c=3)
@@ -331,7 +349,181 @@ def test_dictview_set_operations_on_keys():
     assert k1 | k2 == {1, 2, 3}
     assert k1 ^ k2 == {3}
     assert k1 ^ k3 == {1, 2, 4}
+    
+def test_dictview_keys_operations():
+    d1 = {'a': 1, 'b': 2}
+    
+    # &
+    assert d1.keys() & 'b' == {'b'}
+    assert d1.keys() & 'ab'  == {'a', 'b'}
+    assert d1.keys() & ['a'] == {'a'}
+    assert d1.keys() & ['a', 'b'] == {'a', 'b'}
+    assert d1.keys() & [1, 2] == set()
+    assert d1.keys() & ('a') == {'a'}
+    assert d1.keys() & ('a', 'b') == {'a', 'b'}
+    assert d1.keys() & {('a', 1)} == set()
+    assert d1.keys() & d1 == {'a', 'b'}
+    assert d1.keys() & d1.values() == set()
+    assert d1.keys() & {1:'a', 2:'b'}.values() == {'a', 'b'}
+    assert {1:1, 2:2}.keys() & range(1,3) == {1, 2}
 
+    def chargen(c1, c2):
+        for c in range(ord(c1), ord(c2)+1):
+            yield chr(c)
+    assert d1.keys() & chargen('a', 'b') == {'a', 'b'}    
+        
+    assert_raises(TypeError, lambda: d1.keys() & 1)
+    class TC:
+        pass
+    assert_raises(TypeError, lambda: d1.keys() & TC())
+    
+    # |
+    assert d1.keys() | 'b' == {'a', 'b'}
+    assert d1.keys() | 'bc' == {'a', 'c', 'b'}
+    assert d1.keys() | ['a'] == {'a', 'b'}
+    assert d1.keys() | ['a', 'b'] == {'a', 'b'}
+    assert d1.keys() | ['c', 'b'] == {'a', 'c', 'b'}
+    assert d1.keys() | [1, 2] == {'a', 1, 2, 'b'}
+    assert d1.keys() | ('a') == {'a', 'b'}
+    assert d1.keys() | ('a', 'b') == {'a', 'b'}
+    assert d1.keys() | {('a', 1)} == {'a', ('a', 1), 'b'}
+    assert d1.keys() | d1 == {'a', 'b'}
+    assert d1.keys() | d1.values() == {'a', 1, 2, 'b'}
+    assert d1.keys() | {1:'a', 2:'b'}.values() == {'a', 'b'}
+    assert {1:1, 2:2}.keys() | range(1,3) == {1, 2}
+
+    assert d1.keys() | chargen('a', 'c') == {'a', 'b', 'c'}
+
+    assert_raises(TypeError, lambda: d1.keys() | 1)
+    assert_raises(TypeError, lambda: d1.keys() | TC())
+    
+    # ^
+    assert d1.keys() ^ 'a' == {'b'}
+    assert d1.keys() ^ "ab" == set()
+    assert d1.keys() ^ ['a'] == {'b'}
+    assert d1.keys() ^ ['a', 'b'] == set()
+    assert d1.keys() ^ [1, 2] == {'a', 1, 2, 'b'}
+    assert d1.keys() ^ ('a') == {'b'}
+    assert d1.keys() ^ ('a', 'b') == set()
+    assert d1.keys() ^ {('a', 1)} == {'a', ('a', 1), 'b'}
+    assert d1.keys() ^ d1 == set()
+    assert d1.keys() ^ d1.values() == {'a', 1, 2, 'b'}
+    assert d1.keys() ^ {1:'a', 2:'b'}.values() == set()
+    assert {1:1, 2:2}.keys() ^ range(1,3) == set()
+    
+    assert d1.keys() ^ chargen('b', 'c') == {'a', 'c'}    
+    
+    assert_raises(TypeError, lambda: d1.keys() ^ 1)
+    assert_raises(TypeError, lambda: d1.keys() ^ TC())
+    
+    # -
+    assert d1.keys() - 'a' == {'b'}
+    assert d1.keys() - "ab" == set()
+    assert d1.keys() - ['a'] == {'b'}
+    assert d1.keys() - ['a', 'b'] == set()
+    assert d1.keys() - [1, 2] == {'a', 'b'}
+    assert d1.keys() - ('a') == {'b'}
+    assert d1.keys() - ('a', 'b') == set()
+    assert d1.keys() - {('a', 1)} == {'a', 'b'}
+    assert d1.keys() - d1 == set()
+    assert d1.keys() - d1.values() == {'a', 'b'}
+    assert d1.keys() - {1:'a', 2:'b'}.values() == set()
+    assert {1:1, 2:2}.keys() - range(1,3) == set()
+    
+    assert d1.keys() - chargen('b', 'c') == {'a'}
+    
+    assert_raises(TypeError, lambda: d1.keys() - 1)
+    assert_raises(TypeError, lambda: d1.keys() - TC())
+    
+def test_dictview_items_operations():
+    d1 = {'a': 1, 'b': 2}
+    
+    # &
+    assert d1.items() & 'b' == set()
+    assert d1.items() & "ab" == set()
+    assert d1.items() & ['a'] == set()
+    assert d1.items() & ['a', 'b'] == set()
+    assert d1.items() & [1, 2] == set()
+    assert d1.items() & ('a') == set()
+    assert d1.items() & ('a', 'b') == set()
+    assert d1.items() & {('a', 1)} == {('a', 1)}
+    assert d1.items() & d1 == set()
+    assert d1.items() & d1.values() == set()
+    assert d1.items() & {1:'a', 2:'b'}.values() == set()
+    assert d1.items() & tuple(d1.items()) == {('a', 1), ('b', 2)}
+    assert d1.items() & tuple(('a', 1)) == set()
+    assert {1:1, 2:2}.items() & range(1,3) == set()
+
+    def tuplegen(i, c1, c2):
+        for c in range(ord(c1), ord(c2)+1):
+            i += 1
+            yield (chr(c), i)
+
+    assert d1.items() & tuplegen(0, 'a', 'b') == {('a', 1), ('b', 2)}
+        
+    assert_raises(TypeError, lambda: d1.items() & 1)
+    class TC:
+        pass
+    assert_raises(TypeError, lambda: d1.items() & TC())
+    
+    # |
+    assert d1.items() | 'b' == {('a', 1), ('b', 2), 'b'}
+    assert d1.items() | "ab" == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | ['a'] == {('a', 1), ('b', 2), 'a'}
+    assert d1.items() | ['a', 'b'] == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | [1, 2] == {('a', 1), ('b', 2), 1, 2}
+    assert d1.items() | ('a') == {('a', 1), ('b', 2), 'a'}
+    assert d1.items() | ('a', 'b') == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | {('a', 1)} == {('a', 1), ('b', 2)}
+    assert d1.items() | d1 == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | d1.values() == {('a', 1), ('b', 2), 1, 2}
+    assert d1.items() | {1:'a', 2:'b'}.values() == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | tuple(d1.items()) == {('a', 1), ('b', 2)}
+    assert d1.items() | tuple(('a', 1)) == {('a', 1), ('b', 2), 'a', 1}
+    assert {1:1, 2:2}.items() | range(1,3) == {1, 2, (1, 1), (2, 2)}
+
+    assert d1.items() | tuplegen(0, 'a', 'c') == {('a', 1), ('b', 2), ('c', 3)}
+        
+    assert_raises(TypeError, lambda: d1.items() | 1)
+    assert_raises(TypeError, lambda: d1.items() | TC())
+    
+    # ^
+    assert d1.items() ^ 'a' == {('a', 1), 'a', ('b', 2)}
+    assert d1.items() ^ "ab" == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ ['a'] == {('a', 1), 'a', ('b', 2)}
+    assert d1.items() ^ ['a', 'b'] == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ [1, 2] == {('a', 1), 1, 2, ('b', 2)}
+    assert d1.items() ^ ('a') == {('a', 1), 'a', ('b', 2)}
+    assert d1.items() ^ ('a', 'b') == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ {('a', 1)} == {('b', 2)}
+    assert d1.items() ^ d1 == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ d1.values() == {('a', 1), 1, 2, ('b', 2)}
+    assert d1.items() ^ {1:'a', 2:'b'}.values() == {('a', 1), 'a', ('b', 2), 'b'}
+    assert {1:1, 2:2}.items() ^ range(1,3) == {1, 2, (1, 1), (2, 2)}
+    
+    assert d1.items() ^ tuplegen(1, 'b', 'c') == {('a', 1), ('c', 3)}
+    
+    assert_raises(TypeError, lambda: d1.items() ^ 1)
+    assert_raises(TypeError, lambda: d1.items() ^ TC())
+    
+    # -
+    assert d1.items() - 'a' == {('a', 1), ('b', 2)}
+    assert d1.items() - "ab" == {('a', 1), ('b', 2)}
+    assert d1.items() - ['a'] == {('a', 1), ('b', 2)}
+    assert d1.items() - ['a', 'b'] == {('a', 1), ('b', 2)}
+    assert d1.items() - [1, 2] == {('a', 1), ('b', 2)}
+    assert d1.items() - ('a') == {('a', 1), ('b', 2)}
+    assert d1.items() - ('a', 'b') == {('a', 1), ('b', 2)}
+    assert d1.items() - {('a', 1)} == {('b', 2)}
+    assert d1.items() - d1 == {('a', 1), ('b', 2)}
+    assert d1.items() - d1.values() == {('a', 1), ('b', 2)}
+    assert d1.items() - {1:'a', 2:'b'}.values() ==  {('a', 1), ('b', 2)}
+    assert {1:1, 2:2}.items() - range(1,3) == {(1, 1), (2, 2)}
+    
+    assert d1.items() - tuplegen(1, 'b', 'c') == {('a', 1)}
+
+    assert_raises(TypeError, lambda: d1.items() - 1)
+    assert_raises(TypeError, lambda: d1.items() - TC())
 
 def test_dictview_set_operations_on_items():
     k1 = {1: 1, 2: 2}.items()

@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -70,7 +69,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -121,7 +119,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         public Object reduce(PBaseSet self,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached("create()") GetLazyClassNode getClass) {
+                        @CachedLibrary("self") PythonObjectLibrary plib) {
             int len = lib.length(self.getDictStorage());
             Iterator<Object> keys = lib.keys(self.getDictStorage()).iterator();
             Object[] keysArray = new Object[len];
@@ -129,7 +127,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                 keysArray[i] = keys.next();
             }
             PTuple contents = factory().createTuple(new Object[]{factory().createList(keysArray)});
-            return factory().createTuple(new Object[]{getClass.execute(self), contents, PNone.NONE});
+            return factory().createTuple(new Object[]{plib.getLazyPythonClass(self), contents, PNone.NONE});
         }
     }
 
@@ -150,7 +148,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static HashingStorage getStringAsHashingStorage(VirtualFrame frame, String str, HashingStorageLibrary lib, ConditionProfile hasFrame) {
+    private static HashingStorage getStringAsHashingStorage(VirtualFrame frame, String str, HashingStorageLibrary lib, ConditionProfile hasFrame) {
         HashingStorage storage = EconomicMapStorage.create(PString.length(str));
         for (int i = 0; i < PString.length(str); i++) {
             String key = PString.valueOf(PString.charAt(str, i));
@@ -444,13 +442,13 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return lib.union(selfStorage, other.getDictStorage());
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         HashingStorage doIterable(VirtualFrame frame, HashingStorage dictStorage, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage curStorage = dictStorage;
             Object iterator = getIteratorNode.executeWith(frame, iterable);
             while (true) {
@@ -514,7 +512,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = "isdisjoint", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IsDisjointNode extends PythonBinaryBuiltinNode {
-        @Child private GetLazyClassNode getClassNode;
 
         @Specialization(guards = "self == other", limit = "2")
         boolean isDisjointSameObject(VirtualFrame frame, PBaseSet self, @SuppressWarnings("unused") PBaseSet other,
@@ -524,18 +521,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return lib.lengthWithState(self.getDictStorage(), state) == 0;
         }
 
-        @Specialization(guards = {"self != other", "cannotBeOverridden(getClass(other))"}, limit = "2")
+        @Specialization(guards = {"self != other", "cannotBeOverridden(pLib.getLazyPythonClass(other))"}, limit = "2")
         boolean isDisjointFastPath(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib) {
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
+                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary pLib) {
             ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
             return selfLib.isDisjointWithState(self.getDictStorage(), other.getDictStorage(), state);
         }
 
-        @Specialization(guards = {"self != other", "!cannotBeOverridden(getClass(other))"}, limit = "2")
+        @Specialization(guards = {"self != other", "!cannotBeOverridden(pLib.getLazyPythonClass(other))"}, limit = "2")
         boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
+                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary pLib,
                         @Cached GetIteratorNode getIteratorNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
@@ -565,13 +564,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             }
         }
 
-        public LazyPythonClass getClass(Object obj) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode.execute(obj);
-        }
     }
 
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)

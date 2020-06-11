@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -75,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -87,14 +89,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -105,6 +105,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFloat)
@@ -300,6 +301,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -348,11 +350,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RAddNode extends AddNode {
-    }
-
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -372,29 +370,13 @@ public final class FloatBuiltins extends PythonBuiltins {
             return left - right.doubleValue();
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class RSubNode extends PythonBinaryBuiltinNode {
         @Specialization
-        double doDD(double right, double left) {
+        double doLD(long left, double right) {
             return left - right;
         }
 
         @Specialization
-        double doDL(double right, long left) {
-            return left - right;
-        }
-
-        @Specialization
-        double doDPi(double right, PInt left) {
+        double doPiD(PInt left, double right) {
             return left.doubleValue() - right;
         }
 
@@ -405,6 +387,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -464,11 +447,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
-    }
-
+    @Builtin(name = __RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
     @Builtin(name = __POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -540,6 +519,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RFLOORDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -560,6 +540,18 @@ public final class FloatBuiltins extends PythonBuiltins {
         double doDD(double left, double right) {
             raiseDivisionByZero(right == 0.0);
             return Math.floor(left / right);
+        }
+
+        @Specialization
+        double doLD(long left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return Math.floor(left / right);
+        }
+
+        @Specialization
+        double doPiD(PInt left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return Math.floor(left.doubleValue() / right);
         }
 
         @SuppressWarnings("unused")
@@ -744,36 +736,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RFLOORDIV__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class RFloorDivNode extends FloatBinaryBuiltinNode {
-        @Specialization
-        double doDL(double right, long left) {
-            raiseDivisionByZero(right == 0.0);
-            return Math.floor(left / right);
-        }
-
-        @Specialization
-        double doDPi(double right, PInt left) {
-            raiseDivisionByZero(right == 0.0);
-            return Math.floor(left.doubleValue() / right);
-        }
-
-        @Specialization
-        double doDD(double left, double right) {
-            // Cannot be reached via standard dispatch but it can be called directly.
-            raiseDivisionByZero(right == 0.0);
-            return Math.floor(left / right);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object right, Object left) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
+    @Builtin(name = __RMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -796,35 +759,18 @@ public final class FloatBuiltins extends PythonBuiltins {
             return left % right;
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object right, Object left) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __RMOD__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class RModNode extends FloatBinaryBuiltinNode {
         @Specialization
-        double doDL(double right, long left) {
+        double doLD(long left, double right) {
             raiseDivisionByZero(right == 0.0);
             return left % right;
         }
 
         @Specialization
-        double doGeneric(double right, PInt left) {
+        double doPiD(PInt left, double right) {
             raiseDivisionByZero(right == 0.0);
             return left.doubleValue() % right;
         }
 
-        @Specialization
-        double doDD(double left, double right) {
-            raiseDivisionByZero(right == 0.0);
-            return left % right;
-        }
-
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doGeneric(Object right, Object left) {
@@ -832,6 +778,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -851,34 +798,18 @@ public final class FloatBuiltins extends PythonBuiltins {
             return left / right.doubleValue();
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class RDivNode extends PythonBinaryBuiltinNode {
         @Specialization
-        double div(double right, double left) {
+        double div(long left, double right) {
             return left / right;
         }
 
         @Specialization
-        double div(double right, long left) {
-            return left / right;
-        }
-
-        @Specialization
-        double div(double right, PInt left) {
+        double div(PInt left, double right) {
             return left.doubleValue() / right;
         }
 
         @Specialization
-        Object doDP(VirtualFrame frame, PythonNativeObject right, long left,
+        Object doDP(VirtualFrame frame, long left, PythonNativeObject right,
                         @Cached FromNativeSubclassNode getFloat) {
             Double rPrimitive = getFloat.execute(frame, right);
             if (rPrimitive != null) {
@@ -890,7 +821,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1324,28 +1255,20 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     abstract static class RealNode extends PythonBuiltinNode {
 
-        @Child private GetLazyClassNode getClassNode;
-
-        protected LazyPythonClass getClass(Object value) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetLazyClassNode.create());
-            }
-            return getClassNode.execute(value);
-        }
-
         @Specialization
         double get(double self) {
             return self;
         }
 
-        @Specialization(guards = "cannotBeOverridden(getClass(self))")
-        PFloat getPFloat(PFloat self) {
+        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(self))", limit = "2")
+        PFloat getPFloat(PFloat self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
             return self;
         }
 
-        @Specialization(guards = "!cannotBeOverridden(getClass(self))")
-        PFloat getPFloatOverriden(PFloat self) {
+        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", limit = "2")
+        PFloat getPFloatOverriden(PFloat self,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
             return factory().createFloat(self.getValue());
         }
     }

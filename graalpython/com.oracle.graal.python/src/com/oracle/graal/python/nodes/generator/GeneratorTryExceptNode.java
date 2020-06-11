@@ -93,10 +93,11 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             return;
         } catch (ControlFlowException e) {
             throw e;
-        } catch (Exception | StackOverflowError | AssertionError e) {
-            if (shouldCatchAllExceptions()) {
+        } catch (Throwable e) {
+            PException pe = wrapJavaExceptionIfApplicable(e);
+            if (pe != null) {
                 gen.setActive(frame, exceptFlag, true);
-                catchExceptionInGeneratorFirstTime(frame, wrapJavaException(e));
+                catchExceptionInGeneratorFirstTime(frame, pe);
                 reset(frame);
                 return;
             } else {
@@ -163,6 +164,13 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         } catch (ExceptionHandledException e) {
             return;
         } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, exception);
+            throw handlerException;
+        } catch (Throwable e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
             tryChainExceptionFromHandler(handlerException, exception);
             throw handlerException;
         } finally {

@@ -351,7 +351,7 @@ class CheckerboardSurface(SimpleSurface):
         else:
             return self.baseColour
 
-def _main(width=150, height=150):
+def _main(width=400, height=400):
     Canvas = PpmCanvas
     c = Canvas(width,height)
     s = Scene()

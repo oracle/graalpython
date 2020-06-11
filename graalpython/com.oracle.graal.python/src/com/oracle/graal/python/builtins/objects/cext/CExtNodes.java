@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -124,7 +125,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -162,6 +162,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -411,6 +412,14 @@ public abstract class CExtNodes {
             return object.getPtr();
         }
 
+        @Specialization
+        static Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            assert marker == DescriptorDeleteMarker.INSTANCE;
+            PythonNativeNull nativeNull = (PythonNativeNull) getNativeNullNode.execute();
+            return nativeNull.getPtr();
+        }
+
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
         static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
                         @Cached("object") PythonAbstractObject cachedObject,
@@ -484,8 +493,8 @@ public abstract class CExtNodes {
 
         static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
-                            object instanceof PythonNativeNull || object instanceof PythonAbstractObject) &&
-                            !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
+                            object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE || object instanceof PythonAbstractObject) &&
+                            !lib.isReflectedObject(object, object) && !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
         }
 
         protected static boolean isNaN(double d) {
@@ -644,6 +653,12 @@ public abstract class CExtNodes {
         @Specialization
         static Object doNativeNull(CExtContext cextContext, PythonNativeNull object) {
             return ToSulongNode.doNativeNull(cextContext, object);
+        }
+
+        @Specialization
+        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
@@ -817,6 +832,12 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @Specialization
+        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
+        }
+
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
         static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
                         @Cached("object") PythonAbstractObject cachedObject,
@@ -978,25 +999,28 @@ public abstract class CExtNodes {
             return d;
         }
 
-        @Specialization(guards = "isFallback(obj, getClassNode, isForeignClassProfile)")
+        @Specialization(guards = "isFallback(obj, lib, isForeignClassProfile)", limit = "3")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object obj,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.INVALID_OBJ_FROM_NATIVE, obj);
         }
 
-        protected static boolean isFallback(Object obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
+        protected static boolean isFallback(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
             if (CApiGuards.isNativeWrapper(obj)) {
                 return false;
             }
             if (CApiGuards.isNativeNull(obj)) {
                 return false;
             }
+            if (obj == DescriptorDeleteMarker.INSTANCE) {
+                return false;
+            }
             if (PGuards.isAnyPythonObject(obj)) {
                 return false;
             }
-            if (isForeignObject(obj, getClassNode, isForeignClassProfile)) {
+            if (isForeignObject(obj, lib, isForeignClassProfile)) {
                 return false;
             }
             if (PGuards.isString(obj)) {
@@ -1020,8 +1044,8 @@ public abstract class CExtNodes {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
         }
 
-        protected static boolean isForeignObject(Object obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
-            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.ForeignObject);
+        protected static boolean isForeignObject(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
+            return isForeignClassProfile.profileClass(lib.getLazyPythonClass(obj), PythonBuiltinClassType.ForeignObject);
         }
     }
 
@@ -1033,9 +1057,9 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
@@ -1060,9 +1084,9 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
@@ -1086,9 +1110,9 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class WrapVoidPtrNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
             // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they cannot
             // be used in the user value space but might be passed-through
@@ -2144,7 +2168,7 @@ public abstract class CExtNodes {
         @Specialization
         double runGeneric(PythonAbstractObject value,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
-                        @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile classProfile,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Cached PRaiseNode raiseNode) {
@@ -2159,7 +2183,7 @@ public abstract class CExtNodes {
             // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses
             // of
             // PFloat
-            if (classProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PFloat)) {
+            if (classProfile.profileClass(lib.getLazyPythonClass(result), PythonBuiltinClassType.PFloat)) {
                 return castToJavaDoubleNode.execute(result);
             }
             throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_FLOAT, value, __FLOAT__, result);
@@ -2768,7 +2792,7 @@ public abstract class CExtNodes {
         }
 
         private static boolean isNativeTypeObject(Object self) {
-            return IsBuiltinClassProfile.profileClassSlowPath(GetLazyClassNode.getUncached().execute(self), PythonBuiltinClassType.PythonClass);
+            return IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(self), PythonBuiltinClassType.PythonClass);
         }
 
         public static GetTypeMemberNode create() {
@@ -3114,25 +3138,31 @@ public abstract class CExtNodes {
 
         @Specialization(limit = "3", //
                         guards = {"cachedPointer == pointer", "cachedValue != null"}, //
-                        assumptions = {"singleContextAssumption()", "getHandleValidAssumption(cachedValue)"})
-        static PythonNativeWrapper doLongCachedSingleContext(@SuppressWarnings("unused") long pointer,
+                        assumptions = "singleContextAssumption()", //
+                        rewriteOn = InvalidAssumptionException.class)
+        static PythonNativeWrapper resolveLongCached(@SuppressWarnings("unused") long pointer,
                         @Cached("pointer") @SuppressWarnings("unused") long cachedPointer,
-                        @Cached("resolveHandleUncached(pointer)") PythonNativeWrapper cachedValue) {
+                        @Cached("resolveHandleUncached(pointer)") PythonNativeWrapper cachedValue,
+                        @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
+            associationValidAssumption.check();
             return cachedValue;
         }
 
         @Specialization(limit = "3", //
                         guards = {"isSame(referenceLibrary, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
-                        assumptions = {"singleContextAssumption()", "getHandleValidAssumption(cachedValue)"})
-        static PythonNativeWrapper doObjectCachedSingleContext(@SuppressWarnings("unused") Object pointerObject,
+                        assumptions = "singleContextAssumption()", //
+                        rewriteOn = InvalidAssumptionException.class)
+        static PythonNativeWrapper resolveObjectCached(@SuppressWarnings("unused") Object pointerObject,
                         @Cached("pointerObject") @SuppressWarnings("unused") Object cachedPointerObject,
                         @CachedLibrary("cachedPointerObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
-                        @Cached("resolveHandleUncached(pointerObject)") PythonNativeWrapper cachedValue) {
+                        @Cached("resolveHandleUncached(pointerObject)") PythonNativeWrapper cachedValue,
+                        @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
+            associationValidAssumption.check();
             return cachedValue;
         }
 
-        @Specialization(replaces = {"doObjectCachedSingleContext", "doLongCachedSingleContext"})
-        static Object doGeneric(Object pointerObject,
+        @Specialization(replaces = {"resolveLongCached", "resolveObjectCached"})
+        static Object resolveGeneric(Object pointerObject,
                         @Cached PCallCapiFunction callTruffleCannotBeHandleNode,
                         @Cached PCallCapiFunction callTruffleManagedFromHandleNode) {
             if (!((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbols.FUN_TRUFFLE_CANNOT_BE_HANDLE, pointerObject))) {

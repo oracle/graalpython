@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIte
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -69,6 +68,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -99,7 +99,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         @Specialization(guards = {"!isNoValue(value)"})
         static Object doGeneric(Object value,
                         @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
-                        @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary plib,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrMroNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookupGetitemAttrMroNode,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
@@ -108,7 +108,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             // NOTE: it's fine to pass 'null' frame since the caller must already take care of the
             // global state
-            return GetIteratorNode.doGeneric(null, value, getattributeProfile, getClassNode, lookupAttrMroNode, lookupGetitemAttrMroNode, dispatchGetattribute, isIteratorObjectNode, factory,
+            return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, lookupAttrMroNode, lookupGetitemAttrMroNode, dispatchGetattribute, isIteratorObjectNode, factory,
                             raiseNode);
         }
 
@@ -136,17 +136,17 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
             return value;
         }
 
-        @Specialization(guards = {"!isNoValue(value)"})
+        @Specialization(guards = {"!isNoValue(value)", "!plib.isReflectedObject(value, value)"})
         static Object doGeneric(VirtualFrame frame, Object value,
                         @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
-                        @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary plib,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrMroNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookupGetitemAttrMroNode,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            LazyPythonClass clazz = getClassNode.execute(value);
+            Object clazz = plib.getLazyPythonClass(value);
             Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz, SpecialMethodNames.__ITER__));
             if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
                 Object iterObj = dispatchGetattribute.executeObject(frame, attrObj, value);
@@ -162,6 +162,13 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                 }
             }
             throw notIterable(raiseNode, value);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "plib.isReflectedObject(value, value)"})
+        static Object doReflected(VirtualFrame frame, Object value,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary plib,
+                        @Cached GetIteratorNode recursive) {
+            return recursive.executeWith(frame, plib.getReflectedObject(value));
         }
 
         @Specialization

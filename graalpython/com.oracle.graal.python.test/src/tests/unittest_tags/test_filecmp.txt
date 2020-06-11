@@ -1,5 +1,5 @@
-*DirCompareTestCase.test_cmpfiles
-*DirCompareTestCase.test_default_ignores
-*DirCompareTestCase.test_dircmp
-*DirCompareTestCase.test_report_full_closure
-*DirCompareTestCase.test_report_partial_closure
+*graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_cmpfiles
+*graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_default_ignores
+*graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_dircmp
+*graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_report_full_closure
+*graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_report_partial_closure

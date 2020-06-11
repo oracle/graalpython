@@ -107,8 +107,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                     return;
                 }
             }
-            if (shouldCatchAllExceptions()) {
-                PException pe = wrapJavaException(e);
+            PException pe = wrapJavaExceptionIfApplicable(e);
+            if (pe != null) {
                 boolean handled = catchException(frame, pe);
                 if (handled) {
                     return;
@@ -143,6 +143,13 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         } catch (ExceptionHandledException eh) {
             return true;
         } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, exception);
+            throw handlerException;
+        } catch (Exception | StackOverflowError | AssertionError e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
             tryChainExceptionFromHandler(handlerException, exception);
             throw handlerException;
         }
@@ -249,7 +256,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 for (String c : caughtClasses) {
                     Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
                     if (cls instanceof LazyPythonClass) {
-                        if (isSubtype.execute(lib.getLazyPythonClass(exception), (LazyPythonClass) cls)) {
+                        if (isSubtype.execute(lib.getLazyPythonClass(exception), cls)) {
                             return true;
                         }
                     }

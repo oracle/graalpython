@@ -234,25 +234,28 @@ import java.util.Arrays;
 
 
 @parser::members {
+    private static class LoopState {
+        public boolean containsBreak;
+        public boolean containsContinue;
+    }
 	private PythonSSTNodeFactory factory;
 	private ScopeEnvironment scopeEnvironment;
-	boolean containsBreak;
-	boolean containsContinue;
-	
-	public final boolean startLoopBreak() {
-		try {
-			return containsBreak;
-		} finally {
-			containsBreak = false;
-		}
+	private LoopState loopState;
+
+	public final LoopState startLoop() {
+	    try {
+	        return loopState;
+	    } finally {
+	        loopState = new LoopState();
+	    }
 	}
 	
-	public final boolean startLoopContinue() {
+	public final LoopState saveLoopState() {
 		try {
-			return containsContinue;
-		} finally {
-			containsContinue = false;
-		}
+	        return loopState;
+	    } finally {
+	        loopState = null;
+	    }
 	}
 	
 	private Object[] stack = new Object[8];
@@ -376,6 +379,7 @@ locals
                 scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module);
             }
 	}
+	{ loopState = null; }
 	{ int start = start(); }
 	(
 		NEWLINE
@@ -395,6 +399,7 @@ locals
 [ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
 :
 	{  _localctx.scope = scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module); }
+	{ loopState = null; }
 	{ int start = start(); }
 	(
 		NEWLINE
@@ -461,13 +466,15 @@ funcdef
             ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
+            LoopState savedLoopState = saveLoopState();
             functionScope.setHasAnnotations(true);
             $parameters.result.defineParamsInScope(functionScope); 
         }
 	s = suite
 	{ 
             SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, $s.result, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
-           scopeEnvironment.popScope();
+            scopeEnvironment.popScope();
+            loopState = savedLoopState;
             push(funcDef);
         }
 ;
@@ -482,7 +489,7 @@ typedargslist [ArgDefListBuilder args]
 :
     (
         defparameter[args] ( ',' defparameter[args] )* ',' '/' {args.markPositionalOnlyIndex();}
-            ((',' defparameter[args] ( ',' defparameter[args] )*)?
+            (',' defparameter[args] ( ',' defparameter[args] )*)?
                 ( ',' 
                     ( splatparameter[args]	
                         ( ',' defparameter[args])*
@@ -490,7 +497,6 @@ typedargslist [ArgDefListBuilder args]
                         | kwargsparameter[args] ','?
                     )?
                 )?
-            )?
 	| defparameter[args] ( ',' defparameter[args] )*
             ( ',' 
                 ( splatparameter[args]	
@@ -548,7 +554,7 @@ varargslist returns [ArgDefListBuilder result]
 	{ ArgDefListBuilder args = new ArgDefListBuilder(); }
 	(
             vdefparameter[args] ( ',' vdefparameter[args] )* ',' '/' {args.markPositionalOnlyIndex();}
-                ((',' vdefparameter[args] (',' vdefparameter[args])* )?
+                (',' vdefparameter[args] (',' vdefparameter[args])* )?
                     ( ','
                         ( vsplatparameter[args]
                             ( ',' vdefparameter[args])*
@@ -556,7 +562,6 @@ varargslist returns [ArgDefListBuilder result]
                             | vkwargsparameter[args] ','?
                         )?
                     )?
-                )?
             | vdefparameter[args] (',' vdefparameter[args])*
                 ( ','
                     ( vsplatparameter[args]
@@ -727,14 +732,20 @@ del_stmt
 flow_stmt
 :
 	b='break' 
-	{ 
+	{
+            if (loopState == null) {
+                throw new PythonRecognitionException("'break' outside loop", this, _input, _localctx, getCurrentToken());
+            }
             push(new SimpleSSTNode(SimpleSSTNode.Type.BREAK, getStartIndex($b), getStopIndex($b)));
-            containsBreak = true; 
+            loopState.containsBreak = true;
         }
 	| c='continue'
-	{ 
+	{
+	        if (loopState == null) {
+	            throw new PythonRecognitionException("'continue' not properly in loop", this, _input, _localctx, getCurrentToken());
+	        }
             push(new SimpleSSTNode(SimpleSSTNode.Type.CONTINUE, getStartIndex($c), getStopIndex($c)));
-            containsContinue = true; 
+            loopState.containsContinue = true;
         }
 	| return_stmt
 	| raise_stmt
@@ -905,12 +916,11 @@ elif_stmt returns [SSTNode result]
 while_stmt
 :
 	'while' test ':' 
-	{ boolean bFlag = startLoopBreak(); boolean cFlag = startLoopContinue(); }
+	{ LoopState savedState = startLoop(); }
 	suite
 	{ 
-            WhileSSTNode result = new WhileSSTNode($test.result, $suite.result, containsContinue, containsBreak, getStartIndex($ctx),getStopIndex($suite.stop)); 
-            containsContinue = cFlag;
-            containsBreak = bFlag;
+            WhileSSTNode result = new WhileSSTNode($test.result, $suite.result, loopState.containsContinue, loopState.containsBreak, getStartIndex($ctx),getStopIndex($suite.stop));
+            loopState = savedState;
         }
 	(
 		'else' ':' suite 
@@ -927,13 +937,12 @@ while_stmt
 for_stmt
 :
 	'for' exprlist 'in' testlist ':'
-	{ boolean bFlag = startLoopBreak(); boolean cFlag = startLoopContinue(); }
+	{ LoopState savedState = startLoop(); }
 	suite
 	{ 
-            ForSSTNode result = factory.createForSSTNode($exprlist.result, $testlist.result, $suite.result, containsContinue, getStartIndex($ctx),getStopIndex($suite.stop));
-            result.setContainsBreak(containsBreak);
-            containsContinue = cFlag;
-            containsBreak = bFlag;
+            ForSSTNode result = factory.createForSSTNode($exprlist.result, $testlist.result, $suite.result, loopState.containsContinue, getStartIndex($ctx),getStopIndex($suite.stop));
+            result.setContainsBreak(loopState.containsBreak);
+            loopState = savedState;
         }
 	(
 		'else' ':' suite 
@@ -1530,9 +1539,11 @@ locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
             factory.getScopeEnvironment().createLocal($NAME.text);
             ScopeInfo classScope = scopeEnvironment.pushScope($NAME.text, ScopeInfo.ScopeKind.Class); 
         }
+    { LoopState savedLoopState = saveLoopState(); }
 	':' suite
 	{ push(factory.createClassDefinition($NAME.text, baseClasses, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop))); }
-	{scopeEnvironment.popScope(); }
+	{ scopeEnvironment.popScope(); }
+	{ loopState = savedLoopState; }
 ;
 
 arglist returns [ArgListBuilder result]
@@ -1789,23 +1800,23 @@ BYTES_LITERAL
 
 /// decimalinteger 
 DECIMAL_INTEGER
- : NON_ZERO_DIGIT DIGIT* (['_'] DIGIT+)*
- | '0'+ (['_']'0'+)*
+ : NON_ZERO_DIGIT DIGIT* ('_' DIGIT+)*
+ | '0'+ ('_''0'+)*
  ;
 
 /// octinteger    
 OCT_INTEGER
- : '0' [oO] (OCT_DIGIT | (['_'] OCT_DIGIT+))+
+ : '0' [oO] (OCT_DIGIT | ('_' OCT_DIGIT+))+
  ;
 
 /// hexinteger
 HEX_INTEGER
- : '0' [xX] (HEX_DIGIT | (['_'] HEX_DIGIT+))+
+ : '0' [xX] (HEX_DIGIT | ('_' HEX_DIGIT+))+
  ;
 
 /// bininteger
 BIN_INTEGER
- : '0' [bB] (BIN_DIGIT | (['_'] BIN_DIGIT+))+
+ : '0' [bB] (BIN_DIGIT | ('_' BIN_DIGIT+))+
  ;
 
 /// floatnumber   ::=  pointfloat | exponentfloat
@@ -1949,7 +1960,7 @@ fragment EXPONENT_FLOAT
 
 /// intpart
 fragment INT_PART
- : DIGIT+ (['_'] DIGIT+)*
+ : DIGIT+ ('_' DIGIT+)*
  ;
 
 /// fraction

@@ -1,1 +1,1 @@
-*EINTRTests.test_all
+*graalpython.lib-python.3.test.test_eintr.EINTRTests.test_all

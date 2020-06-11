@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
@@ -47,7 +50,6 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -55,6 +57,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
@@ -184,11 +188,26 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return shouldCatchAllExceptions;
     }
 
-    protected PException wrapJavaException(Throwable e) {
-        PException pe = PException.fromObject(getBaseException(e), this);
+    public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
+        PException pe = PException.fromObject(pythonException, node);
+        pe.setHideLocation(true);
         // Re-attach truffle stacktrace
         moveTruffleStackTrace(e, pe);
-        return pe;
+        // Create a new traceback chain, because the current one has been finalized by Truffle
+        return pe.getExceptionForReraise();
+    }
+
+    protected PException wrapJavaExceptionIfApplicable(Throwable e) {
+        if (e instanceof ControlFlowException) {
+            return null;
+        }
+        if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
+            return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
+        }
+        if (e instanceof StackOverflowError) {
+            return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
+        }
+        return null;
     }
 
     @TruffleBoundary
@@ -197,10 +216,5 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         // Host exceptions have their stacktrace already filled in, call this to set
         // the cutoff point to the catch site
         pe.getTruffleStackTrace();
-    }
-
-    @TruffleBoundary
-    private PBaseException getBaseException(Throwable e) {
-        return factory().createBaseException(PythonErrorType.SystemError, "%m", new Object[]{e});
     }
 }

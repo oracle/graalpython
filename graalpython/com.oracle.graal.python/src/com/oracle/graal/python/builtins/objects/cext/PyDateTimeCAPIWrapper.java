@@ -49,10 +49,10 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptio
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -70,7 +70,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 /**
  * This wrapper should only be used for class {@code PyDateTime_CAPI} defined in
  * {@code python_cext.py}. It emulates following native ABI:
- * 
+ *
  * <pre>
  * typedef struct {
  *     PyTypeObject *DateType;
@@ -214,9 +214,9 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     @ExportMessage
     Object getNativeType(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached GetSulongTypeNode getSulongTypeNode) {
-        return getSulongTypeNode.execute(getClassNode.execute(lib.getDelegate(this)));
+        return getSulongTypeNode.execute(plib.getLazyPythonClass(lib.getDelegate(this)));
     }
 
     @ExportMessage

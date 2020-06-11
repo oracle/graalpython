@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.subscript;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -110,7 +109,7 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
                     @Cached("create()") GetattributeNode getSetitemNode,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") CallTernaryMethodNode callNode) {
-        PythonAbstractClass primaryClass = getClassNode.execute(primary);
+        Object primaryClass = getClassNode.execute(primary);
         Object setItemMethod = getSetitemNode.execute(frame, primaryClass, __SETITEM__);
         callNode.execute(frame, setItemMethod, primary, index, value);
     }
@@ -120,7 +119,7 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
                     @Cached("create()") GetattributeNode getSetitemNode,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") CallTernaryMethodNode callNode) {
-        PythonAbstractClass primaryClass = getClassNode.execute(primary);
+        Object primaryClass = getClassNode.execute(primary);
         Object setItemMethod = getSetitemNode.execute(frame, primaryClass, __SETITEM__);
         callNode.execute(frame, setItemMethod, primary, index, value);
     }

@@ -60,6 +60,8 @@ public abstract class ErrorMessages {
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %l";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
+    public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
+    public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
     public static final String ARRAY_SIZE_TOO_LARGE = "array size too large";
     public static final String ATTEMP_TO_RELEASE_RECURSIVE_LOCK = "attempt to release recursive lock not owned by thread";
     public static final String ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE = "attempt to assign sequence of size %d to extended slice of size %d";
@@ -83,6 +85,7 @@ public abstract class ErrorMessages {
     public static final String BOOL_SHOULD_RETURN_BOOL = "__bool__ should return bool, returned %p";
     public static final String BUFFER_INDICES_MUST_BE_INTS = "buffer indices must be integers, not %p";
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
+    public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
     public static final String BYTES_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
@@ -113,6 +116,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_CALL_TARGET = "cannot create a call target from the code object: %p";
     public static final String CANNOT_CREATE_INSTANCES = "cannot create '%s' instances";
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
+    public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s'";
@@ -167,7 +171,7 @@ public abstract class ErrorMessages {
     public static final String DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED = "dictionary update sequence element #%d has length %d; 2 is required";
     public static final String DIVISION_BY_ZERO = "division by zero";
     public static final String S_DIVISION_BY_ZERO = "%s division by zero";
-    public static final String EMPTY_CLASS_CELL = "%s: empty __class__ cell";
+    public static final String SUPER_NO_CLASS = "super(): no arguments";
     public static final String EMPTY_SEPARATOR = "empty separator";
     public static final String EMPTY_STR_FOR_COMPLEX = "empty string for complex()";
     public static final String END_MUST_BE_NONE_OR_STRING = "end must be None or a string, not %p";
@@ -190,7 +194,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
-    public static final String FACTORIAL_NOT_DEFNED_FOR_NEGATIVE = "factorial() not defined for negative values";
+    public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
     public static final String FILE_NOT_OPENED_FOR_READING = "file not opened for reading";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
@@ -231,6 +235,7 @@ public abstract class ErrorMessages {
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
     public static final String INDEX_OUT_OF_BOUNDS = "index out of bounds";
+    public static final String INDEX_OUT_OF_RANGE = "index out of range";
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
     public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
@@ -296,7 +301,7 @@ public abstract class ErrorMessages {
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
     public static final String MALFORMED_STR_FOR_COMPLEX = "malformed string for complex() %s";
     public static final String MATH_DOMAIN_ERROR = "math domain error";
-    public static final String MATH_RAGE_ERROR = "math range error";
+    public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
     public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
@@ -308,6 +313,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
+    public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
     public static final String MUST_BE_REAL_NUMBER = "must be real number, not %p";
     public static final String MUST_BE_S_NOT_P = "%s must be a %s, not %p";
@@ -339,10 +345,12 @@ public abstract class ErrorMessages {
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
     public static final String NOT_SUPPORTED_BETWEEN_INSTANCES = "'%s' not supported between instances of '%p' and '%p'";
     public static final String NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = "number %s cannot fit into index-sized integer";
+    public static final String OBJ_INDEX_MUST_BE_INT_OR_SLICES = "%s indices must be integers or slices, not %p";
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INT = "%s cannot be interpreted as int (type %p)";
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = "'%p' object cannot be interpreted as an int";
     public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%s' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
+    public static final String P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%p' object does not support item assignment";
     public static final String OBJ_DOESNT_SUPPORT_DELETION = "'%p' object doesn't support item deletion";
     public static final String OBJ_HAS_NO_LEN = "object of type '%p' has no len()";
     public static final String OBJ_ISNT_CALLABLE = "'%p' object is not callable";
@@ -368,10 +376,12 @@ public abstract class ErrorMessages {
     public static final String PROVIDED_OBJ_NOT_ARRAY = "provided object is not an array";
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO = "Python int too large to convert to %s";
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE = "Python int too large to convert to %s-byte C type";
-    public static final String RAGE_DOES_NOT_SUPPORT = "range does not support %s, %s, %s";
+    public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
+    public static final String RANGE_DOES_NOT_SUPPORT = "range does not support %s, %s, %s";
     public static final String RAW_FORMAT_NOT_SUPPORTED = "RAW format unsupported";
     public static final String READ_BYTE_OUT_OF_RANGE = "read byte out of range";
     public static final String READ_WRITE_BYTELIKE_OBJ = "read-write bytes-like object";
+    public static final String READONLY_ATTRIBUTE = "readonly attribute";
     public static final String REQUIRES_CODE_OBJ = "%s() requires a code object with %d free vars, not %d";
     public static final String REQUIRES_INT_OR_CHAR = "%%%c requires int or char";
     public static final String REQUIRES_OBJ_THAT_IMPLEMENTS_S = " %%r requires an object that implements %s";
@@ -430,6 +440,8 @@ public abstract class ErrorMessages {
     public static final String TOO_MANY_VALUES_TO_UNPACK = "too many values to unpack (expected %d)";
     public static final String TRAILING_S_IN_STR = "Trailing %s in string";
     public static final String TRANS_TABLE_MUST_BE_256 = "translation table must be 256 characters long";
+    public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
+    public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
     public static final String TUPLE_OR_STRUCT_TIME_ARG_REQUIRED = "Tuple or struct_time argument required";
     public static final String TWO_STARRED_EXPRESSION_IN_ASSIGMENT = "two starred expressions in assignment";
     public static final String TYPE_DOES_NOT_PROVIDE_BASES = "type does not provide bases";

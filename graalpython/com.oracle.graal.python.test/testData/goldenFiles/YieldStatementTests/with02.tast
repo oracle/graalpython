@@ -61,11 +61,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         CallNodeGen SourceSection: None
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
@@ -93,11 +93,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         CallNodeGen SourceSection: None
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None

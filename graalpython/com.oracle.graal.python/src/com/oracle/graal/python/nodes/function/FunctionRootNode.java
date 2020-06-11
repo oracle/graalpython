@@ -46,6 +46,8 @@ import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.NodeVisitor;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -67,11 +69,11 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Child private ExpressionNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
-    private ExpressionNode uninitializedBody;
-    private boolean isRewritten = false;
+    private final ExpressionNode uninitializedBody;
+    private final boolean isRewritten;
 
-    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots executionCellSlots, Signature signature) {
+    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor,
+                    ExpressionNode uninitializedBody, ExecutionCellSlots executionCellSlots, Signature signature) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.executionCellSlots = executionCellSlots;
 
@@ -79,14 +81,48 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         assert sourceSection != null;
         this.functionName = functionName;
         this.isGenerator = isGenerator;
-        this.body = new InnerRootNode(this, NodeUtil.cloneNode(body));
-        this.uninitializedBody = NodeUtil.cloneNode(body);
+        this.body = new InnerRootNode(this, NodeUtil.cloneNode(uninitializedBody));
+        // "uninitializedBody" is never modified or executed
+        this.uninitializedBody = uninitializedBody;
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
         this.isRewritten = isRewritten;
     }
 
-    public FunctionRootNode copyWithNewSignature(Signature newSignature) {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
+    /**
+     * Creates a shallow copy.
+     */
+    private FunctionRootNode(FunctionRootNode other) {
+        super(PythonLanguage.getCurrent(), other.getFrameDescriptor(), other.executionCellSlots, other.getSignature());
+        this.executionCellSlots = other.executionCellSlots;
+
+        this.sourceSection = other.getSourceSection();
+        this.functionName = other.functionName;
+        this.isGenerator = other.isGenerator;
+        this.generatorFrameProfile = other.isGenerator ? ValueProfile.createClassProfile() : null;
+        this.isRewritten = other.isRewritten;
+        this.uninitializedBody = other.uninitializedBody;
+    }
+
+    @Override
+    protected boolean isCloneUninitializedSupported() {
+        return true;
+    }
+
+    @Override
+    protected RootNode cloneUninitialized() {
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody, executionCellSlots,
+                        getSignature());
+    }
+
+    /**
+     * Returns a new function that has its signature replaced and whose body has been modified by
+     * the given node visitor.
+     */
+    public FunctionRootNode rewriteWithNewSignature(Signature newSignature, NodeVisitor nodeVisitor) {
+        ExpressionNode newUninitializedBody = NodeUtil.cloneNode(uninitializedBody);
+        newUninitializedBody.accept(nodeVisitor);
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
+                        newSignature);
     }
 
     public boolean isLambda() {
@@ -104,8 +140,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody,
-                        executionCellSlots, getSignature());
+        return new FunctionRootNode(this);
     }
 
     @ExplodeLoop
@@ -173,13 +208,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     public boolean isRewritten() {
         return isRewritten;
-    }
-
-    public void setRewritten() {
-        this.isRewritten = true;
-
-        // we need to update the uninitialized body as well
-        this.uninitializedBody = NodeUtil.cloneNode(body);
     }
 
     @Override

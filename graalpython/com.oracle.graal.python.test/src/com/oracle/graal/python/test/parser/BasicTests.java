@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,16 @@
 
 package com.oracle.graal.python.test.parser;
 
+import java.io.File;
+
+import org.junit.Assert;
+import org.junit.Test;
+
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import java.io.File;
-import org.junit.*;
 
 public class BasicTests extends ParserTestBase {
 
@@ -494,6 +497,22 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void for16() throws Exception {
+        checkSyntaxError(
+                        "for i in range(10):\n" +
+                                        "    def foo():\n" +
+                                        "        continue\n");
+    }
+
+    @Test
+    public void for17() throws Exception {
+        checkSyntaxError(
+                        "for i in range(10):\n" +
+                                        "    class foo:\n" +
+                                        "        break\n");
+    }
+
+    @Test
     public void global01() throws Exception {
         checkScopeAndTree();
     }
@@ -826,6 +845,14 @@ public class BasicTests extends ParserTestBase {
                                         "        iters += 1\n" +
                                         "    else:\n" +
                                         "        iters += 1\n" +
+                                        "        break");
+    }
+
+    @Test
+    public void while12() throws Exception {
+        checkSyntaxError(
+                        "while False:\n" +
+                                        "    def foo():\n" +
                                         "        break");
     }
 

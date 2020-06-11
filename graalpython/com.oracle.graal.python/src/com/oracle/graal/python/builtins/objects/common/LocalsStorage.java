@@ -235,7 +235,7 @@ public class LocalsStorage extends HashingStorage {
         @Specialization(guards = {"desc == self.frame.getFrameDescriptor()"}, limit = "1", assumptions = "desc.getVersion()")
         @ExplodeLoop
         static HashingStorage cached(LocalsStorage self, HashingStorage other,
-                        @CachedLibrary("other") HashingStorageLibrary lib,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
                         @Exclusive @Cached(value = "getSlots(desc)", dimensions = 1) FrameSlot[] slots) {
             HashingStorage result = other;
@@ -249,9 +249,9 @@ public class LocalsStorage extends HashingStorage {
             return result;
         }
 
-        @Specialization(replaces = "cached", limit = "1")
+        @Specialization(replaces = "cached")
         static HashingStorage generic(LocalsStorage self, HashingStorage other,
-                        @CachedLibrary("other") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             bailout();
             HashingStorage result = other;
             FrameSlot[] slots = getSlots(self.frame.getFrameDescriptor());

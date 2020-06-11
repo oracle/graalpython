@@ -121,3 +121,19 @@ def sorted(iterable, key=None, reverse=False):
     result = list(iterable)
     result.sort(key=key, reverse=reverse)
     return result
+
+
+@__graalpython__.builtin
+def input(prompt=None):
+    import sys
+    print(prompt, end="", flush=True)
+    result = []
+    while True:
+        ch = sys.stdin.read(1)
+        if ch:
+            if ch == "\n":
+                break
+            result.append(ch)
+        else:
+            break
+    return "".join(result)

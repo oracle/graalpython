@@ -1,3 +1,3 @@
-*PwdTest.test_errors
-*PwdTest.test_values
-*PwdTest.test_values_extended
+*graalpython.lib-python.3.test.test_pwd.PwdTest.test_errors
+*graalpython.lib-python.3.test.test_pwd.PwdTest.test_values
+*graalpython.lib-python.3.test.test_pwd.PwdTest.test_values_extended

@@ -1,1 +1,1 @@
-*StateTestCase.test_skip_with_no_name_module
+*graalpython.lib-python.3.test.test_bdb.StateTestCase.test_skip_with_no_name_module

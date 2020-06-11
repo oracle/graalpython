@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import com.oracle.graal.python.util.BiConsumer;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -41,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -74,8 +74,8 @@ public abstract class PythonBuiltins {
             } else {
                 declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = core.getLanguage().builtinCallTargetCache.computeIfAbsent(factory.getNodeClass(),
-                            (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
+            RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(builtin, factory.getNodeClass(),
+                            (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf, builtin.reverseOperation())));
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (builtin.constructsClass().length > 0) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
@@ -93,7 +93,7 @@ public abstract class PythonBuiltins {
                     assert !builtin.isClassmethod() && !builtin.isStaticmethod();
                     PBuiltinFunction get = builtin.isGetter() ? function : null;
                     PBuiltinFunction set = builtin.isSetter() ? function : null;
-                    callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null);
+                    callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null, builtin.allowsDelete());
                 } else if (builtin.isClassmethod()) {
                     assert !builtin.isStaticmethod();
                     callable = core.factory().createClassmethod(function);
@@ -117,8 +117,15 @@ public abstract class PythonBuiltins {
         List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> factories = getNodeFactories();
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
-            Builtin builtin = factory.getNodeClass().getAnnotation(Builtin.class);
-            func.accept(factory, builtin);
+            Boolean needsFrame = null;
+            for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
+                if (needsFrame == null) {
+                    needsFrame = builtin.needsFrame();
+                } else if (needsFrame != builtin.needsFrame()) {
+                    throw new IllegalStateException(String.format("Implementation error in %s: all @Builtin annotations must agree if the node needs a frame.", factory.getNodeClass().getName()));
+                }
+                func.accept(factory, builtin);
+            }
         }
     }
 

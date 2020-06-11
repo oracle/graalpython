@@ -1,4 +1,4 @@
-*PyclbrTest.test_decorators
-*PyclbrTest.test_nested
-*ReadmoduleTests.test_dotted_name_not_a_package
-*ReadmoduleTests.test_module_has_no_spec
+*graalpython.lib-python.3.test.test_pyclbr.PyclbrTest.test_decorators
+*graalpython.lib-python.3.test.test_pyclbr.PyclbrTest.test_nested
+*graalpython.lib-python.3.test.test_pyclbr.ReadmoduleTests.test_dotted_name_not_a_package
+*graalpython.lib-python.3.test.test_pyclbr.ReadmoduleTests.test_module_has_no_spec
