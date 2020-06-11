@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'yeild17'> SourceSection: [0,37]`generator = type((
         WriteNameNodeGen SourceSection: [0,37]`generator = type((la...`
           Identifier: generator
           PythonCallUnary SourceSection: [12,37]`type((lambda: (yield...`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [12,16]`type`
               Identifier: type
             PythonCallNodeGen SourceSection: [17,36]`(lambda: (yield))()`

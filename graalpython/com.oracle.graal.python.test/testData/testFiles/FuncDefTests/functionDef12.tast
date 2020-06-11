@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                   FunctionBodyNode SourceSection: [39,48]`print(x )`
                                     ExpressionStatementNode SourceSection: [39,48]`print(x )`
                                       PythonCallUnary SourceSection: [39,48]`print(x )`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [39,44]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

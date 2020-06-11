@@ -47,7 +47,7 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __ne__
                             PythonCallUnary SourceSection: [27,37]`len(marks)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [27,30]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

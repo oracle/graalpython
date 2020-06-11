@@ -91,7 +91,7 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                           GetIteratorExpressionNodeGen SourceSection: [26,35]`range(10)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [26,35]`range(10)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [26,31]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
         WriteNameNodeGen SourceSection: [0,26]`@funcattrs()↵def f()...`
           Identifier: f
           PythonCallUnary SourceSection: [0,12]`@funcattrs()`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None

@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
   Documentation: None
   InnerRootNode SourceSection: [0,16]`{x for x in seq}`
     PythonCallUnary SourceSection: [0,16]`{x for x in seq}`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

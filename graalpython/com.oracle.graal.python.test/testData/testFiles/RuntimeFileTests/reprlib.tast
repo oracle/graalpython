@@ -159,7 +159,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Frame: [1,key,Illegal]
                                                   TupleLiteralNode SourceSection: [436,457]`id(self), get_ident(...`
                                                     PythonCallUnary SourceSection: [436,444]`id(self)`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [436,438]`id`
                                                         Identifier: id
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -199,7 +199,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [539,560]`repr_running.add(key...`
                                                   PythonCallUnary SourceSection: [539,560]`repr_running.add(key...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [539,551]`repr_running`
                                                         ReadLocalVariableNode SourceSection: None
@@ -216,7 +216,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [2,result,Illegal]
                                                       PythonCallUnary SourceSection: [603,622]`user_function(self)`
-                                                        CachedNodeGen SourceSection: None
+                                                        CallUnaryMethodNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: [603,616]`user_function`
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [3,user_function,Illegal]
@@ -228,7 +228,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     BlockNode SourceSection: None
                                                   ExpressionStatementNode SourceSection: [660,685]`repr_running.discard...`
                                                     PythonCallUnary SourceSection: [660,685]`repr_running.discard...`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: [660,672]`repr_running`
                                                           ReadLocalVariableNode SourceSection: None
@@ -255,7 +255,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Frame: [2,wrapper,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonCallBinary SourceSection: [813,849]`getattr(user_functio...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [813,820]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -271,7 +271,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Frame: [2,wrapper,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonCallBinary SourceSection: [876,909]`getattr(user_functio...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [876,883]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -287,7 +287,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Frame: [2,wrapper,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonCallBinary SourceSection: [937,971]`getattr(user_functio...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [937,944]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -303,7 +303,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Frame: [2,wrapper,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonCallBinary SourceSection: [1003,1041]`getattr(user_functio...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [1003,1010]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -319,7 +319,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Frame: [2,wrapper,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonCallTernary SourceSection: [1076,1121]`getattr(user_functio...`
-                                      CallTernaryMethodCachedNodeGen SourceSection: None
+                                      CallTernaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [1076,1083]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -356,7 +356,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
       WriteNameNodeGen SourceSection: [1178,4965]`class Repr:↵↵    def...`
         Identifier: Repr
         PythonCallBinary SourceSection: [1178,4965]`class Repr:↵↵    def...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Repr SourceSection: None
@@ -555,7 +555,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallBinary SourceSection: [1543,1571]`self.repr1(x, self.m...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1543,1547]`self`
                                               Frame: [0,self,Illegal]
@@ -634,7 +634,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         PythonCallUnary SourceSection: [1623,1630]`type(x)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [1623,1627]`type`
                                             Identifier: type
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -667,7 +667,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,typename,Illegal]
                                           PythonCallUnary SourceSection: [1728,1743]`'_'.join(parts)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [1728,1731]`'_'`
                                             ReadLocalVariableNode SourceSection: [1737,1742]`parts`
@@ -677,7 +677,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                     IfNode SourceSection: [1752,1920]`if hasattr(self, 're...`
                                       YesNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [1755,1788]`hasattr(self, 'repr_...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [1755,1762]`hasattr`
                                             Identifier: hasattr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -697,9 +697,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [6,<return_val>,Illegal]
                                           PythonCallBinary SourceSection: [1809,1852]`getattr(self, 'repr_...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [1809,1842]`getattr(self, 'repr_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [1809,1816]`getattr`
                                                 Identifier: getattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -725,7 +725,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [6,<return_val>,Illegal]
                                           PythonCallBinary SourceSection: [1886,1914]`self.repr_instance(x...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1886,1890]`self`
                                                 Frame: [0,self,Illegal]
@@ -823,7 +823,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [7,n,Illegal]
                                       PythonCallUnary SourceSection: [2000,2006]`len(x)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2000,2003]`len`
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -882,7 +882,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [11,pieces,Illegal]
                                           PythonCallUnary SourceSection: [2158,2210]`repr1(elem, newlevel...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -913,7 +913,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         YieldNode SourceSection: [2158,2179]`repr1(elem, newlevel...`
                                                           flagSlot: 0
                                                           PythonCallBinary SourceSection: [2158,2179]`repr1(elem, newlevel...`
-                                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                                            CallBinaryMethodNodeGen SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [2158,2163]`repr1`
                                                               ReadGeneratorFrameVariableNode SourceSection: None
                                                                 Frame: [2,repr1,Illegal]
@@ -948,7 +948,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               GetIteratorExpressionNodeGen SourceSection: [2192,2210]`islice(x, maxiter)`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallBinary SourceSection: [2192,2210]`islice(x, maxiter)`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2192,2198]`islice`
                                                     Identifier: islice
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -972,7 +972,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [2241,2261]`pieces.append('...')...`
                                             PythonCallUnary SourceSection: [2241,2261]`pieces.append('...')...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [2241,2247]`pieces`
                                                   Frame: [11,pieces,Illegal]
@@ -984,7 +984,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [8,s,Illegal]
                                           PythonCallUnary SourceSection: [2278,2295]`', '.join(pieces)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [2278,2282]`', '`
                                             ReadLocalVariableNode SourceSection: [2288,2294]`pieces`
@@ -1391,7 +1391,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,x,Illegal]
                                       PythonCallUnary SourceSection: [2925,2944]`_possibly_sorted(x)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2925,2941]`_possibly_sorted`
                                           Identifier: _possibly_sorted
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1495,7 +1495,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,x,Illegal]
                                       PythonCallUnary SourceSection: [3117,3136]`_possibly_sorted(x)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [3117,3133]`_possibly_sorted`
                                           Identifier: _possibly_sorted
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1667,7 +1667,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,n,Illegal]
                                       PythonCallUnary SourceSection: [3419,3425]`len(x)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [3419,3422]`len`
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1752,7 +1752,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [7,keyrepr,Illegal]
                                               PythonCallBinary SourceSection: [3655,3675]`repr1(key, newlevel)...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3655,3660]`repr1`
                                                   Frame: [5,repr1,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1767,7 +1767,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [8,valrepr,Illegal]
                                               PythonCallBinary SourceSection: [3698,3721]`repr1(x[key], newlev...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3698,3703]`repr1`
                                                   Frame: [5,repr1,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1783,7 +1783,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [3734,3778]`pieces.append('%s: %...`
                                               PythonCallUnary SourceSection: [3734,3778]`pieces.append('%s: %...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [3734,3740]`pieces`
                                                     Frame: [6,pieces,Illegal]
@@ -1803,12 +1803,12 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         GetIteratorExpressionNodeGen SourceSection: [3590,3631]`islice(_possibly_sor...`
                                           GetIteratorNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [3590,3631]`islice(_possibly_sor...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3590,3596]`islice`
                                               Identifier: islice
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [3597,3616]`_possibly_sorted(x)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3597,3613]`_possibly_sorted`
                                                 Identifier: _possibly_sorted
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1842,7 +1842,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [3808,3828]`pieces.append('...')...`
                                         PythonCallUnary SourceSection: [3808,3828]`pieces.append('...')...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3808,3814]`pieces`
                                               Frame: [6,pieces,Illegal]
@@ -1854,7 +1854,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [10,s,Illegal]
                                       PythonCallUnary SourceSection: [3841,3858]`', '.join(pieces)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [3841,3845]`', '`
                                         ReadLocalVariableNode SourceSection: [3851,3857]`pieces`
@@ -1932,7 +1932,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,s,Illegal]
                                       PythonCallUnary SourceSection: [3935,3968]`builtins.repr(x[:sel...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3935,3943]`builtins`
                                             Identifier: builtins
@@ -1959,7 +1959,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
                                           PythonCallUnary SourceSection: [3980,3986]`len(s)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3980,3983]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1980,7 +1980,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,i,Illegal]
                                           PythonCallBinary SourceSection: [4021,4050]`max(0, (self.maxstri...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4024]`max`
                                               Identifier: max
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2009,7 +2009,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [5,j,Illegal]
                                           PythonCallBinary SourceSection: [4067,4093]`max(0, self.maxstrin...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4067,4070]`max`
                                               Identifier: max
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2039,7 +2039,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,s,Illegal]
                                           PythonCallUnary SourceSection: [4110,4145]`builtins.repr(x[:i] ...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4110,4118]`builtins`
                                                 Identifier: builtins
@@ -2068,7 +2068,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __sub__
                                                     PythonCallUnary SourceSection: [4134,4140]`len(x)`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4134,4137]`len`
                                                         Identifier: len
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2112,7 +2112,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __sub__
                                                   PythonCallUnary SourceSection: [4180,4186]`len(s)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4180,4183]`len`
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2191,7 +2191,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,s,Illegal]
                                       PythonCallUnary SourceSection: [4255,4271]`builtins.repr(x)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4255,4263]`builtins`
                                             Identifier: builtins
@@ -2205,7 +2205,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
                                           PythonCallUnary SourceSection: [4317,4323]`len(s)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4317,4320]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2226,7 +2226,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,i,Illegal]
                                           PythonCallBinary SourceSection: [4356,4383]`max(0, (self.maxlong...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4356,4359]`max`
                                               Identifier: max
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2255,7 +2255,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [5,j,Illegal]
                                           PythonCallBinary SourceSection: [4400,4424]`max(0, self.maxlong-...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4400,4403]`max`
                                               Identifier: max
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2312,7 +2312,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __sub__
                                                   PythonCallUnary SourceSection: [4459,4465]`len(s)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4459,4462]`len`
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2393,7 +2393,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,s,Illegal]
                                           PythonCallUnary SourceSection: [4556,4572]`builtins.repr(x)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4556,4564]`builtins`
                                                 Identifier: builtins
@@ -2426,7 +2426,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         Frame: [1,x,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   PythonCallUnary SourceSection: [4772,4777]`id(x)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4772,4774]`id`
                                                       Identifier: id
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2444,7 +2444,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
                                           PythonCallUnary SourceSection: [4790,4796]`len(s)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4790,4793]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2465,7 +2465,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,i,Illegal]
                                           PythonCallBinary SourceSection: [4830,4858]`max(0, (self.maxothe...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4830,4833]`max`
                                               Identifier: max
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2494,7 +2494,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [5,j,Illegal]
                                           PythonCallBinary SourceSection: [4875,4900]`max(0, self.maxother...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4875,4878]`max`
                                               Identifier: max
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2551,7 +2551,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __sub__
                                                   PythonCallUnary SourceSection: [4935,4941]`len(s)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4935,4938]`len`
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2625,7 +2625,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
                             PythonCallUnary SourceSection: [5178,5187]`sorted(x)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [5178,5184]`sorted`
                                 Identifier: sorted
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2639,7 +2639,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                               PythonCallUnary SourceSection: [5225,5232]`list(x)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5225,5229]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

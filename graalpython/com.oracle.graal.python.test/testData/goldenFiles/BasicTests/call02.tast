@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'call02'> SourceSection: [0,6]`foo(1)`
   Documentation: None
   InnerRootNode SourceSection: [0,6]`foo(1)`
     PythonCallUnary SourceSection: [0,6]`foo(1)`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
       IntegerLiteralNode SourceSection: [4,5]`1`

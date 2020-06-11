@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                         ExpressionStatementNode SourceSection: [32,36]`pass`
                           EmptyNode SourceSection: [32,36]`pass`
                         PythonCallUnary SourceSection: [17,26]`open('x')`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17,21]`open`
                             Identifier: open
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

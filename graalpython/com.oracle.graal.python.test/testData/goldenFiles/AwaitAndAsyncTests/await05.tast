@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'await05'> SourceSection: [0,35]`async def f():↵ 
                     FunctionBodyNode SourceSection: [16,35]`foo((await smth()))`
                       ExpressionStatementNode SourceSection: [16,35]`foo((await smth()))`
                         PythonCallUnary SourceSection: [16,35]`foo((await smth()))`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [16,19]`foo`
                             Identifier: foo
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

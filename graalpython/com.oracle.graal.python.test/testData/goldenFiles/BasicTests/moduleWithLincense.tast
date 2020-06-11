@@ -8,7 +8,7 @@ ModuleRootNode Name: <module 'moduleWithLincense'> SourceSection: [0,179]`# Copy
     ExpressionWithSideEffect SourceSection: [142,179]`↵"""MODULE A DOC"""↵...`
       Expression:
         PythonCallUnary SourceSection: [162,179]`print("module A")`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [162,167]`print`
             Identifier: print
           StringLiteralNode SourceSection: [168,178]`"module A"`

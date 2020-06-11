@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [51,74]`recursionInner(arg +...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [51,65]`recursionInner`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [1,recursionInner,Illegal]
@@ -94,7 +94,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [77,94]`recursionInner(0)`
                         PythonCallUnary SourceSection: [77,94]`recursionInner(0)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [77,91]`recursionInner`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,recursionInner,Illegal]

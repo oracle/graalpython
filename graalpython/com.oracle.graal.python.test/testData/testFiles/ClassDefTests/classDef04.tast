@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
         WriteNameNodeGen SourceSection: [0,110]`class Complex:↵    d...`
           Identifier: Complex
           PythonCallBinary SourceSection: [0,110]`class Complex:↵    d...`
-            CallBinaryMethodCachedNodeGen SourceSection: None
+            CallBinaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: Complex SourceSection: None

@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
             WriteNameNodeGen SourceSection: [49,98]`double_dict1 = {k:v*...`
               Identifier: double_dict1
               PythonCallUnary SourceSection: [65,97]`k:v*2 for (k,v) in d...`
-                CachedNodeGen SourceSection: None
+                CallUnaryMethodNodeGen SourceSection: None
                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                   Identifier: dict
                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

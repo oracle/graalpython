@@ -65,7 +65,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [62,76]`print('jedna')`
                                     PythonCallUnary SourceSection: [62,76]`print('jedna')`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [62,67]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -73,7 +73,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                   BreakNode SourceSection: [83,88]`break`
                                 ExpressionStatementNode SourceSection: [105,113]`print(x)`
                                   PythonCallUnary SourceSection: [105,113]`print(x)`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [105,110]`print`
                                       Identifier: print
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                           GetIteratorExpressionNodeGen SourceSection: [21,29]`range(3)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [21,29]`range(3)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21,26]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

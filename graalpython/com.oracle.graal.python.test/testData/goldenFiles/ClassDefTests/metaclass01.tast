@@ -19,7 +19,7 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
           WriteNameNodeGen SourceSection: [0,35]`class A:↵    class B...`
             Identifier: A
             PythonCallBinary SourceSection: [0,35]`class A:↵    class B...`
-              CallBinaryMethodCachedNodeGen SourceSection: None
+              CallBinaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: A SourceSection: None
@@ -60,7 +60,7 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             PythonCallBinary SourceSection: [13,35]`class B:↵        pas...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 BuiltinsLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: B SourceSection: None

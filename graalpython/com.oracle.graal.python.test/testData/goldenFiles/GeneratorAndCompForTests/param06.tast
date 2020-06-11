@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,a,Illegal]
                         PythonCallUnary SourceSection: [28,77]`join(dir, file) for ...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -87,7 +87,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                         YieldNode SourceSection: [28,43]`join(dir, file)`
                                           flagSlot: 0
                                           PythonCallBinary SourceSection: [28,43]`join(dir, file)`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`join`
                                               Identifier: join
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

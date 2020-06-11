@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                                         Value: 5
                                     ExpressionStatementNode SourceSection: [65,92]`print("Inner, local ...`
                                       PythonCallBinary SourceSection: [65,92]`print("Inner, local ...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [65,70]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -97,7 +97,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                             ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,137]`print("Outer, local ...`
                         PythonCallBinary SourceSection: [110,137]`print("Outer, local ...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [110,115]`print`
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

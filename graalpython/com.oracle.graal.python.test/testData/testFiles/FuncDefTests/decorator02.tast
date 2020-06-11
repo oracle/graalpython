@@ -160,9 +160,9 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
       WriteNameNodeGen SourceSection: [151,198]`@mydecorator(3)↵def ...`
         Identifier: getNumber
         PythonCallUnary SourceSection: [151,166]`@mydecorator(3)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           PythonCallUnary SourceSection: [151,166]`@mydecorator(3)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: mydecorator
             IntegerLiteralNode SourceSection: [164,165]`3`
@@ -201,7 +201,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
       PythonCallUnary SourceSection: [198,216]`print(getNumber())`
-        CachedNodeGen SourceSection: None
+        CallUnaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [198,203]`print`
           Identifier: print
         PythonCallNodeGen SourceSection: [204,215]`getNumber()`

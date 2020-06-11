@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'functionDef10'> SourceSection: [0,30]`def foo(*arg
                     FunctionBodyNode SourceSection: [19,30]`print(args)`
                       ExpressionStatementNode SourceSection: [19,30]`print(args)`
                         PythonCallUnary SourceSection: [19,30]`print(args)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19,24]`print`
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
       WriteNameNodeGen SourceSection: [515,1619]`class error(Exceptio...`
         Identifier: error
         PythonCallTernary SourceSection: [515,1619]`class error(Exceptio...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: error SourceSection: None
@@ -194,7 +194,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         IfNode SourceSection: [1180,1302]`if isinstance(patter...`
                                           YesNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [1183,1207]`isinstance(pattern, ...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [1183,1193]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -224,7 +224,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __add__
                                             PythonCallTernary SourceSection: [1316,1346]`pattern.count(newlin...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [1316,1323]`pattern`
                                                   Frame: [2,pattern,Illegal]
@@ -251,7 +251,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               Frame: [3,pos,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallTernary SourceSection: [1382,1412]`pattern.rfind(newlin...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [1382,1389]`pattern`
                                                   Frame: [2,pattern,Illegal]
@@ -330,7 +330,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [1595,1616]`super().__init__(msg...`
                                       PythonCallUnary SourceSection: [1595,1616]`super().__init__(msg...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [1595,1602]`super()`
                                             CallNodeGen SourceSection: None
@@ -358,7 +358,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
       WriteNameNodeGen SourceSection: [1619,1868]`class _NamedIntConst...`
         Identifier: _NamedIntConstant
         PythonCallTernary SourceSection: [1619,1868]`class _NamedIntConst...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _NamedIntConstant SourceSection: None
@@ -448,10 +448,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,self,Illegal]
                                       PythonCallBinary SourceSection: [1699,1748]`super(_NamedIntConst...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [1699,1728]`super(_NamedIntConst...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1699,1704]`super`
                                               Identifier: super
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -566,7 +566,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
       WriteNameNodeGen SourceSection: [1868,1921]`MAXREPEAT = _NamedIn...`
         Identifier: MAXREPEAT
         PythonCallBinary SourceSection: [1880,1921]`_NamedIntConstant(MA...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1880,1897]`_NamedIntConstant`
             Identifier: _NamedIntConstant
           ReadNameNodeGen SourceSection: [1898,1907]`MAXREPEAT`
@@ -622,7 +622,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,items,Illegal]
                       PythonCallUnary SourceSection: [1993,2051]`_NamedIntConstant(i,...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -653,7 +653,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                     YieldNode SourceSection: [1993,2019]`_NamedIntConstant(i,...`
                                       flagSlot: 0
                                       PythonCallBinary SourceSection: [1993,2019]`_NamedIntConstant(i,...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [1993,2010]`_NamedIntConstant`
                                           Identifier: _NamedIntConstant
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -703,7 +703,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           GetIteratorExpressionNodeGen SourceSection: [2035,2051]`enumerate(names)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [2035,2051]`enumerate(names)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2035,2044]`enumerate`
                                 Identifier: enumerate
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -713,7 +713,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2057,2110]`globals().update({it...`
                       PythonCallUnary SourceSection: [2057,2110]`globals().update({it...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [2057,2066]`globals()`
                             CallNodeGen SourceSection: None
@@ -721,7 +721,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               Identifier: globals
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [2075,2108]`item.name: item for ...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: dict
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -802,7 +802,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
       WriteNameNodeGen SourceSection: [2206,2868]`OPCODES = _makecodes...`
         Identifier: OPCODES
         PythonCallUnary SourceSection: [2216,2868]`_makecodes("""↵    F...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2216,2226]`_makecodes`
             Identifier: _makecodes
           StringLiteralNode SourceSection: [2227,2867]`"""↵    FAILURE SUCC...`
@@ -818,14 +818,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
       WriteNameNodeGen SourceSection: [2934,3169]`ATCODES = _makecodes...`
         Identifier: ATCODES
         PythonCallUnary SourceSection: [2944,3169]`_makecodes("""↵    A...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2944,2954]`_makecodes`
             Identifier: _makecodes
           StringLiteralNode SourceSection: [2955,3168]`"""↵    AT_BEGINNING...`
       WriteNameNodeGen SourceSection: [3184,3607]`CHCODES = _makecodes...`
         Identifier: CHCODES
         PythonCallUnary SourceSection: [3194,3607]`_makecodes("""↵    C...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3194,3204]`_makecodes`
             Identifier: _makecodes
           StringLiteralNode SourceSection: [3205,3606]`"""↵    CATEGORY_DIG...`
@@ -1086,7 +1086,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [3,items,Illegal]
                               PythonCallUnary SourceSection: [5652,5661]`sorted(d)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5652,5658]`sorted`
                                   Identifier: sorted
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1103,7 +1103,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         Frame: [4,item,Illegal]
                                   ExpressionStatementNode SourceSection: [5701,5753]`f.write("#define %s_...`
                                     PythonCallUnary SourceSection: [5701,5753]`f.write("#define %s_...`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [5701,5702]`f`
                                           Frame: [0,f,Illegal]
@@ -1136,14 +1136,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 BlockNode SourceSection: None
                   ExpressionStatementNode SourceSection: [5806,6190]`f.write("""\↵/*↵ * S...`
                     PythonCallUnary SourceSection: [5806,6190]`f.write("""\↵/*↵ * S...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [5806,5807]`f`
                           Identifier: f
                       StringLiteralNode SourceSection: [5814,6189]`"""\↵/*↵ * Secret La...`
                   ExpressionStatementNode SourceSection: [6200,6241]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6200,6241]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6200,6201]`f`
                           Identifier: f
@@ -1155,7 +1155,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: MAGIC
                   ExpressionStatementNode SourceSection: [6251,6277]`dump(f, OPCODES, "SR...`
                     PythonCallTernary SourceSection: [6251,6277]`dump(f, OPCODES, "SR...`
-                      CallTernaryMethodCachedNodeGen SourceSection: None
+                      CallTernaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [6251,6255]`dump`
                         Identifier: dump
                       ReadNameNodeGen SourceSection: [6256,6257]`f`
@@ -1165,7 +1165,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       StringLiteralNode SourceSection: [6268,6276]`"SRE_OP"`
                   ExpressionStatementNode SourceSection: [6286,6309]`dump(f, ATCODES, "SR...`
                     PythonCallTernary SourceSection: [6286,6309]`dump(f, ATCODES, "SR...`
-                      CallTernaryMethodCachedNodeGen SourceSection: None
+                      CallTernaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [6286,6290]`dump`
                         Identifier: dump
                       ReadNameNodeGen SourceSection: [6291,6292]`f`
@@ -1175,7 +1175,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       StringLiteralNode SourceSection: [6303,6308]`"SRE"`
                   ExpressionStatementNode SourceSection: [6318,6341]`dump(f, CHCODES, "SR...`
                     PythonCallTernary SourceSection: [6318,6341]`dump(f, CHCODES, "SR...`
-                      CallTernaryMethodCachedNodeGen SourceSection: None
+                      CallTernaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [6318,6322]`dump`
                         Identifier: dump
                       ReadNameNodeGen SourceSection: [6323,6324]`f`
@@ -1185,7 +1185,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       StringLiteralNode SourceSection: [6335,6340]`"SRE"`
                   ExpressionStatementNode SourceSection: [6351,6412]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6351,6412]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6351,6352]`f`
                           Identifier: f
@@ -1197,7 +1197,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_TEMPLATE
                   ExpressionStatementNode SourceSection: [6421,6486]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6421,6486]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6421,6422]`f`
                           Identifier: f
@@ -1209,7 +1209,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_IGNORECASE
                   ExpressionStatementNode SourceSection: [6495,6552]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6495,6552]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6495,6496]`f`
                           Identifier: f
@@ -1221,7 +1221,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_LOCALE
                   ExpressionStatementNode SourceSection: [6561,6624]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6561,6624]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6561,6562]`f`
                           Identifier: f
@@ -1233,7 +1233,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_MULTILINE
                   ExpressionStatementNode SourceSection: [6633,6690]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6633,6690]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6633,6634]`f`
                           Identifier: f
@@ -1245,7 +1245,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_DOTALL
                   ExpressionStatementNode SourceSection: [6699,6758]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6699,6758]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6699,6700]`f`
                           Identifier: f
@@ -1257,7 +1257,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_UNICODE
                   ExpressionStatementNode SourceSection: [6767,6826]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6767,6826]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6767,6768]`f`
                           Identifier: f
@@ -1269,7 +1269,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_VERBOSE
                   ExpressionStatementNode SourceSection: [6835,6890]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6835,6890]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6835,6836]`f`
                           Identifier: f
@@ -1281,7 +1281,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_DEBUG
                   ExpressionStatementNode SourceSection: [6899,6954]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6899,6954]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6899,6900]`f`
                           Identifier: f
@@ -1293,7 +1293,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_FLAG_ASCII
                   ExpressionStatementNode SourceSection: [6964,7021]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6964,7021]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6964,6965]`f`
                           Identifier: f
@@ -1305,7 +1305,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_INFO_PREFIX
                   ExpressionStatementNode SourceSection: [7030,7089]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [7030,7089]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [7030,7031]`f`
                           Identifier: f
@@ -1317,7 +1317,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: SRE_INFO_LITERAL
                   ExpressionStatementNode SourceSection: [7098,7157]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [7098,7157]`f.write("#define SRE...`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [7098,7099]`f`
                           Identifier: f
@@ -1330,7 +1330,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 WriteNameNodeGen SourceSection: None
                   Identifier: f
                 PythonCallBinary SourceSection: [5763,5791]`open("sre_constants....`
-                  CallBinaryMethodCachedNodeGen SourceSection: None
+                  CallBinaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [5763,5767]`open`
                     Identifier: open
                   StringLiteralNode SourceSection: [5768,5785]`"sre_constants.h"`
@@ -1349,7 +1349,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 GetClassNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [7163,7176]`print("done")`
                 PythonCallUnary SourceSection: [7163,7176]`print("done")`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [7163,7168]`print`
                     Identifier: print
                   StringLiteralNode SourceSection: [7169,7175]`"done"`

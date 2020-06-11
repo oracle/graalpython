@@ -97,7 +97,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__
                               PythonCallUnary SourceSection: [73,79]`len(h)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [73,76]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'dictComprehensions01'> SourceSection: [0,18]`{x:x 
   Documentation: None
   InnerRootNode SourceSection: [0,18]`{x:x for x in seq}`
     PythonCallUnary SourceSection: [0,18]`{x:x for x in seq}`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

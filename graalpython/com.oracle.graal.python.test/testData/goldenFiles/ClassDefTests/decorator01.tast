@@ -12,11 +12,11 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
         WriteNameNodeGen SourceSection: [0,33]`@class_decorator↵cla...`
           Identifier: foo
           PythonCallUnary SourceSection: [0,16]`@class_decorator`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,16]`@class_decorator`
               Identifier: class_decorator
             PythonCallBinary SourceSection: [17,33]`class foo():pass`
-              CallBinaryMethodCachedNodeGen SourceSection: None
+              CallBinaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: foo SourceSection: None

@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
         WriteNameNodeGen SourceSection: [0,22]`class foo(object):pa...`
           Identifier: foo
           PythonCallTernary SourceSection: [0,22]`class foo(object):pa...`
-            CallTernaryMethodCachedNodeGen SourceSection: None
+            CallTernaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: foo SourceSection: None

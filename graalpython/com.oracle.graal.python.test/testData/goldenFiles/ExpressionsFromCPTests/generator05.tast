@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
   Documentation: None
   InnerRootNode SourceSection: [0,38]`list(x**3 for x in r...`
     PythonCallUnary SourceSection: [0,38]`list(x**3 for x in r...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,4]`list`
         Identifier: list
       GeneratorExpressionNode SourceSection: [10,37]`for x in range(20) i...`
@@ -76,7 +76,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
         GetIteratorExpressionNodeGen SourceSection: [19,28]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [19,28]`range(20)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [19,24]`range`
               Identifier: range
             IntegerLiteralNode SourceSection: [25,27]`20`

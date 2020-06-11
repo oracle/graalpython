@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
         WriteNameNodeGen SourceSection: [0,208]`class Counter(dict):...`
           Identifier: Counter
           PythonCallTernary SourceSection: [0,208]`class Counter(dict):...`
-            CallTernaryMethodCachedNodeGen SourceSection: None
+            CallTernaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: Counter SourceSection: None
@@ -87,7 +87,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,nonpositive,Illegal]
                                         PythonCallUnary SourceSection: [74,127]`elem for elem, count...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: list
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

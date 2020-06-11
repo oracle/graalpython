@@ -190,7 +190,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [225,234]`list(gen)`
                         PythonCallUnary SourceSection: [225,234]`list(gen)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [225,229]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

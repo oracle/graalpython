@@ -101,7 +101,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                         OrNode SourceSection: [456,560]`hasattr(obj, '__get_...`
                           OrNode SourceSection: None
                             PythonCallBinary SourceSection: [456,479]`hasattr(obj, '__get_...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [456,463]`hasattr`
                                 Identifier: hasattr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -110,7 +110,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [469,478]`'__get__'`
                             PythonCallBinary SourceSection: [495,518]`hasattr(obj, '__set_...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [495,502]`hasattr`
                                 Identifier: hasattr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -120,7 +120,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               StringLiteralNode SourceSection: [508,517]`'__set__'`
                             YesNodeGen SourceSection: None
                           PythonCallBinary SourceSection: [534,560]`hasattr(obj, '__dele...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [534,541]`hasattr`
                               Identifier: hasattr
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -247,7 +247,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
                             PythonCallUnary SourceSection: [774,783]`len(name)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [774,777]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -363,7 +363,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
                             PythonCallUnary SourceSection: [996,1005]`len(name)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [996,999]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -452,7 +452,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 FunctionBodyNode SourceSection: [1143,1189]`raise TypeError('%r ...`
                                   RaiseNodeGen SourceSection: [1143,1189]`raise TypeError('%r ...`
                                     PythonCallUnary SourceSection: [1149,1189]`TypeError('%r cannot...`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [1149,1158]`TypeError`
                                         Identifier: TypeError
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -493,7 +493,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
       WriteNameNodeGen SourceSection: [1292,1420]`class auto:↵    """↵...`
         Identifier: auto
         PythonCallBinary SourceSection: [1292,1420]`class auto:↵    """↵...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: auto SourceSection: None
@@ -561,7 +561,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
       WriteNameNodeGen SourceSection: [1420,3954]`class _EnumDict(dict...`
         Identifier: _EnumDict
         PythonCallTernary SourceSection: [1420,3954]`class _EnumDict(dict...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _EnumDict SourceSection: None
@@ -723,7 +723,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [2053,3691]`if _is_sunder(key):↵...`
                                       YesNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [2056,2071]`_is_sunder(key)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2056,2066]`_is_sunder`
                                             Identifier: _is_sunder
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -749,7 +749,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [2267,2327]`raise ValueError('_n...`
                                             PythonCallUnary SourceSection: [2273,2327]`ValueError('_names_ ...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [2273,2283]`ValueError`
                                                 Identifier: ValueError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -767,7 +767,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               StringLiteralNode SourceSection: [2350,2373]`'_generate_next_valu...`
                                           ExpressionStatementNode SourceSection: [2391,2435]`setattr(self, '_gene...`
                                             PythonCallTernary SourceSection: [2391,2435]`setattr(self, '_gene...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [2391,2398]`setattr`
                                                 Identifier: setattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -791,7 +791,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               IfNode SourceSection: [2488,2652]`if isinstance(value,...`
                                                 YesNodeGen SourceSection: None
                                                   PythonCallBinary SourceSection: [2491,2513]`isinstance(value, st...`
-                                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                                    CallBinaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2491,2501]`isinstance`
                                                       Identifier: isinstance
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -809,7 +809,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       PythonCallBinary SourceSection: [2543,2565]`value.replace(',',' ...`
-                                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                                        CallBinaryMethodNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [2543,2548]`value`
                                                             Frame: [2,value,Illegal]
@@ -821,7 +821,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [2,value,Illegal]
                                                   PythonCallUnary SourceSection: [2624,2635]`list(value)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2624,2628]`list`
                                                       Identifier: list
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -844,7 +844,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __and__
                                                   PythonCallUnary SourceSection: [2699,2709]`set(value)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2699,2702]`set`
                                                       Identifier: set
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -852,7 +852,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Frame: [2,value,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   PythonCallUnary SourceSection: [2712,2735]`set(self._member_nam...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2712,2715]`set`
                                                       Identifier: set
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -871,7 +871,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 RaiseNodeGen SourceSection: [2784,2863]`raise ValueError('_i...`
                                                   PythonCallUnary SourceSection: [2790,2863]`ValueError('_ignore_...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2790,2800]`ValueError`
                                                       Identifier: ValueError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -890,7 +890,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       IfNode SourceSection: None
                                         YesNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [2877,2892]`_is_dunder(key)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [2877,2887]`_is_dunder`
                                               Identifier: _is_dunder
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -931,7 +931,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [3059,3110]`raise TypeError('Att...`
                                             PythonCallUnary SourceSection: [3065,3110]`TypeError('Attempted...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3065,3074]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -965,7 +965,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             IfNode SourceSection: None
                                               NotNodeGen SourceSection: [3175,3200]`not _is_descriptor(v...`
                                                 PythonCallUnary SourceSection: [3179,3200]`_is_descriptor(value...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3179,3193]`_is_descriptor`
                                                     Identifier: _is_descriptor
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -987,7 +987,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   RaiseNodeGen SourceSection: [3295,3358]`raise TypeError('%r ...`
                                                     PythonCallUnary SourceSection: [3301,3358]`TypeError('%r alread...`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [3301,3310]`TypeError`
                                                         Identifier: TypeError
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1012,7 +1012,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 IfNode SourceSection: [3371,3608]`if isinstance(value,...`
                                                   YesNodeGen SourceSection: None
                                                     PythonCallBinary SourceSection: [3374,3397]`isinstance(value, au...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [3374,3384]`isinstance`
                                                         Identifier: isinstance
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1056,7 +1056,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           IntegerLiteralNode SourceSection: [3510,3511]`1`
                                                             Value: 1
                                                           PythonCallUnary SourceSection: [3513,3536]`len(self._member_nam...`
-                                                            CachedNodeGen SourceSection: None
+                                                            CallUnaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3513,3516]`len`
                                                               Identifier: len
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1098,7 +1098,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [3608,3638]`self._member_names.a...`
                                                   PythonCallUnary SourceSection: [3608,3638]`self._member_names.a...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [3608,3626]`self._member_names`
                                                         GetFixedAttributeNodeGen SourceSection: None
@@ -1113,7 +1113,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [3651,3682]`self._last_values.ap...`
                                                   PythonCallUnary SourceSection: [3651,3682]`self._last_values.ap...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [3651,3668]`self._last_values`
                                                         GetFixedAttributeNodeGen SourceSection: None
@@ -1129,7 +1129,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [3691,3722]`super().__setitem__(...`
                                       PythonCallBinary SourceSection: [3691,3722]`super().__setitem__(...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [3691,3698]`super()`
                                             CallNodeGen SourceSection: None
@@ -1163,7 +1163,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
       WriteNameNodeGen SourceSection: [3968,21037]`class EnumMeta(type)...`
         Identifier: EnumMeta
         PythonCallTernary SourceSection: [3968,21037]`class EnumMeta(type)...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: EnumMeta SourceSection: None
@@ -1210,7 +1210,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [4023,4035]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4023,4035]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1276,7 +1276,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       DestructuringAssignmentNodeGen SourceSection: [4222,4275]`member_type, first_e...`
                                         PythonCallUnary SourceSection: [4248,4275]`metacls._get_mixins_...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [4248,4255]`metacls`
                                               Frame: [0,metacls,Illegal]
@@ -1319,7 +1319,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [4333,4356]`'_generate_next_valu...`
                                           PythonCallTernary SourceSection: [4360,4410]`getattr(first_enum, ...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4360,4367]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1400,10 +1400,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   FunctionBodyNode SourceSection: [4808,11209]`classdict.setdefault...`
                                     ExpressionStatementNode SourceSection: [4808,4863]`classdict.setdefault...`
                                       PythonCallUnary SourceSection: [4808,4863]`classdict.setdefault...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [4808,4844]`classdict.setdefault...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [4808,4817]`classdict`
                                                 ReadLocalVariableNode SourceSection: None
@@ -1435,7 +1435,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [5,key,Illegal]
                                           ExpressionStatementNode SourceSection: [4942,4966]`classdict.pop(key, N...`
                                             PythonCallBinary SourceSection: [4942,4966]`classdict.pop(key, N...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [4942,4951]`classdict`
                                                   ReadLocalVariableNode SourceSection: None
@@ -1454,7 +1454,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [4975,5028]`member_type, first_e...`
                                       PythonCallUnary SourceSection: [5001,5028]`metacls._get_mixins_...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5001,5008]`metacls`
                                             Frame: [0,metacls,Illegal]
@@ -1487,7 +1487,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [5037,5177]`__new__, save_new, u...`
                                       PythonCallTernary SourceSection: [5067,5177]`metacls._find_new_(c...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5067,5074]`metacls`
                                             Frame: [0,metacls,Illegal]
@@ -1543,7 +1543,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [11,enum_members,Illegal]
                                       PythonCallUnary SourceSection: [5304,5352]`k: classdict[k] for ...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: dict
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1653,7 +1653,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [13,_order_,Illegal]
                                       PythonCallBinary SourceSection: [5479,5509]`classdict.pop('_orde...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [5479,5488]`classdict`
                                             ReadLocalVariableNode SourceSection: None
@@ -1670,7 +1670,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __and__
                                         PythonCallUnary SourceSection: [5588,5605]`set(enum_members)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5588,5591]`set`
                                             Identifier: set
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1687,16 +1687,16 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [5656,5754]`raise ValueError('In...`
                                         PythonCallUnary SourceSection: [5662,5754]`ValueError('Invalid ...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5662,5672]`ValueError`
                                             Identifier: ValueError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [5673,5753]`'Invalid enum member...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5673,5704]`'Invalid enum member...`
                                             PythonCallUnary SourceSection: [5729,5752]`','.join(invalid_nam...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [5729,5732]`','`
                                               ReadLocalVariableNode SourceSection: [5738,5751]`invalid_names`
@@ -1783,7 +1783,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [16,base_attributes,Illegal]
                                       PythonCallUnary SourceSection: [6377,6424]`a for b in enum_clas...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: set
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1906,7 +1906,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           IfNode SourceSection: [7400,7769]`if not any(m in memb...`
                                             NotNodeGen SourceSection: [7403,7454]`not any(m in member_...`
                                               PythonCallUnary SourceSection: [7407,7454]`any(m in member_type...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7407,7410]`any`
                                                   Identifier: any
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1979,7 +1979,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [7476,7511]`_make_class_unpickla...`
                                               PythonCallUnary SourceSection: [7476,7511]`_make_class_unpickla...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7476,7499]`_make_class_unpickla...`
                                                   Identifier: _make_class_unpicklable
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2012,7 +2012,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             IfNode SourceSection: [7871,7996]`if not isinstance(va...`
                                               NotNodeGen SourceSection: [7874,7902]`not isinstance(value...`
                                                 PythonCallBinary SourceSection: [7878,7902]`isinstance(value, tu...`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [7878,7888]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2070,7 +2070,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [20,enum_member,Illegal]
                                                   PythonCallUnary SourceSection: [8173,8192]`__new__(enum_class)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [8173,8180]`__new__`
                                                       Frame: [8,__new__,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -2080,7 +2080,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 IfNode SourceSection: [8209,8309]`if not hasattr(enum_...`
                                                   NotNodeGen SourceSection: [8212,8247]`not hasattr(enum_mem...`
                                                     PythonCallBinary SourceSection: [8216,8247]`hasattr(enum_member,...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [8216,8223]`hasattr`
                                                         Identifier: hasattr
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2118,7 +2118,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 IfNode SourceSection: [8388,8629]`if not hasattr(enum_...`
                                                   NotNodeGen SourceSection: [8391,8426]`not hasattr(enum_mem...`
                                                     PythonCallBinary SourceSection: [8395,8426]`hasattr(enum_member,...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [8395,8402]`hasattr`
                                                         Identifier: hasattr
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2276,7 +2276,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [9264,9309]`enum_class._member_n...`
                                                 PythonCallUnary SourceSection: [9264,9309]`enum_class._member_n...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [9264,9289]`enum_class._member_n...`
                                                       GetFixedAttributeNodeGen SourceSection: None
@@ -2303,7 +2303,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [9484,9529]`setattr(enum_class, ...`
                                                 PythonCallTernary SourceSection: [9484,9529]`setattr(enum_class, ...`
-                                                  CallTernaryMethodCachedNodeGen SourceSection: None
+                                                  CallTernaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [9484,9491]`setattr`
                                                     Identifier: setattr
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2383,7 +2383,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [23,class_method,Illegal]
                                               PythonCallBinary SourceSection: [10167,10192]`getattr(enum_class, ...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10167,10174]`getattr`
                                                   Identifier: getattr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2398,7 +2398,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [24,obj_method,Illegal]
                                               PythonCallTernary SourceSection: [10218,10250]`getattr(member_type,...`
-                                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                                CallTernaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10218,10225]`getattr`
                                                   Identifier: getattr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2416,7 +2416,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [25,enum_method,Illegal]
                                               PythonCallTernary SourceSection: [10277,10308]`getattr(first_enum, ...`
-                                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                                CallTernaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10277,10284]`getattr`
                                                   Identifier: getattr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2446,7 +2446,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   YesNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [10395,10433]`setattr(enum_class, ...`
                                                 PythonCallTernary SourceSection: [10395,10433]`setattr(enum_class, ...`
-                                                  CallTernaryMethodCachedNodeGen SourceSection: None
+                                                  CallTernaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [10395,10402]`setattr`
                                                     Identifier: setattr
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2516,7 +2516,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         IfNode SourceSection: [10970,11071]`if isinstance(_order...`
                                           YesNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [10973,10997]`isinstance(_order_, ...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [10973,10983]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2534,7 +2534,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 PythonCallBinary SourceSection: [11025,11050]`_order_.replace(',',...`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [11025,11032]`_order_`
                                                       Frame: [13,_order_,Illegal]
@@ -2560,7 +2560,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [11128,11182]`raise TypeError('mem...`
                                             PythonCallUnary SourceSection: [11134,11182]`TypeError('member or...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11134,11143]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2729,7 +2729,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [9,<return_val>,Illegal]
                                           PythonCallBinary SourceSection: [12550,12573]`cls.__new__(cls, val...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [12550,12553]`cls`
                                                 Frame: [0,cls,Illegal]
@@ -2827,7 +2827,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [12786,13044]`if not isinstance(me...`
                                       NotNodeGen SourceSection: [12789,12817]`not isinstance(membe...`
                                         PythonCallBinary SourceSection: [12793,12817]`isinstance(member, E...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12793,12803]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2847,7 +2847,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Module: warnings
                                         ExpressionStatementNode SourceSection: [12859,13035]`warnings.warn(↵     ...`
                                           PythonCallTernary SourceSection: [12859,13035]`warnings.warn(↵     ...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [12859,12867]`warnings`
                                                 Frame: [2,warnings,Illegal]
@@ -2866,7 +2866,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [4,<return_val>,Illegal]
                                         AndNode SourceSection: [13051,13112]`isinstance(member, c...`
                                           PythonCallBinary SourceSection: [13051,13074]`isinstance(member, c...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [13051,13061]`isinstance`
                                               Identifier: isinstance
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2962,7 +2962,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [13295,13385]`raise AttributeError...`
                                         PythonCallUnary SourceSection: [13301,13385]`AttributeError(↵    ...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13301,13315]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2982,7 +2982,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [13394,13419]`super().__delattr__(...`
                                       PythonCallUnary SourceSection: [13394,13419]`super().__delattr__(...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [13394,13401]`super()`
                                             CallNodeGen SourceSection: None
@@ -3101,7 +3101,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [13918,13986]`if _is_dunder(name):...`
                                       YesNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [13921,13937]`_is_dunder(name)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13921,13931]`_is_dunder`
                                             Identifier: _is_dunder
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3110,7 +3110,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [13951,13977]`raise AttributeError...`
                                         PythonCallUnary SourceSection: [13957,13977]`AttributeError(name)...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13957,13971]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3141,7 +3141,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         ExceptNode SourceSection: None
                                           RaiseNodeGen SourceSection: [14070,14106]`raise AttributeError...`
                                             PythonCallUnary SourceSection: [14076,14096]`AttributeError(name)...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14076,14090]`AttributeError`
                                                 Identifier: AttributeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3375,7 +3375,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [14311,14334]`len(cls._member_name...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [14311,14314]`len`
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3396,7 +3396,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [14340,14349]`@property`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [14340,14349]`@property`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3442,7 +3442,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<return_val>,Illegal]
                                           PythonCallUnary SourceSection: [14589,14623]`MappingProxyType(cls...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [14589,14605]`MappingProxyType`
                                               Identifier: MappingProxyType
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3614,7 +3614,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetIteratorExpressionNodeGen SourceSection: [14769,14797]`reversed(cls._member...`
                                             GetIteratorNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [14769,14797]`reversed(cls._member...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14769,14777]`reversed`
                                                 Identifier: reversed
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3687,7 +3687,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,member_map,Illegal]
                                       PythonCallBinary SourceSection: [15124,15160]`cls.__dict__.get('_m...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [15124,15136]`cls.__dict__`
                                             GetFixedAttributeNodeGen SourceSection: None
@@ -3714,7 +3714,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [15204,15252]`raise AttributeError...`
                                         PythonCallUnary SourceSection: [15210,15252]`AttributeError('Cann...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [15210,15224]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3723,7 +3723,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [15261,15293]`super().__setattr__(...`
                                       PythonCallBinary SourceSection: [15261,15293]`super().__setattr__(...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [15261,15268]`super()`
                                             CallNodeGen SourceSection: None
@@ -3869,7 +3869,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           PythonObjectFactoryNodeGen SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [15905,15944]`_, first_enum = cls....`
                                       PythonCallUnary SourceSection: [15921,15944]`cls._get_mixins_(bas...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15921,15924]`cls`
                                             Frame: [0,cls,Illegal]
@@ -3904,7 +3904,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [12,classdict,Illegal]
                                       PythonCallBinary SourceSection: [15965,16003]`metacls.__prepare__(...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15965,15972]`metacls`
                                             Frame: [8,metacls,Illegal]
@@ -3918,7 +3918,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [16060,16147]`if isinstance(names,...`
                                       YesNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [16063,16085]`isinstance(names, st...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [16063,16073]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3936,7 +3936,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [16107,16130]`names.replace(',', '...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [16107,16112]`names`
                                                   Frame: [2,names,Illegal]
@@ -3949,7 +3949,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         AndNode SourceSection: [16150,16222]`isinstance(names, (t...`
                                           AndNode SourceSection: None
                                             PythonCallBinary SourceSection: [16150,16182]`isinstance(names, (t...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [16150,16160]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3969,7 +3969,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [16197,16222]`isinstance(names[0],...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [16197,16207]`isinstance`
                                               Identifier: isinstance
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4078,7 +4078,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         EmptyNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [16466,16491]`last_values.append(v...`
                                                   PythonCallUnary SourceSection: [16466,16491]`last_values.append(v...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [16466,16477]`last_values`
                                                         Frame: [14,last_values,Illegal]
@@ -4088,7 +4088,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [16508,16535]`names.append((name, ...`
                                                   PythonCallUnary SourceSection: [16508,16535]`names.append((name, ...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [16508,16513]`names`
                                                         Frame: [2,names,Illegal]
@@ -4104,7 +4104,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetIteratorExpressionNodeGen SourceSection: [16330,16355]`enumerate(original_n...`
                                               GetIteratorNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [16330,16355]`enumerate(original_n...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [16330,16339]`enumerate`
                                                   Identifier: enumerate
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4125,7 +4125,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             IfNode SourceSection: [16651,16818]`if isinstance(item, ...`
                                               YesNodeGen SourceSection: None
                                                 PythonCallBinary SourceSection: [16654,16675]`isinstance(item, str...`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [16654,16664]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4254,7 +4254,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 PythonCallUnary SourceSection: [17113,17129]`sys._getframe(2)`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17113,17116]`sys`
                                                       Identifier: sys
@@ -4288,7 +4288,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ObjectLiteralNode SourceSection: [17250,17254]`None`
                                       ExpressionStatementNode SourceSection: [17268,17303]`_make_class_unpickla...`
                                         PythonCallUnary SourceSection: [17268,17303]`_make_class_unpickla...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [17268,17291]`_make_class_unpickla...`
                                             Identifier: _make_class_unpicklable
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4336,7 +4336,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [17473,17486]`@staticmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [17473,17486]`@staticmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -4436,7 +4436,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           Identifier: Enum
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     PythonCallBinary SourceSection: [18081,18103]`issubclass(base, Enu...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [18081,18091]`issubclass`
                                                         Identifier: issubclass
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4458,7 +4458,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   YesNodeGen SourceSection: None
                                               RaiseNodeGen SourceSection: [18166,18211]`raise TypeError("Can...`
                                                 PythonCallUnary SourceSection: [18172,18211]`TypeError("Cannot ex...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [18172,18181]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4474,7 +4474,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       IfNode SourceSection: [18265,18550]`if not issubclass(ba...`
                                         NotNodeGen SourceSection: [18268,18294]`not issubclass(base,...`
                                           PythonCallBinary SourceSection: [18272,18294]`issubclass(base, Enu...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18272,18282]`issubclass`
                                               Identifier: issubclass
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4486,7 +4486,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [18308,18422]`raise TypeError("new...`
                                           PythonCallUnary SourceSection: [18314,18422]`TypeError("new enume...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18314,18323]`TypeError`
                                               Identifier: TypeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4496,7 +4496,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       IfNode SourceSection: [18550,19236]`if not issubclass(ba...`
                                         NotNodeGen SourceSection: [18553,18583]`not issubclass(bases...`
                                           PythonCallBinary SourceSection: [18557,18583]`issubclass(bases[0],...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18557,18567]`issubclass`
                                               Identifier: issubclass
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4541,7 +4541,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               IfNode SourceSection: [19006,19236]`if issubclass(base, ...`
                                                 YesNodeGen SourceSection: None
                                                   PythonCallBinary SourceSection: [19009,19031]`issubclass(base, Enu...`
-                                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                                    CallBinaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [19009,19019]`issubclass`
                                                       Identifier: issubclass
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4617,7 +4617,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [19272,19285]`@staticmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [19272,19285]`@staticmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -4677,7 +4677,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,__new__,Illegal]
                                         PythonCallBinary SourceSection: [19830,19860]`classdict.get('__new...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [19830,19839]`classdict`
                                               Frame: [0,classdict,Illegal]
@@ -4724,7 +4724,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                                             Frame: [5,target,Illegal]
                                                           PythonCallTernary SourceSection: [20232,20263]`getattr(possible, me...`
-                                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                                            CallTernaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [20232,20239]`getattr`
                                                               Identifier: getattr
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4962,7 +4962,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       YesNodeGen SourceSection: None
                                         IsExpressionNodeGen SourceSection: [21408,21426]`type(value) is cls`
                                           PythonCallUnary SourceSection: [21408,21419]`type(value)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [21408,21412]`type`
                                               Identifier: type
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5076,7 +5076,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [22016,22036]`cls._missing_(value)...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [22016,22019]`cls`
                                               Frame: [0,cls,Illegal]
@@ -5177,7 +5177,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetIteratorExpressionNodeGen SourceSection: [22128,22149]`reversed(last_values...`
                                           GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [22128,22149]`reversed(last_values...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [22128,22136]`reversed`
                                               Identifier: reversed
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5201,7 +5201,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [22301,22313]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [22301,22313]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -5251,7 +5251,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     FunctionBodyNode SourceSection: [22353,22417]`raise ValueError("%r...`
                                       RaiseNodeGen SourceSection: [22353,22417]`raise ValueError("%r...`
                                         PythonCallUnary SourceSection: [22359,22417]`ValueError("%r is no...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [22359,22369]`ValueError`
                                             Identifier: ValueError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5465,7 +5465,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,added_behavior,Illegal]
                                       PythonCallUnary SourceSection: [22699,22848]`m↵                fo...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: list
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5674,7 +5674,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,val,Illegal]
                                           PythonCallUnary SourceSection: [23265,23274]`str(self)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [23265,23268]`str`
                                               Identifier: str
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5712,7 +5712,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,<return_val>,Illegal]
                                         PythonCallBinary SourceSection: [23396,23428]`cls.__format__(val, ...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [23396,23399]`cls`
                                               Frame: [2,cls,Illegal]
@@ -5767,7 +5767,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [23469,23486]`hash(self._name_)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23469,23473]`hash`
                                             Identifier: hash
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5859,7 +5859,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [23976,23998]`@DynamicClassAttribu...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [23976,23998]`@DynamicClassAttribu...`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -5921,7 +5921,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [24094,24116]`@DynamicClassAttribu...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24094,24116]`@DynamicClassAttribu...`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -5983,7 +5983,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [24215,24227]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24215,24227]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -6060,7 +6060,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,module_globals,Illegal]
                                         PythonCallUnary SourceSection: [24698,24723]`vars(sys.modules[mod...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [24698,24702]`vars`
                                             Identifier: vars
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6089,7 +6089,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [4,source,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [24764,24776]`vars(source)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [24764,24768]`vars`
                                               Identifier: vars
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6111,7 +6111,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [6,members,Illegal]
                                         PythonCallUnary SourceSection: [25215,25309]`(name, source[name])...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: list
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6142,7 +6142,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
                                                         PythonCallUnary SourceSection: [25297,25309]`filter(name)`
-                                                          CachedNodeGen SourceSection: None
+                                                          CallUnaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [25297,25303]`filter`
                                                             ReadGeneratorFrameVariableNode SourceSection: None
                                                               Frame: [1,filter,Illegal]
@@ -6358,7 +6358,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [25658,25696]`module_globals.updat...`
                                         PythonCallUnary SourceSection: [25658,25696]`module_globals.updat...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [25658,25672]`module_globals`
                                               Frame: [5,module_globals,Illegal]
@@ -6528,7 +6528,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
       WriteNameNodeGen SourceSection: [25897,29992]`class Flag(Enum):↵  ...`
         Identifier: Flag
         PythonCallTernary SourceSection: [25897,29992]`class Flag(Enum):↵  ...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Flag SourceSection: None
@@ -6665,7 +6665,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [4,high_bit,Illegal]
                                                   PythonCallUnary SourceSection: [26432,26453]`_high_bit(last_value...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [26432,26441]`_high_bit`
                                                       Identifier: _high_bit
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6676,7 +6676,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ExceptNode SourceSection: None
                                                 RaiseNodeGen SourceSection: [26522,26586]`raise TypeError('Inv...`
                                                   PythonCallUnary SourceSection: [26528,26576]`TypeError('Invalid F...`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [26528,26537]`TypeError`
                                                       Identifier: TypeError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6695,7 +6695,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetIteratorExpressionNodeGen SourceSection: [26365,26386]`reversed(last_values...`
                                           GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [26365,26386]`reversed(last_values...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [26365,26373]`reversed`
                                               Identifier: reversed
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6730,7 +6730,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [26625,26637]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [26625,26637]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -6811,7 +6811,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,possible_member,Illegal]
                                         PythonCallUnary SourceSection: [26775,26808]`cls._create_pseudo_m...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [26775,26778]`cls`
                                               Frame: [0,cls,Illegal]
@@ -6857,7 +6857,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [26923,26935]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [26923,26935]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -6910,7 +6910,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,pseudo_member,Illegal]
                                         PythonCallBinary SourceSection: [27095,27134]`cls._value2member_ma...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [27095,27117]`cls._value2member_ma...`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -6934,7 +6934,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         BlockNode SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: [27229,27268]`_, extra_flags = _de...`
                                             PythonCallBinary SourceSection: [27246,27268]`_decompose(cls, valu...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [27246,27256]`_decompose`
                                                 Identifier: _decompose
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6973,7 +6973,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [27313,27377]`raise ValueError("%r...`
                                               PythonCallUnary SourceSection: [27319,27377]`ValueError("%r is no...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [27319,27329]`ValueError`
                                                   Identifier: ValueError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7001,7 +7001,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,pseudo_member,Illegal]
                                             PythonCallUnary SourceSection: [27461,27480]`object.__new__(cls)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [27461,27467]`object`
                                                   Identifier: object
@@ -7028,7 +7028,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,pseudo_member,Illegal]
                                             PythonCallBinary SourceSection: [27701,27756]`cls._value2member_ma...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [27701,27723]`cls._value2member_ma...`
                                                   GetFixedAttributeNodeGen SourceSection: None
@@ -7102,7 +7102,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [27830,28122]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [27833,27870]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [27837,27870]`isinstance(other, se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [27837,27847]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7127,7 +7127,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Module: warnings
                                         ExpressionStatementNode SourceSection: [27912,28088]`warnings.warn(↵     ...`
                                           PythonCallTernary SourceSection: [27912,28088]`warnings.warn(↵     ...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [27912,27920]`warnings`
                                                 Frame: [2,warnings,Illegal]
@@ -7280,7 +7280,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [28350,28400]`members, uncovered =...`
                                       PythonCallBinary SourceSection: [28371,28400]`_decompose(cls, self...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [28371,28381]`_decompose`
                                           Identifier: _decompose
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7336,11 +7336,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [28480,28535]`'|'.join([str(m._nam...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [28480,28483]`'|'`
                                               PythonCallUnary SourceSection: [28490,28533]`str(m._name_ or m._v...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: list
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7371,7 +7371,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             YieldNode SourceSection: [28490,28516]`str(m._name_ or m._v...`
                                                               flagSlot: 0
                                                               PythonCallUnary SourceSection: [28490,28516]`str(m._name_ or m._v...`
-                                                                CachedNodeGen SourceSection: None
+                                                                CallUnaryMethodNodeGen SourceSection: None
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [28490,28493]`str`
                                                                   Identifier: str
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7518,7 +7518,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [28739,28789]`members, uncovered =...`
                                       PythonCallBinary SourceSection: [28760,28789]`_decompose(cls, self...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [28760,28770]`_decompose`
                                           Identifier: _decompose
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7562,7 +7562,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __eq__
                                             PythonCallUnary SourceSection: [28801,28813]`len(members)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [28801,28804]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7634,11 +7634,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Frame: [1,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [29013,29068]`'|'.join([str(m._nam...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [29013,29016]`'|'`
                                                 PythonCallUnary SourceSection: [29023,29066]`str(m._name_ or m._v...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: list
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7669,7 +7669,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               YieldNode SourceSection: [29023,29049]`str(m._name_ or m._v...`
                                                                 flagSlot: 0
                                                                 PythonCallUnary SourceSection: [29023,29049]`str(m._name_ or m._v...`
-                                                                  CachedNodeGen SourceSection: None
+                                                                  CallUnaryMethodNodeGen SourceSection: None
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [29023,29026]`str`
                                                                     Identifier: str
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7760,7 +7760,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [29132,29150]`bool(self._value_)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [29132,29136]`bool`
                                             Identifier: bool
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7821,7 +7821,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [29189,29273]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [29192,29229]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [29196,29229]`isinstance(other, se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [29196,29206]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7851,7 +7851,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [29280,29324]`self.__class__(self....`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [29280,29284]`self`
                                               Frame: [0,self,Illegal]
@@ -7924,7 +7924,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [29364,29448]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [29367,29404]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [29371,29404]`isinstance(other, se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [29371,29381]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7954,7 +7954,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [29455,29499]`self.__class__(self....`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [29455,29459]`self`
                                               Frame: [0,self,Illegal]
@@ -8027,7 +8027,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [29539,29623]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [29542,29579]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [29546,29579]`isinstance(other, se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [29546,29556]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8057,7 +8057,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [29630,29674]`self.__class__(self....`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [29630,29634]`self`
                                               Frame: [0,self,Illegal]
@@ -8121,7 +8121,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   FunctionBodyNode SourceSection: [29710,29989]`members, uncovered =...`
                                     DestructuringAssignmentNodeGen SourceSection: [29710,29771]`members, uncovered =...`
                                       PythonCallBinary SourceSection: [29731,29771]`_decompose(self.__cl...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [29731,29741]`_decompose`
                                           Identifier: _decompose
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8168,7 +8168,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,inverted,Illegal]
                                       PythonCallUnary SourceSection: [29791,29808]`self.__class__(0)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [29791,29795]`self`
                                             Frame: [0,self,Illegal]
@@ -8249,7 +8249,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [8,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [29965,29989]`self.__class__(inver...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [29965,29969]`self`
                                               Frame: [0,self,Illegal]
@@ -8322,7 +8322,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [30065,30077]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [30065,30077]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -8373,7 +8373,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       IfNode SourceSection: [30117,30233]`if not isinstance(va...`
                                         NotNodeGen SourceSection: [30120,30146]`not isinstance(value...`
                                           PythonCallBinary SourceSection: [30124,30146]`isinstance(value, in...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [30124,30134]`isinstance`
                                               Identifier: isinstance
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8385,7 +8385,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [30160,30224]`raise ValueError("%r...`
                                           PythonCallUnary SourceSection: [30166,30224]`ValueError("%r is no...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [30166,30176]`ValueError`
                                               Identifier: ValueError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8413,7 +8413,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,new_member,Illegal]
                                         PythonCallUnary SourceSection: [30246,30279]`cls._create_pseudo_m...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [30246,30249]`cls`
                                               Frame: [0,cls,Illegal]
@@ -8438,7 +8438,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [30311,30323]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [30311,30323]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -8491,7 +8491,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,pseudo_member,Illegal]
                                         PythonCallBinary SourceSection: [30392,30431]`cls._value2member_ma...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [30392,30414]`cls._value2member_ma...`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -8524,7 +8524,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               PythonObjectFactoryNodeGen SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: [30554,30593]`_, extra_flags = _de...`
                                             PythonCallBinary SourceSection: [30571,30593]`_decompose(cls, valu...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [30571,30581]`_decompose`
                                                 Identifier: _decompose
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8569,7 +8569,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [6,bit,Illegal]
                                                     PythonCallUnary SourceSection: [30701,30723]`_high_bit(extra_flag...`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [30701,30710]`_high_bit`
                                                         Identifier: _high_bit
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8621,7 +8621,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         YesNodeGen SourceSection: None
                                                     ExpressionStatementNode SourceSection: [30931,30964]`need_to_create.appen...`
                                                       PythonCallUnary SourceSection: [30931,30964]`need_to_create.appen...`
-                                                        CachedNodeGen SourceSection: None
+                                                        CallUnaryMethodNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [30931,30945]`need_to_create`
                                                             Frame: [3,need_to_create,Illegal]
@@ -8676,7 +8676,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [2,pseudo_member,Illegal]
                                                     PythonCallBinary SourceSection: [31252,31275]`int.__new__(cls, val...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [31252,31255]`int`
                                                           Identifier: int
@@ -8706,7 +8706,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [2,pseudo_member,Illegal]
                                                     PythonCallBinary SourceSection: [31516,31571]`cls._value2member_ma...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         GetAttributeNodeGen SourceSection: [31516,31538]`cls._value2member_ma...`
                                                           GetFixedAttributeNodeGen SourceSection: None
@@ -8725,7 +8725,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetIteratorExpressionNodeGen SourceSection: [31141,31165]`reversed(need_to_cre...`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallUnary SourceSection: [31141,31165]`reversed(need_to_cre...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [31141,31149]`reversed`
                                                     Identifier: reversed
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8791,7 +8791,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [31639,31730]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [31642,31686]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [31646,31686]`isinstance(other, (s...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [31646,31656]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8825,7 +8825,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,result,Illegal]
                                       PythonCallUnary SourceSection: [31739,31799]`self.__class__(self....`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [31739,31743]`self`
                                             Frame: [0,self,Illegal]
@@ -8847,7 +8847,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             PythonCallUnary SourceSection: [31769,31790]`self.__class__(other...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [31769,31773]`self`
                                                   Frame: [0,self,Illegal]
@@ -8912,7 +8912,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [31861,31952]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [31864,31908]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [31868,31908]`isinstance(other, (s...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [31868,31878]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8947,7 +8947,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [31959,32019]`self.__class__(self....`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [31959,31963]`self`
                                               Frame: [0,self,Illegal]
@@ -8969,7 +8969,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               PythonCallUnary SourceSection: [31989,32010]`self.__class__(other...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [31989,31993]`self`
                                                     Frame: [0,self,Illegal]
@@ -9026,7 +9026,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [32059,32150]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [32062,32106]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [32066,32106]`isinstance(other, (s...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [32066,32076]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9061,7 +9061,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [32157,32217]`self.__class__(self....`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [32157,32161]`self`
                                               Frame: [0,self,Illegal]
@@ -9083,7 +9083,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               PythonCallUnary SourceSection: [32187,32208]`self.__class__(other...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [32187,32191]`self`
                                                     Frame: [0,self,Illegal]
@@ -9176,7 +9176,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,result,Illegal]
                                       PythonCallUnary SourceSection: [32330,32359]`self.__class__(~self...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [32330,32334]`self`
                                             Frame: [0,self,Illegal]
@@ -9351,7 +9351,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [32736,32774]`duplicates.append((n...`
                               PythonCallUnary SourceSection: [32736,32774]`duplicates.append((n...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [32736,32746]`duplicates`
                                     Frame: [1,duplicates,Illegal]
@@ -9395,11 +9395,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [4,alias_details,Illegal]
                           PythonCallUnary SourceSection: [32818,32906]`', '.join(↵         ...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [32818,32822]`', '`
                             PythonCallUnary SourceSection: [32846,32904]`"%s -> %s" % (alias,...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9486,7 +9486,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 PythonObjectFactoryNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [32915,33014]`raise ValueError('du...`
                           PythonCallUnary SourceSection: [32921,33014]`ValueError('duplicat...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [32921,32931]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9584,7 +9584,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,flags_to_check,Illegal]
                         PythonCallUnary SourceSection: [33513,33623]`(m, v)↵             ...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9677,7 +9677,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetIteratorExpressionNodeGen SourceSection: [33548,33585]`list(flag._value2mem...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [33548,33585]`list(flag._value2mem...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [33548,33552]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9698,7 +9698,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,flags_to_check,Illegal]
                         PythonCallUnary SourceSection: [33751,33881]`(m, v)↵             ...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9741,7 +9741,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [33857,33861]`None`
                                           PythonCallUnary SourceSection: [33865,33881]`_power_of_two(v)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [33865,33878]`_power_of_two`
                                               Identifier: _power_of_two
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9801,7 +9801,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetIteratorExpressionNodeGen SourceSection: [33786,33823]`list(flag._value2mem...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [33786,33823]`list(flag._value2mem...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [33786,33790]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9875,7 +9875,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             BlockNode SourceSection: None
                               ExpressionStatementNode SourceSection: [34043,34065]`members.append(membe...`
                                 PythonCallUnary SourceSection: [34043,34065]`members.append(membe...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [34043,34050]`members`
                                       Frame: [5,members,Illegal]
@@ -9929,7 +9929,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           YesNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [34172,34218]`members.append(flag....`
                         PythonCallUnary SourceSection: [34172,34218]`members.append(flag....`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [34172,34179]`members`
                               Frame: [5,members,Illegal]
@@ -10014,7 +10014,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
                             PythonCallUnary SourceSection: [34282,34294]`len(members)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34282,34285]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10043,7 +10043,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           YesNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [34406,34420]`members.pop(0)`
                         PythonCallUnary SourceSection: [34406,34420]`members.pop(0)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [34406,34413]`members`
                               Frame: [5,members,Illegal]
@@ -10137,7 +10137,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 IntegerLiteralNode SourceSection: [34539,34540]`2`
                                   Value: 2
                                 PythonCallUnary SourceSection: [34544,34560]`_high_bit(value)`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [34544,34553]`_high_bit`
                                     Identifier: _high_bit
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

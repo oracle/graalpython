@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                           Frame: [0,MyIter,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [14,148]`class MyIter:↵      ...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             BuiltinsLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: MyIter SourceSection: None
@@ -158,7 +158,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                   FunctionBodyNode SourceSection: [120,143]`raise StopIteration(...`
                                                     RaiseNodeGen SourceSection: [120,143]`raise StopIteration(...`
                                                       PythonCallUnary SourceSection: [126,143]`StopIteration(42)`
-                                                        CachedNodeGen SourceSection: None
+                                                        CallUnaryMethodNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [126,139]`StopIteration`
                                                           Identifier: StopIteration
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -244,7 +244,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                         ObjectLiteralNode SourceSection: [224,228]`None`
                       ExpressionStatementNode SourceSection: [233,244]`list(gen())`
                         PythonCallUnary SourceSection: [233,244]`list(gen())`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [233,237]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

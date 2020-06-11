@@ -34,7 +34,7 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
                       ReadVariableFromFrameNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [44,52]`print(b)`
                 PythonCallUnary SourceSection: [44,52]`print(b)`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [44,49]`print`
                     Identifier: print
                   ReadNameNodeGen SourceSection: [50,51]`b`

@@ -107,7 +107,7 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                                 Frame: [4,k2,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [57,65]`sum(arg)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [57,60]`sum`
                                 Identifier: sum
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

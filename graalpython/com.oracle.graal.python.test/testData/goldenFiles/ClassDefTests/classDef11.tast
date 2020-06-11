@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,named_tuple,Illegal]
                         PythonCallTernary SourceSection: [46,264]`class named_tuple(tu...`
-                          CallTernaryMethodCachedNodeGen SourceSection: None
+                          CallTernaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             BuiltinsLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: named_tuple SourceSection: None
@@ -116,7 +116,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                             Index: 0
                                         StringLiteralNode SourceSection: None
                                         PythonCallUnary SourceSection: [124,135]`len(fields)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadClassAttributeNodeGen SourceSection: [124,127]`len`
                                             GetItemNodeGen SourceSection: None
                                               ArgumentExpressionNode SourceSection: None

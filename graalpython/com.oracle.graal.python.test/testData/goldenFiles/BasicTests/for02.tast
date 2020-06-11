@@ -17,7 +17,7 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
                   Identifier: i
               ExpressionStatementNode SourceSection: [23,31]`print(i)`
                 PythonCallUnary SourceSection: [23,31]`print(i)`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [23,28]`print`
                     Identifier: print
                   ReadNameNodeGen SourceSection: [29,30]`i`
@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
             GetIteratorExpressionNodeGen SourceSection: [9,19]`range(210)`
               GetIteratorNodeGen SourceSection: None
               PythonCallUnary SourceSection: [9,19]`range(210)`
-                CachedNodeGen SourceSection: None
+                CallUnaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
                 IntegerLiteralNode SourceSection: [15,18]`210`

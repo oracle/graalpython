@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
   Documentation: None
   InnerRootNode SourceSection: [0,52]`{x:x for x in seq1 f...`
     PythonCallUnary SourceSection: [0,52]`{x:x for x in seq1 f...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     GeneratorAccessNode SourceSection: None
                     YesNodeGen SourceSection: None
                       PythonCallBinary SourceSection: [36,51]`condition(x, y)`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [36,45]`condition`
                           Identifier: condition
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

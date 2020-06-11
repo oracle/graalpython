@@ -49,7 +49,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                           Value: 2
                     ExpressionStatementNode SourceSection: [84,109]`print("Inside add():...`
                       PythonCallBinary SourceSection: [84,109]`print("Inside add():...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [84,89]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
           ReadNameNodeGen SourceSection: [111,114]`add`
             Identifier: add
       PythonCallBinary SourceSection: [117,137]`print("In main:", c)...`
-        CallBinaryMethodCachedNodeGen SourceSection: None
+        CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [117,122]`print`
           Identifier: print
         StringLiteralNode SourceSection: [123,133]`"In main:"`

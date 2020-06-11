@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
   Documentation: None
   InnerRootNode SourceSection: [0,25]`foo(x for x in range...`
     PythonCallUnary SourceSection: [0,25]`foo(x for x in range...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
       GeneratorExpressionNode SourceSection: [6,24]`for x in range(10)`
@@ -59,7 +59,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(10)`
           GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [15,24]`range(10)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
             IntegerLiteralNode SourceSection: [21,23]`10`

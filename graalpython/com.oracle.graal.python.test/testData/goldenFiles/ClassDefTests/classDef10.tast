@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
             WriteNameNodeGen SourceSection: [22,83]`class FalseRec:â†µ  de...`
               Identifier: FalseRec
               PythonCallBinary SourceSection: [22,83]`class FalseRec:â†µ  de...`
-                CallBinaryMethodCachedNodeGen SourceSection: None
+                CallBinaryMethodNodeGen SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None
                   BuiltinsLiteralNode SourceSection: None
                 FunctionDefinitionNode Name: FalseRec SourceSection: None
@@ -98,7 +98,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,<return_val>,Illegal]
                                               PythonCallUnary SourceSection: [72,83]`test(arg+1)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
                                                   Identifier: test
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

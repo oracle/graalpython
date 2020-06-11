@@ -45,7 +45,7 @@ ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    
                             IntegerLiteralNode SourceSection: [29,30]`0`
                               Value: 0
                         PythonCallUnary SourceSection: [32,47]`getMessage(len)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [32,42]`getMessage`
                             Identifier: getMessage
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

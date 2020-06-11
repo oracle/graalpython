@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
   Documentation: None
   InnerRootNode SourceSection: [0,19]`{f(x) for x in seq}`
     PythonCallUnary SourceSection: [0,19]`{f(x) for x in seq}`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -37,7 +37,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
                   YieldNode SourceSection: [1,5]`f(x)`
                     flagSlot: 0
                     PythonCallUnary SourceSection: [1,5]`f(x)`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [1,2]`f`
                         Identifier: f
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

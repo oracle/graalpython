@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():�
         WriteNameNodeGen SourceSection: [0,76]`class Test():↵    ""...`
           Identifier: Test
           PythonCallBinary SourceSection: [0,76]`class Test():↵    ""...`
-            CallBinaryMethodCachedNodeGen SourceSection: None
+            CallBinaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: Test SourceSection: None

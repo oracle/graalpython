@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                           ExceptNode SourceSection: None
                             ExpressionStatementNode SourceSection: [88,114]`print("division by z...`
                               PythonCallUnary SourceSection: [88,114]`print("division by z...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [88,93]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -77,7 +77,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [133,159]`print("result is", r...`
                             PythonCallBinary SourceSection: [133,159]`print("result is", r...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [133,138]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -87,7 +87,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [181,214]`print("executing fin...`
                           PythonCallUnary SourceSection: [181,214]`print("executing fin...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [181,186]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

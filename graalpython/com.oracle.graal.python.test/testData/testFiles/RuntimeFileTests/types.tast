@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [366,389]`FunctionType = type(...`
         Identifier: FunctionType
         PythonCallUnary SourceSection: [381,389]`type(_f)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [381,385]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [386,388]`_f`
@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [390,421]`LambdaType = type(la...`
         Identifier: LambdaType
         PythonCallUnary SourceSection: [403,421]`type(lambda: None)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [403,407]`type`
             Identifier: type
           FunctionDefinitionNode Name: <lambda> SourceSection: [408,420]`lambda: None`
@@ -92,7 +92,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [453,481]`CodeType = type(_f._...`
         Identifier: CodeType
         PythonCallUnary SourceSection: [464,481]`type(_f.__code__)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [464,468]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [469,480]`_f.__code__`
@@ -105,7 +105,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [482,520]`MappingProxyType = t...`
         Identifier: MappingProxyType
         PythonCallUnary SourceSection: [501,520]`type(type.__dict__)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [501,505]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [506,519]`type.__dict__`
@@ -118,7 +118,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [521,563]`SimpleNamespace = ty...`
         Identifier: SimpleNamespace
         PythonCallUnary SourceSection: [539,563]`type(sys.implementat...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [539,543]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [544,562]`sys.implementation`
@@ -171,7 +171,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [587,613]`GeneratorType = type...`
         Identifier: GeneratorType
         PythonCallUnary SourceSection: [603,613]`type(_g())`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [603,607]`type`
             Identifier: type
           PythonCallNodeGen SourceSection: [608,612]`_g()`
@@ -217,7 +217,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [646,670]`CoroutineType = type...`
         Identifier: CoroutineType
         PythonCallUnary SourceSection: [662,670]`type(_c)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [662,666]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [667,669]`_c`
@@ -276,7 +276,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [749,779]`AsyncGeneratorType =...`
         Identifier: AsyncGeneratorType
         PythonCallUnary SourceSection: [770,779]`type(_ag)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [770,774]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [775,778]`_ag`
@@ -284,7 +284,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [781,814]`class _C:↵    def _m...`
         Identifier: _C
         PythonCallBinary SourceSection: [781,814]`class _C:↵    def _m...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _C SourceSection: None
@@ -372,7 +372,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [814,840]`MethodType = type(_C...`
         Identifier: MethodType
         PythonCallUnary SourceSection: [827,840]`type(_C()._m)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [827,831]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [832,839]`_C()._m`
@@ -387,7 +387,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [842,873]`BuiltinFunctionType ...`
         Identifier: BuiltinFunctionType
         PythonCallUnary SourceSection: [864,873]`type(len)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [864,868]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [869,872]`len`
@@ -395,7 +395,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [874,909]`BuiltinMethodType = ...`
         Identifier: BuiltinMethodType
         PythonCallUnary SourceSection: [894,909]`type([].append)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [894,898]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [899,908]`[].append`
@@ -408,7 +408,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [945,990]`WrapperDescriptorTyp...`
         Identifier: WrapperDescriptorType
         PythonCallUnary SourceSection: [969,990]`type(object.__init__...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [969,973]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [974,989]`object.__init__`
@@ -421,7 +421,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [991,1033]`MethodWrapperType = ...`
         Identifier: MethodWrapperType
         PythonCallUnary SourceSection: [1011,1033]`type(object().__str_...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1011,1015]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [1016,1032]`object().__str__`
@@ -436,7 +436,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1034,1071]`MethodDescriptorType...`
         Identifier: MethodDescriptorType
         PythonCallUnary SourceSection: [1057,1071]`type(str.join)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1057,1061]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [1062,1070]`str.join`
@@ -449,7 +449,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1072,1131]`ClassMethodDescripto...`
         Identifier: ClassMethodDescriptorType
         PythonCallUnary SourceSection: [1100,1131]`type(dict.__dict__['...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1100,1104]`type`
             Identifier: type
           GetItemNodeGen SourceSection: [1105,1130]`dict.__dict__['fromk...`
@@ -464,7 +464,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1133,1155]`ModuleType = type(sy...`
         Identifier: ModuleType
         PythonCallUnary SourceSection: [1146,1155]`type(sys)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1146,1150]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [1151,1154]`sys`
@@ -490,7 +490,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               WriteNameNodeGen SourceSection: [1231,1255]`TracebackType = type...`
                 Identifier: TracebackType
                 PythonCallUnary SourceSection: [1247,1255]`type(tb)`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [1247,1251]`type`
                     Identifier: type
                   ReadNameNodeGen SourceSection: [1252,1254]`tb`
@@ -498,7 +498,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               WriteNameNodeGen SourceSection: [1260,1289]`FrameType = type(tb....`
                 Identifier: FrameType
                 PythonCallUnary SourceSection: [1272,1289]`type(tb.tb_frame)`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [1272,1276]`type`
                     Identifier: type
                   GetAttributeNodeGen SourceSection: [1277,1288]`tb.tb_frame`
@@ -519,7 +519,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1365,1415]`GetSetDescriptorType...`
         Identifier: GetSetDescriptorType
         PythonCallUnary SourceSection: [1388,1415]`type(FunctionType.__...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1388,1392]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [1393,1414]`FunctionType.__code_...`
@@ -532,7 +532,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1416,1469]`MemberDescriptorType...`
         Identifier: MemberDescriptorType
         PythonCallUnary SourceSection: [1439,1469]`type(FunctionType.__...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1439,1443]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [1444,1468]`FunctionType.__globa...`
@@ -616,7 +616,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,resolved_bases,Illegal]
                       PythonCallUnary SourceSection: [1757,1777]`resolve_bases(bases)...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1757,1770]`resolve_bases`
                           Identifier: resolve_bases
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -625,7 +625,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadVariableFromFrameNodeGen SourceSection: None
                     DestructuringAssignmentNodeGen SourceSection: [1782,1840]`meta, ns, kwds = pre...`
                       PythonCallTernary SourceSection: [1799,1840]`prepare_class(name, ...`
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1799,1812]`prepare_class`
                           Identifier: prepare_class
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -680,7 +680,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ObjectLiteralNode SourceSection: [1865,1869]`None`
                       ExpressionStatementNode SourceSection: [1879,1892]`exec_body(ns)`
                         PythonCallUnary SourceSection: [1879,1892]`exec_body(ns)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1879,1888]`exec_body`
                             Frame: [3,exec_body,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -771,7 +771,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,new_bases,Illegal]
                       PythonCallUnary SourceSection: [2126,2137]`list(bases)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2126,2130]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -821,7 +821,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [2217,2273]`if isinstance(base, ...`
                                 YesNodeGen SourceSection: None
                                   PythonCallBinary SourceSection: [2220,2242]`isinstance(base, typ...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2220,2230]`isinstance`
                                       Identifier: isinstance
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -836,7 +836,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [2273,2343]`if not hasattr(base,...`
                                 NotNodeGen SourceSection: [2276,2312]`not hasattr(base, "_...`
                                   PythonCallBinary SourceSection: [2280,2312]`hasattr(base, "__mro...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2280,2287]`hasattr`
                                       Identifier: hasattr
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -851,7 +851,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [4,new_base,Illegal]
                                 PythonCallUnary SourceSection: [2354,2381]`base.__mro_entries__...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [2354,2358]`base`
                                       Frame: [6,base,Illegal]
@@ -867,7 +867,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [2413,2625]`if not isinstance(ne...`
                                 NotNodeGen SourceSection: [2416,2447]`not isinstance(new_b...`
                                   PythonCallBinary SourceSection: [2420,2447]`isinstance(new_base,...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2420,2430]`isinstance`
                                       Identifier: isinstance
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -879,7 +879,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 RaiseNodeGen SourceSection: [2461,2515]`raise TypeError("__m...`
                                   PythonCallUnary SourceSection: [2467,2515]`TypeError("__mro_ent...`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2467,2476]`TypeError`
                                       Identifier: TypeError
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -931,7 +931,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __sub__
                                         PythonCallUnary SourceSection: [2603,2616]`len(new_base)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2603,2606]`len`
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -943,7 +943,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         GetIteratorExpressionNodeGen SourceSection: [2191,2207]`enumerate(bases)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [2191,2207]`enumerate(bases)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2191,2200]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -971,7 +971,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [9,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [2673,2689]`tuple(new_bases)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [2673,2678]`tuple`
                             Identifier: tuple
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1049,7 +1049,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,kwds,Illegal]
                         PythonCallUnary SourceSection: [3190,3200]`dict(kwds)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3190,3194]`dict`
                             Identifier: dict
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1071,7 +1071,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,meta,Illegal]
                         PythonCallUnary SourceSection: [3279,3300]`kwds.pop('metaclass'...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [3279,3283]`kwds`
                               Frame: [2,kwds,Illegal]
@@ -1087,7 +1087,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,meta,Illegal]
                           PythonCallUnary SourceSection: [3348,3362]`type(bases[0])`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3348,3352]`type`
                               Identifier: type
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1107,7 +1107,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     IfNode SourceSection: [3405,3618]`if isinstance(meta, ...`
                       YesNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [3408,3430]`isinstance(meta, typ...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3408,3418]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1122,7 +1122,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,meta,Illegal]
                         PythonCallBinary SourceSection: [3585,3613]`_calculate_meta(meta...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3585,3600]`_calculate_meta`
                             Identifier: _calculate_meta
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1136,7 +1136,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     IfNode SourceSection: [3618,3732]`if hasattr(meta, '__...`
                       YesNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [3621,3649]`hasattr(meta, '__pre...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3621,3628]`hasattr`
                             Identifier: hasattr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1253,7 +1253,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [3,base_meta,Illegal]
                                 PythonCallUnary SourceSection: [3898,3908]`type(base)`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3898,3902]`type`
                                     Identifier: type
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1263,7 +1263,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [3917,3980]`if issubclass(winner...`
                                 YesNodeGen SourceSection: None
                                   PythonCallBinary SourceSection: [3920,3949]`issubclass(winner, b...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3920,3930]`issubclass`
                                       Identifier: issubclass
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1278,7 +1278,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [3980,4090]`if issubclass(base_m...`
                                 YesNodeGen SourceSection: None
                                   PythonCallBinary SourceSection: [3983,4012]`issubclass(base_meta...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3983,3993]`issubclass`
                                       Identifier: issubclass
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1300,7 +1300,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 BlockNode SourceSection: None
                               RaiseNodeGen SourceSection: [4090,4310]`raise TypeError("met...`
                                 PythonCallUnary SourceSection: [4096,4310]`TypeError("metaclass...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [4096,4105]`TypeError`
                                     Identifier: TypeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1326,7 +1326,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [4330,6524]`class DynamicClassAt...`
         Identifier: DynamicClassAttribute
         PythonCallBinary SourceSection: [4330,6524]`class DynamicClassAt...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: DynamicClassAttribute SourceSection: None
@@ -1493,12 +1493,12 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [5264,5314]`bool(getattr(fget, '...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5264,5268]`bool`
                                           Identifier: bool
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         PythonCallTernary SourceSection: [5269,5313]`getattr(fget, '__isa...`
-                                          CallTernaryMethodCachedNodeGen SourceSection: None
+                                          CallTernaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5269,5276]`getattr`
                                             Identifier: getattr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1609,7 +1609,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ObjectLiteralNode SourceSection: [5526,5530]`None`
                                         RaiseNodeGen SourceSection: [5544,5588]`raise AttributeError...`
                                           PythonCallUnary SourceSection: [5550,5588]`AttributeError("unre...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5550,5564]`AttributeError`
                                               Identifier: AttributeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1622,7 +1622,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [5604,5623]`self.fget(instance)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5604,5608]`self`
                                               Frame: [0,self,Illegal]
@@ -1697,7 +1697,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ObjectLiteralNode SourceSection: [5689,5693]`None`
                                       RaiseNodeGen SourceSection: [5707,5750]`raise AttributeError...`
                                         PythonCallUnary SourceSection: [5713,5750]`AttributeError("can'...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5713,5727]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1706,7 +1706,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [5759,5785]`self.fset(instance, ...`
                                       PythonCallBinary SourceSection: [5759,5785]`self.fset(instance, ...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5759,5763]`self`
                                             Frame: [0,self,Illegal]
@@ -1777,7 +1777,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ObjectLiteralNode SourceSection: [5847,5851]`None`
                                       RaiseNodeGen SourceSection: [5865,5911]`raise AttributeError...`
                                         PythonCallUnary SourceSection: [5871,5911]`AttributeError("can'...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5871,5885]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1786,7 +1786,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [5920,5939]`self.fdel(instance)`
                                       PythonCallUnary SourceSection: [5920,5939]`self.fdel(instance)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5920,5924]`self`
                                             Frame: [0,self,Illegal]
@@ -1870,7 +1870,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       PythonCallQuaternary SourceSection: [6046,6106]`type(self)(fget, sel...`
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [6046,6056]`type(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6046,6050]`type`
                                             Identifier: type
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1983,7 +1983,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       PythonCallQuaternary SourceSection: [6225,6277]`type(self)(self.fget...`
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [6225,6235]`type(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6225,6229]`type`
                                             Identifier: type
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2091,7 +2091,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       PythonCallQuaternary SourceSection: [6397,6449]`type(self)(self.fget...`
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [6397,6407]`type(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6397,6401]`type`
                                             Identifier: type
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2162,7 +2162,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [6524,7624]`class _GeneratorWrap...`
         Identifier: _GeneratorWrapper
         PythonCallBinary SourceSection: [6524,7624]`class _GeneratorWrap...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _GeneratorWrapper SourceSection: None
@@ -2271,7 +2271,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallTernary SourceSection: [6718,6748]`getattr(gen, '__name...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6718,6725]`getattr`
                                           Identifier: getattr
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2286,7 +2286,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallTernary SourceSection: [6777,6811]`getattr(gen, '__qual...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6777,6784]`getattr`
                                           Identifier: getattr
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2347,7 +2347,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [6852,6876]`self.__wrapped.send(...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [6852,6866]`self.__wrapped`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -2500,7 +2500,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [7019,7028]`@property`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7019,7028]`@property`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2567,7 +2567,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [7094,7103]`@property`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7094,7103]`@property`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2634,7 +2634,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [7171,7180]`@property`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7171,7180]`@property`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2701,7 +2701,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [7252,7261]`@property`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7252,7261]`@property`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2859,7 +2859,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [7474,7494]`next(self.__wrapped)...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7474,7478]`next`
                                             Identifier: next
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3004,7 +3004,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     IfNode SourceSection: [7711,7803]`if not callable(func...`
                       NotNodeGen SourceSection: [7714,7732]`not callable(func)`
                         PythonCallUnary SourceSection: [7718,7732]`callable(func)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7718,7726]`callable`
                             Identifier: callable
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3015,7 +3015,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             ReadFromCellNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [7742,7797]`raise TypeError('typ...`
                         PythonCallUnary SourceSection: [7748,7797]`TypeError('types.cor...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7748,7757]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3046,7 +3046,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               PythonCallTernary SourceSection: [7850,7881]`getattr(func, '__cod...`
-                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7850,7857]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3296,9 +3296,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,wrapped,Illegal]
                       PythonCallUnary SourceSection: [9033,9055]`@functools.wraps(fun...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [9033,9055]`@functools.wraps(fun...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: None
                               Frame: [3,functools,Illegal]
@@ -3429,7 +3429,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       YesNodeGen SourceSection: None
                                         AndNode SourceSection: [9365,9474]`isinstance(coro, _co...`
                                           PythonCallBinary SourceSection: [9365,9409]`isinstance(coro, _co...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9365,9375]`isinstance`
                                               Identifier: isinstance
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3448,7 +3448,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 ReadFromCellNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [9426,9474]`not isinstance(coro,...`
                                             PythonCallBinary SourceSection: [9430,9474]`isinstance(coro, _co...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9430,9440]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3472,7 +3472,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [5,<return_val>,Illegal]
                                           PythonCallUnary SourceSection: [9684,9707]`_GeneratorWrapper(co...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9684,9701]`_GeneratorWrapper`
                                               Identifier: _GeneratorWrapper
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3509,7 +3509,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           WriteNameNodeGen SourceSection: [9869,9917]`__all__ = [n for n i...`
             Identifier: __all__
             PythonCallUnary SourceSection: [9880,9916]`n for n in globals()...`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               ReadGlobalOrBuiltinNodeGen SourceSection: None
                 Identifier: list
                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

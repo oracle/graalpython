@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
         WriteNameNodeGen SourceSection: [0,73]`class A:↵    @classm...`
           Identifier: A
           PythonCallBinary SourceSection: [0,73]`class A:↵    @classm...`
-            CallBinaryMethodCachedNodeGen SourceSection: None
+            CallBinaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: A SourceSection: None
@@ -53,7 +53,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallUnary SourceSection: [13,25]`@classmethod`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [13,25]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None

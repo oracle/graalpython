@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [44,52]`print(a)`
                               PythonCallUnary SourceSection: [44,52]`print(a)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [44,49]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

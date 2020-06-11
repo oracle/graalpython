@@ -39,7 +39,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
       WriteNameNodeGen SourceSection: [2008,2031]`FunctionType = type(...`
         Identifier: FunctionType
         PythonCallUnary SourceSection: [2023,2031]`type(_f)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2023,2027]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [2028,2030]`_f`
@@ -47,7 +47,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
       WriteNameNodeGen SourceSection: [2032,2072]`descriptor = type(Fu...`
         Identifier: descriptor
         PythonCallUnary SourceSection: [2045,2072]`type(FunctionType.__...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2045,2049]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [2050,2071]`FunctionType.__code_...`
@@ -105,7 +105,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                         Frame: [2,named_tuple,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallTernary SourceSection: [2121,2611]`class named_tuple(tu...`
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           BuiltinsLiteralNode SourceSection: None
                         FunctionDefinitionNode Name: named_tuple SourceSection: None
@@ -165,7 +165,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           Index: 0
                                       StringLiteralNode SourceSection: None
                                       PythonCallUnary SourceSection: [2199,2210]`len(fields)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadClassAttributeNodeGen SourceSection: [2199,2202]`len`
                                           GetItemNodeGen SourceSection: None
                                             ArgumentExpressionNode SourceSection: None
@@ -315,7 +315,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                         BlockNode SourceSection: None
                                                           ExpressionStatementNode SourceSection: [2401,2413]`sb.append(f)`
                                                             PythonCallUnary SourceSection: [2401,2413]`sb.append(f)`
-                                                              CachedNodeGen SourceSection: None
+                                                              CallUnaryMethodNodeGen SourceSection: None
                                                               GetCallAttributeNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [2401,2403]`sb`
                                                                   Frame: [1,sb,Illegal]
@@ -325,7 +325,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                           ExpressionStatementNode SourceSection: [2430,2444]`sb.append("=")`
                                                             PythonCallUnary SourceSection: [2430,2444]`sb.append("=")`
-                                                              CachedNodeGen SourceSection: None
+                                                              CallUnaryMethodNodeGen SourceSection: None
                                                               GetCallAttributeNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [2430,2432]`sb`
                                                                   Frame: [1,sb,Illegal]
@@ -333,18 +333,18 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                               StringLiteralNode SourceSection: [2440,2443]`"="`
                                                           ExpressionStatementNode SourceSection: [2461,2494]`sb.append(repr(getat...`
                                                             PythonCallUnary SourceSection: [2461,2494]`sb.append(repr(getat...`
-                                                              CachedNodeGen SourceSection: None
+                                                              CallUnaryMethodNodeGen SourceSection: None
                                                               GetCallAttributeNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [2461,2463]`sb`
                                                                   Frame: [1,sb,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                               PythonCallUnary SourceSection: [2471,2493]`repr(getattr(self, f...`
-                                                                CachedNodeGen SourceSection: None
+                                                                CallUnaryMethodNodeGen SourceSection: None
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2471,2475]`repr`
                                                                   Identifier: repr
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                 PythonCallBinary SourceSection: [2476,2492]`getattr(self, f)`
-                                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                                  CallBinaryMethodNodeGen SourceSection: None
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2476,2483]`getattr`
                                                                     Identifier: getattr
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -356,7 +356,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                           ExpressionStatementNode SourceSection: [2511,2526]`sb.append(", ")`
                                                             PythonCallUnary SourceSection: [2511,2526]`sb.append(", ")`
-                                                              CachedNodeGen SourceSection: None
+                                                              CallUnaryMethodNodeGen SourceSection: None
                                                               GetCallAttributeNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [2511,2513]`sb`
                                                                   Frame: [1,sb,Illegal]
@@ -379,7 +379,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [2560,2574]`sb.append(")")`
                                                     PythonCallUnary SourceSection: [2560,2574]`sb.append(")")`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [2560,2562]`sb`
                                                           Frame: [1,sb,Illegal]
@@ -391,7 +391,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [6,<return_val>,Illegal]
                                                       PythonCallUnary SourceSection: [2594,2605]`"".join(sb)`
-                                                        CachedNodeGen SourceSection: None
+                                                        CallUnaryMethodNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           StringLiteralNode SourceSection: [2594,2596]`""`
                                                         ReadLocalVariableNode SourceSection: [2602,2604]`sb`
@@ -567,7 +567,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [2825,2912]`setattr(named_tuple,...`
                                             PythonCallTernary SourceSection: [2825,2912]`setattr(named_tuple,...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [2825,2832]`setattr`
                                                 Identifier: setattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -584,7 +584,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
                                                     PythonCallUnary SourceSection: [2868,2880]`make_func(i)`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [2868,2877]`make_func`
                                                         Frame: [0,make_func,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -610,7 +610,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                       GetIteratorExpressionNodeGen SourceSection: [2669,2686]`enumerate(fields)`
                                         GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [2669,2686]`enumerate(fields)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2669,2678]`enumerate`
                                             Identifier: enumerate
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -649,7 +649,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
           WriteNameNodeGen SourceSection: [2974,3601]`class SimpleNamespac...`
             Identifier: SimpleNamespace
             PythonCallTernary SourceSection: [2974,3601]`class SimpleNamespac...`
-              CallTernaryMethodCachedNodeGen SourceSection: None
+              CallTernaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: SimpleNamespace SourceSection: None
@@ -730,7 +730,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                       FunctionBodyNode SourceSection: [3047,3089]`object.__setattr__(s...`
                                         ExpressionStatementNode SourceSection: [3047,3089]`object.__setattr__(s...`
                                           PythonCallTernary SourceSection: [3047,3089]`object.__setattr__(s...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3047,3053]`object`
                                                 Identifier: object
@@ -790,10 +790,10 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                       FunctionBodyNode SourceSection: [3132,3189]`object.__getattribut...`
                                         ExpressionStatementNode SourceSection: [3132,3189]`object.__getattribut...`
                                           PythonCallUnary SourceSection: [3132,3189]`object.__getattribut...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallBinary SourceSection: [3132,3171]`object.__getattribut...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3132,3138]`object`
                                                     Identifier: object
@@ -858,7 +858,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               Frame: [3,<return_val>,Illegal]
                                             GetItemNodeGen SourceSection: [3239,3284]`object.__getattribut...`
                                               PythonCallBinary SourceSection: [3239,3278]`object.__getattribut...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3239,3245]`object`
                                                     Identifier: object
@@ -925,7 +925,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                       FunctionBodyNode SourceSection: [3334,3387]`object.__getattribut...`
                                         SetItemNodeGen SourceSection: [3334,3387]`object.__getattribut...`
                                           PythonCallBinary SourceSection: [3334,3373]`object.__getattribut...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3334,3340]`object`
                                                 Identifier: object
@@ -989,7 +989,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,ns,Illegal]
                                           PythonCallBinary SourceSection: [3442,3481]`object.__getattribut...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3442,3448]`object`
                                                 Identifier: object
@@ -1027,7 +1027,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
                                                 PythonCallUnary SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [3525,3527]`sb`
                                                       Frame: [1,sb,Illegal]
@@ -1063,7 +1063,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [3569,3584]`"namespace(%s)"`
                                               PythonCallUnary SourceSection: [3587,3600]`", ".join(sb)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [3587,3591]`", "`
                                                 ReadLocalVariableNode SourceSection: [3597,3599]`sb`

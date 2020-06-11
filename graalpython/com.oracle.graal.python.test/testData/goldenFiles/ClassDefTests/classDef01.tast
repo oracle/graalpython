@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'classDef01'> SourceSection: [0,16]`class foo():pas
         WriteNameNodeGen SourceSection: [0,16]`class foo():pass`
           Identifier: foo
           PythonCallBinary SourceSection: [0,16]`class foo():pass`
-            CallBinaryMethodCachedNodeGen SourceSection: None
+            CallBinaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: foo SourceSection: None

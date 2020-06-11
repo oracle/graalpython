@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                         GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [58,85]`_is_unpacked_egg(pat...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [58,74]`_is_unpacked_egg`
                               Identifier: _is_unpacked_egg
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 KeywordArgumentsNodeGen SourceSection: None
                                   KeywordLiteralNode SourceSection: None
                                     PythonCallBinary SourceSection: [161,251]`PathMetadata(↵      ...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [161,173]`PathMetadata`
                                         Identifier: PathMetadata
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -77,7 +77,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       PythonCallBinary SourceSection: [202,237]`os.path.join(path_it...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [202,209]`os.path`
                                             GetFixedAttributeNodeGen SourceSection: None
@@ -109,7 +109,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [3,entries,Illegal]
                         PythonCallUnary SourceSection: [292,315]`safe_listdir(path_it...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [292,304]`safe_listdir`
                             Identifier: safe_listdir
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -149,7 +149,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
                                       PythonCallTernary SourceSection: [388,424]`dist_factory(path_it...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [388,400]`dist_factory`
                                           Identifier: dist_factory
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -202,7 +202,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [5,path_item_entries,Illegal]
                         PythonCallUnary SourceSection: [456,488]`_by_version_descendi...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [456,478]`_by_version_descendi...`
                             Identifier: _by_version_descending
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -217,7 +217,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [6,fullpath,Illegal]
                               PythonCallBinary SourceSection: [544,574]`os.path.join(path_it...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNodeGen SourceSection: [544,551]`os.path`
                                     GetFixedAttributeNodeGen SourceSection: None
@@ -240,7 +240,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [7,factory,Illegal]
                               PythonCallTernary SourceSection: [593,629]`dist_factory(path_it...`
-                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [593,605]`dist_factory`
                                   Identifier: dist_factory
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -273,7 +273,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 GetIteratorExpressionNodeGen SourceSection: [650,667]`factory(fullpath)`
                                   GetIteratorNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [650,667]`factory(fullpath)`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: [650,657]`factory`
                                       Frame: [7,factory,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None

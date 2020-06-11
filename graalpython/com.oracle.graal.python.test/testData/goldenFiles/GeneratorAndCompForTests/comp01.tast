@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
         WriteNameNodeGen SourceSection: [0,94]`resutl = {i: tuple(j...`
           Identifier: resutl
           PythonCallUnary SourceSection: [10,93]`i: tuple(j for j in ...`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: dict
               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadFromCellNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [13,42]`tuple(j for j in t i...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
                                   Identifier: tuple
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

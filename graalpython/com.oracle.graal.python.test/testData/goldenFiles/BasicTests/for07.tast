@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                     BlockNode SourceSection: None
                   ExpressionStatementNode SourceSection: [60,68]`print(x)`
                     PythonCallUnary SourceSection: [60,68]`print(x)`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [60,65]`print`
                         Identifier: print
                       ReadNameNodeGen SourceSection: [66,67]`x`
@@ -43,7 +43,7 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
             GetIteratorExpressionNodeGen SourceSection: [9,18]`range(10)`
               GetIteratorNodeGen SourceSection: None
               PythonCallUnary SourceSection: [9,18]`range(10)`
-                CachedNodeGen SourceSection: None
+                CallUnaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
                 IntegerLiteralNode SourceSection: [15,17]`10`

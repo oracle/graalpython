@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
   Documentation: None
   InnerRootNode SourceSection: [0,35]`{f(x) for x in seq i...`
     PythonCallUnary SourceSection: [0,35]`{f(x) for x in seq i...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -37,7 +37,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
                     PythonCallUnary SourceSection: [22,34]`condition(x)`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [22,31]`condition`
                         Identifier: condition
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -48,7 +48,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                     YieldNode SourceSection: [1,5]`f(x)`
                       flagSlot: 0
                       PythonCallUnary SourceSection: [1,5]`f(x)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1,2]`f`
                           Identifier: f
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

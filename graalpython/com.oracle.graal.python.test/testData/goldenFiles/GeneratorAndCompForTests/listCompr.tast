@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'listCompr'> SourceSection: [0,21]`[i for i in rang
   Documentation: None
   InnerRootNode SourceSection: [0,21]`[i for i in range(3)...`
     PythonCallUnary SourceSection: [0,21]`[i for i in range(3)...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'listCompr'> SourceSection: [0,21]`[i for i in rang
         GetIteratorExpressionNodeGen SourceSection: [12,20]`range(3)`
           GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [12,20]`range(3)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [12,17]`range`
               Identifier: range
             IntegerLiteralNode SourceSection: [18,19]`3`

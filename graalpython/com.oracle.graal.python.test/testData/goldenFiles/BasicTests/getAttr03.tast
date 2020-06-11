@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
           PythonCallUnary SourceSection: [0,10]`a().b.c(x)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNodeGen SourceSection: [0,5]`a().b`
                 GetFixedAttributeNodeGen SourceSection: None

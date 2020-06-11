@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
       GetIteratorExpressionNodeGen SourceSection: [12,21]`range(10)`
         GetIteratorNodeGen SourceSection: None
         PythonCallUnary SourceSection: [12,21]`range(10)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [12,17]`range`
             Identifier: range
           IntegerLiteralNode SourceSection: [18,20]`10`

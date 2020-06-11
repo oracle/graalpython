@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             IfNode SourceSection: [55,155]`if not any(issubclas...`
                               NotNodeGen SourceSection: [58,109]`not any(issubclass(b...`
                                 PythonCallUnary SourceSection: [62,109]`any(issubclass(b, ba...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [62,65]`any`
                                     Identifier: any
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -94,7 +94,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                               YieldNode SourceSection: [66,85]`issubclass(b, base)`
                                                 flagSlot: 0
                                                 PythonCallBinary SourceSection: [66,85]`issubclass(b, base)`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [66,76]`issubclass`
                                                     Identifier: issubclass
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -137,7 +137,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     PythonObjectFactoryNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [123,150]`abstract_bases.appen...`
                                 PythonCallUnary SourceSection: [123,150]`abstract_bases.appen...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [123,137]`abstract_bases`
                                       Identifier: abstract_bases
@@ -161,7 +161,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,other,Illegal]
                         PythonCallUnary SourceSection: [164,202]`mro(base, abcs=abcs)...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

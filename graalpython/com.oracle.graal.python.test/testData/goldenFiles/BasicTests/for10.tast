@@ -29,7 +29,7 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                   GetIteratorExpressionNodeGen SourceSection: [37,49]`range(2,num)`
                     GetIteratorNodeGen SourceSection: None
                     PythonCallBinary SourceSection: [37,49]`range(2,num)`
-                      CallBinaryMethodCachedNodeGen SourceSection: None
+                      CallBinaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [37,42]`range`
                         Identifier: range
                       IntegerLiteralNode SourceSection: [43,44]`2`
@@ -41,7 +41,7 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
             GetIteratorExpressionNodeGen SourceSection: [11,23]`range(10,20)`
               GetIteratorNodeGen SourceSection: None
               PythonCallBinary SourceSection: [11,23]`range(10,20)`
-                CallBinaryMethodCachedNodeGen SourceSection: None
+                CallBinaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [11,16]`range`
                   Identifier: range
                 IntegerLiteralNode SourceSection: [17,19]`10`

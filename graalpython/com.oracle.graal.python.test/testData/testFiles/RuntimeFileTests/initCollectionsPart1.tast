@@ -114,7 +114,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               Identifier: ImportError
           ExpressionStatementNode SourceSection: [1394,1442]`_collections_abc.Mut...`
             PythonCallUnary SourceSection: [1394,1442]`_collections_abc.Mut...`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 GetAttributeNodeGen SourceSection: [1394,1426]`_collections_abc.Mut...`
                   GetFixedAttributeNodeGen SourceSection: None
@@ -198,7 +198,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,obj,Illegal]
                           PythonCallBinary SourceSection: [1800,1831]`getattr(_collections...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [1800,1807]`getattr`
                               Identifier: getattr
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -256,7 +256,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       BlockNode SourceSection: None
                     RaiseNodeGen SourceSection: [2168,2238]`raise AttributeError...`
                       PythonCallUnary SourceSection: [2174,2238]`AttributeError(f'mod...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2174,2188]`AttributeError`
                           Identifier: AttributeError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -268,7 +268,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
       WriteNameNodeGen SourceSection: [2419,2547]`class _OrderedDictKe...`
         Identifier: _OrderedDictKeysView
         PythonCallTernary SourceSection: [2419,2547]`class _OrderedDictKe...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictKeysView SourceSection: None
@@ -343,7 +343,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       PythonCallUnary SourceSection: [2522,2545]`reversed(self._mappi...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2522,2530]`reversed`
                                           Identifier: reversed
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -387,7 +387,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
       WriteNameNodeGen SourceSection: [2547,2722]`class _OrderedDictIt...`
         Identifier: _OrderedDictItemsView
         PythonCallTernary SourceSection: [2547,2722]`class _OrderedDictIt...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictItemsView SourceSection: None
@@ -484,7 +484,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       GetIteratorExpressionNodeGen SourceSection: [2652,2675]`reversed(self._mappi...`
                                         GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [2652,2675]`reversed(self._mappi...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2652,2660]`reversed`
                                             Identifier: reversed
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -533,7 +533,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
       WriteNameNodeGen SourceSection: [2722,2892]`class _OrderedDictVa...`
         Identifier: _OrderedDictValuesView
         PythonCallTernary SourceSection: [2722,2892]`class _OrderedDictVa...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictValuesView SourceSection: None
@@ -625,7 +625,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       GetIteratorExpressionNodeGen SourceSection: [2829,2852]`reversed(self._mappi...`
                                         GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [2829,2852]`reversed(self._mappi...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2829,2837]`reversed`
                                             Identifier: reversed
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -674,7 +674,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
       WriteNameNodeGen SourceSection: [2892,2967]`class _Link(object):...`
         Identifier: _Link
         PythonCallTernary SourceSection: [2892,2967]`class _Link(object):...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _Link SourceSection: None
@@ -735,7 +735,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
       WriteNameNodeGen SourceSection: [2967,10820]`class OrderedDict(di...`
         Identifier: OrderedDict
         PythonCallTernary SourceSection: [2967,10820]`class OrderedDict(di...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: OrderedDict SourceSection: None
@@ -826,7 +826,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [4058,4171]`raise TypeError("des...`
                                         PythonCallUnary SourceSection: [4064,4171]`TypeError("descripto...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4064,4073]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -865,7 +865,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
                                           PythonCallUnary SourceSection: [4210,4219]`len(args)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4210,4213]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -876,7 +876,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Value: 1
                                       RaiseNodeGen SourceSection: [4237,4304]`raise TypeError('exp...`
                                         PythonCallUnary SourceSection: [4243,4304]`TypeError('expected ...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4243,4252]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -885,7 +885,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Op: __mod__
                                             StringLiteralNode SourceSection: [4253,4291]`'expected at most 1 ...`
                                             PythonCallUnary SourceSection: [4294,4303]`len(args)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4294,4297]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -923,7 +923,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [7,<>temp7,Illegal]
                                                 PythonCallUnary SourceSection: [4444,4467]`_proxy(self.__hardro...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [4444,4450]`_proxy`
                                                     Identifier: _proxy
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1240,7 +1240,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [7,root,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [5139,5150]`proxy(link)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5139,5144]`proxy`
                                               Frame: [4,proxy,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1250,7 +1250,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [5159,5189]`dict_setitem(self, k...`
                                       PythonCallTernary SourceSection: [5159,5189]`dict_setitem(self, k...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [5159,5171]`dict_setitem`
                                           Frame: [3,dict_setitem,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1332,7 +1332,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   FunctionBodyNode SourceSection: [5465,5703]`dict_delitem(self, k...`
                                     ExpressionStatementNode SourceSection: [5465,5488]`dict_delitem(self, k...`
                                       PythonCallBinary SourceSection: [5465,5488]`dict_delitem(self, k...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [5465,5477]`dict_delitem`
                                           Frame: [2,dict_delitem,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1347,7 +1347,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,link,Illegal]
                                       PythonCallUnary SourceSection: [5504,5523]`self.__map.pop(key)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [5504,5514]`self.__map`
                                             GetFixedAttributeNodeGen SourceSection: None
@@ -1716,7 +1716,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [6398,6414]`dict.clear(self)`
                                       PythonCallUnary SourceSection: [6398,6414]`dict.clear(self)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6398,6402]`dict`
                                             Identifier: dict
@@ -1778,7 +1778,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [6647,6684]`raise KeyError('dict...`
                                         PythonCallUnary SourceSection: [6653,6684]`KeyError('dictionary...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6653,6661]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1913,7 +1913,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [7,value,Illegal]
                                       PythonCallBinary SourceSection: [7072,7091]`dict.pop(self, key)`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7072,7076]`dict`
                                             Identifier: dict
@@ -2224,7 +2224,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __add__
                                         PythonCallUnary SourceSection: [7937,7946]`len(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7937,7940]`len`
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2238,7 +2238,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,size,Illegal]
                                       PythonCallUnary SourceSection: [8021,8042]`sizeof(self.__dict__...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [8021,8027]`sizeof`
                                           Frame: [1,sizeof,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -2262,7 +2262,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __mul__
                                           PythonCallUnary SourceSection: [8092,8110]`sizeof(self.__map)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [8092,8098]`sizeof`
                                               Frame: [1,sizeof,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2288,7 +2288,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __mul__
                                           PythonCallUnary SourceSection: [8175,8198]`sizeof(self.__hardro...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [8175,8181]`sizeof`
                                               Frame: [1,sizeof,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2315,7 +2315,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __mul__
                                           PythonCallUnary SourceSection: [8238,8257]`sizeof(self.__root)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [8238,8244]`sizeof`
                                               Frame: [1,sizeof,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2422,7 +2422,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [8475,8501]`_OrderedDictKeysView...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8475,8495]`_OrderedDictKeysView...`
                                             Identifier: _OrderedDictKeysView
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2473,7 +2473,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [8610,8637]`_OrderedDictItemsVie...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8610,8631]`_OrderedDictItemsVie...`
                                             Identifier: _OrderedDictItemsView
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2524,7 +2524,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [8741,8769]`_OrderedDictValuesVi...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8741,8763]`_OrderedDictValuesVi...`
                                             Identifier: _OrderedDictValuesView
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2689,7 +2689,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [9240,9259]`raise KeyError(key)`
                                         PythonCallUnary SourceSection: [9246,9259]`KeyError(key)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9246,9254]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2812,7 +2812,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [9606,9624]`@_recursive_repr()`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [9606,9624]`@_recursive_repr()`
                             CallNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: None
@@ -2908,7 +2908,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [9815,9833]`list(self.items())`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [9815,9819]`list`
                                                   Identifier: list
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2965,7 +2965,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         CallNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [9930,9940]`vars(self)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9930,9934]`vars`
                                               Identifier: vars
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2982,7 +2982,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [2,k,Illegal]
                                           ExpressionStatementNode SourceSection: [9998,10020]`inst_dict.pop(k, Non...`
                                             PythonCallBinary SourceSection: [9998,10020]`inst_dict.pop(k, Non...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [9998,10007]`inst_dict`
                                                   Frame: [1,inst_dict,Illegal]
@@ -2994,7 +2994,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         GetIteratorExpressionNodeGen SourceSection: [9965,9984]`vars(OrderedDict())`
                                           GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [9965,9984]`vars(OrderedDict())`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9965,9969]`vars`
                                               Identifier: vars
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3028,7 +3028,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             YesNodeGen SourceSection: None
                                           ObjectLiteralNode SourceSection: [10075,10079]`None`
                                           PythonCallUnary SourceSection: [10081,10099]`iter(self.items())`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10081,10085]`iter`
                                               Identifier: iter
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3083,7 +3083,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [10180,10200]`self.__class__(self)...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [10180,10184]`self`
                                               Frame: [0,self,Illegal]
@@ -3100,7 +3100,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [10206,10218]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10206,10218]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3246,7 +3246,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     IfNode SourceSection: [10668,10786]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [10671,10701]`isinstance(other, Or...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10671,10681]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3263,7 +3263,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [3,<return_val>,Illegal]
                                           AndNode SourceSection: [10722,10777]`dict.__eq__(self, ot...`
                                             PythonCallBinary SourceSection: [10722,10746]`dict.__eq__(self, ot...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10722,10726]`dict`
                                                   Identifier: dict
@@ -3275,12 +3275,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [10751,10777]`all(map(_eq, self, o...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [10751,10754]`all`
                                                 Identifier: all
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               PythonCallTernary SourceSection: [10755,10776]`map(_eq, self, other...`
-                                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                                CallTernaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10755,10758]`map`
                                                   Identifier: map
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3301,7 +3301,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallBinary SourceSection: [10793,10817]`dict.__eq__(self, ot...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10793,10797]`dict`
                                               Identifier: dict
@@ -3424,7 +3424,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                     IfNode SourceSection: [12231,12328]`if isinstance(field_...`
                       YesNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [12234,12262]`isinstance(field_nam...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12234,12244]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3445,7 +3445,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           CallNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             PythonCallBinary SourceSection: [12286,12315]`field_names.replace(...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [12286,12297]`field_names`
                                   ReadLocalVariableNode SourceSection: None
@@ -3461,12 +3461,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [1,field_names,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallUnary SourceSection: [12342,12369]`list(map(str, field_...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [12342,12346]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [12347,12368]`map(str, field_names...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12347,12350]`map`
                             Identifier: map
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3483,13 +3483,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,typename,Illegal]
                       PythonCallUnary SourceSection: [12385,12411]`_sys.intern(str(type...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12385,12389]`_sys`
                             Identifier: _sys
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [12397,12410]`str(typename)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12397,12400]`str`
                             Identifier: str
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3552,7 +3552,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Frame: [8,name,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [12559,12575]`_iskeyword(name)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [12559,12569]`_iskeyword`
                                               Identifier: _iskeyword
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3561,7 +3561,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [12595,12615]`name.startswith('_')...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12595,12599]`name`
                                               Frame: [8,name,Illegal]
@@ -3592,7 +3592,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [12711,12725]`seen.add(name)`
                                   PythonCallUnary SourceSection: [12711,12725]`seen.add(name)`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [12711,12715]`seen`
                                         Frame: [6,seen,Illegal]
@@ -3603,7 +3603,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             GetIteratorExpressionNodeGen SourceSection: [12476,12498]`enumerate(field_name...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [12476,12498]`enumerate(field_name...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12476,12485]`enumerate`
                                   Identifier: enumerate
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3627,7 +3627,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               NotNodeGen SourceSection: [12780,12801]`type(name) is not st...`
                                 IsExpressionNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [12780,12790]`type(name)`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12780,12784]`type`
                                       Identifier: type
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3639,7 +3639,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [12815,12876]`raise TypeError('Typ...`
                                 PythonCallUnary SourceSection: [12821,12876]`TypeError('Type name...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12821,12830]`TypeError`
                                     Identifier: TypeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3656,7 +3656,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [12925,13040]`raise ValueError('Ty...`
                                 PythonCallUnary SourceSection: [12931,13040]`ValueError('Type nam...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12931,12941]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3666,7 +3666,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             IfNode SourceSection: [13049,13197]`if _iskeyword(name):...`
                               YesNodeGen SourceSection: None
                                 PythonCallUnary SourceSection: [13052,13068]`_iskeyword(name)`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13052,13062]`_iskeyword`
                                     Identifier: _iskeyword
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3675,7 +3675,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13082,13191]`raise ValueError('Ty...`
                                 PythonCallUnary SourceSection: [13088,13191]`ValueError('Type nam...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13088,13098]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3720,7 +3720,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               YesNodeGen SourceSection: None
                                 AndNode SourceSection: [13250,13285]`name.startswith('_')...`
                                   PythonCallUnary SourceSection: [13250,13270]`name.startswith('_')...`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [13250,13254]`name`
                                         Frame: [8,name,Illegal]
@@ -3733,7 +3733,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   YesNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13299,13405]`raise ValueError('Fi...`
                                 PythonCallUnary SourceSection: [13305,13405]`ValueError('Field na...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13305,13315]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3754,7 +3754,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13443,13506]`raise ValueError(f'E...`
                                 PythonCallUnary SourceSection: [13449,13506]`ValueError(f'Encount...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13449,13459]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3763,7 +3763,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [13515,13529]`seen.add(name)`
                               PythonCallUnary SourceSection: [13515,13529]`seen.add(name)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [13515,13519]`seen`
                                     Frame: [6,seen,Illegal]
@@ -3798,7 +3798,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [4,defaults,Illegal]
                           PythonCallUnary SourceSection: [13603,13618]`tuple(defaults)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [13603,13608]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3811,7 +3811,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__
                               PythonCallUnary SourceSection: [13630,13643]`len(defaults)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13630,13633]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3819,7 +3819,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Frame: [4,defaults,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [13646,13662]`len(field_names)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13646,13649]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3830,7 +3830,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   ReadFromCellNodeGen SourceSection: None
                           RaiseNodeGen SourceSection: [13676,13735]`raise TypeError('Got...`
                             PythonCallUnary SourceSection: [13682,13735]`TypeError('Got more ...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [13682,13691]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3842,27 +3842,27 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [9,field_defaults,Illegal]
                           PythonCallUnary SourceSection: [13761,13877]`dict(reversed(list(z...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [13761,13765]`dict`
                               Identifier: dict
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [13766,13876]`reversed(list(zip(re...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [13766,13774]`reversed`
                                 Identifier: reversed
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [13775,13875]`list(zip(reversed(fi...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13775,13779]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 PythonCallBinary SourceSection: [13780,13874]`zip(reversed(field_n...`
-                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  CallBinaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13780,13783]`zip`
                                     Identifier: zip
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [13784,13805]`reversed(field_names...`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [13784,13792]`reversed`
                                       Identifier: reversed
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3872,7 +3872,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadFromCellNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [13855,13873]`reversed(defaults)`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [13855,13863]`reversed`
                                       Identifier: reversed
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3886,12 +3886,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [1,field_names,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallUnary SourceSection: [13948,13984]`tuple(map(_sys.inter...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [13948,13953]`tuple`
                           Identifier: tuple
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [13954,13983]`map(_sys.intern, fie...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13954,13957]`map`
                             Identifier: map
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3914,7 +3914,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [10,num_fields,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallUnary SourceSection: [14002,14018]`len(field_names)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [14002,14005]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3929,10 +3929,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [11,arg_list,Illegal]
                       GetItemNodeGen SourceSection: [14034,14074]`repr(field_names).re...`
                         PythonCallBinary SourceSection: [14034,14068]`repr(field_names).re...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [14034,14051]`repr(field_names)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [14034,14038]`repr`
                                 Identifier: repr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3963,7 +3963,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Op: __add__
                           StringLiteralNode SourceSection: [14090,14093]`'('`
                           PythonCallUnary SourceSection: [14096,14143]`', '.join(f'{name}=%...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [14096,14100]`', '`
                             GeneratorExpressionNode SourceSection: [14119,14142]`for name in field_na...`
@@ -4046,7 +4046,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [15,s,Illegal]
                       PythonCallUnary SourceSection: [14281,14354]`'def __new__(_cls, {...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [14281,14337]`'def __new__(_cls, {...`
                         ReadLocalVariableNode SourceSection: [14345,14353]`arg_list`
@@ -4066,7 +4066,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadFromCellNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [14409,14441]`'namedtuple_{}'.form...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [14409,14424]`'namedtuple_{}'`
                           ReadLocalVariableNode SourceSection: [14432,14440]`typename`
@@ -4074,7 +4074,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [14515,14533]`exec(s, namespace)`
                       PythonCallBinary SourceSection: [14515,14533]`exec(s, namespace)`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [14515,14519]`exec`
                           Identifier: exec
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4120,7 +4120,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [18,_make,Illegal]
                       PythonCallUnary SourceSection: [14714,14726]`@classmethod`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [14714,14726]`@classmethod`
                           Identifier: classmethod
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4167,7 +4167,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,result,Illegal]
                                       PythonCallBinary SourceSection: [14774,14798]`tuple_new(cls, itera...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [14774,14783]`tuple_new`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [4,tuple_new,Illegal]
@@ -4185,7 +4185,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __ne__
                                           PythonCallUnary SourceSection: [14810,14822]`_len(result)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [14810,14814]`_len`
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [5,_len,Illegal]
@@ -4201,7 +4201,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadFromCellNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [14850,14920]`raise TypeError(f'Ex...`
                                         PythonCallUnary SourceSection: [14856,14920]`TypeError(f'Expected...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [14856,14865]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4278,13 +4278,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [2,result,Illegal]
                                     PythonCallUnary SourceSection: [15119,15165]`_self._make(map(kwds...`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [15119,15124]`_self`
                                           Frame: [0,_self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallTernary SourceSection: [15131,15164]`map(kwds.pop, field_...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15131,15134]`map`
                                           Identifier: map
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4311,7 +4311,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     RaiseNodeGen SourceSection: [15195,15258]`raise ValueError(f'G...`
                                       PythonCallUnary SourceSection: [15201,15258]`ValueError(f'Got une...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15201,15211]`ValueError`
                                           Identifier: ValueError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4444,12 +4444,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,<return_val>,Illegal]
                                       PythonCallUnary SourceSection: [15665,15701]`OrderedDict(zip(self...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15665,15676]`OrderedDict`
                                           Identifier: OrderedDict
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [15677,15700]`zip(self._fields, se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [15677,15680]`zip`
                                             Identifier: zip
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4507,7 +4507,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,<return_val>,Illegal]
                                       PythonCallUnary SourceSection: [15814,15825]`tuple(self)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15814,15819]`tuple`
                                           Identifier: tuple
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4678,7 +4678,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [26,itemgetter_object,Illegal]
                                       PythonCallUnary SourceSection: [16719,16737]`_itemgetter(index)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [16719,16730]`_itemgetter`
                                           Identifier: _itemgetter
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4735,7 +4735,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         GetIteratorExpressionNodeGen SourceSection: [16575,16597]`enumerate(field_name...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [16575,16597]`enumerate(field_name...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16575,16584]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4750,7 +4750,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [28,result,Illegal]
                       PythonCallTernary SourceSection: [16923,16964]`type(typename, (tupl...`
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [16923,16927]`type`
                           Identifier: type
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4779,7 +4779,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [5,module,Illegal]
                             PythonCallBinary SourceSection: [17380,17435]`_sys._getframe(1).f_...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 GetAttributeNodeGen SourceSection: [17380,17407]`_sys._getframe(1).f_...`
                                   GetFixedAttributeNodeGen SourceSection: None
@@ -4787,7 +4787,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                   PythonCallUnary SourceSection: [17380,17397]`_sys._getframe(1)`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [17380,17384]`_sys`
                                         Identifier: _sys
@@ -4907,7 +4907,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __add__
                               PythonCallBinary SourceSection: [17901,17921]`mapping_get(elem, 0)...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [17901,17912]`mapping_get`
                                   Frame: [2,mapping_get,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4952,7 +4952,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           WriteNameNodeGen SourceSection: [18080,32029]`class Counter(dict):...`
             Identifier: Counter
             PythonCallTernary SourceSection: [18080,32029]`class Counter(dict):...`
-              CallTernaryMethodCachedNodeGen SourceSection: None
+              CallTernaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: Counter SourceSection: None
@@ -5043,7 +5043,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [20738,20847]`raise TypeError("des...`
                                             PythonCallUnary SourceSection: [20744,20847]`TypeError("descripto...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20744,20753]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5082,7 +5082,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __gt__
                                               PythonCallUnary SourceSection: [20886,20895]`len(args)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20886,20889]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5093,7 +5093,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Value: 1
                                           RaiseNodeGen SourceSection: [20913,20980]`raise TypeError('exp...`
                                             PythonCallUnary SourceSection: [20919,20980]`TypeError('expected ...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20919,20928]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5102,7 +5102,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [20929,20967]`'expected at most 1 ...`
                                                 PythonCallUnary SourceSection: [20970,20979]`len(args)`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20970,20973]`len`
                                                     Identifier: len
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5116,7 +5116,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallBinary SourceSection: [20989,21009]`super(Counter, self)...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20989,20994]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5267,7 +5267,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
                                                     PythonCallUnary SourceSection: [21642,21656]`_itemgetter(1)`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [21642,21653]`_itemgetter`
                                                         Identifier: _itemgetter
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5301,7 +5301,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               KeywordArgumentsNodeGen SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
                                                   PythonCallUnary SourceSection: [21724,21738]`_itemgetter(1)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21724,21735]`_itemgetter`
                                                       Identifier: _itemgetter
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5358,13 +5358,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             PythonCallUnary SourceSection: [22505,22558]`_chain.from_iterable...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22505,22511]`_chain`
                                                   Identifier: _chain
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               PythonCallBinary SourceSection: [22526,22557]`_starmap(_repeat, se...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22526,22534]`_starmap`
                                                   Identifier: _starmap
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5386,7 +5386,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             PythonCallUnary SourceSection: [22609,22621]`@classmethod`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: [22609,22621]`@classmethod`
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
@@ -5444,7 +5444,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         FunctionBodyNode SourceSection: [22811,22917]`raise NotImplemented...`
                                           RaiseNodeGen SourceSection: [22811,22917]`raise NotImplemented...`
                                             PythonCallUnary SourceSection: [22817,22917]`NotImplementedError(...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [22817,22836]`NotImplementedError`
                                                 Identifier: NotImplementedError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5503,7 +5503,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [23907,24014]`raise TypeError("des...`
                                             PythonCallUnary SourceSection: [23913,24014]`TypeError("descripto...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [23913,23922]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5542,7 +5542,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __gt__
                                               PythonCallUnary SourceSection: [24053,24062]`len(args)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [24053,24056]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5553,7 +5553,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Value: 1
                                           RaiseNodeGen SourceSection: [24080,24147]`raise TypeError('exp...`
                                             PythonCallUnary SourceSection: [24086,24147]`TypeError('expected ...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [24086,24095]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5562,7 +5562,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [24096,24134]`'expected at most 1 ...`
                                                 PythonCallUnary SourceSection: [24137,24146]`len(args)`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [24137,24140]`len`
                                                     Identifier: len
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5597,7 +5597,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           IfNode SourceSection: [24238,24662]`if isinstance(iterab...`
                                             YesNodeGen SourceSection: None
                                               PythonCallBinary SourceSection: [24241,24287]`isinstance(iterable,...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [24241,24251]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5671,7 +5671,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                             Frame: [6,count,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           PythonCallBinary SourceSection: [24456,24473]`self_get(elem, 0)`
-                                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                                            CallBinaryMethodNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [24456,24464]`self_get`
                                                               Frame: [4,self_get,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5691,10 +5691,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   BlockNode SourceSection: None
                                               ExpressionStatementNode SourceSection: [24516,24553]`super(Counter, self)...`
                                                 PythonCallUnary SourceSection: [24516,24553]`super(Counter, self)...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     PythonCallBinary SourceSection: [24516,24536]`super(Counter, self)...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [24516,24521]`super`
                                                         Identifier: super
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5709,7 +5709,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [24622,24653]`_count_elements(self...`
                                               PythonCallBinary SourceSection: [24622,24653]`_count_elements(self...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [24622,24637]`_count_elements`
                                                   Identifier: _count_elements
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5727,7 +5727,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [24683,24700]`self.update(kwds)`
                                             PythonCallUnary SourceSection: [24683,24700]`self.update(kwds)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [24683,24687]`self`
                                                   Frame: [2,self,Illegal]
@@ -5789,7 +5789,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [25478,25587]`raise TypeError("des...`
                                             PythonCallUnary SourceSection: [25484,25587]`TypeError("descripto...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [25484,25493]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5828,7 +5828,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __gt__
                                               PythonCallUnary SourceSection: [25626,25635]`len(args)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [25626,25629]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5839,7 +5839,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Value: 1
                                           RaiseNodeGen SourceSection: [25653,25720]`raise TypeError('exp...`
                                             PythonCallUnary SourceSection: [25659,25720]`TypeError('expected ...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [25659,25668]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5848,7 +5848,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [25669,25707]`'expected at most 1 ...`
                                                 PythonCallUnary SourceSection: [25710,25719]`len(args)`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [25710,25713]`len`
                                                     Identifier: len
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5896,7 +5896,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             IfNode SourceSection: [25843,26125]`if isinstance(iterab...`
                                               YesNodeGen SourceSection: None
                                                 PythonCallBinary SourceSection: [25846,25892]`isinstance(iterable,...`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [25846,25856]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5949,7 +5949,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __sub__
                                                         PythonCallBinary SourceSection: [25980,25997]`self_get(elem, 0)`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [25980,25988]`self_get`
                                                             Frame: [4,self_get,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5989,7 +5989,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __sub__
                                                         PythonCallBinary SourceSection: [26095,26112]`self_get(elem, 0)`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [26095,26103]`self_get`
                                                             Frame: [4,self_get,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6014,7 +6014,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [26146,26165]`self.subtract(kwds)`
                                             PythonCallUnary SourceSection: [26146,26165]`self.subtract(kwds)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [26146,26150]`self`
                                                   Frame: [2,self,Illegal]
@@ -6067,7 +6067,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             PythonCallUnary SourceSection: [26235,26255]`self.__class__(self)...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [26235,26239]`self`
                                                   Frame: [0,self,Illegal]
@@ -6129,7 +6129,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [26314,26327]`(dict(self),)`
                                                 PythonCallUnary SourceSection: [26315,26325]`dict(self)`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [26315,26319]`dict`
                                                     Identifier: dict
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6198,7 +6198,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [26481,26506]`super().__delitem__(...`
                                             PythonCallUnary SourceSection: [26481,26506]`super().__delitem__(...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [26481,26488]`super()`
                                                   CallNodeGen SourceSection: None
@@ -6283,11 +6283,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [1,items,Illegal]
                                                 PythonCallUnary SourceSection: [26638,26690]`', '.join(map('%r: %...`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [26638,26642]`', '`
                                                   PythonCallBinary SourceSection: [26648,26689]`map('%r: %r'.__mod__...`
-                                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                                    CallBinaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [26648,26651]`map`
                                                       Identifier: map
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6337,7 +6337,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [3,<return_val>,Illegal]
                                                   PythonCallBinary SourceSection: [26858,26914]`'{0}({1!r})'.format(...`
-                                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                                    CallBinaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [26858,26870]`'{0}({1!r})'`
                                                     GetAttributeNodeGen SourceSection: [26878,26901]`self.__class__.__nam...`
@@ -6354,7 +6354,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     PythonCallUnary SourceSection: [26903,26913]`dict(self)`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [26903,26907]`dict`
                                                         Identifier: dict
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6414,7 +6414,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         IfNode SourceSection: [27436,27513]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [27439,27469]`not isinstance(other...`
                                             PythonCallBinary SourceSection: [27443,27469]`isinstance(other, Co...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [27443,27453]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6644,7 +6644,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         IfNode SourceSection: [28039,28116]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [28042,28072]`not isinstance(other...`
                                             PythonCallBinary SourceSection: [28046,28072]`isinstance(other, Co...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [28046,28056]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6879,7 +6879,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         IfNode SourceSection: [28653,28730]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [28656,28686]`not isinstance(other...`
                                             PythonCallBinary SourceSection: [28660,28686]`isinstance(other, Co...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [28660,28670]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7124,7 +7124,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         IfNode SourceSection: [29303,29380]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [29306,29336]`not isinstance(other...`
                                             PythonCallBinary SourceSection: [29310,29336]`isinstance(other, Co...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [29310,29320]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7522,7 +7522,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,nonpositive,Illegal]
                                           PythonCallUnary SourceSection: [30346,30399]`elem for elem, count...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

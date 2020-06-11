@@ -47,7 +47,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,<return_val>,Illegal]
                           PythonCallUnary SourceSection: [24,64]`', '.join(f'{name}' ...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [24,28]`', '`
                             GeneratorExpressionNode SourceSection: [44,63]`for name in someset`

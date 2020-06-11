@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
       WriteNameNodeGen SourceSection: [1999,2125]`@__graalpython__.bui...`
         Identifier: hasattr
         PythonCallUnary SourceSection: [1999,2023]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -68,7 +68,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           NotNodeGen SourceSection: [2081,2122]`getattr(obj, key, de...`
                             IsExpressionNodeGen SourceSection: None
                               PythonCallTernary SourceSection: [2081,2107]`getattr(obj, key, de...`
-                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2081,2088]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
       WriteNameNodeGen SourceSection: [2125,2249]`@__graalpython__.bui...`
         Identifier: any
         PythonCallUnary SourceSection: [2125,2149]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -162,7 +162,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
       WriteNameNodeGen SourceSection: [2249,2377]`@__graalpython__.bui...`
         Identifier: all
         PythonCallUnary SourceSection: [2249,2273]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -234,7 +234,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
       WriteNameNodeGen SourceSection: [2377,2666]`@__graalpython__.bui...`
         Identifier: filter
         PythonCallUnary SourceSection: [2377,2401]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -348,7 +348,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             IfNode SourceSection: [2535,2585]`if predicate(i):↵   ...`
                               YesNodeGen SourceSection: None
                                 PythonCallUnary SourceSection: [2538,2550]`predicate(i)`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [2538,2547]`predicate`
                                     Frame: [3,predicate,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -357,7 +357,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [2564,2580]`result.append(i)`
                                 PythonCallUnary SourceSection: [2564,2580]`result.append(i)`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [2564,2570]`result`
                                       Frame: [2,result,Illegal]
@@ -378,7 +378,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,<return_val>,Illegal]
                           PythonCallUnary SourceSection: [2592,2605]`tuple(result)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2592,2597]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -466,7 +466,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
                             PythonCallUnary SourceSection: [2837,2848]`len(kwargs)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2837,2840]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -486,14 +486,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               Module: _posix
                         ExpressionStatementNode SourceSection: [2884,2970]`print("Tried to use ...`
                           PythonCallUnary SourceSection: [2884,2970]`print("Tried to use ...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2884,2889]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [2890,2969]`"Tried to use keywor...`
                         ExpressionStatementNode SourceSection: [2979,2994]`_posix.exit(-1)`
                           PythonCallUnary SourceSection: [2979,2994]`_posix.exit(-1)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2979,2985]`_posix`
                                 Frame: [5,_posix,Illegal]
@@ -509,7 +509,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [3011,3019]`func(ns)`
                       PythonCallUnary SourceSection: [3011,3019]`func(ns)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [3011,3015]`func`
                           Frame: [0,func,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -522,7 +522,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [7,<return_val>,Illegal]
                         PythonCallTernary SourceSection: [3031,3052]`type(name, bases, ns...`
-                          CallTernaryMethodCachedNodeGen SourceSection: None
+                          CallTernaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3031,3035]`type`
                             Identifier: type
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -541,7 +541,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
       WriteNameNodeGen SourceSection: [3055,3636]`class map(object):↵ ...`
         Identifier: map
         PythonCallTernary SourceSection: [3055,3636]`class map(object):↵ ...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: map SourceSection: None
@@ -647,7 +647,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         Frame: [4,iterators,Illegal]
                                       ListLiteralNode SourceSection: [3168,3184]`[iter(iterable)]`
                                         PythonCallUnary SourceSection: [3169,3183]`iter(iterable)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3169,3173]`iter`
                                             Identifier: iter
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -665,13 +665,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 Frame: [5,i,Illegal]
                                           ExpressionStatementNode SourceSection: [3220,3245]`iterators.append(ite...`
                                             PythonCallUnary SourceSection: [3220,3245]`iterators.append(ite...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3220,3229]`iterators`
                                                   Frame: [4,iterators,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [3237,3244]`iter(i)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3237,3241]`iter`
                                                   Identifier: iter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -746,13 +746,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 Frame: [2,it,Illegal]
                                           ExpressionStatementNode SourceSection: [3374,3395]`args.append(next(it)...`
                                             PythonCallUnary SourceSection: [3374,3395]`args.append(next(it)...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3374,3378]`args`
                                                   Frame: [1,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [3386,3394]`next(it)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3386,3390]`next`
                                                   Identifier: next
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -964,7 +964,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
       WriteNameNodeGen SourceSection: [3680,4271]`@__graalpython__.bui...`
         Identifier: vars
         PythonCallUnary SourceSection: [3680,3704]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -1003,7 +1003,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
                             PythonCallUnary SourceSection: [3880,3888]`len(obj)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [3880,3883]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1023,7 +1023,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               PythonCallUnary SourceSection: [4021,4036]`__getframe__(1)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4033]`__getframe__`
                                   Identifier: __getframe__
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1035,7 +1035,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __ne__
                               PythonCallUnary SourceSection: [4055,4063]`len(obj)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4055,4058]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1046,7 +1046,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 Value: 1
                           RaiseNodeGen SourceSection: [4078,4129]`raise TypeError("var...`
                             PythonCallUnary SourceSection: [4084,4129]`TypeError("vars() ta...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4084,4093]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1074,7 +1074,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           ExceptNode SourceSection: None
                             RaiseNodeGen SourceSection: [4205,4268]`raise TypeError("var...`
                               PythonCallUnary SourceSection: [4211,4268]`TypeError("vars() ar...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4211,4220]`TypeError`
                                   Identifier: TypeError
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1090,7 +1090,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
       WriteNameNodeGen SourceSection: [4271,4575]`@__graalpython__.bui...`
         Identifier: format
         PythonCallUnary SourceSection: [4271,4295]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -1139,10 +1139,10 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,<return_val>,Illegal]
                           PythonCallBinary SourceSection: [4530,4572]`type(value).__format...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4530,4541]`type(value)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4530,4534]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1165,7 +1165,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           WriteNameNodeGen SourceSection: [4575,4978]`@__graalpython__.bui...`
             Identifier: sorted
             PythonCallUnary SourceSection: [4575,4599]`@__graalpython__.bui...`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: None
                   Identifier: __graalpython__
@@ -1221,7 +1221,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [3,result,Illegal]
                             PythonCallUnary SourceSection: [4903,4917]`list(iterable)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4903,4907]`list`
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

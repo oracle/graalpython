@@ -368,7 +368,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [2758,2815]`raise Error('_locale...`
                                 PythonCallUnary SourceSection: [2764,2815]`Error('_locale emula...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2764,2769]`Error`
                                     Identifier: Error
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -430,9 +430,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       WriteNameNodeGen SourceSection: [3179,3450]`@functools.wraps(_lo...`
         Identifier: localeconv
         PythonCallUnary SourceSection: [3179,3208]`@functools.wraps(_lo...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           PythonCallUnary SourceSection: [3179,3208]`@functools.wraps(_lo...`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None
                 Identifier: functools
@@ -477,7 +477,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [3286,3316]`d.update(_override_l...`
                           PythonCallUnary SourceSection: [3286,3316]`d.update(_override_l...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [3286,3287]`d`
                                 Frame: [0,d,Illegal]
@@ -569,7 +569,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ObjectLiteralNode SourceSection: [3735,3739]`None`
                                 RaiseNodeGen SourceSection: [3757,3793]`raise ValueError("in...`
                                   PythonCallUnary SourceSection: [3763,3793]`ValueError("invalid ...`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3763,3773]`ValueError`
                                       Identifier: ValueError
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -769,7 +769,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             SliceLiteralNodeGen SourceSection: [4267,4281]`len(stripped):`
                               PythonObjectFactoryNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4267,4280]`len(stripped)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4267,4270]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -847,7 +847,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [4610,4638]`groups.append(s[-int...`
                               PythonCallUnary SourceSection: [4610,4638]`groups.append(s[-int...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [4610,4616]`groups`
                                     Frame: [8,groups,Illegal]
@@ -887,7 +887,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         GetIteratorExpressionNodeGen SourceSection: [4397,4426]`_grouping_intervals(...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [4397,4426]`_grouping_intervals(...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4397,4416]`_grouping_intervals`
                               Identifier: _grouping_intervals
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -902,7 +902,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [4683,4699]`groups.append(s)`
                         PythonCallUnary SourceSection: [4683,4699]`groups.append(s)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [4683,4689]`groups`
                               Frame: [8,groups,Illegal]
@@ -934,7 +934,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [7,left_spaces,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4756,4782]`thousands_sep.join(g...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [4756,4769]`thousands_sep`
                                     Frame: [3,thousands_sep,Illegal]
@@ -949,7 +949,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __mul__
                             PythonCallUnary SourceSection: [4807,4825]`len(thousands_sep)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4807,4810]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -960,7 +960,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __sub__
                               PythonCallUnary SourceSection: [4829,4840]`len(groups)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4829,4832]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1069,7 +1069,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __sub__
                         PythonCallUnary SourceSection: [5046,5052]`len(s)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [5046,5049]`len`
                             Identifier: len
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1149,7 +1149,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       WriteNameNodeGen SourceSection: [5159,5288]`_percent_re = re.com...`
         Identifier: _percent_re
         PythonCallUnary SourceSection: [5173,5288]`re.compile(r'%(?:\((...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [5173,5175]`re`
               Identifier: re
@@ -1281,7 +1281,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [7,parts,Illegal]
                           PythonCallUnary SourceSection: [5599,5619]`formatted.split('.')...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [5599,5608]`formatted`
                                 Frame: [5,formatted,Illegal]
@@ -1361,7 +1361,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,formatted,Illegal]
                           PythonCallUnary SourceSection: [5862,5887]`decimal_point.join(p...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [5862,5875]`decimal_point`
                                 Frame: [8,decimal_point,Illegal]
@@ -1379,7 +1379,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [5,formatted,Illegal]
                             PythonCallBinary SourceSection: [5929,5960]`_strip_padding(forma...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [5929,5943]`_strip_padding`
                                 Identifier: _strip_padding
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1465,7 +1465,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [5,formatted,Illegal]
                               PythonCallBinary SourceSection: [6138,6169]`_strip_padding(forma...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6138,6152]`_strip_padding`
                                   Identifier: _strip_padding
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1549,12 +1549,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,percents,Illegal]
                       PythonCallUnary SourceSection: [6557,6586]`list(_percent_re.fin...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [6557,6561]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [6562,6585]`_percent_re.finditer...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6562,6573]`_percent_re`
                               Identifier: _percent_re
@@ -1567,7 +1567,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,new_f,Illegal]
                       PythonCallBinary SourceSection: [6599,6623]`_percent_re.sub('%s'...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6599,6610]`_percent_re`
                             Identifier: _percent_re
@@ -1579,7 +1579,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [6629,7491]`if isinstance(val, _...`
                       YesNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [6632,6673]`isinstance(val, _col...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6632,6642]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1626,7 +1626,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     StringLiteralNode SourceSection: [6759,6762]`'%'`
                                 ExpressionStatementNode SourceSection: [6780,6799]`new_val.append('%')`
                                   PythonCallUnary SourceSection: [6780,6799]`new_val.append('%')`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [6780,6787]`new_val`
                                         Frame: [6,new_val,Illegal]
@@ -1634,7 +1634,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     StringLiteralNode SourceSection: [6795,6798]`'%'`
                                 ExpressionStatementNode SourceSection: [6834,6896]`new_val.append(_form...`
                                   PythonCallUnary SourceSection: [6834,6896]`new_val.append(_form...`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [6834,6841]`new_val`
                                         Frame: [6,new_val,Illegal]
@@ -1669,7 +1669,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         IfNode SourceSection: [6915,6979]`if not isinstance(va...`
                           NotNodeGen SourceSection: [6918,6944]`not isinstance(val, ...`
                             PythonCallBinary SourceSection: [6922,6944]`isinstance(val, tupl...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [6922,6932]`isinstance`
                                 Identifier: isinstance
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1726,7 +1726,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     StringLiteralNode SourceSection: [7069,7072]`'%'`
                                 ExpressionStatementNode SourceSection: [7090,7109]`new_val.append('%')`
                                   PythonCallUnary SourceSection: [7090,7109]`new_val.append('%')`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [7090,7097]`new_val`
                                         Frame: [6,new_val,Illegal]
@@ -1738,10 +1738,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [9,starcount,Illegal]
                                     PythonCallUnary SourceSection: [7156,7190]`perc.group('modifier...`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [7156,7179]`perc.group('modifier...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [7156,7160]`perc`
                                               Frame: [7,perc,Illegal]
@@ -1750,7 +1750,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       StringLiteralNode SourceSection: [7186,7189]`'*'`
                                   ExpressionStatementNode SourceSection: [7207,7449]`new_val.append(_form...`
                                     PythonCallUnary SourceSection: [7207,7449]`new_val.append(_form...`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [7207,7214]`new_val`
                                           Frame: [6,new_val,Illegal]
@@ -1837,7 +1837,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,val,Illegal]
                       PythonCallUnary SourceSection: [7497,7511]`tuple(new_val)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [7497,7502]`tuple`
                           Identifier: tuple
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1954,7 +1954,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [6,match,Illegal]
                       PythonCallUnary SourceSection: [7877,7903]`_percent_re.match(pe...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7877,7888]`_percent_re`
                             Identifier: _percent_re
@@ -1973,7 +1973,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __ne__
                             PythonCallUnary SourceSection: [7924,7942]`len(match.group())`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [7924,7927]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1984,7 +1984,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [6,match,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [7945,7957]`len(percent)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [7945,7948]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1994,7 +1994,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [7967,8105]`raise ValueError(("f...`
                         PythonCallUnary SourceSection: [7973,8105]`ValueError(("format(...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7973,7983]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2003,7 +2003,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Op: __mod__
                             StringLiteralNode SourceSection: [7985,8087]`"format() must be gi...`
                             PythonCallUnary SourceSection: [8091,8104]`repr(percent)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [8091,8095]`repr`
                                 Identifier: repr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2137,7 +2137,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Value: 127
                       RaiseNodeGen SourceSection: [8486,8591]`raise ValueError("Cu...`
                         PythonCallUnary SourceSection: [8492,8591]`ValueError("Currency...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [8492,8502]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2158,7 +2158,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Frame: [5,digits,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [8628,8636]`abs(val)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [8628,8631]`abs`
                             Identifier: abs
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2445,7 +2445,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [6,s,Illegal]
                               PythonCallBinary SourceSection: [9445,9465]`s.replace('<', sign)...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [9445,9446]`s`
                                     Frame: [6,s,Illegal]
@@ -2469,7 +2469,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [6,s,Illegal]
                                 PythonCallBinary SourceSection: [9502,9522]`s.replace('>', sign)...`
-                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  CallBinaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [9502,9503]`s`
                                       Frame: [6,s,Illegal]
@@ -2497,10 +2497,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [12,<return_val>,Illegal]
                         PythonCallBinary SourceSection: [9666,9701]`s.replace('<', '').r...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             PythonCallBinary SourceSection: [9666,9684]`s.replace('<', '')`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [9666,9667]`s`
                                   Frame: [6,s,Illegal]
@@ -2550,7 +2550,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,<return_val>,Illegal]
                         PythonCallBinary SourceSection: [9795,9816]`_format("%.12g", val...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [9795,9802]`_format`
                             Identifier: _format
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2621,7 +2621,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,string,Illegal]
                         PythonCallBinary SourceSection: [10042,10064]`string.replace(ts, '...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10042,10048]`string`
                               Frame: [0,string,Illegal]
@@ -2650,7 +2650,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,string,Illegal]
                         PythonCallBinary SourceSection: [10173,10196]`string.replace(dd, '...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10173,10179]`string`
                               Frame: [0,string,Illegal]
@@ -2719,12 +2719,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [10324,10348]`func(delocalize(stri...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [10324,10328]`func`
                             Frame: [1,func,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [10329,10347]`delocalize(string)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [10329,10339]`delocalize`
                               Identifier: delocalize
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2772,12 +2772,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [10451,10474]`int(delocalize(strin...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10451,10454]`int`
                             Identifier: int
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [10455,10473]`delocalize(string)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [10455,10465]`delocalize`
                               Identifier: delocalize
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2814,7 +2814,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   FunctionBodyNode SourceSection: [10493,10677]`setlocale(LC_ALL, ""...`
                     ExpressionStatementNode SourceSection: [10493,10514]`setlocale(LC_ALL, ""...`
                       PythonCallBinary SourceSection: [10493,10514]`setlocale(LC_ALL, ""...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10493,10502]`setlocale`
                           Identifier: setlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2827,7 +2827,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,s1,Illegal]
                       PythonCallTernary SourceSection: [10541,10573]`format_string("%d", ...`
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10541,10554]`format_string`
                           Identifier: format_string
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2838,7 +2838,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Value: 1
                     ExpressionStatementNode SourceSection: [10578,10603]`print(s1, "is", atoi...`
                       PythonCallTernary SourceSection: [10578,10603]`print(s1, "is", atoi...`
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10578,10583]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2847,7 +2847,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadVariableFromFrameNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [10588,10592]`"is"`
                         PythonCallUnary SourceSection: [10594,10602]`atoi(s1)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10594,10598]`atoi`
                             Identifier: atoi
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2859,14 +2859,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,s1,Illegal]
                       PythonCallUnary SourceSection: [10638,10647]`str(3.14)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10638,10641]`str`
                           Identifier: str
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         DoubleLiteralNode SourceSection: [10642,10646]`3.14`
                     ExpressionStatementNode SourceSection: [10652,10677]`print(s1, "is", atof...`
                       PythonCallTernary SourceSection: [10652,10677]`print(s1, "is", atof...`
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10652,10657]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2875,7 +2875,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadVariableFromFrameNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [10662,10666]`"is"`
                         PythonCallUnary SourceSection: [10668,10676]`atof(s1)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10668,10672]`atof`
                             Identifier: atof
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2951,7 +2951,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             PythonObjectFactoryNodeGen SourceSection: None
                             EmptyNode SourceSection: None
                             PythonCallUnary SourceSection: [11000,11015]`code.index('.')`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [11000,11004]`code`
                                   Frame: [0,code,Illegal]
@@ -2970,7 +2970,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,norm_encoding,Illegal]
                       PythonCallUnary SourceSection: [11136,11174]`encodings.normalize_...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11136,11145]`encodings`
                             Identifier: encodings
@@ -2983,7 +2983,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,norm_encoding,Illegal]
                       PythonCallBinary SourceSection: [11243,11360]`encodings.aliases.al...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [11243,11268]`encodings.aliases.al...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -3053,7 +3053,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,norm_encoding,Illegal]
                           PythonCallBinary SourceSection: [11620,11650]`norm_encoding.replac...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [11620,11633]`norm_encoding`
                                 Frame: [3,norm_encoding,Illegal]
@@ -3065,7 +3065,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,norm_encoding,Illegal]
                           PythonCallBinary SourceSection: [11675,11705]`norm_encoding.replac...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [11675,11688]`norm_encoding`
                                 Frame: [3,norm_encoding,Illegal]
@@ -3192,7 +3192,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           BlockNode SourceSection: None
                         DestructuringAssignmentNodeGen SourceSection: [12039,12075]`_, _, encoding = cod...`
                           PythonCallUnary SourceSection: [12056,12075]`code.partition('.')`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12056,12060]`code`
                                 Frame: [0,code,Illegal]
@@ -3268,7 +3268,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [4,<return_val>,Illegal]
                               PythonCallBinary SourceSection: [12203,12240]`_replace_encoding(co...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12203,12220]`_replace_encoding`
                                   Identifier: _replace_encoding
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3356,7 +3356,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,code,Illegal]
                         PythonCallBinary SourceSection: [12896,12918]`code.replace(':', '....`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [12896,12900]`code`
                               Frame: [1,code,Illegal]
@@ -3376,7 +3376,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           StringLiteralNode SourceSection: [12926,12929]`'@'`
                       DestructuringAssignmentNodeGen SourceSection: [12947,12982]`code, modifier = cod...`
                         PythonCallBinary SourceSection: [12964,12982]`code.split('@', 1)`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [12964,12968]`code`
                               Frame: [1,code,Illegal]
@@ -3424,7 +3424,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       DestructuringAssignmentNodeGen SourceSection: [13043,13083]`langname, encoding =...`
                         GetItemNodeGen SourceSection: [13064,13083]`code.split('.')[:2]`
                           PythonCallUnary SourceSection: [13064,13079]`code.split('.')`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [13064,13068]`code`
                                 Frame: [1,code,Illegal]
@@ -3489,7 +3489,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [6,norm_encoding,Illegal]
                           PythonCallBinary SourceSection: [13273,13298]`encoding.replace('-'...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [13273,13281]`encoding`
                                 Frame: [4,encoding,Illegal]
@@ -3501,7 +3501,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [6,norm_encoding,Illegal]
                           PythonCallBinary SourceSection: [13323,13353]`norm_encoding.replac...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [13323,13336]`norm_encoding`
                                 Frame: [6,norm_encoding,Illegal]
@@ -3557,7 +3557,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,code,Illegal]
                       PythonCallBinary SourceSection: [13487,13522]`locale_alias.get(loo...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13487,13499]`locale_alias`
                             Identifier: locale_alias
@@ -3593,7 +3593,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,code,Illegal]
                           PythonCallBinary SourceSection: [13708,13740]`locale_alias.get(lan...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [13708,13720]`locale_alias`
                                 Identifier: locale_alias
@@ -3626,7 +3626,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [13,<return_val>,Illegal]
                                   PythonCallBinary SourceSection: [13881,13913]`_append_modifier(cod...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [13881,13897]`_append_modifier`
                                       Identifier: _append_modifier
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3647,7 +3647,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     GetCallAttributeNodeGen SourceSection: None
                                       GetItemNodeGen SourceSection: [13929,13950]`code.split('@', 1)[1...`
                                         PythonCallBinary SourceSection: [13929,13947]`code.split('@', 1)`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [13929,13933]`code`
                                               Frame: [1,code,Illegal]
@@ -3710,7 +3710,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,code,Illegal]
                           PythonCallBinary SourceSection: [14239,14274]`locale_alias.get(loo...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [14239,14251]`locale_alias`
                                 Identifier: locale_alias
@@ -3743,7 +3743,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [13,<return_val>,Illegal]
                                   PythonCallBinary SourceSection: [14415,14448]`_replace_encoding(co...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [14415,14432]`_replace_encoding`
                                       Identifier: _replace_encoding
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3756,7 +3756,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               BlockNode SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: [14461,14496]`code, modifier = cod...`
                               PythonCallBinary SourceSection: [14478,14496]`code.split('@', 1)`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [14478,14482]`code`
                                     Frame: [1,code,Illegal]
@@ -3798,7 +3798,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __add__
                                     PythonCallBinary SourceSection: [14516,14549]`_replace_encoding(co...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [14516,14533]`_replace_encoding`
                                         Identifier: _replace_encoding
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3824,7 +3824,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,code,Illegal]
                               PythonCallBinary SourceSection: [14675,14707]`locale_alias.get(lan...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14675,14687]`locale_alias`
                                     Identifier: locale_alias
@@ -3857,7 +3857,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,code,Illegal]
                                       PythonCallBinary SourceSection: [14877,14910]`_replace_encoding(co...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14877,14894]`_replace_encoding`
                                           Identifier: _replace_encoding
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3873,7 +3873,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [13,<return_val>,Illegal]
                                         PythonCallBinary SourceSection: [14938,14970]`_append_modifier(cod...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [14938,14954]`_append_modifier`
                                             Identifier: _append_modifier
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3886,7 +3886,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   BlockNode SourceSection: None
                                 DestructuringAssignmentNodeGen SourceSection: [14987,15020]`code, defmod = code....`
                                   PythonCallBinary SourceSection: [15002,15020]`code.split('@', 1)`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [15002,15006]`code`
                                         Frame: [1,code,Illegal]
@@ -3942,7 +3942,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __add__
                                           PythonCallBinary SourceSection: [15095,15128]`_replace_encoding(co...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [15095,15112]`_replace_encoding`
                                               Identifier: _replace_encoding
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4008,7 +4008,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,code,Illegal]
                       PythonCallUnary SourceSection: [15678,15699]`normalize(localename...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [15678,15687]`normalize`
                           Identifier: normalize
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4028,7 +4028,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       BlockNode SourceSection: None
                         DestructuringAssignmentNodeGen SourceSection: [15765,15800]`code, modifier = cod...`
                           PythonCallBinary SourceSection: [15782,15800]`code.split('@', 1)`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [15782,15786]`code`
                                 Frame: [1,code,Illegal]
@@ -4107,13 +4107,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,<return_val>,Illegal]
                           PythonCallUnary SourceSection: [16113,16139]`tuple(code.split('.'...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16113,16118]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GetItemNodeGen SourceSection: [16119,16138]`code.split('.')[:2]`
                               PythonCallUnary SourceSection: [16119,16134]`code.split('.')`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [16119,16123]`code`
                                     Frame: [1,code,Illegal]
@@ -4146,7 +4146,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         BlockNode SourceSection: None
                     RaiseNodeGen SourceSection: [16192,16243]`raise ValueError('un...`
                       PythonCallUnary SourceSection: [16198,16243]`ValueError('unknown ...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [16198,16208]`ValueError`
                           Identifier: ValueError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4271,7 +4271,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ExceptNode SourceSection: None
                           RaiseNodeGen SourceSection: [16692,16836]`raise TypeError('Loc...`
                             PythonCallUnary SourceSection: [16698,16826]`TypeError('Locale mu...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [16698,16707]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4418,13 +4418,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [2,code,Illegal]
                               PythonCallUnary SourceSection: [18316,18348]`windows_locale.get(i...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [18316,18330]`windows_locale`
                                     Identifier: windows_locale
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 PythonCallBinary SourceSection: [18335,18347]`int(code, 0)`
-                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  CallBinaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [18335,18338]`int`
                                     Identifier: int
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4485,7 +4485,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [6,localename,Illegal]
                               PythonCallBinary SourceSection: [18591,18612]`lookup(variable,None...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [18591,18597]`lookup`
                                   Frame: [5,lookup,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4514,7 +4514,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Frame: [6,localename,Illegal]
                                     GetItemNodeGen SourceSection: [18704,18728]`localename.split(':'...`
                                       PythonCallUnary SourceSection: [18704,18725]`localename.split(':'...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [18704,18714]`localename`
                                             Frame: [6,localename,Illegal]
@@ -4541,7 +4541,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [10,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [18793,18822]`_parse_localename(lo...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [18793,18810]`_parse_localename`
                             Identifier: _parse_localename
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4590,7 +4590,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,localename,Illegal]
                       PythonCallUnary SourceSection: [19256,19276]`_setlocale(category)...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19256,19266]`_setlocale`
                           Identifier: _setlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4620,7 +4620,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [19334,19385]`raise TypeError('cat...`
                         PythonCallUnary SourceSection: [19340,19385]`TypeError('category ...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19340,19349]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4633,7 +4633,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [19397,19426]`_parse_localename(lo...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19397,19414]`_parse_localename`
                             Identifier: _parse_localename
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4692,7 +4692,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadVariableFromFrameNodeGen SourceSection: None
                           NotNodeGen SourceSection: [19846,19882]`not isinstance(local...`
                             PythonCallBinary SourceSection: [19850,19882]`isinstance(locale, _...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [19850,19860]`isinstance`
                                 Identifier: isinstance
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4708,12 +4708,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,locale,Illegal]
                         PythonCallUnary SourceSection: [19929,19965]`normalize(_build_loc...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19929,19938]`normalize`
                             Identifier: normalize
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [19939,19964]`_build_localename(lo...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19939,19956]`_build_localename`
                               Identifier: _build_localename
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4727,7 +4727,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
                         PythonCallBinary SourceSection: [19977,20005]`_setlocale(category,...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19977,19987]`_setlocale`
                             Identifier: _setlocale
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4776,7 +4776,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   FunctionBodyNode SourceSection: [20227,20286]`_setlocale(category,...`
                     ExpressionStatementNode SourceSection: [20227,20286]`_setlocale(category,...`
                       PythonCallBinary SourceSection: [20227,20286]`_setlocale(category,...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [20227,20237]`_setlocale`
                           Identifier: _setlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4784,7 +4784,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Frame: [0,category,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [20248,20285]`_build_localename(ge...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [20248,20265]`_build_localename`
                             Identifier: _build_localename
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4799,7 +4799,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       IfNode SourceSection: [20288,22737]`if sys.platform.star...`
         YesNodeGen SourceSection: None
           PythonCallUnary SourceSection: [20291,20321]`sys.platform.startsw...`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNodeGen SourceSection: [20291,20303]`sys.platform`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -4877,7 +4877,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,<return_val>,Illegal]
                           PythonCallUnary SourceSection: [20591,20630]`_bootlocale.getprefe...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [20591,20602]`_bootlocale`
                                 Frame: [1,_bootlocale,Illegal]
@@ -4895,7 +4895,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               IfNode SourceSection: [20742,21544]`if hasattr(sys, 'get...`
                 YesNodeGen SourceSection: None
                   PythonCallBinary SourceSection: [20745,20779]`hasattr(sys, 'getand...`
-                    CallBinaryMethodCachedNodeGen SourceSection: None
+                    CallBinaryMethodNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [20745,20752]`hasattr`
                       Identifier: hasattr
                     ReadNameNodeGen SourceSection: [20753,20756]`sys`
@@ -5109,7 +5109,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [2,oldloc,Illegal]
                                 PythonCallUnary SourceSection: [21876,21895]`setlocale(LC_CTYPE)`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21876,21885]`setlocale`
                                     Identifier: setlocale
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5120,7 +5120,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 TryExceptNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [21937,21960]`setlocale(LC_CTYPE, ...`
                                     PythonCallBinary SourceSection: [21937,21960]`setlocale(LC_CTYPE, ...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [21937,21946]`setlocale`
                                         Identifier: setlocale
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5141,7 +5141,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [3,result,Illegal]
                             PythonCallUnary SourceSection: [22037,22076]`_bootlocale.getprefe...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [22037,22048]`_bootlocale`
                                   Frame: [1,_bootlocale,Illegal]
@@ -5154,7 +5154,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [22122,22149]`setlocale(LC_CTYPE, ...`
                               PythonCallBinary SourceSection: [22122,22149]`setlocale(LC_CTYPE, ...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22122,22131]`setlocale`
                                   Identifier: setlocale
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5295,7 +5295,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               WriteNameNodeGen SourceSection: [25138,25160]`k = k.replace('_', '...`
                 Identifier: k
                 PythonCallBinary SourceSection: [25142,25160]`k.replace('_', '')`
-                  CallBinaryMethodCachedNodeGen SourceSection: None
+                  CallBinaryMethodNodeGen SourceSection: None
                   GetCallAttributeNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [25142,25143]`k`
                       Identifier: k
@@ -5303,7 +5303,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   StringLiteralNode SourceSection: [25157,25159]`''`
               ExpressionStatementNode SourceSection: [25165,25203]`locale_encoding_alia...`
                 PythonCallBinary SourceSection: [25165,25203]`locale_encoding_alia...`
-                  CallBinaryMethodCachedNodeGen SourceSection: None
+                  CallBinaryMethodNodeGen SourceSection: None
                   GetCallAttributeNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [25165,25186]`locale_encoding_alia...`
                       Identifier: locale_encoding_alias
@@ -5314,7 +5314,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
           GetIteratorExpressionNodeGen SourceSection: [25095,25132]`sorted(locale_encodi...`
             GetIteratorNodeGen SourceSection: None
             PythonCallUnary SourceSection: [25095,25132]`sorted(locale_encodi...`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [25095,25101]`sorted`
                 Identifier: sorted
               PythonCallNodeGen SourceSection: [25102,25131]`locale_encoding_alia...`
@@ -7280,14 +7280,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       StringLiteralNode SourceSection: [76322,76330]`'LC_ALL'`
                     ExpressionStatementNode SourceSection: [76337,76398]`print('Locale defaul...`
                       PythonCallUnary SourceSection: [76337,76398]`print('Locale defaul...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76337,76342]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [76343,76397]`'Locale defaults as ...`
                     ExpressionStatementNode SourceSection: [76403,76416]`print('-'*72)`
                       PythonCallUnary SourceSection: [76403,76416]`print('-'*72)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76403,76408]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7327,7 +7327,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76456,76498]`print('Language: ', ...`
                       PythonCallBinary SourceSection: [76456,76498]`print('Language: ', ...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76456,76461]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7340,7 +7340,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76503,76544]`print('Encoding: ', ...`
                       PythonCallBinary SourceSection: [76503,76544]`print('Encoding: ', ...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76503,76508]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7359,14 +7359,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76562,76598]`print('Locale settin...`
                       PythonCallUnary SourceSection: [76562,76598]`print('Locale settin...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76562,76567]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [76568,76597]`'Locale settings on ...`
                     ExpressionStatementNode SourceSection: [76603,76616]`print('-'*72)`
                       PythonCallUnary SourceSection: [76603,76616]`print('-'*72)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76603,76608]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7406,7 +7406,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [76670,76688]`print(name, '...')`
                               PythonCallBinary SourceSection: [76670,76688]`print(name, '...')`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [76670,76675]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7416,7 +7416,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 StringLiteralNode SourceSection: [76682,76687]`'...'`
                             DestructuringAssignmentNodeGen SourceSection: [76697,76728]`lang, enc = getlocal...`
                               PythonCallUnary SourceSection: [76709,76728]`getlocale(category)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [76709,76718]`getlocale`
                                   Identifier: getlocale
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7447,7 +7447,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [76737,76782]`print('   Language: ...`
                               PythonCallBinary SourceSection: [76737,76782]`print('   Language: ...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [76737,76742]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7460,7 +7460,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   YesNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [76791,76835]`print('   Encoding: ...`
                               PythonCallBinary SourceSection: [76791,76835]`print('   Encoding: ...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [76791,76796]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7494,14 +7494,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76869,76922]`print('Locale settin...`
                       PythonCallUnary SourceSection: [76869,76922]`print('Locale settin...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76869,76874]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [76875,76921]`'Locale settings aft...`
                     ExpressionStatementNode SourceSection: [76927,76940]`print('-'*72)`
                       PythonCallUnary SourceSection: [76927,76940]`print('-'*72)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76927,76932]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7547,7 +7547,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [77012,77030]`print(name, '...')`
                               PythonCallBinary SourceSection: [77012,77030]`print(name, '...')`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [77012,77017]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7557,7 +7557,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 StringLiteralNode SourceSection: [77024,77029]`'...'`
                             DestructuringAssignmentNodeGen SourceSection: [77039,77070]`lang, enc = getlocal...`
                               PythonCallUnary SourceSection: [77051,77070]`getlocale(category)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [77051,77060]`getlocale`
                                   Identifier: getlocale
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7588,7 +7588,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [77079,77124]`print('   Language: ...`
                               PythonCallBinary SourceSection: [77079,77124]`print('   Language: ...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [77079,77084]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7601,7 +7601,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   YesNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [77133,77177]`print('   Encoding: ...`
                               PythonCallBinary SourceSection: [77133,77177]`print('   Encoding: ...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [77133,77138]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7631,7 +7631,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       TryExceptNode SourceSection: None
                         ExpressionStatementNode SourceSection: [77212,77233]`setlocale(LC_ALL, ""...`
                           PythonCallBinary SourceSection: [77212,77233]`setlocale(LC_ALL, ""...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [77212,77221]`setlocale`
                               Identifier: setlocale
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7643,21 +7643,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [77254,77268]`print('NOTE:')`
                               PythonCallUnary SourceSection: [77254,77268]`print('NOTE:')`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [77254,77259]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [77260,77267]`'NOTE:'`
                             ExpressionStatementNode SourceSection: [77277,77343]`print('setlocale(LC_...`
                               PythonCallUnary SourceSection: [77277,77343]`print('setlocale(LC_...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [77277,77282]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [77283,77342]`'setlocale(LC_ALL, "...`
                             ExpressionStatementNode SourceSection: [77352,77399]`print('given in the ...`
                               PythonCallUnary SourceSection: [77352,77399]`print('given in the ...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [77352,77357]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7671,14 +7671,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [77434,77495]`print('Locale settin...`
                             PythonCallUnary SourceSection: [77434,77495]`print('Locale settin...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [77434,77439]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [77440,77494]`'Locale settings aft...`
                           ExpressionStatementNode SourceSection: [77504,77517]`print('-'*72)`
                             PythonCallUnary SourceSection: [77504,77517]`print('-'*72)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [77504,77509]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7718,7 +7718,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [77579,77597]`print(name, '...')`
                                     PythonCallBinary SourceSection: [77579,77597]`print(name, '...')`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [77579,77584]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7728,7 +7728,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       StringLiteralNode SourceSection: [77591,77596]`'...'`
                                   DestructuringAssignmentNodeGen SourceSection: [77610,77641]`lang, enc = getlocal...`
                                     PythonCallUnary SourceSection: [77622,77641]`getlocale(category)`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [77622,77631]`getlocale`
                                         Identifier: getlocale
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7759,7 +7759,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   ExpressionStatementNode SourceSection: [77654,77699]`print('   Language: ...`
                                     PythonCallBinary SourceSection: [77654,77699]`print('   Language: ...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [77654,77659]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7772,7 +7772,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         YesNodeGen SourceSection: None
                                   ExpressionStatementNode SourceSection: [77712,77756]`print('   Encoding: ...`
                                     PythonCallBinary SourceSection: [77712,77756]`print('   Encoding: ...`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [77712,77717]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7813,7 +7813,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               Identifier: NameError
           ExpressionStatementNode SourceSection: [77841,77870]`__all__.append("LC_M...`
             PythonCallUnary SourceSection: [77841,77870]`__all__.append("LC_M...`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [77841,77848]`__all__`
                   Identifier: __all__
@@ -7833,7 +7833,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             BlockNode SourceSection: None
               ExpressionStatementNode SourceSection: [77901,77926]`print('Locale aliasi...`
                 PythonCallUnary SourceSection: [77901,77926]`print('Locale aliasi...`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [77901,77906]`print`
                     Identifier: print
                   StringLiteralNode SourceSection: [77907,77925]`'Locale aliasing:'`
@@ -7854,7 +7854,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     Identifier: print
               ExpressionStatementNode SourceSection: [77975,78002]`print('Number format...`
                 PythonCallUnary SourceSection: [77975,78002]`print('Number format...`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [77975,77980]`print`
                     Identifier: print
                   StringLiteralNode SourceSection: [77981,78001]`'Number formatting:'...`

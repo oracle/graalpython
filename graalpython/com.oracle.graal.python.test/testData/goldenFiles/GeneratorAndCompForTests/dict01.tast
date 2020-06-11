@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
   Documentation: None
   InnerRootNode SourceSection: [0,26]`{x:x*x for x in rang...`
     PythonCallUnary SourceSection: [0,26]`{x:x*x for x in rang...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
         GetIteratorExpressionNodeGen SourceSection: [16,25]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [16,25]`range(20)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [16,21]`range`
               Identifier: range
             IntegerLiteralNode SourceSection: [22,24]`20`

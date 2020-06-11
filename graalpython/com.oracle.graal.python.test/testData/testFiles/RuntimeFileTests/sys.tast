@@ -53,7 +53,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,version_info_type,Illegal]
                       PythonCallBinary SourceSection: [2123,2230]`make_named_tuple_cla...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2123,2145]`make_named_tuple_cla...`
                           Frame: [1,make_named_tuple_class,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -79,7 +79,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               StringLiteralNode SourceSection: [2305,2318]`"graalpython"`
                             KeywordLiteralNode SourceSection: None
                               PythonCallUnary SourceSection: [2336,2367]`version_info_type(ve...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [2336,2353]`version_info_type`
                                   Frame: [2,version_info_type,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -160,7 +160,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,get_set_descriptor,Illegal]
                       PythonCallUnary SourceSection: [2637,2674]`type(type(make_flags...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2637,2641]`type`
                           Identifier: type
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -170,7 +170,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           PythonCallUnary SourceSection: [2642,2664]`type(make_flags_clas...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2642,2646]`type`
                               Identifier: type
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -203,7 +203,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,flags_class,Illegal]
                       PythonCallBinary SourceSection: [2962,3004]`make_named_tuple_cla...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2962,2984]`make_named_tuple_cla...`
                           Frame: [0,make_named_tuple_class,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -337,7 +337,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [3147,3236]`setattr(flags_class,...`
                             PythonCallTernary SourceSection: [3147,3236]`setattr(flags_class,...`
-                              CallTernaryMethodCachedNodeGen SourceSection: None
+                              CallTernaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [3147,3154]`setattr`
                                 Identifier: setattr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -352,7 +352,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                 KeywordArgumentsNodeGen SourceSection: None
                                   KeywordLiteralNode SourceSection: None
                                     PythonCallUnary SourceSection: [3195,3207]`make_func(i)`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [3195,3204]`make_func`
                                         Frame: [4,make_func,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -376,7 +376,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         GetIteratorExpressionNodeGen SourceSection: [3121,3137]`enumerate(names)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [3121,3137]`enumerate(names)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3121,3130]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -448,7 +448,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,<return_val>,Illegal]
                         PythonCallBinary SourceSection: [3406,3669]`make_named_tuple_cla...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3406,3428]`make_named_tuple_cla...`
                             Frame: [0,make_named_tuple_class,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -472,7 +472,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       WriteNameNodeGen SourceSection: [3670,3718]`float_info = make_fl...`
         Identifier: float_info
         PythonCallUnary SourceSection: [3683,3718]`make_float_info_clas...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [3683,3706]`make_float_info_clas...`
             CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [3683,3704]`make_float_info_clas...`
@@ -524,7 +524,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,<return_val>,Illegal]
                         PythonCallBinary SourceSection: [3837,4059]`make_named_tuple_cla...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3837,3859]`make_named_tuple_cla...`
                             Frame: [0,make_named_tuple_class,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -546,7 +546,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       WriteNameNodeGen SourceSection: [4060,4180]`hash_info = make_has...`
         Identifier: hash_info
         PythonCallUnary SourceSection: [4072,4180]`make_hash_info_class...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [4072,4094]`make_hash_info_class...`
             CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [4072,4092]`make_hash_info_class...`
@@ -563,7 +563,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 PythonCallUnary SourceSection: [4119,4131]`float('inf')`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [4119,4124]`float`
                     Identifier: float
                   StringLiteralNode SourceSection: [4125,4130]`'inf'`
@@ -573,7 +573,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 PythonCallUnary SourceSection: [4147,4159]`float('nan')`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [4147,4152]`float`
                     Identifier: float
                   StringLiteralNode SourceSection: [4153,4158]`'nan'`
@@ -609,7 +609,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       WriteNameNodeGen SourceSection: [4494,4564]`@__graalpython__.bui...`
         Identifier: exit
         PythonCallUnary SourceSection: [4494,4518]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -647,7 +647,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                     FunctionBodyNode SourceSection: [4540,4561]`raise SystemExit(arg...`
                       RaiseNodeGen SourceSection: [4540,4561]`raise SystemExit(arg...`
                         PythonCallUnary SourceSection: [4546,4561]`SystemExit(arg)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4546,4556]`SystemExit`
                             Identifier: SystemExit
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -837,7 +837,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [2,msg,Illegal]
                                     PythonCallUnary SourceSection: [4990,4996]`str(e)`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4990,4993]`str`
                                         Identifier: str
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -863,7 +863,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               PythonCallUnary SourceSection: [5043,5050]`type(e)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5043,5047]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -894,7 +894,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           PythonCallUnary SourceSection: [5116,5123]`type(e)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5116,5120]`type`
                                               Identifier: type
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -976,7 +976,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                               Module: traceback
                                         ExpressionStatementNode SourceSection: [5251,5292]`traceback.print_exce...`
                                           PythonCallTernary SourceSection: [5251,5292]`traceback.print_exce...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [5251,5260]`traceback`
                                                 Frame: [3,traceback,Illegal]
@@ -1009,7 +1009,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [5403,5430]`simple_print_traceba...`
                                             PythonCallUnary SourceSection: [5403,5430]`simple_print_traceba...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [5403,5425]`simple_print_traceba...`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [5,simple_print_traceback,Illegal]
@@ -1035,7 +1035,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [5505,5534]`simple_print_traceba...`
                                             PythonCallUnary SourceSection: [5505,5534]`simple_print_traceba...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [5505,5527]`simple_print_traceba...`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [5,simple_print_traceback,Illegal]
@@ -1081,7 +1081,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       WriteNameNodeGen SourceSection: [5654,6431]`@__graalpython__.bui...`
         Identifier: breakpointhook
         PythonCallUnary SourceSection: [5654,5678]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -1149,7 +1149,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [5,hookname,Illegal]
                         PythonCallUnary SourceSection: [5763,5792]`os.getenv('PYTHONBRE...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [5763,5765]`os`
                               Frame: [3,os,Illegal]
@@ -1167,7 +1167,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __eq__
                               PythonCallUnary SourceSection: [5820,5833]`len(hookname)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5820,5823]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1180,7 +1180,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         BlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [5848,5960]`warnings.warn('Graal...`
                             PythonCallBinary SourceSection: [5848,5960]`warnings.warn('Graal...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [5848,5856]`warnings`
                                   Frame: [4,warnings,Illegal]
@@ -1212,7 +1212,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           BlockNode SourceSection: None
                       DestructuringAssignmentNodeGen SourceSection: [6046,6095]`modname, dot, funcna...`
                         PythonCallUnary SourceSection: [6071,6095]`hookname.rpartition(...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [6071,6079]`hookname`
                               Frame: [5,hookname,Illegal]
@@ -1274,7 +1274,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [9,module,Illegal]
                               PythonCallUnary SourceSection: [6169,6201]`importlib.import_mod...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [6169,6178]`importlib`
                                     Frame: [2,importlib,Illegal]
@@ -1287,7 +1287,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [10,hook,Illegal]
                               PythonCallBinary SourceSection: [6217,6242]`getattr(module, func...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6217,6224]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1300,13 +1300,13 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           ExceptNode SourceSection: None
                             ExpressionStatementNode SourceSection: [6263,6398]`warnings.warn(↵     ...`
                               PythonCallBinary SourceSection: [6263,6398]`warnings.warn(↵     ...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [6263,6271]`warnings`
                                     Frame: [4,warnings,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonCallUnary SourceSection: [6290,6369]`'Ignoring unimportab...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [6290,6335]`'Ignoring unimportab...`
                                   ReadLocalVariableNode SourceSection: [6360,6368]`hookname`
@@ -1347,7 +1347,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       WriteNameNodeGen SourceSection: [6469,6537]`@__graalpython__.bui...`
         Identifier: getrecursionlimit
         PythonCallUnary SourceSection: [6469,6493]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -1387,7 +1387,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       WriteNameNodeGen SourceSection: [6537,7105]`@__graalpython__.bui...`
         Identifier: displayhook
         PythonCallUnary SourceSection: [6537,6561]`@__graalpython__.bui...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
@@ -1450,7 +1450,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,text,Illegal]
                         PythonCallUnary SourceSection: [6732,6743]`repr(value)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6732,6736]`repr`
                             Identifier: repr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1461,7 +1461,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         TryExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [6761,6779]`stdout.write(text)`
                             PythonCallUnary SourceSection: [6761,6779]`stdout.write(text)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6761,6767]`stdout`
                                   Identifier: stdout
@@ -1476,7 +1476,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [3,bytes,Illegal]
                                 PythonCallBinary SourceSection: [6827,6875]`text.encode(stdout.e...`
-                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  CallBinaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [6827,6831]`text`
                                       Frame: [2,text,Illegal]
@@ -1493,7 +1493,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               IfNode SourceSection: [6884,7061]`if hasattr(stdout, '...`
                                 YesNodeGen SourceSection: None
                                   PythonCallBinary SourceSection: [6887,6912]`hasattr(stdout, 'buf...`
-                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                    CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [6887,6894]`hasattr`
                                       Identifier: hasattr
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1503,7 +1503,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     StringLiteralNode SourceSection: [6903,6911]`'buffer'`
                                 ExpressionStatementNode SourceSection: [6926,6952]`stdout.buffer.write(...`
                                   PythonCallUnary SourceSection: [6926,6952]`stdout.buffer.write(...`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       GetAttributeNodeGen SourceSection: [6926,6939]`stdout.buffer`
                                         GetFixedAttributeNodeGen SourceSection: None
@@ -1522,7 +1522,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [2,text,Illegal]
                                     PythonCallBinary SourceSection: [6986,7025]`bytes.decode(stdout....`
-                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                      CallBinaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [6986,6991]`bytes`
                                           Frame: [3,bytes,Illegal]
@@ -1538,7 +1538,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                       StringLiteralNode SourceSection: [7016,7024]`'strict'`
                                   ExpressionStatementNode SourceSection: [7038,7056]`stdout.write(text)`
                                     PythonCallUnary SourceSection: [7038,7056]`stdout.write(text)`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [7038,7044]`stdout`
                                           Identifier: stdout
@@ -1552,7 +1552,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           BlockNode SourceSection: None
                       ExpressionStatementNode SourceSection: [7061,7079]`stdout.write("\n")`
                         PythonCallUnary SourceSection: [7061,7079]`stdout.write("\n")`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7061,7067]`stdout`
                               Identifier: stdout

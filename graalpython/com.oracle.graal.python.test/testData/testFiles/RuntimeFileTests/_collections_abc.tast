@@ -61,11 +61,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1339,1371]`bytes_iterator = typ...`
         Identifier: bytes_iterator
         PythonCallUnary SourceSection: [1356,1371]`type(iter(b''))`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1356,1360]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1361,1370]`iter(b'')`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1361,1365]`iter`
               Identifier: iter
             BytesLiteralNode SourceSection: [1366,1369]`b''`
@@ -73,11 +73,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1372,1416]`bytearray_iterator =...`
         Identifier: bytearray_iterator
         PythonCallUnary SourceSection: [1393,1416]`type(iter(bytearray(...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1393,1397]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1398,1415]`iter(bytearray())`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1398,1402]`iter`
               Identifier: iter
             PythonCallNodeGen SourceSection: [1403,1414]`bytearray()`
@@ -87,11 +87,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1442,1482]`dict_keyiterator = t...`
         Identifier: dict_keyiterator
         PythonCallUnary SourceSection: [1461,1482]`type(iter({}.keys())...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1461,1465]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1466,1481]`iter({}.keys())`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1466,1470]`iter`
               Identifier: iter
             PythonCallNodeGen SourceSection: [1471,1480]`{}.keys()`
@@ -102,11 +102,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1483,1527]`dict_valueiterator =...`
         Identifier: dict_valueiterator
         PythonCallUnary SourceSection: [1504,1527]`type(iter({}.values(...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1504,1508]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1509,1526]`iter({}.values())`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1509,1513]`iter`
               Identifier: iter
             PythonCallNodeGen SourceSection: [1514,1525]`{}.values()`
@@ -117,11 +117,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1528,1570]`dict_itemiterator = ...`
         Identifier: dict_itemiterator
         PythonCallUnary SourceSection: [1548,1570]`type(iter({}.items()...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1548,1552]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1553,1569]`iter({}.items())`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1553,1557]`iter`
               Identifier: iter
             PythonCallNodeGen SourceSection: [1558,1568]`{}.items()`
@@ -132,11 +132,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1571,1601]`list_iterator = type...`
         Identifier: list_iterator
         PythonCallUnary SourceSection: [1587,1601]`type(iter([]))`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1587,1591]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1592,1600]`iter([])`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1592,1596]`iter`
               Identifier: iter
             ListLiteralNode SourceSection: [1597,1599]`[]`
@@ -144,15 +144,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1602,1649]`list_reverseiterator...`
         Identifier: list_reverseiterator
         PythonCallUnary SourceSection: [1625,1649]`type(iter(reversed([...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1625,1629]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1630,1648]`iter(reversed([]))`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1630,1634]`iter`
               Identifier: iter
             PythonCallUnary SourceSection: [1635,1647]`reversed([])`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1635,1643]`reversed`
                 Identifier: reversed
               ListLiteralNode SourceSection: [1644,1646]`[]`
@@ -160,15 +160,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1650,1687]`range_iterator = typ...`
         Identifier: range_iterator
         PythonCallUnary SourceSection: [1667,1687]`type(iter(range(0)))...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1667,1671]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1672,1686]`iter(range(0))`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1672,1676]`iter`
               Identifier: iter
             PythonCallUnary SourceSection: [1677,1685]`range(0)`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1677,1682]`range`
                 Identifier: range
               IntegerLiteralNode SourceSection: [1683,1684]`0`
@@ -176,15 +176,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1688,1737]`longrange_iterator =...`
         Identifier: longrange_iterator
         PythonCallUnary SourceSection: [1709,1737]`type(iter(range(1 <<...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1709,1713]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1714,1736]`iter(range(1 << 1000...`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1714,1718]`iter`
               Identifier: iter
             PythonCallUnary SourceSection: [1719,1735]`range(1 << 1000)`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1719,1724]`range`
                 Identifier: range
               BinaryArithmeticExpression SourceSection: [1725,1734]`1 << 1000`
@@ -197,11 +197,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1738,1770]`set_iterator = type(...`
         Identifier: set_iterator
         PythonCallUnary SourceSection: [1753,1770]`type(iter(set()))`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1753,1757]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1758,1769]`iter(set())`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1758,1762]`iter`
               Identifier: iter
             PythonCallNodeGen SourceSection: [1763,1768]`set()`
@@ -211,22 +211,22 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1771,1800]`str_iterator = type(...`
         Identifier: str_iterator
         PythonCallUnary SourceSection: [1786,1800]`type(iter(""))`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1786,1790]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1791,1799]`iter("")`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1791,1795]`iter`
               Identifier: iter
             StringLiteralNode SourceSection: [1796,1798]`""`
       WriteNameNodeGen SourceSection: [1801,1832]`tuple_iterator = typ...`
         Identifier: tuple_iterator
         PythonCallUnary SourceSection: [1818,1832]`type(iter(()))`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1818,1822]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1823,1831]`iter(())`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1823,1827]`iter`
               Identifier: iter
             TupleLiteralNode SourceSection: [1828,1830]`()`
@@ -234,11 +234,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1833,1865]`zip_iterator = type(...`
         Identifier: zip_iterator
         PythonCallUnary SourceSection: [1848,1865]`type(iter(zip()))`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1848,1852]`type`
             Identifier: type
           PythonCallUnary SourceSection: [1853,1864]`iter(zip())`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1853,1857]`iter`
               Identifier: iter
             PythonCallNodeGen SourceSection: [1858,1863]`zip()`
@@ -248,7 +248,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1878,1905]`dict_keys = type({}....`
         Identifier: dict_keys
         PythonCallUnary SourceSection: [1890,1905]`type({}.keys())`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1890,1894]`type`
             Identifier: type
           PythonCallNodeGen SourceSection: [1895,1904]`{}.keys()`
@@ -259,7 +259,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1906,1937]`dict_values = type({...`
         Identifier: dict_values
         PythonCallUnary SourceSection: [1920,1937]`type({}.values())`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1920,1924]`type`
             Identifier: type
           PythonCallNodeGen SourceSection: [1925,1936]`{}.values()`
@@ -270,7 +270,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1938,1967]`dict_items = type({}...`
         Identifier: dict_items
         PythonCallUnary SourceSection: [1951,1967]`type({}.items())`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1951,1955]`type`
             Identifier: type
           PythonCallNodeGen SourceSection: [1956,1966]`{}.items()`
@@ -281,7 +281,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [1979,2013]`mappingproxy = type(...`
         Identifier: mappingproxy
         PythonCallUnary SourceSection: [1994,2013]`type(type.__dict__)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1994,1998]`type`
             Identifier: type
           GetAttributeNodeGen SourceSection: [1999,2012]`type.__dict__`
@@ -294,7 +294,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [2014,2051]`generator = type((la...`
         Identifier: generator
         PythonCallUnary SourceSection: [2026,2051]`type((lambda: (yield...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2026,2030]`type`
             Identifier: type
           PythonCallNodeGen SourceSection: [2031,2050]`(lambda: (yield))()`
@@ -379,7 +379,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [2108,2131]`coroutine = type(_co...`
         Identifier: coroutine
         PythonCallUnary SourceSection: [2120,2131]`type(_coro)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2120,2124]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [2125,2130]`_coro`
@@ -434,7 +434,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [2267,2294]`async_generator = ty...`
         Identifier: async_generator
         PythonCallUnary SourceSection: [2285,2294]`type(_ag)`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2285,2289]`type`
             Identifier: type
           ReadNameNodeGen SourceSection: [2290,2293]`_ag`
@@ -631,7 +631,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [2706,2721]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [2706,2721]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -687,7 +687,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [2768,2780]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [2768,2780]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -750,7 +750,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallBinary SourceSection: [2862,2891]`_check_methods(C, "_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [2862,2876]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -838,7 +838,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [2985,3000]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [2985,3000]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -898,7 +898,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [3045,3057]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [3045,3057]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -961,7 +961,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallBinary SourceSection: [3140,3170]`_check_methods(C, "_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3140,3154]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1003,7 +1003,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [3203,4279]`class Coroutine(Awai...`
         Identifier: Coroutine
         PythonCallTernary SourceSection: [3203,4279]`class Coroutine(Awai...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Coroutine SourceSection: None
@@ -1051,7 +1051,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [3256,3271]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [3256,3271]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1113,7 +1113,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [3446,3461]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [3446,3461]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1220,7 +1220,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,val,Illegal]
                                           PythonCallUnary SourceSection: [3771,3793]`val.with_traceback(t...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [3771,3774]`val`
                                                 Frame: [2,val,Illegal]
@@ -1276,7 +1276,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       TryExceptNode SourceSection: None
                                         ExpressionStatementNode SourceSection: [3920,3945]`self.throw(Generator...`
                                           PythonCallUnary SourceSection: [3920,3945]`self.throw(Generator...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [3920,3924]`self`
                                                 Frame: [0,self,Illegal]
@@ -1297,7 +1297,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [4036,4089]`raise RuntimeError("...`
                                           PythonCallUnary SourceSection: [4042,4089]`RuntimeError("corout...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4042,4054]`RuntimeError`
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1312,7 +1312,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [4095,4107]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4095,4107]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1412,7 +1412,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Awaitable
       ExpressionStatementNode SourceSection: [4279,4308]`Coroutine.register(c...`
         PythonCallUnary SourceSection: [4279,4308]`Coroutine.register(c...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [4279,4288]`Coroutine`
               Identifier: Coroutine
@@ -1467,7 +1467,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [4376,4391]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4376,4391]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1526,7 +1526,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [4453,4465]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4453,4465]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1589,7 +1589,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallBinary SourceSection: [4552,4582]`_check_methods(C, "_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4552,4566]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1631,7 +1631,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [4615,5061]`class AsyncIterator(...`
         Identifier: AsyncIterator
         PythonCallTernary SourceSection: [4615,5061]`class AsyncIterator(...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: AsyncIterator SourceSection: None
@@ -1679,7 +1679,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [4676,4691]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4676,4691]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1779,7 +1779,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [4886,4898]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4886,4898]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -1842,7 +1842,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallTernary SourceSection: [4985,5028]`_check_methods(C, "_...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4985,4999]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1878,7 +1878,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [5061,6485]`class AsyncGenerator...`
         Identifier: AsyncGenerator
         PythonCallTernary SourceSection: [5061,6485]`class AsyncGenerator...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: AsyncGenerator SourceSection: None
@@ -1961,7 +1961,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [5292,5314]`await self.asend(Non...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5298,5302]`self`
                                               Frame: [0,self,Illegal]
@@ -1976,7 +1976,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [5320,5335]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [5320,5335]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2038,7 +2038,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [5540,5555]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [5540,5555]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2145,7 +2145,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,val,Illegal]
                                           PythonCallUnary SourceSection: [5890,5912]`val.with_traceback(t...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [5890,5893]`val`
                                                 Frame: [2,val,Illegal]
@@ -2201,7 +2201,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       TryExceptNode SourceSection: None
                                         ExpressionStatementNode SourceSection: [6046,6078]`await self.athrow(Ge...`
                                           PythonCallUnary SourceSection: [6046,6078]`await self.athrow(Ge...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [6052,6056]`self`
                                                 Frame: [0,self,Illegal]
@@ -2222,7 +2222,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [6174,6240]`raise RuntimeError("...`
                                           PythonCallUnary SourceSection: [6180,6240]`RuntimeError("asynch...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6180,6192]`RuntimeError`
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2237,7 +2237,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [6246,6258]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6246,6258]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2338,7 +2338,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: AsyncIterator
       ExpressionStatementNode SourceSection: [6485,6525]`AsyncGenerator.regis...`
         PythonCallUnary SourceSection: [6485,6525]`AsyncGenerator.regis...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6485,6499]`AsyncGenerator`
               Identifier: AsyncGenerator
@@ -2393,7 +2393,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [6588,6603]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6588,6603]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2459,7 +2459,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [6677,6689]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6677,6689]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2522,7 +2522,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallBinary SourceSection: [6771,6800]`_check_methods(C, "_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [6771,6785]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2564,7 +2564,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [6833,7255]`class Iterator(Itera...`
         Identifier: Iterator
         PythonCallTernary SourceSection: [6833,7255]`class Iterator(Itera...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Iterator SourceSection: None
@@ -2612,7 +2612,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [6884,6899]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6884,6899]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2712,7 +2712,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [7088,7100]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7088,7100]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -2775,7 +2775,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallTernary SourceSection: [7182,7223]`_check_methods(C, '_...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [7182,7196]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2810,7 +2810,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Iterable
       ExpressionStatementNode SourceSection: [7255,7288]`Iterator.register(by...`
         PythonCallUnary SourceSection: [7255,7288]`Iterator.register(by...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7255,7263]`Iterator`
               Identifier: Iterator
@@ -2818,7 +2818,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: bytes_iterator
       ExpressionStatementNode SourceSection: [7289,7326]`Iterator.register(by...`
         PythonCallUnary SourceSection: [7289,7326]`Iterator.register(by...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7289,7297]`Iterator`
               Identifier: Iterator
@@ -2826,7 +2826,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: bytearray_iterator
       ExpressionStatementNode SourceSection: [7365,7400]`Iterator.register(di...`
         PythonCallUnary SourceSection: [7365,7400]`Iterator.register(di...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7365,7373]`Iterator`
               Identifier: Iterator
@@ -2834,7 +2834,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: dict_keyiterator
       ExpressionStatementNode SourceSection: [7401,7438]`Iterator.register(di...`
         PythonCallUnary SourceSection: [7401,7438]`Iterator.register(di...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7401,7409]`Iterator`
               Identifier: Iterator
@@ -2842,7 +2842,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: dict_valueiterator
       ExpressionStatementNode SourceSection: [7439,7475]`Iterator.register(di...`
         PythonCallUnary SourceSection: [7439,7475]`Iterator.register(di...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7439,7447]`Iterator`
               Identifier: Iterator
@@ -2850,7 +2850,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: dict_itemiterator
       ExpressionStatementNode SourceSection: [7476,7508]`Iterator.register(li...`
         PythonCallUnary SourceSection: [7476,7508]`Iterator.register(li...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7476,7484]`Iterator`
               Identifier: Iterator
@@ -2858,7 +2858,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: list_iterator
       ExpressionStatementNode SourceSection: [7509,7548]`Iterator.register(li...`
         PythonCallUnary SourceSection: [7509,7548]`Iterator.register(li...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7509,7517]`Iterator`
               Identifier: Iterator
@@ -2866,7 +2866,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: list_reverseiterator
       ExpressionStatementNode SourceSection: [7549,7582]`Iterator.register(ra...`
         PythonCallUnary SourceSection: [7549,7582]`Iterator.register(ra...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7549,7557]`Iterator`
               Identifier: Iterator
@@ -2874,7 +2874,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: range_iterator
       ExpressionStatementNode SourceSection: [7583,7620]`Iterator.register(lo...`
         PythonCallUnary SourceSection: [7583,7620]`Iterator.register(lo...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7583,7591]`Iterator`
               Identifier: Iterator
@@ -2882,7 +2882,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: longrange_iterator
       ExpressionStatementNode SourceSection: [7621,7652]`Iterator.register(se...`
         PythonCallUnary SourceSection: [7621,7652]`Iterator.register(se...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7621,7629]`Iterator`
               Identifier: Iterator
@@ -2890,7 +2890,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: set_iterator
       ExpressionStatementNode SourceSection: [7653,7684]`Iterator.register(st...`
         PythonCallUnary SourceSection: [7653,7684]`Iterator.register(st...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7653,7661]`Iterator`
               Identifier: Iterator
@@ -2898,7 +2898,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: str_iterator
       ExpressionStatementNode SourceSection: [7685,7718]`Iterator.register(tu...`
         PythonCallUnary SourceSection: [7685,7718]`Iterator.register(tu...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7685,7693]`Iterator`
               Identifier: Iterator
@@ -2906,7 +2906,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: tuple_iterator
       ExpressionStatementNode SourceSection: [7719,7750]`Iterator.register(zi...`
         PythonCallUnary SourceSection: [7719,7750]`Iterator.register(zi...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7719,7727]`Iterator`
               Identifier: Iterator
@@ -2915,7 +2915,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [7753,8073]`class Reversible(Ite...`
         Identifier: Reversible
         PythonCallTernary SourceSection: [7753,8073]`class Reversible(Ite...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Reversible SourceSection: None
@@ -2963,7 +2963,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [7806,7821]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7806,7821]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3029,7 +3029,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [7899,7911]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7899,7911]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3092,7 +3092,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallTernary SourceSection: [7995,8040]`_check_methods(C, "_...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [7995,8009]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3128,7 +3128,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [8073,9357]`class Generator(Iter...`
         Identifier: Generator
         PythonCallTernary SourceSection: [8073,9357]`class Generator(Iter...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Generator SourceSection: None
@@ -3211,7 +3211,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [8269,8284]`self.send(None)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [8269,8273]`self`
                                               Frame: [0,self,Illegal]
@@ -3226,7 +3226,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [8290,8305]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [8290,8305]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3288,7 +3288,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [8480,8495]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [8480,8495]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3395,7 +3395,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,val,Illegal]
                                           PythonCallUnary SourceSection: [8805,8827]`val.with_traceback(t...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [8805,8808]`val`
                                                 Frame: [2,val,Illegal]
@@ -3451,7 +3451,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       TryExceptNode SourceSection: None
                                         ExpressionStatementNode SourceSection: [8954,8979]`self.throw(Generator...`
                                           PythonCallUnary SourceSection: [8954,8979]`self.throw(Generator...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [8954,8958]`self`
                                                 Frame: [0,self,Illegal]
@@ -3472,7 +3472,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [9070,9123]`raise RuntimeError("...`
                                           PythonCallUnary SourceSection: [9076,9123]`RuntimeError("genera...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9076,9088]`RuntimeError`
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3487,7 +3487,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [9129,9141]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9129,9141]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3588,7 +3588,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Iterator
       ExpressionStatementNode SourceSection: [9357,9386]`Generator.register(g...`
         PythonCallUnary SourceSection: [9357,9386]`Generator.register(g...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [9357,9366]`Generator`
               Identifier: Generator
@@ -3643,7 +3643,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [9446,9461]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9446,9461]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3699,7 +3699,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [9507,9519]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9507,9519]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3762,7 +3762,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallBinary SourceSection: [9598,9626]`_check_methods(C, "_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9598,9612]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3850,7 +3850,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [9720,9735]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9720,9735]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3913,7 +3913,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [9793,9805]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9793,9805]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -3976,7 +3976,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallBinary SourceSection: [9888,9921]`_check_methods(C, "_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9888,9902]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4064,7 +4064,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [10024,10036]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10024,10036]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -4216,7 +4216,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [10269,10284]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10269,10284]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -4287,7 +4287,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [10350,10362]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10350,10362]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -4350,7 +4350,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             PythonCallBinary SourceSection: [10444,10473]`_check_methods(C, "_...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [10444,10458]`_check_methods`
                                                 Identifier: _check_methods
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4392,7 +4392,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [10521,14799]`class Set(Collection...`
         Identifier: Set
         PythonCallTernary SourceSection: [10521,14799]`class Set(Collection...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Set SourceSection: None
@@ -4486,7 +4486,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [10960,11033]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [10963,10989]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [10967,10989]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10967,10977]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4511,7 +4511,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
                                           PythonCallUnary SourceSection: [11036,11045]`len(self)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11036,11039]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4519,7 +4519,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [11048,11058]`len(other)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11048,11051]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4621,7 +4621,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [11232,11305]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11235,11261]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [11239,11261]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11239,11249]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4650,7 +4650,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __lt__
                                             PythonCallUnary SourceSection: [11312,11321]`len(self)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11312,11315]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4658,7 +4658,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [11324,11334]`len(other)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11324,11327]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4666,7 +4666,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [11339,11357]`self.__le__(other)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [11339,11343]`self`
                                                 Frame: [0,self,Illegal]
@@ -4724,7 +4724,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [11396,11469]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11399,11425]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [11403,11425]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11403,11413]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4753,7 +4753,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __gt__
                                             PythonCallUnary SourceSection: [11476,11485]`len(self)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11476,11479]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4761,7 +4761,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [11488,11498]`len(other)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11488,11491]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4769,7 +4769,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [11503,11521]`self.__ge__(other)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [11503,11507]`self`
                                                 Frame: [0,self,Illegal]
@@ -4827,7 +4827,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [11560,11633]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11563,11589]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [11567,11589]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11567,11577]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4852,7 +4852,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __lt__
                                           PythonCallUnary SourceSection: [11636,11645]`len(self)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11636,11639]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4860,7 +4860,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [11648,11658]`len(other)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11648,11651]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4962,7 +4962,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [11832,11905]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11835,11861]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [11839,11861]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11839,11849]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4991,7 +4991,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __eq__
                                             PythonCallUnary SourceSection: [11912,11921]`len(self)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11912,11915]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4999,7 +4999,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [11925,11935]`len(other)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11925,11928]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5007,7 +5007,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [11940,11958]`self.__le__(other)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [11940,11944]`self`
                                                 Frame: [0,self,Illegal]
@@ -5025,7 +5025,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [11964,11976]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [11964,11976]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -5079,7 +5079,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,<return_val>,Illegal]
                                           PythonCallUnary SourceSection: [12228,12235]`cls(it)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12228,12231]`cls`
                                               Frame: [0,cls,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5136,7 +5136,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [12275,12353]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [12278,12309]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [12282,12309]`isinstance(other, It...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12282,12292]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5161,7 +5161,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [12360,12422]`self._from_iterable(...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [12360,12364]`self`
                                               ReadLocalVariableNode SourceSection: None
@@ -5385,7 +5385,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [12686,12764]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [12689,12720]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [12693,12720]`isinstance(other, It...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12693,12703]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5486,7 +5486,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [12825,12851]`self._from_iterable(...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12825,12829]`self`
                                               Frame: [0,self,Illegal]
@@ -5558,7 +5558,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [12913,13085]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [12916,12942]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [12920,12942]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12920,12930]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5574,7 +5574,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         IfNode SourceSection: [12956,13042]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [12959,12990]`not isinstance(other...`
                                             PythonCallBinary SourceSection: [12963,12990]`isinstance(other, It...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12963,12973]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5601,7 +5601,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [1,other,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [13050,13076]`self._from_iterable(...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [13050,13054]`self`
                                                 Frame: [0,self,Illegal]
@@ -5618,7 +5618,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [13092,13193]`self._from_iterable(...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [13092,13096]`self`
                                               Frame: [0,self,Illegal]
@@ -5743,7 +5743,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [13234,13406]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [13237,13263]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [13241,13263]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13241,13251]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5757,7 +5757,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         IfNode SourceSection: [13277,13363]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [13280,13311]`not isinstance(other...`
                                             PythonCallBinary SourceSection: [13284,13311]`isinstance(other, It...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13284,13294]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5781,7 +5781,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,other,Illegal]
                                           PythonCallUnary SourceSection: [13371,13397]`self._from_iterable(...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [13371,13375]`self`
                                                 ReadLocalVariableNode SourceSection: None
@@ -5798,7 +5798,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [13413,13514]`self._from_iterable(...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [13413,13417]`self`
                                               ReadLocalVariableNode SourceSection: None
@@ -5924,7 +5924,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [13554,13726]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [13557,13583]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [13561,13583]`isinstance(other, Se...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13561,13571]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5938,7 +5938,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         IfNode SourceSection: [13597,13683]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [13600,13631]`not isinstance(other...`
                                             PythonCallBinary SourceSection: [13604,13631]`isinstance(other, It...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13604,13614]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5962,7 +5962,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,other,Illegal]
                                           PythonCallUnary SourceSection: [13691,13717]`self._from_iterable(...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [13691,13695]`self`
                                                 Frame: [0,self,Illegal]
@@ -6083,7 +6083,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,n,Illegal]
                                       PythonCallUnary SourceSection: [14446,14455]`len(self)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14446,14449]`len`
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6132,7 +6132,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [5,hx,Illegal]
                                               PythonCallUnary SourceSection: [14547,14554]`hash(x)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14547,14551]`hash`
                                                   Identifier: hash
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6286,7 +6286,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Collection
       ExpressionStatementNode SourceSection: [14799,14822]`Set.register(frozens...`
         PythonCallUnary SourceSection: [14799,14822]`Set.register(frozens...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [14799,14802]`Set`
               Identifier: Set
@@ -6295,7 +6295,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [14825,16941]`class MutableSet(Set...`
         Identifier: MutableSet
         PythonCallTernary SourceSection: [14825,16941]`class MutableSet(Set...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: MutableSet SourceSection: None
@@ -6349,7 +6349,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [15275,15290]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [15275,15290]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -6411,7 +6411,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [15386,15401]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [15386,15401]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -6524,7 +6524,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [15677,15698]`raise KeyError(value...`
                                         PythonCallUnary SourceSection: [15683,15698]`KeyError(value)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [15683,15691]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6535,7 +6535,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [15707,15726]`self.discard(value)`
                                       PythonCallUnary SourceSection: [15707,15726]`self.discard(value)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15707,15711]`self`
                                             Frame: [0,self,Illegal]
@@ -6586,7 +6586,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,it,Illegal]
                                       PythonCallUnary SourceSection: [15825,15835]`iter(self)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15825,15829]`iter`
                                           Identifier: iter
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6600,7 +6600,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,value,Illegal]
                                           PythonCallUnary SourceSection: [15869,15877]`next(it)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [15869,15873]`next`
                                               Identifier: next
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6619,7 +6619,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [15953,15972]`self.discard(value)`
                                       PythonCallUnary SourceSection: [15953,15972]`self.discard(value)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15953,15957]`self`
                                             Frame: [0,self,Illegal]
@@ -6751,7 +6751,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,value,Illegal]
                                           ExpressionStatementNode SourceSection: [16256,16271]`self.add(value)`
                                             PythonCallUnary SourceSection: [16256,16271]`self.add(value)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [16256,16260]`self`
                                                   Frame: [0,self,Illegal]
@@ -6829,7 +6829,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,value,Illegal]
                                           ExpressionStatementNode SourceSection: [16367,16386]`self.discard(value)`
                                             PythonCallUnary SourceSection: [16367,16386]`self.discard(value)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [16367,16371]`self`
                                                   Frame: [0,self,Illegal]
@@ -6923,7 +6923,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         IfNode SourceSection: [16510,16595]`if not isinstance(it...`
                                           NotNodeGen SourceSection: [16513,16536]`not isinstance(it, S...`
                                             PythonCallBinary SourceSection: [16517,16536]`isinstance(it, Set)`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [16517,16527]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6938,7 +6938,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,it,Illegal]
                                             PythonCallUnary SourceSection: [16559,16582]`self._from_iterable(...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [16559,16563]`self`
                                                   Frame: [0,self,Illegal]
@@ -6969,7 +6969,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [16666,16685]`self.discard(value)`
                                                   PythonCallUnary SourceSection: [16666,16685]`self.discard(value)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [16666,16670]`self`
                                                         Frame: [0,self,Illegal]
@@ -6979,7 +6979,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [16728,16743]`self.add(value)`
                                                   PythonCallUnary SourceSection: [16728,16743]`self.add(value)`
-                                                    CachedNodeGen SourceSection: None
+                                                    CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [16728,16732]`self`
                                                         Frame: [0,self,Illegal]
@@ -7073,7 +7073,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [2,value,Illegal]
                                             ExpressionStatementNode SourceSection: [16900,16919]`self.discard(value)`
                                               PythonCallUnary SourceSection: [16900,16919]`self.discard(value)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [16900,16904]`self`
                                                     Frame: [0,self,Illegal]
@@ -7112,7 +7112,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Set
       ExpressionStatementNode SourceSection: [16941,16965]`MutableSet.register(...`
         PythonCallUnary SourceSection: [16941,16965]`MutableSet.register(...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [16941,16951]`MutableSet`
               Identifier: MutableSet
@@ -7121,7 +7121,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [16987,18236]`class Mapping(Collec...`
         Identifier: Mapping
         PythonCallTernary SourceSection: [16987,18236]`class Mapping(Collec...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Mapping SourceSection: None
@@ -7171,7 +7171,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [17250,17265]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [17250,17265]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -7421,7 +7421,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [17787,17801]`KeysView(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [17787,17795]`KeysView`
                                             Identifier: KeysView
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7472,7 +7472,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [17910,17925]`ItemsView(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [17910,17919]`ItemsView`
                                             Identifier: ItemsView
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7523,7 +7523,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [18029,18045]`ValuesView(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18029,18039]`ValuesView`
                                             Identifier: ValuesView
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7579,7 +7579,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [18084,18161]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [18087,18117]`not isinstance(other...`
                                         PythonCallBinary SourceSection: [18091,18117]`isinstance(other, Ma...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18091,18101]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7607,7 +7607,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __eq__
                                           PythonCallUnary SourceSection: [18168,18186]`dict(self.items())`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18168,18172]`dict`
                                               Identifier: dict
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7618,7 +7618,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [18190,18209]`dict(other.items())`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18190,18194]`dict`
                                               Identifier: dict
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7651,7 +7651,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Collection
       ExpressionStatementNode SourceSection: [18236,18266]`Mapping.register(map...`
         PythonCallUnary SourceSection: [18236,18266]`Mapping.register(map...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [18236,18243]`Mapping`
               Identifier: Mapping
@@ -7660,7 +7660,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [18269,18544]`class MappingView(Si...`
         Identifier: MappingView
         PythonCallTernary SourceSection: [18269,18544]`class MappingView(Si...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: MappingView SourceSection: None
@@ -7798,7 +7798,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [18429,18447]`len(self._mapping)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18429,18432]`len`
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7854,7 +7854,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [18488,18541]`'{0.__class__.__name...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [18488,18528]`'{0.__class__.__name...`
                                           ReadLocalVariableNode SourceSection: [18536,18540]`self`
@@ -7926,7 +7926,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [18603,18615]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [18603,18615]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -7980,7 +7980,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,<return_val>,Illegal]
                                           PythonCallUnary SourceSection: [18665,18672]`set(it)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18665,18668]`set`
                                               Identifier: set
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8131,7 +8131,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Set
       ExpressionStatementNode SourceSection: [18802,18830]`KeysView.register(di...`
         PythonCallUnary SourceSection: [18802,18830]`KeysView.register(di...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [18802,18810]`KeysView`
               Identifier: KeysView
@@ -8188,7 +8188,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [18893,18905]`@classmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [18893,18905]`@classmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -8242,7 +8242,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,<return_val>,Illegal]
                                           PythonCallUnary SourceSection: [18955,18962]`set(it)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18955,18958]`set`
                                               Identifier: set
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8477,7 +8477,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Set
       ExpressionStatementNode SourceSection: [19284,19314]`ItemsView.register(d...`
         PythonCallUnary SourceSection: [19284,19314]`ItemsView.register(d...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [19284,19293]`ItemsView`
               Identifier: ItemsView
@@ -8740,7 +8740,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Collection
       ExpressionStatementNode SourceSection: [19672,19704]`ValuesView.register(...`
         PythonCallUnary SourceSection: [19672,19704]`ValuesView.register(...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [19672,19682]`ValuesView`
               Identifier: ValuesView
@@ -8749,7 +8749,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [19707,22581]`class MutableMapping...`
         Identifier: MutableMapping
         PythonCallTernary SourceSection: [19707,22581]`class MutableMapping...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: MutableMapping SourceSection: None
@@ -8799,7 +8799,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [20011,20026]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [20011,20026]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -8868,7 +8868,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [20094,20109]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [20094,20109]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -9104,12 +9104,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,key,Illegal]
                                           PythonCallUnary SourceSection: [20841,20857]`next(iter(self))`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [20841,20845]`next`
                                               Identifier: next
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [20846,20856]`iter(self)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20846,20850]`iter`
                                                 Identifier: iter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9270,7 +9270,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [21597,21711]`raise TypeError("des...`
                                         PythonCallUnary SourceSection: [21603,21711]`TypeError("descripto...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [21603,21612]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9309,7 +9309,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
                                           PythonCallUnary SourceSection: [21750,21759]`len(args)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [21750,21753]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9320,7 +9320,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Value: 1
                                       RaiseNodeGen SourceSection: [21777,21879]`raise TypeError('upd...`
                                         PythonCallUnary SourceSection: [21783,21879]`TypeError('update ex...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [21783,21792]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9329,7 +9329,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Op: __mod__
                                             StringLiteralNode SourceSection: [21793,21838]`'update expected at ...`
                                             PythonCallUnary SourceSection: [21869,21878]`len(args)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21869,21872]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9357,7 +9357,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         IfNode SourceSection: [21937,22275]`if isinstance(other,...`
                                           YesNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [21940,21966]`isinstance(other, Ma...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21940,21950]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9398,7 +9398,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           IfNode SourceSection: None
                                             YesNodeGen SourceSection: None
                                               PythonCallBinary SourceSection: [22062,22084]`hasattr(other, "keys...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22062,22069]`hasattr`
                                                   Identifier: hasattr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9635,7 +9635,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Mapping
       ExpressionStatementNode SourceSection: [22581,22610]`MutableMapping.regis...`
         PythonCallUnary SourceSection: [22581,22610]`MutableMapping.regis...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [22581,22595]`MutableMapping`
               Identifier: MutableMapping
@@ -9698,7 +9698,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [22848,22863]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [22848,22863]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -9997,17 +9997,17 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       GetIteratorExpressionNodeGen SourceSection: [23315,23341]`reversed(range(len(s...`
                                         GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [23315,23341]`reversed(range(len(s...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23315,23323]`reversed`
                                             Identifier: reversed
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [23324,23340]`range(len(self))`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [23324,23329]`range`
                                               Identifier: range
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [23330,23339]`len(self)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [23330,23333]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10114,7 +10114,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,start,Illegal]
                                         PythonCallBinary SourceSection: [23727,23752]`max(len(self) + star...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23727,23730]`max`
                                             Identifier: max
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10122,7 +10122,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __add__
                                             PythonCallUnary SourceSection: [23731,23740]`len(self)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [23731,23734]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10162,7 +10162,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [3,stop,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [23815,23824]`len(self)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [23815,23818]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10316,7 +10316,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [24221,24269]`sum(1 for v in self ...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [24221,24224]`sum`
                                             Identifier: sum
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10417,7 +10417,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Collection
       ExpressionStatementNode SourceSection: [24271,24295]`Sequence.register(tu...`
         PythonCallUnary SourceSection: [24271,24295]`Sequence.register(tu...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [24271,24279]`Sequence`
               Identifier: Sequence
@@ -10425,7 +10425,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: tuple
       ExpressionStatementNode SourceSection: [24296,24318]`Sequence.register(st...`
         PythonCallUnary SourceSection: [24296,24318]`Sequence.register(st...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [24296,24304]`Sequence`
               Identifier: Sequence
@@ -10433,7 +10433,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: str
       ExpressionStatementNode SourceSection: [24319,24343]`Sequence.register(ra...`
         PythonCallUnary SourceSection: [24319,24343]`Sequence.register(ra...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [24319,24327]`Sequence`
               Identifier: Sequence
@@ -10441,7 +10441,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: range
       ExpressionStatementNode SourceSection: [24344,24373]`Sequence.register(me...`
         PythonCallUnary SourceSection: [24344,24373]`Sequence.register(me...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [24344,24352]`Sequence`
               Identifier: Sequence
@@ -10450,7 +10450,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [24376,24514]`class ByteString(Seq...`
         Identifier: ByteString
         PythonCallTernary SourceSection: [24376,24514]`class ByteString(Seq...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: ByteString SourceSection: None
@@ -10512,7 +10512,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Sequence
       ExpressionStatementNode SourceSection: [24514,24540]`ByteString.register(...`
         PythonCallUnary SourceSection: [24514,24540]`ByteString.register(...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [24514,24524]`ByteString`
               Identifier: ByteString
@@ -10520,7 +10520,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: bytes
       ExpressionStatementNode SourceSection: [24541,24571]`ByteString.register(...`
         PythonCallUnary SourceSection: [24541,24571]`ByteString.register(...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [24541,24551]`ByteString`
               Identifier: ByteString
@@ -10529,7 +10529,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [24574,26338]`class MutableSequenc...`
         Identifier: MutableSequence
         PythonCallTernary SourceSection: [24574,26338]`class MutableSequenc...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: MutableSequence SourceSection: None
@@ -10579,7 +10579,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [24819,24834]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24819,24834]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -10648,7 +10648,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [24906,24921]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24906,24921]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -10710,7 +10710,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [24986,25001]`@abstractmethod`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24986,25001]`@abstractmethod`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -10818,13 +10818,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [25232,25261]`self.insert(len(self...`
                                     ExpressionStatementNode SourceSection: [25232,25261]`self.insert(len(self...`
                                       PythonCallBinary SourceSection: [25232,25261]`self.insert(len(self...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [25232,25236]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [25244,25253]`len(self)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [25244,25247]`len`
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10937,7 +10937,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,n,Illegal]
                                       PythonCallUnary SourceSection: [25527,25536]`len(self)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [25527,25530]`len`
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -11022,7 +11022,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         GetIteratorExpressionNodeGen SourceSection: [25554,25565]`range(n//2)`
                                           GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [25554,25565]`range(n//2)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [25554,25559]`range`
                                               Identifier: range
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -11091,7 +11091,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,v,Illegal]
                                           ExpressionStatementNode SourceSection: [25779,25793]`self.append(v)`
                                             PythonCallUnary SourceSection: [25779,25793]`self.append(v)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [25779,25783]`self`
                                                   Frame: [0,self,Illegal]
@@ -11230,7 +11230,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [26237,26254]`self.index(value)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [26237,26241]`self`
                                             Frame: [0,self,Illegal]
@@ -11286,7 +11286,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [26297,26336]`self.extend(values)↵...`
                                     ExpressionStatementNode SourceSection: [26297,26316]`self.extend(values)`
                                       PythonCallUnary SourceSection: [26297,26316]`self.extend(values)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [26297,26301]`self`
                                             Frame: [0,self,Illegal]
@@ -11319,14 +11319,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Sequence
       ExpressionStatementNode SourceSection: [26338,26368]`MutableSequence.regi...`
         PythonCallUnary SourceSection: [26338,26368]`MutableSequence.regi...`
-          CachedNodeGen SourceSection: None
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [26338,26353]`MutableSequence`
               Identifier: MutableSequence
           ReadNameNodeGen SourceSection: [26363,26367]`list`
             Identifier: list
       PythonCallUnary SourceSection: [26369,26404]`MutableSequence.regi...`
-        CachedNodeGen SourceSection: None
+        CallUnaryMethodNodeGen SourceSection: None
         GetCallAttributeNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [26369,26384]`MutableSequence`
             Identifier: MutableSequence

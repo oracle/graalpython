@@ -39,7 +39,7 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                   FunctionBodyNode SourceSection: [9,26]`f((yield from 1))`
                     ExpressionStatementNode SourceSection: [9,26]`f((yield from 1))`
                       PythonCallUnary SourceSection: [9,26]`f((yield from 1))`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [9,10]`f`
                           Identifier: f
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

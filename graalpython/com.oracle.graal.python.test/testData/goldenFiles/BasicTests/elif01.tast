@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     Value: 200
               ExpressionStatementNode SourceSection: [27,36]`print (2)`
                 PythonCallUnary SourceSection: [27,36]`print (2)`
-                  CachedNodeGen SourceSection: None
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [27,32]`print`
                     Identifier: print
                   IntegerLiteralNode SourceSection: [34,35]`2`
@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       Value: 150
                 ExpressionStatementNode SourceSection: [56,67]`print (1.5)`
                   PythonCallUnary SourceSection: [56,67]`print (1.5)`
-                    CachedNodeGen SourceSection: None
+                    CallUnaryMethodNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [56,61]`print`
                       Identifier: print
                     DoubleLiteralNode SourceSection: [63,66]`1.5`
@@ -53,7 +53,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                         Value: 100
                   ExpressionStatementNode SourceSection: [87,96]`print (1)`
                     PythonCallUnary SourceSection: [87,96]`print (1)`
-                      CachedNodeGen SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [87,92]`print`
                         Identifier: print
                       IntegerLiteralNode SourceSection: [94,95]`1`

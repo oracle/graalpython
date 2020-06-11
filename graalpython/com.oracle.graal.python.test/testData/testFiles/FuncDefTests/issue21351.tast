@@ -110,7 +110,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
             Identifier: fnc
       ExpressionStatementNode SourceSection: [144,175]`print("free > ", c.c...`
         PythonCallBinary SourceSection: [144,175]`print("free > ", c.c...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [144,149]`print`
             Identifier: print
           StringLiteralNode SourceSection: [150,159]`"free > "`
@@ -122,7 +122,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
             ReadNameNodeGen SourceSection: [161,162]`c`
               Identifier: c
       PythonCallBinary SourceSection: [176,207]`print("cell > ", c.c...`
-        CallBinaryMethodCachedNodeGen SourceSection: None
+        CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [176,181]`print`
           Identifier: print
         StringLiteralNode SourceSection: [182,191]`"cell > "`

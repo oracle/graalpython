@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
   Documentation: None
   InnerRootNode SourceSection: [0,28]`{i: i + 1 for i in r...`
     PythonCallUnary SourceSection: [0,28]`{i: i + 1 for i in r...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -70,7 +70,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
         GetIteratorExpressionNodeGen SourceSection: [19,27]`range(3)`
           GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [19,27]`range(3)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [19,24]`range`
               Identifier: range
             IntegerLiteralNode SourceSection: [25,26]`3`

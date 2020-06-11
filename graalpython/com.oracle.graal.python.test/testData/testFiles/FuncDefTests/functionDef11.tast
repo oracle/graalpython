@@ -45,7 +45,7 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                           Value: 10
                       ExpressionStatementNode SourceSection: [30,38]`print(x)`
                         PythonCallUnary SourceSection: [30,38]`print(x)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [30,35]`print`
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
         WriteNameNodeGen SourceSection: [0,27]`@staticmethod↵def f(...`
           Identifier: f
           PythonCallUnary SourceSection: [0,13]`@staticmethod`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
               Identifier: staticmethod
             FunctionDefinitionNode Name: f SourceSection: None

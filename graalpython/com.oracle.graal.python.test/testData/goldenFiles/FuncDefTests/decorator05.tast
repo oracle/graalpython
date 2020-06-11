@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,inner,Illegal]
                         PythonCallUnary SourceSection: [46,57]`@decorator1`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [46,57]`@decorator1`
                             Frame: [0,decorator1,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

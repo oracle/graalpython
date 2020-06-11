@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                       WithNode SourceSection: [14,44]`with a:↵    bla(p1, ...`
                         ExpressionStatementNode SourceSection: [26,41]`bla(p1, p2, p3)`
                           PythonCallTernary SourceSection: [26,41]`bla(p1, p2, p3)`
-                            CallTernaryMethodCachedNodeGen SourceSection: None
+                            CallTernaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [26,29]`bla`
                               Identifier: bla
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

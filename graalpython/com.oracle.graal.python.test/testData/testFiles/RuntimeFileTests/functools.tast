@@ -168,7 +168,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [4,value,Illegal]
                                 PythonCallBinary SourceSection: [2114,2136]`getattr(wrapped, att...`
-                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  CallBinaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2114,2121]`getattr`
                                     Identifier: getattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -186,7 +186,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [2211,2240]`setattr(wrapper, att...`
                                 PythonCallTernary SourceSection: [2211,2240]`setattr(wrapper, att...`
-                                  CallTernaryMethodCachedNodeGen SourceSection: None
+                                  CallTernaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2211,2218]`setattr`
                                     Identifier: setattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -215,10 +215,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 Frame: [5,attr,Illegal]
                           ExpressionStatementNode SourceSection: [2274,2331]`getattr(wrapper, att...`
                             PythonCallUnary SourceSection: [2274,2331]`getattr(wrapper, att...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 PythonCallBinary SourceSection: [2274,2296]`getattr(wrapper, att...`
-                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  CallBinaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2274,2281]`getattr`
                                     Identifier: getattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -229,7 +229,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Frame: [5,attr,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               PythonCallTernary SourceSection: [2304,2330]`getattr(wrapped, att...`
-                                CallTernaryMethodCachedNodeGen SourceSection: None
+                                CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2304,2311]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -403,7 +403,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [3843,3861]`self.__lt__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3843,3847]`self`
                             Frame: [0,self,Illegal]
@@ -506,7 +506,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [4120,4138]`self.__lt__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [4120,4124]`self`
                             Frame: [0,self,Illegal]
@@ -590,7 +590,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [4323,4341]`self.__lt__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [4323,4327]`self`
                             Frame: [0,self,Illegal]
@@ -682,7 +682,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [4587,4605]`self.__le__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [4587,4591]`self`
                             Frame: [0,self,Illegal]
@@ -785,7 +785,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [4864,4882]`self.__le__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [4864,4868]`self`
                             Frame: [0,self,Illegal]
@@ -887,7 +887,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [5129,5147]`self.__le__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [5129,5133]`self`
                             Frame: [0,self,Illegal]
@@ -979,7 +979,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [5392,5410]`self.__gt__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [5392,5396]`self`
                             Frame: [0,self,Illegal]
@@ -1082,7 +1082,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [5669,5687]`self.__gt__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [5669,5673]`self`
                             Frame: [0,self,Illegal]
@@ -1166,7 +1166,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [5872,5890]`self.__gt__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [5872,5876]`self`
                             Frame: [0,self,Illegal]
@@ -1258,7 +1258,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [6136,6154]`self.__ge__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [6136,6140]`self`
                             Frame: [0,self,Illegal]
@@ -1361,7 +1361,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [6413,6431]`self.__ge__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [6413,6417]`self`
                             Frame: [0,self,Illegal]
@@ -1463,7 +1463,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,op_result,Illegal]
                       PythonCallUnary SourceSection: [6678,6696]`self.__ge__(other)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [6678,6682]`self`
                             Frame: [0,self,Illegal]
@@ -1615,7 +1615,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,roots,Illegal]
                       PythonCallUnary SourceSection: [7457,7537]`op for op in _conver...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1648,7 +1648,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       NotNodeGen SourceSection: [7482,7537]`getattr(cls, op, Non...`
                                         IsExpressionNodeGen SourceSection: None
                                           PythonCallTernary SourceSection: [7482,7504]`getattr(cls, op, Non...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7482,7489]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1662,7 +1662,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [7499,7503]`None`
                                           PythonCallTernary SourceSection: [7512,7537]`getattr(object, op, ...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7512,7519]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1711,7 +1711,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [7565,7639]`raise ValueError('mu...`
                         PythonCallUnary SourceSection: [7571,7639]`ValueError('must def...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7571,7581]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1723,7 +1723,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,root,Illegal]
                       PythonCallUnary SourceSection: [7651,7661]`max(roots)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [7651,7654]`max`
                           Identifier: max
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1780,7 +1780,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [7837,7865]`setattr(cls, opname,...`
                                 PythonCallTernary SourceSection: [7837,7865]`setattr(cls, opname,...`
-                                  CallTernaryMethodCachedNodeGen SourceSection: None
+                                  CallTernaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [7837,7844]`setattr`
                                     Identifier: setattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1857,7 +1857,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,K,Illegal]
                       PythonCallTernary SourceSection: [8164,8715]`class K(object):↵   ...`
-                        CallTernaryMethodCachedNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           BuiltinsLiteralNode SourceSection: None
                         FunctionDefinitionNode Name: K SourceSection: None
@@ -2006,7 +2006,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __lt__
                                                         PythonCallBinary SourceSection: [8321,8347]`mycmp(self.obj, othe...`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8321,8326]`mycmp`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [2,mycmp,Illegal]
@@ -2085,7 +2085,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __gt__
                                                         PythonCallBinary SourceSection: [8404,8430]`mycmp(self.obj, othe...`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8404,8409]`mycmp`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [2,mycmp,Illegal]
@@ -2164,7 +2164,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __eq__
                                                         PythonCallBinary SourceSection: [8487,8513]`mycmp(self.obj, othe...`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8487,8492]`mycmp`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [2,mycmp,Illegal]
@@ -2243,7 +2243,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __le__
                                                         PythonCallBinary SourceSection: [8571,8597]`mycmp(self.obj, othe...`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8571,8576]`mycmp`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [2,mycmp,Illegal]
@@ -2322,7 +2322,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __ge__
                                                         PythonCallBinary SourceSection: [8655,8681]`mycmp(self.obj, othe...`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8655,8660]`mycmp`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [2,mycmp,Illegal]
@@ -2400,7 +2400,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
       WriteNameNodeGen SourceSection: [9042,11795]`class partial:↵    "...`
         Identifier: partial
         PythonCallBinary SourceSection: [9042,11795]`class partial:↵    "...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: partial SourceSection: None
@@ -2503,7 +2503,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [9292,9360]`raise TypeError("des...`
                                         PythonCallUnary SourceSection: [9298,9360]`TypeError("descripto...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9298,9307]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2516,7 +2516,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __lt__
                                           PythonCallUnary SourceSection: [9372,9381]`len(args)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9372,9375]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2527,7 +2527,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             Value: 2
                                       RaiseNodeGen SourceSection: [9399,9460]`raise TypeError("typ...`
                                         PythonCallUnary SourceSection: [9405,9460]`TypeError("type 'par...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9405,9414]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2574,7 +2574,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     IfNode SourceSection: [9501,9599]`if not callable(func...`
                                       NotNodeGen SourceSection: [9504,9522]`not callable(func)`
                                         PythonCallUnary SourceSection: [9508,9522]`callable(func)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9508,9516]`callable`
                                             Identifier: callable
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2583,7 +2583,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [9536,9590]`raise TypeError("the...`
                                         PythonCallUnary SourceSection: [9542,9590]`TypeError("the first...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9542,9551]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2595,7 +2595,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,args,Illegal]
                                       PythonCallUnary SourceSection: [9606,9617]`tuple(args)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [9606,9611]`tuple`
                                           Identifier: tuple
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2605,7 +2605,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     IfNode SourceSection: [9627,9854]`if hasattr(func, "fu...`
                                       YesNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [9630,9651]`hasattr(func, "func"...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9630,9637]`hasattr`
                                             Identifier: hasattr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2649,7 +2649,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [9742,9764]`tmpkw.update(keyword...`
                                           PythonCallUnary SourceSection: [9742,9764]`tmpkw.update(keyword...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [9742,9747]`tmpkw`
                                                 Frame: [4,tmpkw,Illegal]
@@ -2692,10 +2692,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [5,self,Illegal]
                                       PythonCallUnary SourceSection: [9861,9893]`super(partial, cls)....`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [9861,9880]`super(partial, cls)`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9861,9866]`super`
                                               Identifier: super
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2793,7 +2793,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [10069,10138]`raise TypeError("des...`
                                         PythonCallUnary SourceSection: [10075,10138]`TypeError("descripto...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10075,10084]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2843,7 +2843,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [10217,10245]`newkeywords.update(k...`
                                       PythonCallUnary SourceSection: [10217,10245]`newkeywords.update(k...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [10217,10228]`newkeywords`
                                             Frame: [3,newkeywords,Illegal]
@@ -2893,7 +2893,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [10310,10327]`@recursive_repr()`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [10310,10327]`@recursive_repr()`
                             CallNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: None
@@ -2945,7 +2945,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           PythonCallUnary SourceSection: [10371,10381]`type(self)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10371,10375]`type`
                                               Identifier: type
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2958,7 +2958,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [2,args,Illegal]
                                         ListLiteralNode SourceSection: [10410,10427]`[repr(self.func)]`
                                           PythonCallUnary SourceSection: [10411,10426]`repr(self.func)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10411,10415]`repr`
                                               Identifier: repr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2973,7 +2973,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [10436,10475]`args.extend(repr(x) ...`
                                         PythonCallUnary SourceSection: [10436,10475]`args.extend(repr(x) ...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [10436,10440]`args`
                                               Frame: [2,args,Illegal]
@@ -3005,7 +3005,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       YieldNode SourceSection: [10448,10455]`repr(x)`
                                                         flagSlot: 0
                                                         PythonCallUnary SourceSection: [10448,10455]`repr(x)`
-                                                          CachedNodeGen SourceSection: None
+                                                          CallUnaryMethodNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10448,10452]`repr`
                                                             Identifier: repr
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3043,7 +3043,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             PythonObjectFactoryNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [10484,10545]`args.extend(f"{k}={v...`
                                         PythonCallUnary SourceSection: [10484,10545]`args.extend(f"{k}={v...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [10484,10488]`args`
                                               Frame: [2,args,Illegal]
@@ -3137,7 +3137,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               PythonCallUnary SourceSection: [10557,10567]`type(self)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10557,10561]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3203,7 +3203,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [2,<return_val>,Illegal]
                                         TupleLiteralNode SourceSection: [10747,10856]`type(self), (self.fu...`
                                           PythonCallUnary SourceSection: [10747,10757]`type(self)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10747,10751]`type`
                                               Identifier: type
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3310,7 +3310,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     IfNode SourceSection: [10901,11014]`if not isinstance(st...`
                                       NotNodeGen SourceSection: [10904,10932]`not isinstance(state...`
                                         PythonCallBinary SourceSection: [10908,10932]`isinstance(state, tu...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10908,10918]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3322,7 +3322,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [10946,11005]`raise TypeError("arg...`
                                         PythonCallUnary SourceSection: [10952,11005]`TypeError("argument ...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10952,10961]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3335,7 +3335,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __ne__
                                           PythonCallUnary SourceSection: [11017,11027]`len(state)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11017,11020]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3346,7 +3346,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             Value: 4
                                       RaiseNodeGen SourceSection: [11046,11109]`raise TypeError(f"ex...`
                                         PythonCallUnary SourceSection: [11052,11109]`TypeError(f"expected...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11052,11061]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3408,7 +3408,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             OrNode SourceSection: None
                                               NotNodeGen SourceSection: [11166,11184]`not callable(func)`
                                                 PythonCallUnary SourceSection: [11170,11184]`callable(func)`
-                                                  CachedNodeGen SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [11170,11178]`callable`
                                                     Identifier: callable
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3417,7 +3417,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               NotNodeGen SourceSection: [11188,11215]`not isinstance(args,...`
                                                 PythonCallBinary SourceSection: [11192,11215]`isinstance(args, tup...`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [11192,11202]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3437,7 +3437,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ObjectLiteralNode SourceSection: [11243,11247]`None`
                                               NotNodeGen SourceSection: [11252,11278]`not isinstance(kwds,...`
                                                 PythonCallBinary SourceSection: [11256,11278]`isinstance(kwds, dic...`
-                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                  CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [11256,11266]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3458,7 +3458,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ObjectLiteralNode SourceSection: [11312,11316]`None`
                                             NotNodeGen SourceSection: [11321,11352]`not isinstance(names...`
                                               PythonCallBinary SourceSection: [11325,11352]`isinstance(namespace...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [11325,11335]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3472,7 +3472,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           YesNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [11368,11408]`raise TypeError("inv...`
                                         PythonCallUnary SourceSection: [11374,11408]`TypeError("invalid p...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11374,11383]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3484,7 +3484,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,args,Illegal]
                                       PythonCallUnary SourceSection: [11425,11436]`tuple(args)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [11425,11430]`tuple`
                                           Identifier: tuple
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3508,7 +3508,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         NotNodeGen SourceSection: [11528,11550]`type(kwds) is not di...`
                                           IsExpressionNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [11528,11538]`type(kwds)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11528,11532]`type`
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3523,7 +3523,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,kwds,Illegal]
                                           PythonCallUnary SourceSection: [11612,11622]`dict(kwds)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11612,11616]`dict`
                                               Identifier: dict
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3611,7 +3611,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
       WriteNameNodeGen SourceSection: [11886,15107]`class partialmethod(...`
         Identifier: partialmethod
         PythonCallTernary SourceSection: [11886,15107]`class partialmethod(...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: partialmethod SourceSection: None
@@ -3715,7 +3715,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         AndNode SourceSection: [12181,12232]`not callable(func) a...`
                                           NotNodeGen SourceSection: [12181,12199]`not callable(func)`
                                             PythonCallUnary SourceSection: [12185,12199]`callable(func)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12185,12193]`callable`
                                                 Identifier: callable
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3724,7 +3724,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [12204,12232]`not hasattr(func, "_...`
                                             PythonCallBinary SourceSection: [12208,12232]`hasattr(func, "__get...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12208,12215]`hasattr`
                                                 Identifier: hasattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3735,12 +3735,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           YesNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [12246,12348]`raise TypeError("{!r...`
                                         PythonCallUnary SourceSection: [12252,12348]`TypeError("{!r} is n...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12252,12261]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [12262,12347]`"{!r} is not callabl...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [12262,12300]`"{!r} is not callabl...`
                                             ReadLocalVariableNode SourceSection: [12342,12346]`func`
@@ -3751,7 +3751,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     IfNode SourceSection: [12508,13009]`if isinstance(func, ...`
                                       YesNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [12511,12542]`isinstance(func, par...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12511,12521]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3812,7 +3812,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [12864,12894]`self.keywords.update...`
                                           PythonCallUnary SourceSection: [12864,12894]`self.keywords.update...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [12864,12877]`self.keywords`
                                                 GetFixedAttributeNodeGen SourceSection: None
@@ -3893,11 +3893,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,args,Illegal]
                                       PythonCallUnary SourceSection: [13044,13075]`", ".join(map(repr, ...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [13044,13048]`", "`
                                         PythonCallBinary SourceSection: [13054,13074]`map(repr, self.args)...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13054,13057]`map`
                                             Identifier: map
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3917,7 +3917,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,keywords,Illegal]
                                       PythonCallUnary SourceSection: [13095,13195]`", ".join("{}={!r}"....`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [13095,13099]`", "`
                                         GeneratorExpressionNode SourceSection: [13161,13194]`for k, v in self.key...`
@@ -3947,7 +3947,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     YieldNode SourceSection: [13105,13127]`"{}={!r}".format(k, ...`
                                                       flagSlot: 0
                                                       PythonCallBinary SourceSection: [13105,13127]`"{}={!r}".format(k, ...`
-                                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                                        CallBinaryMethodNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           StringLiteralNode SourceSection: [13105,13114]`"{}={!r}"`
                                                         ReadGeneratorFrameVariableNode SourceSection: [13122,13123]`k`
@@ -4172,7 +4172,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                             ReadFromCellNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [13696,13726]`call_keywords.update...`
                                                     PythonCallUnary SourceSection: [13696,13726]`call_keywords.update...`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [13696,13709]`call_keywords`
                                                           Frame: [2,call_keywords,Illegal]
@@ -4232,7 +4232,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                       PythonCallUnary SourceSection: [13818,13829]`tuple(rest)`
-                                                        CachedNodeGen SourceSection: None
+                                                        CallUnaryMethodNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [13818,13823]`tuple`
                                                           Identifier: tuple
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4357,7 +4357,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,get,Illegal]
                                       PythonCallTernary SourceSection: [14062,14097]`getattr(self.func, "...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14062,14069]`getattr`
                                           Identifier: getattr
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4389,7 +4389,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [5,new_func,Illegal]
                                           PythonCallBinary SourceSection: [14171,14184]`get(obj, cls)`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [14171,14174]`get`
                                               Frame: [3,get,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -4483,7 +4483,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,result,Illegal]
                                         PythonCallBinary SourceSection: [14725,14770]`self._make_unbound_m...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [14725,14752]`self._make_unbound_m...`
                                               CallNodeGen SourceSection: None
@@ -4515,7 +4515,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             Index: 0
                         StringLiteralNode SourceSection: None
                         PythonCallUnary SourceSection: [14798,14807]`@property`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [14798,14807]`@property`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -4561,7 +4561,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<return_val>,Illegal]
                                           PythonCallTernary SourceSection: [14859,14908]`getattr(self.func, "...`
-                                            CallTernaryMethodCachedNodeGen SourceSection: None
+                                            CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [14859,14866]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4593,7 +4593,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
       WriteNameNodeGen SourceSection: [15107,15186]`_CacheInfo = namedtu...`
         Identifier: _CacheInfo
         PythonCallBinary SourceSection: [15120,15186]`namedtuple("CacheInf...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [15120,15130]`namedtuple`
             Identifier: namedtuple
           StringLiteralNode SourceSection: [15131,15142]`"CacheInfo"`
@@ -4606,7 +4606,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
       WriteNameNodeGen SourceSection: [15188,15601]`class _HashedSeq(lis...`
         Identifier: _HashedSeq
         PythonCallTernary SourceSection: [15188,15601]`class _HashedSeq(lis...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _HashedSeq SourceSection: None
@@ -4730,7 +4730,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [15535,15544]`hash(tup)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [15535,15539]`hash`
                                           Frame: [2,hash,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4822,7 +4822,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               ReadNameNodeGen SourceSection: [15707,15716]`frozenset`
                 Identifier: frozenset
               PythonCallUnary SourceSection: [15718,15728]`type(None)`
-                CachedNodeGen SourceSection: None
+                CallUnaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [15718,15722]`type`
                   Identifier: type
                 ObjectLiteralNode SourceSection: [15723,15727]`None`
@@ -4979,7 +4979,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Frame: [8,key,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [16628,16656]`tuple(type(v) for v ...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [16628,16633]`tuple`
                                 Frame: [5,tuple,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -5010,7 +5010,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           YieldNode SourceSection: [16634,16641]`type(v)`
                                             flagSlot: 0
                                             PythonCallUnary SourceSection: [16634,16641]`type(v)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [16634,16638]`type`
                                                 ReadGeneratorFrameVariableNode SourceSection: None
                                                   Frame: [1,type,Illegal]
@@ -5057,7 +5057,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 Frame: [8,key,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [16693,16730]`tuple(type(v) for v ...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [16693,16698]`tuple`
                                   Frame: [5,tuple,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5088,7 +5088,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             YieldNode SourceSection: [16699,16706]`type(v)`
                                               flagSlot: 0
                                               PythonCallUnary SourceSection: [16699,16706]`type(v)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [16699,16703]`type`
                                                   ReadGeneratorFrameVariableNode SourceSection: None
                                                     Frame: [1,type,Illegal]
@@ -5132,7 +5132,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __eq__
                               PythonCallUnary SourceSection: [16740,16748]`len(key)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [16740,16743]`len`
                                   Frame: [7,len,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5149,7 +5149,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 Frame: [4,fasttypes,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [16758,16770]`type(key[0])`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [16758,16762]`type`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [6,type,Illegal]
@@ -5180,7 +5180,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [10,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [16818,16833]`_HashedSeq(key)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [16818,16828]`_HashedSeq`
                             Identifier: _HashedSeq
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5248,7 +5248,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               ObjectLiteralNode SourceSection: [18034,18038]`None`
                           NotNodeGen SourceSection: [18043,18071]`not isinstance(maxsi...`
                             PythonCallBinary SourceSection: [18047,18071]`isinstance(maxsize, ...`
-                              CallBinaryMethodCachedNodeGen SourceSection: None
+                              CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [18047,18057]`isinstance`
                                 Identifier: isinstance
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5263,7 +5263,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           YesNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [18081,18141]`raise TypeError('Exp...`
                         PythonCallUnary SourceSection: [18087,18141]`TypeError('Expected ...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [18087,18096]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5335,7 +5335,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                       PythonCallBinary SourceSection: [18282,18320]`update_wrapper(wrapp...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [18282,18296]`update_wrapper`
                                           Identifier: update_wrapper
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5762,7 +5762,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,key,Illegal]
                                         PythonCallTernary SourceSection: [19558,19585]`make_key(args, kwds,...`
-                                          CallTernaryMethodCachedNodeGen SourceSection: None
+                                          CallTernaryMethodNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [19558,19566]`make_key`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [7,make_key,Illegal]
@@ -5784,7 +5784,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,result,Illegal]
                                         PythonCallBinary SourceSection: [19607,19631]`cache_get(key, senti...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [19607,19616]`cache_get`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [11,cache_get,Illegal]
@@ -5939,7 +5939,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,key,Illegal]
                                         PythonCallTernary SourceSection: [20038,20065]`make_key(args, kwds,...`
-                                          CallTernaryMethodCachedNodeGen SourceSection: None
+                                          CallTernaryMethodNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [20038,20046]`make_key`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [15,make_key,Illegal]
@@ -5963,7 +5963,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,link,Illegal]
                                             PythonCallUnary SourceSection: [20112,20126]`cache_get(key)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [20112,20121]`cache_get`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [24,cache_get,Illegal]
@@ -6779,7 +6779,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,sequences,Illegal]
                               PythonCallUnary SourceSection: [23745,23770]`s for s in sequences...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6932,7 +6932,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ObjectLiteralNode SourceSection: [24200,24204]`None`
                               RaiseNodeGen SourceSection: [24218,24262]`raise RuntimeError("...`
                                 PythonCallUnary SourceSection: [24224,24262]`RuntimeError("Incons...`
-                                  CachedNodeGen SourceSection: None
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [24224,24236]`RuntimeError`
                                     Identifier: RuntimeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6941,7 +6941,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [24271,24295]`result.append(candid...`
                               PythonCallUnary SourceSection: [24271,24295]`result.append(candid...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [24271,24277]`result`
                                     Frame: [1,result,Illegal]
@@ -7061,7 +7061,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           IfNode SourceSection: [25430,25599]`if hasattr(base, '__...`
                             YesNodeGen SourceSection: None
                               PythonCallBinary SourceSection: [25433,25469]`hasattr(base, '__abs...`
-                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [25433,25440]`hasattr`
                                   Identifier: hasattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7080,7 +7080,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __sub__
                                   PythonCallUnary SourceSection: [25494,25512]`len(cls.__bases__)`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [25494,25497]`len`
                                       Identifier: len
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7100,12 +7100,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         GetIteratorExpressionNodeGen SourceSection: [25386,25420]`enumerate(reversed(c...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [25386,25420]`enumerate(reversed(c...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [25386,25395]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [25396,25419]`reversed(cls.__bases...`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [25396,25404]`reversed`
                                 Identifier: reversed
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7136,7 +7136,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [25637,25647]`list(abcs)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [25637,25641]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7152,7 +7152,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,explicit_bases,Illegal]
                       PythonCallUnary SourceSection: [25685,25715]`list(cls.__bases__[:...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [25685,25689]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7183,7 +7183,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [7,other_bases,Illegal]
                       PythonCallUnary SourceSection: [25758,25788]`list(cls.__bases__[b...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [25758,25762]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7216,7 +7216,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             YesNodeGen SourceSection: None
                               AndNode SourceSection: [25822,25929]`issubclass(cls, base...`
                                 PythonCallBinary SourceSection: [25822,25843]`issubclass(cls, base...`
-                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                  CallBinaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [25822,25832]`issubclass`
                                     Identifier: issubclass
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7230,7 +7230,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     ReadFromCellNodeGen SourceSection: None
                                 NotNodeGen SourceSection: [25848,25929]`not any(↵           ...`
                                   PythonCallUnary SourceSection: [25852,25929]`any(↵               ...`
-                                    CachedNodeGen SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [25852,25855]`any`
                                       Identifier: any
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7261,7 +7261,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 YieldNode SourceSection: [25873,25892]`issubclass(b, base)`
                                                   flagSlot: 0
                                                   PythonCallBinary SourceSection: [25873,25892]`issubclass(b, base)`
-                                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                                    CallBinaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [25873,25883]`issubclass`
                                                       Identifier: issubclass
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7305,7 +7305,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 YesNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [26075,26102]`abstract_bases.appen...`
                               PythonCallUnary SourceSection: [26075,26102]`abstract_bases.appen...`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [26075,26089]`abstract_bases`
                                     Frame: [6,abstract_bases,Illegal]
@@ -7335,7 +7335,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [26143,26160]`abcs.remove(base)`
                             PythonCallUnary SourceSection: [26143,26160]`abcs.remove(base)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [26143,26147]`abcs`
                                   ReadLocalVariableNode SourceSection: None
@@ -7358,7 +7358,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [8,explicit_c3_mros,Illegal]
                       PythonCallUnary SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7435,7 +7435,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [9,abstract_c3_mros,Illegal]
                       PythonCallUnary SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7512,7 +7512,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [10,other_c3_mros,Illegal]
                       PythonCallUnary SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7590,7 +7590,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [13,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [26397,26553]`_c3_merge(↵        [...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [26397,26406]`_c3_merge`
                             Identifier: _c3_merge
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7694,7 +7694,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [2,bases,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallUnary SourceSection: [26827,26843]`set(cls.__mro__)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [26827,26830]`set`
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7764,7 +7764,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Frame: [0,typ,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [26982,27005]`hasattr(typ, '__mro_...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [26982,26989]`hasattr`
                                               Identifier: hasattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7774,7 +7774,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             StringLiteralNode SourceSection: [26995,27004]`'__mro__'`
                                           YesNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [27043,27063]`issubclass(cls, typ)...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [27043,27053]`issubclass`
                                             Identifier: issubclass
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7796,7 +7796,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [1,types,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallUnary SourceSection: [27078,27111]`n for n in types if ...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7827,7 +7827,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [27098,27111]`is_related(n)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [27098,27108]`is_related`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [1,is_related,Illegal]
@@ -7970,7 +7970,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [1,types,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallUnary SourceSection: [27390,27431]`n for n in types if ...`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8002,7 +8002,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     YesNodeGen SourceSection: None
                                       NotNodeGen SourceSection: [27410,27431]`not is_strict_base(n...`
                                         PythonCallUnary SourceSection: [27414,27431]`is_strict_base(n)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [27414,27428]`is_strict_base`
                                             ReadGeneratorFrameVariableNode SourceSection: None
                                               Frame: [1,is_strict_base,Illegal]
@@ -8050,7 +8050,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [5,type_set,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallUnary SourceSection: [27569,27579]`set(types)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [27569,27572]`set`
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8106,7 +8106,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Frame: [8,sub,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [27711,27731]`issubclass(cls, sub)...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [27711,27721]`issubclass`
                                               Identifier: issubclass
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8121,13 +8121,13 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           YesNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [27749,27804]`found.append([s for ...`
                                         PythonCallUnary SourceSection: [27749,27804]`found.append([s for ...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [27749,27754]`found`
                                               Frame: [7,found,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [27763,27802]`s for s in sub.__mro...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8223,7 +8223,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [27839,27854]`mro.append(typ)`
                                     PythonCallUnary SourceSection: [27839,27854]`mro.append(typ)`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [27839,27842]`mro`
                                           Frame: [6,mro,Illegal]
@@ -8280,7 +8280,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [28100,28118]`mro.append(subcls)`
                                               PythonCallUnary SourceSection: [28100,28118]`mro.append(subcls)`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [28100,28103]`mro`
                                                     Frame: [6,mro,Illegal]
@@ -8380,7 +8380,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,mro,Illegal]
                       PythonCallBinary SourceSection: [28556,28590]`_compose_mro(cls, re...`
-                        CallBinaryMethodCachedNodeGen SourceSection: None
+                        CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [28556,28568]`_compose_mro`
                           Identifier: _compose_mro
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8466,7 +8466,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         YesNodeGen SourceSection: None
                                       NotNodeGen SourceSection: [28957,28981]`not issubclass(match...`
                                         PythonCallBinary SourceSection: [28961,28981]`issubclass(match, t)...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [28961,28971]`issubclass`
                                             Identifier: issubclass
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8479,12 +8479,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       YesNodeGen SourceSection: None
                                   RaiseNodeGen SourceSection: [29000,29088]`raise RuntimeError("...`
                                     PythonCallUnary SourceSection: [29006,29088]`RuntimeError("Ambigu...`
-                                      CachedNodeGen SourceSection: None
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [29006,29018]`RuntimeError`
                                         Identifier: RuntimeError
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonCallBinary SourceSection: [29019,29087]`"Ambiguous dispatch:...`
-                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                        CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [29019,29049]`"Ambiguous dispatch:...`
                                         ReadLocalVariableNode SourceSection: [29078,29083]`match`
@@ -8529,7 +8529,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [5,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [29166,29185]`registry.get(match)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [29166,29174]`registry`
                               Frame: [1,registry,Illegal]
@@ -8741,7 +8741,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [2,impl,Illegal]
                                                       PythonCallBinary SourceSection: [30583,30608]`_find_impl(cls, regi...`
-                                                        CallBinaryMethodCachedNodeGen SourceSection: None
+                                                        CallBinaryMethodNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [30583,30593]`_find_impl`
                                                           Identifier: _find_impl
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8842,7 +8842,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           IfNode SourceSection: [30915,31003]`if isinstance(cls, t...`
                                             YesNodeGen SourceSection: None
                                               PythonCallBinary SourceSection: [30918,30939]`isinstance(cls, type...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [30918,30928]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8895,7 +8895,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                                   Frame: [3,<return_val>,Illegal]
                                                                 PythonCallBinary SourceSection: [30974,30990]`register(cls, f)`
-                                                                  CallBinaryMethodCachedNodeGen SourceSection: None
+                                                                  CallBinaryMethodNodeGen SourceSection: None
                                                                   ReadLocalCellNodeGen SourceSection: [30974,30982]`register`
                                                                     ReadLocalVariableNode SourceSection: None
                                                                       Frame: [2,register,Illegal]
@@ -8918,7 +8918,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,ann,Illegal]
                                             PythonCallTernary SourceSection: [31009,31044]`getattr(cls, '__anno...`
-                                              CallTernaryMethodCachedNodeGen SourceSection: None
+                                              CallTernaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [31009,31016]`getattr`
                                                 Identifier: getattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8937,7 +8937,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [31085,31321]`raise TypeError(↵   ...`
                                               PythonCallUnary SourceSection: [31091,31321]`TypeError(↵         ...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31091,31100]`TypeError`
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8967,12 +8967,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Op: __getattribute__
                                           DestructuringAssignmentNodeGen SourceSection: [31472,31527]`argname, cls = next(...`
                                             PythonCallUnary SourceSection: [31487,31527]`next(iter(get_type_h...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [31487,31491]`next`
                                                 Identifier: next
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [31492,31526]`iter(get_type_hints(...`
-                                                CachedNodeGen SourceSection: None
+                                                CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31492,31496]`iter`
                                                   Identifier: iter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8980,7 +8980,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     PythonCallUnary SourceSection: [31497,31517]`get_type_hints(func)...`
-                                                      CachedNodeGen SourceSection: None
+                                                      CallUnaryMethodNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [31497,31511]`get_type_hints`
                                                         Frame: [3,get_type_hints,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -9013,7 +9013,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           AssertNode SourceSection: [31540,31664]`assert isinstance(cl...`
                                             YesNodeGen SourceSection: None
                                               PythonCallBinary SourceSection: [31547,31568]`isinstance(cls, type...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31547,31557]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9052,7 +9052,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadFromCellNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [31720,31724]`None`
                                             PythonCallBinary SourceSection: [31729,31764]`hasattr(cls, '__abst...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [31729,31736]`hasattr`
                                                 Identifier: hasattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9155,7 +9155,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   Frame: [1,kw,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [31907,31934]`dispatch(args[0].__c...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [31907,31915]`dispatch`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [2,dispatch,Illegal]
@@ -9213,7 +9213,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             Frame: [8,wrapper,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [32064,32096]`types.MappingProxyTy...`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [32064,32069]`types`
                                 Frame: [1,types,Illegal]
@@ -9240,7 +9240,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               ReadFromCellNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [32149,32178]`update_wrapper(wrapp...`
                           PythonCallBinary SourceSection: [32149,32178]`update_wrapper(wrapp...`
-                            CallBinaryMethodCachedNodeGen SourceSection: None
+                            CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [32149,32163]`update_wrapper`
                               Identifier: update_wrapper
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __eq__
                       PythonCallUnary SourceSection: [30,39]`call01(i)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [30,36]`call01`
                           Identifier: call01
                         ReadNameNodeGen SourceSection: [37,38]`i`
@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
                   BlockNode SourceSection: None
                 ExpressionStatementNode SourceSection: [62,70]`print(i)`
                   PythonCallUnary SourceSection: [62,70]`print(i)`
-                    CachedNodeGen SourceSection: None
+                    CallUnaryMethodNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [62,67]`print`
                       Identifier: print
                     ReadNameNodeGen SourceSection: [68,69]`i`
@@ -41,7 +41,7 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
             GetIteratorExpressionNodeGen SourceSection: [9,21]`range(1, 10)`
               GetIteratorNodeGen SourceSection: None
               PythonCallBinary SourceSection: [9,21]`range(1, 10)`
-                CallBinaryMethodCachedNodeGen SourceSection: None
+                CallBinaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
                 IntegerLiteralNode SourceSection: [15,16]`1`
@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
                   Value: 10
           ExpressionStatementNode SourceSection: [81,94]`print("test")`
             PythonCallUnary SourceSection: [81,94]`print("test")`
-              CachedNodeGen SourceSection: None
+              CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [81,86]`print`
                 Identifier: print
               StringLiteralNode SourceSection: [87,93]`"test"`

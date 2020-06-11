@@ -16,7 +16,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
       WriteNameNodeGen SourceSection: [329,773]`class Quitter(object...`
         Identifier: Quitter
         PythonCallTernary SourceSection: [329,773]`class Quitter(object...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: Quitter SourceSection: None
@@ -249,7 +249,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         BlockNode SourceSection: None
                                     RaiseNodeGen SourceSection: [748,770]`raise SystemExit(cod...`
                                       PythonCallUnary SourceSection: [754,770]`SystemExit(code)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [754,764]`SystemExit`
                                           Identifier: SystemExit
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -275,7 +275,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
       WriteNameNodeGen SourceSection: [773,2538]`class _Printer(objec...`
         Identifier: _Printer
         PythonCallTernary SourceSection: [773,2538]`class _Printer(objec...`
-          CallTernaryMethodCachedNodeGen SourceSection: None
+          CallTernaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: _Printer SourceSection: None
@@ -428,7 +428,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [1121,1242]`os.path.join(dir, fi...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: list
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -460,7 +460,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       YieldNode SourceSection: [1121,1148]`os.path.join(dir, fi...`
                                                         flagSlot: 0
                                                         PythonCallBinary SourceSection: [1121,1148]`os.path.join(dir, fi...`
-                                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                                          CallBinaryMethodNodeGen SourceSection: None
                                                           GetCallAttributeNodeGen SourceSection: None
                                                             GetAttributeNodeGen SourceSection: [1121,1128]`os.path`
                                                               GetFixedAttributeNodeGen SourceSection: None
@@ -599,7 +599,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [2,fp,Illegal]
                                                   PythonCallBinary SourceSection: [1412,1431]`open(filename, "r")`
-                                                    CallBinaryMethodCachedNodeGen SourceSection: None
+                                                    CallBinaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [1412,1416]`open`
                                                       Identifier: open
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -662,7 +662,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [1622,1638]`data.split('\n')`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [1622,1626]`data`
                                             Frame: [1,data,Illegal]
@@ -674,7 +674,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [1664,1681]`len(self.__lines)`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [1664,1667]`len`
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -737,7 +737,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __le__
                                           PythonCallUnary SourceSection: [1741,1758]`len(self.__lines)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1741,1744]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -763,7 +763,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<return_val>,Illegal]
                                           PythonCallUnary SourceSection: [1796,1819]`"\n".join(self.__lin...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [1796,1800]`"\n"`
                                             GetAttributeNodeGen SourceSection: [1806,1818]`self.__lines`
@@ -872,7 +872,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                           Frame: [3,i,Illegal]
                                                     ExpressionStatementNode SourceSection: [2163,2185]`print(self.__lines[i...`
                                                       PythonCallUnary SourceSection: [2163,2185]`print(self.__lines[i...`
-                                                        CachedNodeGen SourceSection: None
+                                                        CallUnaryMethodNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2163,2168]`print`
                                                           Identifier: print
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -891,7 +891,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   GetIteratorExpressionNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
                                                     GetIteratorNodeGen SourceSection: None
                                                     PythonCallBinary SourceSection: [2104,2141]`range(lineno, lineno...`
-                                                      CallBinaryMethodCachedNodeGen SourceSection: None
+                                                      CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [2104,2109]`range`
                                                         Identifier: range
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -955,7 +955,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                                             Frame: [4,key,Illegal]
                                                           PythonCallUnary SourceSection: [2385,2398]`input(prompt)`
-                                                            CachedNodeGen SourceSection: None
+                                                            CallUnaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [2385,2390]`input`
                                                               Identifier: input
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1016,7 +1016,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
           WriteNameNodeGen SourceSection: [2538,3115]`class _Helper(object...`
             Identifier: _Helper
             PythonCallTernary SourceSection: [2538,3115]`class _Helper(object...`
-              CallTernaryMethodCachedNodeGen SourceSection: None
+              CallTernaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
               FunctionDefinitionNode Name: _Helper SourceSection: None

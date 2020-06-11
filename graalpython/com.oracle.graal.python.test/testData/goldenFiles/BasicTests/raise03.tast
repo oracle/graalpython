@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'raise03'> SourceSection: [0,24]`raise NameError('P
       SideEffect:
         RaiseNodeGen SourceSection: [0,24]`raise NameError('Pav...`
           PythonCallUnary SourceSection: [6,24]`NameError('Pavel')`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6,15]`NameError`
               Identifier: NameError
             StringLiteralNode SourceSection: [16,23]`'Pavel'`

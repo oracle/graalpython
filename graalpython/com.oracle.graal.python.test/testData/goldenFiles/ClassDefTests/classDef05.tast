@@ -39,7 +39,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,DerivedClassName,Illegal]
                         PythonCallTernary SourceSection: [12,63]`class DerivedClassNa...`
-                          CallTernaryMethodCachedNodeGen SourceSection: None
+                          CallTernaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             BuiltinsLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: DerivedClassName SourceSection: None

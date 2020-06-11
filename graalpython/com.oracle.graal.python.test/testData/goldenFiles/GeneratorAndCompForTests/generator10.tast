@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [2,f,Illegal]
                       PythonCallUnary SourceSection: [36,46]`open(path)`
-                        CachedNodeGen SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [36,40]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

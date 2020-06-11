@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
   Documentation: None
   InnerRootNode SourceSection: [0,27]`foo(x+2 for x in ran...`
     PythonCallUnary SourceSection: [0,27]`foo(x+2 for x in ran...`
-      CachedNodeGen SourceSection: None
+      CallUnaryMethodNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
       GeneratorExpressionNode SourceSection: [8,26]`for x in range(10)`
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
         GetIteratorExpressionNodeGen SourceSection: [17,26]`range(10)`
           GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [17,26]`range(10)`
-            CachedNodeGen SourceSection: None
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [17,22]`range`
               Identifier: range
             IntegerLiteralNode SourceSection: [23,25]`10`

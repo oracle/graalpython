@@ -72,7 +72,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,Test,Illegal]
                                       PythonCallTernary SourceSection: [77,375]`class Test(object):↵...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           BuiltinsLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: Test SourceSection: None
@@ -240,7 +240,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                                         Frame: [2,<return_val>,Illegal]
                                                                       PythonCallUnary SourceSection: [293,306]`str("global")`
-                                                                        CachedNodeGen SourceSection: None
+                                                                        CallUnaryMethodNodeGen SourceSection: None
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [293,296]`str`
                                                                           Identifier: str
                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -289,7 +289,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                                         Frame: [2,<return_val>,Illegal]
                                                                       PythonCallUnary SourceSection: [357,366]`str(self)`
-                                                                        CachedNodeGen SourceSection: None
+                                                                        CallUnaryMethodNodeGen SourceSection: None
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [357,360]`str`
                                                                           Identifier: str
                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

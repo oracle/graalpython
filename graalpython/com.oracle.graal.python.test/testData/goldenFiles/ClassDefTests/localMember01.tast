@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,C,Illegal]
                                       PythonCallTernary SourceSection: [64,128]`class C(object):â†µ   ...`
-                                        CallTernaryMethodCachedNodeGen SourceSection: None
+                                        CallTernaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           BuiltinsLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: C SourceSection: None

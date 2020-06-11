@@ -658,7 +658,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,<return_val>,Illegal]
                         PythonCallUnary SourceSection: [1886,1893]`_abs(a)`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [1886,1890]`_abs`
                             Identifier: _abs
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1640,7 +1640,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                     IfNode SourceSection: [2989,3125]`if not hasattr(a, '_...`
                       NotNodeGen SourceSection: [2992,3021]`not hasattr(a, '__ge...`
                         PythonCallBinary SourceSection: [2996,3021]`hasattr(a, '__getite...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [2996,3003]`hasattr`
                             Identifier: hasattr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1663,7 +1663,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               PythonCallUnary SourceSection: [3075,3082]`type(a)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3075,3079]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1672,7 +1672,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [3100,3120]`raise TypeError(msg)...`
                           PythonCallUnary SourceSection: [3106,3120]`TypeError(msg)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3106,3115]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2044,7 +2044,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         GetIteratorExpressionNodeGen SourceSection: [3570,3582]`enumerate(a)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [3570,3582]`enumerate(a)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3570,3579]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2053,7 +2053,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               ReadVariableFromFrameNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [3642,3698]`raise ValueError('se...`
                         PythonCallUnary SourceSection: [3648,3698]`ValueError('sequence...`
-                          CachedNodeGen SourceSection: None
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3648,3658]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2167,7 +2167,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                     IfNode SourceSection: [4114,4287]`if not isinstance(de...`
                       NotNodeGen SourceSection: [4117,4145]`not isinstance(defau...`
                         PythonCallBinary SourceSection: [4121,4145]`isinstance(default, ...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4121,4131]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2192,7 +2192,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               PythonCallUnary SourceSection: [4229,4242]`type(default)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4229,4233]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2201,7 +2201,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [4261,4281]`raise TypeError(msg)...`
                           PythonCallUnary SourceSection: [4267,4281]`TypeError(msg)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4267,4276]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2218,7 +2218,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [5,<return_val>,Illegal]
                             PythonCallUnary SourceSection: [4307,4315]`len(obj)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4307,4310]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2244,7 +2244,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             PythonCallUnary SourceSection: [4376,4385]`type(obj)`
-                              CachedNodeGen SourceSection: None
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4376,4380]`type`
                                 Identifier: type
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2271,7 +2271,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [4,val,Illegal]
                           PythonCallUnary SourceSection: [4476,4485]`hint(obj)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [4476,4480]`hint`
                               Frame: [3,hint,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2312,7 +2312,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                     IfNode SourceSection: [4588,4744]`if not isinstance(va...`
                       NotNodeGen SourceSection: [4591,4615]`not isinstance(val, ...`
                         PythonCallBinary SourceSection: [4595,4615]`isinstance(val, int)...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4595,4605]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2337,7 +2337,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               PythonCallUnary SourceSection: [4691,4700]`type(val)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4691,4695]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2346,7 +2346,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [4719,4739]`raise TypeError(msg)...`
                           PythonCallUnary SourceSection: [4725,4739]`TypeError(msg)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4725,4734]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2373,7 +2373,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           StringLiteralNode SourceSection: [4770,4808]`'__length_hint__() s...`
                         RaiseNodeGen SourceSection: [4817,4838]`raise ValueError(msg...`
                           PythonCallUnary SourceSection: [4823,4838]`ValueError(msg)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4823,4833]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2396,7 +2396,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
       WriteNameNodeGen SourceSection: [4937,6321]`class attrgetter:↵  ...`
         Identifier: attrgetter
         PythonCallBinary SourceSection: [4937,6321]`class attrgetter:↵  ...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: attrgetter SourceSection: None
@@ -2505,7 +2505,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         IfNode SourceSection: [5417,5526]`if not isinstance(at...`
                                           NotNodeGen SourceSection: [5420,5445]`not isinstance(attr,...`
                                             PythonCallBinary SourceSection: [5424,5445]`isinstance(attr, str...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5424,5434]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2517,7 +2517,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [5463,5513]`raise TypeError('att...`
                                             PythonCallUnary SourceSection: [5469,5513]`TypeError('attribute...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5469,5478]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2540,7 +2540,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Frame: [3,names,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [5568,5583]`attr.split('.')`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [5568,5572]`attr`
                                                 Frame: [1,attr,Illegal]
@@ -2593,7 +2593,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                                 Frame: [0,obj,Illegal]
                                                               PythonCallBinary SourceSection: [5672,5690]`getattr(obj, name)`
-                                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                                CallBinaryMethodNodeGen SourceSection: None
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5672,5679]`getattr`
                                                                   Identifier: getattr
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2653,12 +2653,12 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Frame: [5,getters,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [5826,5861]`tuple(map(attrgetter...`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5826,5831]`tuple`
                                               Identifier: tuple
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [5832,5860]`map(attrgetter, self...`
-                                              CallBinaryMethodCachedNodeGen SourceSection: None
+                                              CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5832,5835]`map`
                                                 Identifier: map
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2714,7 +2714,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                                             Frame: [2,<return_val>,Illegal]
                                                           PythonCallUnary SourceSection: [5912,5952]`tuple(getter(obj) fo...`
-                                                            CachedNodeGen SourceSection: None
+                                                            CallUnaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5912,5917]`tuple`
                                                               Identifier: tuple
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2745,7 +2745,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                         YieldNode SourceSection: [5918,5929]`getter(obj)`
                                                                           flagSlot: 0
                                                                           PythonCallUnary SourceSection: [5918,5929]`getter(obj)`
-                                                                            CachedNodeGen SourceSection: None
+                                                                            CallUnaryMethodNodeGen SourceSection: None
                                                                             ReadGeneratorFrameVariableNode SourceSection: [5918,5924]`getter`
                                                                               Frame: [0,getter,Illegal]
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2843,7 +2843,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [6028,6043]`self._call(obj)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [6028,6032]`self`
                                               Frame: [0,self,Illegal]
@@ -2926,11 +2926,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [6215,6248]`', '.join(map(repr, ...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [6215,6219]`', '`
                                               PythonCallBinary SourceSection: [6225,6247]`map(repr, self._attr...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6225,6228]`map`
                                                   Identifier: map
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3023,7 +3023,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
       WriteNameNodeGen SourceSection: [6321,7294]`class itemgetter:↵  ...`
         Identifier: itemgetter
         PythonCallBinary SourceSection: [6321,7294]`class itemgetter:↵  ...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: itemgetter SourceSection: None
@@ -3282,7 +3282,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                                             Frame: [2,<return_val>,Illegal]
                                                           PythonCallUnary SourceSection: [6901,6929]`tuple(obj[i] for i i...`
-                                                            CachedNodeGen SourceSection: None
+                                                            CallUnaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6901,6906]`tuple`
                                                               Identifier: tuple
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3410,7 +3410,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [7005,7020]`self._call(obj)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [7005,7009]`self`
                                               Frame: [0,self,Illegal]
@@ -3493,11 +3493,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [7188,7221]`', '.join(map(repr, ...`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [7188,7192]`', '`
                                               PythonCallBinary SourceSection: [7198,7220]`map(repr, self._item...`
-                                                CallBinaryMethodCachedNodeGen SourceSection: None
+                                                CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7198,7201]`map`
                                                   Identifier: map
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3590,7 +3590,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
       WriteNameNodeGen SourceSection: [7294,8778]`class methodcaller:↵...`
         Identifier: methodcaller
         PythonCallBinary SourceSection: [7294,8778]`class methodcaller:↵...`
-          CallBinaryMethodCachedNodeGen SourceSection: None
+          CallBinaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: methodcaller SourceSection: None
@@ -3690,7 +3690,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __lt__
                                           PythonCallUnary SourceSection: [7664,7673]`len(args)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7664,7667]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3707,7 +3707,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           StringLiteralNode SourceSection: [7697,7756]`"methodcaller needs ...`
                                         RaiseNodeGen SourceSection: [7769,7789]`raise TypeError(msg)...`
                                           PythonCallUnary SourceSection: [7775,7789]`TypeError(msg)`
-                                            CachedNodeGen SourceSection: None
+                                            CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7775,7784]`TypeError`
                                               Identifier: TypeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3740,7 +3740,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                     IfNode SourceSection: [7850,7954]`if not isinstance(se...`
                                       NotNodeGen SourceSection: [7853,7884]`not isinstance(self....`
                                         PythonCallBinary SourceSection: [7857,7884]`isinstance(self._nam...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7857,7867]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3757,7 +3757,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [7898,7945]`raise TypeError('met...`
                                         PythonCallUnary SourceSection: [7904,7945]`TypeError('method na...`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7904,7913]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3862,7 +3862,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [8051,8075]`getattr(obj, self._n...`
-                                            CallBinaryMethodCachedNodeGen SourceSection: None
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8051,8058]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3921,7 +3921,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         Frame: [1,args,Illegal]
                                       ListLiteralNode SourceSection: [8145,8163]`[repr(self._name)]`
                                         PythonCallUnary SourceSection: [8146,8162]`repr(self._name)`
-                                          CachedNodeGen SourceSection: None
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8146,8150]`repr`
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3936,13 +3936,13 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [8172,8206]`args.extend(map(repr...`
                                       PythonCallUnary SourceSection: [8172,8206]`args.extend(map(repr...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [8172,8176]`args`
                                             Frame: [1,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [8184,8205]`map(repr, self._args...`
-                                          CallBinaryMethodCachedNodeGen SourceSection: None
+                                          CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8184,8187]`map`
                                             Identifier: map
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3959,7 +3959,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [8215,8277]`args.extend('%s=%r' ...`
                                       PythonCallUnary SourceSection: [8215,8277]`args.extend('%s=%r' ...`
-                                        CachedNodeGen SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [8215,8219]`args`
                                             Frame: [1,args,Illegal]
@@ -4090,7 +4090,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [8420,8435]`', '.join(args)`
-                                              CachedNodeGen SourceSection: None
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [8420,8424]`', '`
                                               ReadLocalVariableNode SourceSection: [8430,8434]`args`
@@ -4421,7 +4421,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                     IfNode SourceSection: [8972,9108]`if not hasattr(a, '_...`
                       NotNodeGen SourceSection: [8975,9004]`not hasattr(a, '__ge...`
                         PythonCallBinary SourceSection: [8979,9004]`hasattr(a, '__getite...`
-                          CallBinaryMethodCachedNodeGen SourceSection: None
+                          CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [8979,8986]`hasattr`
                             Identifier: hasattr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4444,7 +4444,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               PythonCallUnary SourceSection: [9058,9065]`type(a)`
-                                CachedNodeGen SourceSection: None
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [9058,9062]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4453,7 +4453,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [9083,9103]`raise TypeError(msg)...`
                           PythonCallUnary SourceSection: [9089,9103]`TypeError(msg)`
-                            CachedNodeGen SourceSection: None
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9089,9098]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
