@@ -42,27 +42,38 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.Node;
 
-public final class IsBuiltinClassProfile {
+public final class IsBuiltinClassProfile extends Node {
     @CompilationFinal private boolean isBuiltinType;
     @CompilationFinal private boolean isBuiltinClass;
     @CompilationFinal private boolean isOtherClass;
 
     @CompilationFinal private boolean match;
     @CompilationFinal private boolean noMatch;
+    @CompilationFinal private boolean adoptable;
 
-    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile();
+    @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(3);
+
+    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile(false);
 
     /* private constructor */
-    private IsBuiltinClassProfile() {
+    private IsBuiltinClassProfile(boolean isCached) {
+        if (isCached) {
+            this.lib = PythonObjectLibrary.getFactory().createDispatched(3);
+        } else {
+            this.lib = PythonObjectLibrary.getUncached();
+        }
+        this.adoptable = isCached;
     }
 
     public static IsBuiltinClassProfile create() {
-        return new IsBuiltinClassProfile();
+        return new IsBuiltinClassProfile(true);
     }
 
     public static IsBuiltinClassProfile getUncached() {
@@ -70,19 +81,23 @@ public final class IsBuiltinClassProfile {
     }
 
     public boolean profileIsAnyBuiltinObject(PythonObject object) {
-        return profileIsAnyBuiltinClass(object.getInternalLazyPythonClass());
+        return profileIsAnyBuiltinClass(lib.getLazyPythonClass(object));
     }
 
     public boolean profileIsOtherBuiltinObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileIsOtherBuiltinClass(object.getInternalLazyPythonClass(), type);
+        return profileIsOtherBuiltinClass(lib.getLazyPythonClass(object), type);
     }
 
     public boolean profileException(PException object, PythonBuiltinClassType type) {
-        return profileClass(object.getExceptionObject().getInternalLazyPythonClass(), type);
+        return profileClass(lib.getLazyPythonClass(object.getExceptionObject()), type);
     }
 
-    public boolean profileObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileClass(object.getInternalLazyPythonClass(), type);
+    public boolean profileException(PException object, PythonBuiltinClassType type, PythonObjectLibrary elib) {
+        return profileClass(elib.getLazyPythonClass(object.getExceptionObject()), type);
+    }
+
+    public boolean profileObject(Object object, PythonBuiltinClassType type) {
+        return profileClass(lib.getLazyPythonClass(object), type);
 
     }
 
@@ -212,5 +227,10 @@ public final class IsBuiltinClassProfile {
             }
             return false;
         }
+    }
+
+    @Override
+    public boolean isAdoptable() {
+        return adoptable;
     }
 }

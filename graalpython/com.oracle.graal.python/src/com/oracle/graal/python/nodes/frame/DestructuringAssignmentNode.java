@@ -96,11 +96,11 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
     }
 
     protected static boolean isBuiltinList(Object object, IsBuiltinClassProfile profile) {
-        return object instanceof PList && profile.profileObject((PList) object, PythonBuiltinClassType.PList);
+        return object instanceof PList && profile.profileObject(object, PythonBuiltinClassType.PList);
     }
 
     protected static boolean isBuiltinTuple(Object object, IsBuiltinClassProfile profile) {
-        return object instanceof PTuple && profile.profileObject((PTuple) object, PythonBuiltinClassType.PTuple);
+        return object instanceof PTuple && profile.profileObject(object, PythonBuiltinClassType.PTuple);
     }
 
     @Specialization(guards = {"isBuiltinList(rhsVal, isBuiltinClass)", "starredIndex < 0"})

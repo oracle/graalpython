@@ -17,6 +17,8 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None
                 Identifier: funcattrs
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
             FunctionDefinitionNode Name: f SourceSection: None
               Arguments: None
               KwArguments: None
@@ -44,4 +46,6 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
                           EmptyNode SourceSection: [22,26]`pass`
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None

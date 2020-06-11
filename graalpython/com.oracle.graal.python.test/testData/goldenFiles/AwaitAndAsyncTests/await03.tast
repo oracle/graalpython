@@ -44,24 +44,38 @@ ModuleRootNode Name: <module 'await03'> SourceSection: [0,39]`async def f():↵ 
                           Identifier: <>temp2
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,<>temp2,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <>temp3
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,<>temp3,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: foo
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [0,foo,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: None
                             Frame: [2,<>temp2,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: bar
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,bar,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: None
                             Frame: [3,<>temp3,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

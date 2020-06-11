@@ -25,6 +25,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         GetAnyAttributeNodeGen SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [515,1619]`class error(Exceptio...`
         Identifier: error
         PythonCallTernary SourceSection: [515,1619]`class error(Exceptio...`
@@ -109,6 +113,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -116,6 +122,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: msg
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,msg,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 1
@@ -123,6 +131,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: pattern
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,pattern,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 2
@@ -130,6 +140,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: pos
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,pos,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 3
@@ -138,47 +150,73 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Attribute: msg
                                       ReadLocalVariableNode SourceSection: [996,1000]`self`
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [1007,1010]`msg`
                                         Frame: [1,msg,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     SetAttributeNodeGen SourceSection: [1019,1041]`self.pattern = patte...`
                                       Attribute: pattern
                                       ReadLocalVariableNode SourceSection: [1019,1023]`self`
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [1034,1041]`pattern`
                                         Frame: [2,pattern,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     SetAttributeNodeGen SourceSection: [1050,1064]`self.pos = pos`
                                       Attribute: pos
                                       ReadLocalVariableNode SourceSection: [1050,1054]`self`
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [1061,1064]`pos`
                                         Frame: [3,pos,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [1073,1595]`if pattern is not No...`
                                       YesNodeGen SourceSection: None
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [1076,1115]`pattern is not None ...`
                                           NotNodeGen SourceSection: [1076,1095]`pattern is not None`
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1076,1083]`pattern`
                                                 Frame: [2,pattern,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [1091,1095]`None`
                                           NotNodeGen SourceSection: [1100,1115]`pos is not None`
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1100,1103]`pos`
                                                 Frame: [3,pos,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [1111,1115]`None`
                                           YesNodeGen SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [1129,1167]`msg = '%s at positio...`
                                           Identifier: msg
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,msg,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                           BinaryArithmeticExpression SourceSection: [1135,1167]`'%s at position %d' ...`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mod__
@@ -186,13 +224,19 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             TupleLiteralNode SourceSection: [1157,1167]`(msg, pos)`
                                               ReadLocalVariableNode SourceSection: [1158,1161]`msg`
                                                 Frame: [1,msg,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1163,1166]`pos`
                                                 Frame: [3,pos,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               PythonObjectFactoryNodeGen SourceSection: None
                                         IfNode SourceSection: [1180,1302]`if isinstance(patter...`
                                           YesNodeGen SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [1183,1207]`isinstance(pattern, ...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [1183,1193]`isinstance`
@@ -200,6 +244,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1194,1201]`pattern`
                                                 Frame: [2,pattern,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [1203,1206]`str`
                                                 Identifier: str
@@ -208,17 +254,23 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             Identifier: newline
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,newline,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                             StringLiteralNode SourceSection: [1235,1239]`'\n'`
                                           WriteLocalVariableNodeGen SourceSection: [1274,1289]`newline = b'\n'`
                                             Identifier: newline
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,newline,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                             BytesLiteralNode SourceSection: [1284,1289]`b'\n'`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [1302,1350]`self.lineno = patter...`
                                           Attribute: lineno
                                           ReadLocalVariableNode SourceSection: [1302,1306]`self`
                                             Frame: [0,self,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           BinaryArithmeticExpression SourceSection: [1316,1350]`pattern.count(newlin...`
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -228,14 +280,20 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [1316,1323]`pattern`
                                                   Frame: [2,pattern,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1330,1337]`newline`
                                                 Frame: [4,newline,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [1339,1340]`0`
                                                 Value: 0
                                               ReadLocalVariableNode SourceSection: [1342,1345]`pos`
                                                 Frame: [3,pos,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [1349,1350]`1`
                                               Value: 1
@@ -243,43 +301,63 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           Attribute: colno
                                           ReadLocalVariableNode SourceSection: [1363,1367]`self`
                                             Frame: [0,self,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           BinaryArithmeticExpression SourceSection: [1376,1412]`pos - pattern.rfind(...`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __sub__
                                             ReadLocalVariableNode SourceSection: [1376,1379]`pos`
                                               Frame: [3,pos,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallTernary SourceSection: [1382,1412]`pattern.rfind(newlin...`
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [1382,1389]`pattern`
                                                   Frame: [2,pattern,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1396,1403]`newline`
                                                 Frame: [4,newline,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [1405,1406]`0`
                                                 Value: 0
                                               ReadLocalVariableNode SourceSection: [1408,1411]`pos`
                                                 Frame: [3,pos,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [1425,1537]`if newline in patter...`
                                           YesNodeGen SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ContainsNodeGen SourceSection: [1428,1446]`newline in pattern`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1439,1446]`pattern`
                                                 Frame: [2,pattern,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1428,1435]`newline`
                                                 Frame: [4,newline,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [1464,1528]`msg = '%s (line %d, ...`
                                             Identifier: msg
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,msg,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                             BinaryArithmeticExpression SourceSection: [1470,1528]`'%s (line %d, column...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __mod__
@@ -287,22 +365,32 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               TupleLiteralNode SourceSection: [1498,1528]`(msg, self.lineno, s...`
                                                 ReadLocalVariableNode SourceSection: [1499,1502]`msg`
                                                   Frame: [1,msg,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [1504,1515]`self.lineno`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: lineno
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [1504,1508]`self`
                                                     Frame: [0,self,Illegal]
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [1517,1527]`self.colno`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: colno
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [1517,1521]`self`
                                                     Frame: [0,self,Illegal]
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -311,22 +399,32 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           Identifier: <>temp6
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [6,<>temp6,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                           ObjectLiteralNode SourceSection: [1582,1586]`None`
                                         SetAttributeNodeGen SourceSection: None
                                           Attribute: lineno
                                           ReadLocalVariableNode SourceSection: [1555,1559]`self`
                                             Frame: [0,self,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [6,<>temp6,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: None
                                           Attribute: colno
                                           ReadLocalVariableNode SourceSection: [1569,1573]`self`
                                             Frame: [0,self,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [6,<>temp6,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [1595,1616]`super().__init__(msg...`
                                       PythonCallUnary SourceSection: [1595,1616]`super().__init__(msg...`
@@ -339,9 +437,13 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1612,1615]`msg`
                                           Frame: [1,msg,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [7,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                     SetItemNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
@@ -350,11 +452,15 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       StringLiteralNode SourceSection: None
                       ReadLocalVariableNode SourceSection: None
                         Frame: [2,__class__,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [527,536]`Exception`
             Identifier: Exception
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1619,1868]`class _NamedIntConst...`
         Identifier: _NamedIntConstant
         PythonCallTernary SourceSection: [1619,1868]`class _NamedIntConst...`
@@ -425,6 +531,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: cls
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,cls,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -432,6 +540,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: value
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,value,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 1
@@ -439,6 +549,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: name
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,name,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 2
@@ -447,6 +559,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       PythonCallBinary SourceSection: [1699,1748]`super(_NamedIntConst...`
                                         CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
@@ -460,31 +574,47 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1724,1727]`cls`
                                               Frame: [0,cls,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1737,1740]`cls`
                                           Frame: [0,cls,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1742,1747]`value`
                                           Frame: [1,value,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     SetAttributeNodeGen SourceSection: [1757,1773]`self.name = name`
                                       Attribute: name
                                       ReadLocalVariableNode SourceSection: [1757,1761]`self`
                                         Frame: [3,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [1769,1773]`name`
                                         Frame: [2,name,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [1782,1793]`return self`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1789,1793]`self`
                                           Frame: [3,self,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [1799,1848]`def __str__(self):↵ ...`
                         ArgumentExpressionNode SourceSection: None
@@ -517,6 +647,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                     Identifier: self
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [0,self,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -526,16 +658,24 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         GetAttributeNodeGen SourceSection: [1833,1842]`self.name`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: name
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [1833,1837]`self`
                                             Frame: [0,self,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [1848,1866]`__repr__ = __str__`
                         ArgumentExpressionNode SourceSection: None
@@ -558,19 +698,27 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       StringLiteralNode SourceSection: None
                       ReadLocalVariableNode SourceSection: None
                         Frame: [3,__class__,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [1643,1646]`int`
             Identifier: int
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1868,1921]`MAXREPEAT = _NamedIn...`
         Identifier: MAXREPEAT
         PythonCallBinary SourceSection: [1880,1921]`_NamedIntConstant(MA...`
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1880,1897]`_NamedIntConstant`
             Identifier: _NamedIntConstant
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [1898,1907]`MAXREPEAT`
             Identifier: MAXREPEAT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [1909,1920]`'MAXREPEAT'`
       WriteNameNodeGen SourceSection: [1923,2206]`def _makecodes(names...`
         Identifier: _makecodes
@@ -600,6 +748,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                     Identifier: names
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [0,names,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
@@ -608,6 +758,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       Identifier: names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,names,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       PythonCallNodeGen SourceSection: [1958,1979]`names.strip().split(...`
                         CallNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
@@ -616,11 +768,15 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [1958,1963]`names`
                                 Frame: [0,names,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1984,2052]`items = [_NamedIntCo...`
                       Identifier: items
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,items,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       PythonCallUnary SourceSection: [1993,2051]`_NamedIntConstant(i,...`
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -659,9 +815,13 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [2011,2012]`i`
                                           Frame: [0,i,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [2014,2018]`name`
                                           Frame: [1,name,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: None
@@ -669,23 +829,35 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: <>temp2
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [2,<>temp2,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: <>temp3
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [3,<>temp3,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: i
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [0,i,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ReadGeneratorFrameVariableNode SourceSection: None
                                         Frame: [2,<>temp2,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: name
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [1,name,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ReadGeneratorFrameVariableNode SourceSection: None
                                         Frame: [3,<>temp3,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
@@ -694,8 +866,12 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
@@ -709,6 +885,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2045,2050]`names`
                                 Frame: [0,names,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2057,2110]`globals().update({it...`
@@ -757,11 +935,17 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               Key: name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [2075,2079]`item`
                                               Frame: [0,item,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [2086,2090]`item`
                                             Frame: [0,item,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None
@@ -769,6 +953,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: item
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [0,item,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -776,8 +962,12 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [1,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
@@ -786,6 +976,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2103,2108]`items`
                                 Frame: [1,items,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2115,2127]`return items`
@@ -793,11 +985,17 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [2122,2127]`items`
                           Frame: [1,items,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2206,2868]`OPCODES = _makecodes...`
         Identifier: OPCODES
@@ -805,10 +1003,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2216,2226]`_makecodes`
             Identifier: _makecodes
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2227,2867]`"""↵    FAILURE SUCC...`
       DeleteItemNodeGen SourceSection: [2869,2885]`del OPCODES[-2:]`
         ReadNameNodeGen SourceSection: None
           Identifier: OPCODES
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         SliceLiteralNodeGen SourceSection: [2881,2884]`-2:`
           PythonObjectFactoryNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [2881,2883]`-2`
@@ -821,6 +1023,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2944,2954]`_makecodes`
             Identifier: _makecodes
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2955,3168]`"""↵    AT_BEGINNING...`
       WriteNameNodeGen SourceSection: [3184,3607]`CHCODES = _makecodes...`
         Identifier: CHCODES
@@ -828,6 +1032,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3194,3204]`_makecodes`
             Identifier: _makecodes
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [3205,3606]`"""↵    CATEGORY_DIG...`
       WriteNameNodeGen SourceSection: [3658,3739]`OP_IGNORE = {↵    LI...`
         Identifier: OP_IGNORE
@@ -835,144 +1041,256 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3676,3683]`LITERAL`
             Identifier: LITERAL
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3705,3716]`NOT_LITERAL`
             Identifier: NOT_LITERAL
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3685,3699]`LITERAL_IGNORE`
             Identifier: LITERAL_IGNORE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3718,3736]`NOT_LITERAL_IGNORE`
             Identifier: NOT_LITERAL_IGNORE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3741,3837]`OP_LOCALE_IGNORE = {...`
         Identifier: OP_LOCALE_IGNORE
         DictLiteralNodeGen SourceSection: [3760,3837]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3766,3773]`LITERAL`
             Identifier: LITERAL
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3799,3810]`NOT_LITERAL`
             Identifier: NOT_LITERAL
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3775,3793]`LITERAL_LOC_IGNORE`
             Identifier: LITERAL_LOC_IGNORE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3812,3834]`NOT_LITERAL_LOC_IGNO...`
             Identifier: NOT_LITERAL_LOC_IGNORE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3839,3936]`OP_UNICODE_IGNORE = ...`
         Identifier: OP_UNICODE_IGNORE
         DictLiteralNodeGen SourceSection: [3859,3936]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3865,3872]`LITERAL`
             Identifier: LITERAL
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3898,3909]`NOT_LITERAL`
             Identifier: NOT_LITERAL
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3874,3892]`LITERAL_UNI_IGNORE`
             Identifier: LITERAL_UNI_IGNORE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3911,3933]`NOT_LITERAL_UNI_IGNO...`
             Identifier: NOT_LITERAL_UNI_IGNORE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3938,4017]`AT_MULTILINE = {↵   ...`
         Identifier: AT_MULTILINE
         DictLiteralNodeGen SourceSection: [3953,4017]`{↵    AT_BEGINNING: ...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3959,3971]`AT_BEGINNING`
             Identifier: AT_BEGINNING
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3996,4002]`AT_END`
             Identifier: AT_END
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [3973,3990]`AT_BEGINNING_LINE`
             Identifier: AT_BEGINNING_LINE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4004,4015]`AT_END_LINE`
             Identifier: AT_END_LINE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4019,4109]`AT_LOCALE = {↵    AT...`
         Identifier: AT_LOCALE
         DictLiteralNodeGen SourceSection: [4031,4109]`{↵    AT_BOUNDARY: A...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4037,4048]`AT_BOUNDARY`
             Identifier: AT_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4071,4086]`AT_NON_BOUNDARY`
             Identifier: AT_NON_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4050,4065]`AT_LOC_BOUNDARY`
             Identifier: AT_LOC_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4088,4107]`AT_LOC_NON_BOUNDARY`
             Identifier: AT_LOC_NON_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4111,4202]`AT_UNICODE = {↵    A...`
         Identifier: AT_UNICODE
         DictLiteralNodeGen SourceSection: [4124,4202]`{↵    AT_BOUNDARY: A...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4130,4141]`AT_BOUNDARY`
             Identifier: AT_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4164,4179]`AT_NON_BOUNDARY`
             Identifier: AT_NON_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4143,4158]`AT_UNI_BOUNDARY`
             Identifier: AT_UNI_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4181,4200]`AT_UNI_NON_BOUNDARY`
             Identifier: AT_UNI_NON_BOUNDARY
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4204,4558]`CH_LOCALE = {↵    CA...`
         Identifier: CH_LOCALE
         DictLiteralNodeGen SourceSection: [4216,4558]`{↵    CATEGORY_DIGIT...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4222,4236]`CATEGORY_DIGIT`
             Identifier: CATEGORY_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4258,4276]`CATEGORY_NOT_DIGIT`
             Identifier: CATEGORY_NOT_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4302,4316]`CATEGORY_SPACE`
             Identifier: CATEGORY_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4338,4356]`CATEGORY_NOT_SPACE`
             Identifier: CATEGORY_NOT_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4382,4395]`CATEGORY_WORD`
             Identifier: CATEGORY_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4420,4437]`CATEGORY_NOT_WORD`
             Identifier: CATEGORY_NOT_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4466,4484]`CATEGORY_LINEBREAK`
             Identifier: CATEGORY_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4510,4532]`CATEGORY_NOT_LINEBRE...`
             Identifier: CATEGORY_NOT_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4238,4252]`CATEGORY_DIGIT`
             Identifier: CATEGORY_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4278,4296]`CATEGORY_NOT_DIGIT`
             Identifier: CATEGORY_NOT_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4318,4332]`CATEGORY_SPACE`
             Identifier: CATEGORY_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4358,4376]`CATEGORY_NOT_SPACE`
             Identifier: CATEGORY_NOT_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4397,4414]`CATEGORY_LOC_WORD`
             Identifier: CATEGORY_LOC_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4439,4460]`CATEGORY_LOC_NOT_WOR...`
             Identifier: CATEGORY_LOC_NOT_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4486,4504]`CATEGORY_LINEBREAK`
             Identifier: CATEGORY_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4534,4556]`CATEGORY_NOT_LINEBRE...`
             Identifier: CATEGORY_NOT_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4560,4939]`CH_UNICODE = {↵    C...`
         Identifier: CH_UNICODE
         DictLiteralNodeGen SourceSection: [4573,4939]`{↵    CATEGORY_DIGIT...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4579,4593]`CATEGORY_DIGIT`
             Identifier: CATEGORY_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4619,4637]`CATEGORY_NOT_DIGIT`
             Identifier: CATEGORY_NOT_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4667,4681]`CATEGORY_SPACE`
             Identifier: CATEGORY_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4707,4725]`CATEGORY_NOT_SPACE`
             Identifier: CATEGORY_NOT_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4755,4768]`CATEGORY_WORD`
             Identifier: CATEGORY_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4793,4810]`CATEGORY_NOT_WORD`
             Identifier: CATEGORY_NOT_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4839,4857]`CATEGORY_LINEBREAK`
             Identifier: CATEGORY_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4887,4909]`CATEGORY_NOT_LINEBRE...`
             Identifier: CATEGORY_NOT_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4595,4613]`CATEGORY_UNI_DIGIT`
             Identifier: CATEGORY_UNI_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4639,4661]`CATEGORY_UNI_NOT_DIG...`
             Identifier: CATEGORY_UNI_NOT_DIGIT
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4683,4701]`CATEGORY_UNI_SPACE`
             Identifier: CATEGORY_UNI_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4727,4749]`CATEGORY_UNI_NOT_SPA...`
             Identifier: CATEGORY_UNI_NOT_SPACE
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4770,4787]`CATEGORY_UNI_WORD`
             Identifier: CATEGORY_UNI_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4812,4833]`CATEGORY_UNI_NOT_WOR...`
             Identifier: CATEGORY_UNI_NOT_WORD
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4859,4881]`CATEGORY_UNI_LINEBRE...`
             Identifier: CATEGORY_UNI_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [4911,4937]`CATEGORY_UNI_NOT_LIN...`
             Identifier: CATEGORY_UNI_NOT_LINEBREAK
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4949,4970]`SRE_FLAG_TEMPLATE = ...`
         Identifier: SRE_FLAG_TEMPLATE
         IntegerLiteralNode SourceSection: [4969,4970]`1`
@@ -1027,11 +1345,15 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         SideEffect:
           IfNode SourceSection: [5581,7177]`if __name__ == "__ma...`
             YesNodeGen SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               BinaryComparisonNodeGen SourceSection: [5584,5606]`__name__ == "__main_...`
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __eq__
                 ReadNameNodeGen SourceSection: [5584,5592]`__name__`
                   Identifier: __name__
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 StringLiteralNode SourceSection: [5596,5606]`"__main__"`
             BlockNode SourceSection: None
               WriteNameNodeGen SourceSection: [5612,5758]`def dump(f, d, prefi...`
@@ -1063,6 +1385,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               Identifier: f
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,f,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
                                   Index: 0
@@ -1070,6 +1394,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               Identifier: d
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,d,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
                                   Index: 1
@@ -1077,6 +1403,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               Identifier: prefix
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [2,prefix,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
                                   Index: 2
@@ -1085,6 +1413,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               Identifier: items
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [3,items,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               PythonCallUnary SourceSection: [5652,5661]`sorted(d)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5652,5658]`sorted`
@@ -1092,6 +1422,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [5659,5660]`d`
                                   Frame: [1,d,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             ElseNode SourceSection: [5670,5758]`for item in items:↵ ...`
                               ForNode SourceSection: None
@@ -1101,12 +1433,16 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       Identifier: item
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [4,item,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                   ExpressionStatementNode SourceSection: [5701,5753]`f.write("#define %s_...`
                                     PythonCallUnary SourceSection: [5701,5753]`f.write("#define %s_...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [5701,5702]`f`
                                           Frame: [0,f,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       BinaryArithmeticExpression SourceSection: [5709,5752]`"#define %s_%s %d\n"...`
                                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -1115,22 +1451,32 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         TupleLiteralNode SourceSection: [5732,5752]`(prefix, item, item)...`
                                           ReadLocalVariableNode SourceSection: [5733,5739]`prefix`
                                             Frame: [2,prefix,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5741,5745]`item`
                                             Frame: [4,item,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5747,5751]`item`
                                             Frame: [4,item,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [5682,5687]`items`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [5682,5687]`items`
                                     Frame: [3,items,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [5,<return_val>,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
               WithNode SourceSection: [5758,7163]`with open("sre_const...`
                 BlockNode SourceSection: None
@@ -1140,6 +1486,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [5806,5807]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       StringLiteralNode SourceSection: [5814,6189]`"""\↵/*↵ * Secret La...`
                   ExpressionStatementNode SourceSection: [6200,6241]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6200,6241]`f.write("#define SRE...`
@@ -1147,41 +1495,63 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6200,6201]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6208,6240]`"#define SRE_MAGIC %...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6208,6232]`"#define SRE_MAGIC %...`
                         ReadNameNodeGen SourceSection: [6235,6240]`MAGIC`
                           Identifier: MAGIC
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6251,6277]`dump(f, OPCODES, "SR...`
                     PythonCallTernary SourceSection: [6251,6277]`dump(f, OPCODES, "SR...`
                       CallTernaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [6251,6255]`dump`
                         Identifier: dump
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ReadNameNodeGen SourceSection: [6256,6257]`f`
                         Identifier: f
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ReadNameNodeGen SourceSection: [6259,6266]`OPCODES`
                         Identifier: OPCODES
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       StringLiteralNode SourceSection: [6268,6276]`"SRE_OP"`
                   ExpressionStatementNode SourceSection: [6286,6309]`dump(f, ATCODES, "SR...`
                     PythonCallTernary SourceSection: [6286,6309]`dump(f, ATCODES, "SR...`
                       CallTernaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [6286,6290]`dump`
                         Identifier: dump
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ReadNameNodeGen SourceSection: [6291,6292]`f`
                         Identifier: f
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ReadNameNodeGen SourceSection: [6294,6301]`ATCODES`
                         Identifier: ATCODES
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       StringLiteralNode SourceSection: [6303,6308]`"SRE"`
                   ExpressionStatementNode SourceSection: [6318,6341]`dump(f, CHCODES, "SR...`
                     PythonCallTernary SourceSection: [6318,6341]`dump(f, CHCODES, "SR...`
                       CallTernaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [6318,6322]`dump`
                         Identifier: dump
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ReadNameNodeGen SourceSection: [6323,6324]`f`
                         Identifier: f
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ReadNameNodeGen SourceSection: [6326,6333]`CHCODES`
                         Identifier: CHCODES
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       StringLiteralNode SourceSection: [6335,6340]`"SRE"`
                   ExpressionStatementNode SourceSection: [6351,6412]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6351,6412]`f.write("#define SRE...`
@@ -1189,150 +1559,200 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6351,6352]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6359,6411]`"#define SRE_FLAG_TE...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6359,6391]`"#define SRE_FLAG_TE...`
                         ReadNameNodeGen SourceSection: [6394,6411]`SRE_FLAG_TEMPLATE`
                           Identifier: SRE_FLAG_TEMPLATE
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6421,6486]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6421,6486]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6421,6422]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6429,6485]`"#define SRE_FLAG_IG...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6429,6463]`"#define SRE_FLAG_IG...`
                         ReadNameNodeGen SourceSection: [6466,6485]`SRE_FLAG_IGNORECASE`
                           Identifier: SRE_FLAG_IGNORECASE
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6495,6552]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6495,6552]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6495,6496]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6503,6551]`"#define SRE_FLAG_LO...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6503,6533]`"#define SRE_FLAG_LO...`
                         ReadNameNodeGen SourceSection: [6536,6551]`SRE_FLAG_LOCALE`
                           Identifier: SRE_FLAG_LOCALE
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6561,6624]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6561,6624]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6561,6562]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6569,6623]`"#define SRE_FLAG_MU...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6569,6602]`"#define SRE_FLAG_MU...`
                         ReadNameNodeGen SourceSection: [6605,6623]`SRE_FLAG_MULTILINE`
                           Identifier: SRE_FLAG_MULTILINE
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6633,6690]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6633,6690]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6633,6634]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6641,6689]`"#define SRE_FLAG_DO...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6641,6671]`"#define SRE_FLAG_DO...`
                         ReadNameNodeGen SourceSection: [6674,6689]`SRE_FLAG_DOTALL`
                           Identifier: SRE_FLAG_DOTALL
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6699,6758]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6699,6758]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6699,6700]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6707,6757]`"#define SRE_FLAG_UN...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6707,6738]`"#define SRE_FLAG_UN...`
                         ReadNameNodeGen SourceSection: [6741,6757]`SRE_FLAG_UNICODE`
                           Identifier: SRE_FLAG_UNICODE
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6767,6826]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6767,6826]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6767,6768]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6775,6825]`"#define SRE_FLAG_VE...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6775,6806]`"#define SRE_FLAG_VE...`
                         ReadNameNodeGen SourceSection: [6809,6825]`SRE_FLAG_VERBOSE`
                           Identifier: SRE_FLAG_VERBOSE
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6835,6890]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6835,6890]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6835,6836]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6843,6889]`"#define SRE_FLAG_DE...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6843,6872]`"#define SRE_FLAG_DE...`
                         ReadNameNodeGen SourceSection: [6875,6889]`SRE_FLAG_DEBUG`
                           Identifier: SRE_FLAG_DEBUG
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6899,6954]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6899,6954]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6899,6900]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6907,6953]`"#define SRE_FLAG_AS...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6907,6936]`"#define SRE_FLAG_AS...`
                         ReadNameNodeGen SourceSection: [6939,6953]`SRE_FLAG_ASCII`
                           Identifier: SRE_FLAG_ASCII
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [6964,7021]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [6964,7021]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [6964,6965]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [6972,7020]`"#define SRE_INFO_PR...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [6972,7002]`"#define SRE_INFO_PR...`
                         ReadNameNodeGen SourceSection: [7005,7020]`SRE_INFO_PREFIX`
                           Identifier: SRE_INFO_PREFIX
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [7030,7089]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [7030,7089]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [7030,7031]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [7038,7088]`"#define SRE_INFO_LI...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [7038,7069]`"#define SRE_INFO_LI...`
                         ReadNameNodeGen SourceSection: [7072,7088]`SRE_INFO_LITERAL`
                           Identifier: SRE_INFO_LITERAL
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [7098,7157]`f.write("#define SRE...`
                     PythonCallUnary SourceSection: [7098,7157]`f.write("#define SRE...`
                       CallUnaryMethodNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [7098,7099]`f`
                           Identifier: f
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       BinaryArithmeticExpression SourceSection: [7106,7156]`"#define SRE_INFO_CH...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
                         StringLiteralNode SourceSection: [7106,7137]`"#define SRE_INFO_CH...`
                         ReadNameNodeGen SourceSection: [7140,7156]`SRE_INFO_CHARSET`
                           Identifier: SRE_INFO_CHARSET
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                 WriteNameNodeGen SourceSection: None
                   Identifier: f
                 PythonCallBinary SourceSection: [5763,5791]`open("sre_constants....`
                   CallBinaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [5763,5767]`open`
                     Identifier: open
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                   StringLiteralNode SourceSection: [5768,5785]`"sre_constants.h"`
                   StringLiteralNode SourceSection: [5787,5790]`"w"`
                 LookupInheritedAttributeNode SourceSection: None
@@ -1346,11 +1766,15 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 CallNodeGen SourceSection: None
                 CallNodeGen SourceSection: None
                 YesNodeGen SourceSection: None
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 GetClassNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [7163,7176]`print("done")`
                 PythonCallUnary SourceSection: [7163,7176]`print("done")`
                   CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [7163,7168]`print`
                     Identifier: print
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                   StringLiteralNode SourceSection: [7169,7175]`"done"`
             BlockNode SourceSection: None

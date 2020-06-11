@@ -39,6 +39,8 @@ ModuleRootNode Name: <module 'positionalOnlyArg01'> SourceSection: [0,41]`def na
                         Identifier: p1
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,p1,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -46,6 +48,8 @@ ModuleRootNode Name: <module 'positionalOnlyArg01'> SourceSection: [0,41]`def na
                         Identifier: p2
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,p2,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -53,6 +57,8 @@ ModuleRootNode Name: <module 'positionalOnlyArg01'> SourceSection: [0,41]`def na
                         Identifier: p_or_kw
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,p_or_kw,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -60,6 +66,8 @@ ModuleRootNode Name: <module 'positionalOnlyArg01'> SourceSection: [0,41]`def na
                         Identifier: kw
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,kw,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
@@ -68,4 +76,6 @@ ModuleRootNode Name: <module 'positionalOnlyArg01'> SourceSection: [0,41]`def na
                         EmptyNode SourceSection: [37,41]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

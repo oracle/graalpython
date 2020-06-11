@@ -10,6 +10,10 @@ ModuleRootNode Name: <module 'fnCall01'> SourceSection: [0,10]`foo(*args)`
       PositionalArgumentsNode SourceSection: None
         ReadNameNodeGen SourceSection: [5,9]`args`
           Identifier: args
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ExecutePositionalStarargsNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

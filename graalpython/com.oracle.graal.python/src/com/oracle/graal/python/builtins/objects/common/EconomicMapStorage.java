@@ -165,7 +165,7 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, lib)"})
+        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile)"})
         static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
@@ -223,7 +223,7 @@ public class EconomicMapStorage extends HashingStorage {
             return self;
         }
 
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, lib)"})
+        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile)"})
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,

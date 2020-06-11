@@ -42,13 +42,19 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                                 Identifier: x
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [0,x,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                             IfNode SourceSection: [36,59]`if x == 1:↵      bre...`
                               YesNodeGen SourceSection: None
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [39,45]`x == 1`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __eq__
                                   ReadLocalVariableNode SourceSection: [39,40]`x`
                                     Frame: [0,x,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [44,45]`1`
                                     Value: 1
@@ -66,4 +72,6 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -79,6 +79,8 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                         Identifier: self
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [0,self,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
@@ -86,6 +88,8 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                         Identifier: realpart
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,realpart,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 1
@@ -93,6 +97,8 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                         Identifier: imagpart
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,imagpart,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 2
@@ -101,20 +107,30 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                         Attribute: r
                                         ReadLocalVariableNode SourceSection: [67,71]`self`
                                           Frame: [0,self,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [76,84]`realpart`
                                           Frame: [1,realpart,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [93,110]`self.i = imagpart`
                                         Attribute: i
                                         ReadLocalVariableNode SourceSection: [93,97]`self`
                                           Frame: [0,self,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [102,110]`imagpart`
                                           Frame: [2,imagpart,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
@@ -123,6 +139,8 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                         StringLiteralNode SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [1,__class__,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

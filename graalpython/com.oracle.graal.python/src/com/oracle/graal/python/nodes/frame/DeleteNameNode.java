@@ -59,7 +59,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class DeleteNameNode extends StatementNode implements AccessNameNode {
     @Child private DeleteGlobalNode deleteGlobalNode;
-    protected final IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
+    @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final String attributeId;
 
     protected DeleteNameNode(String attributeId) {

@@ -10,5 +10,7 @@ ModuleRootNode Name: <module 'int04'> SourceSection: [0,7]`h == -1`
         Op: __eq__
       ReadNameNodeGen SourceSection: [0,1]`h`
         Identifier: h
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       IntegerLiteralNode SourceSection: [5,7]`-1`
         Value: -1

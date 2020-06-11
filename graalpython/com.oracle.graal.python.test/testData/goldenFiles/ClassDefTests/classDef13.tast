@@ -65,6 +65,8 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                       StringLiteralNode SourceSection: None
                       ReadLocalVariableNode SourceSection: None
                         Frame: [2,__class__,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
@@ -74,6 +76,8 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [33,38]`Point`
             Identifier: Point
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -88,12 +92,20 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                   Key: x
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [45,46]`p`
                   Identifier: p
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
               GetAttributeNodeGen SourceSection: [51,54]`p.y`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: y
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [51,52]`p`
                   Identifier: p
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None

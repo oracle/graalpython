@@ -47,6 +47,8 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                               ReadLocalCellNodeGen SourceSection: [10,11]`i`
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [0,i,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadFromCellNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [13,42]`tuple(j for j in t i...`
@@ -80,22 +82,30 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                           GeneratorIfNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [35,41]`i != j`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __ne__
                                                 ReadLocalCellNodeGen SourceSection: [35,36]`i`
                                                   ReadGeneratorFrameVariableNode SourceSection: None
                                                     Frame: [1,i,Illegal]
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [40,41]`j`
                                                   Frame: [0,j,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [19,20]`j`
                                               YieldNode SourceSection: [19,20]`j`
                                                 flagSlot: 0
                                                 ReadGeneratorFrameVariableNode SourceSection: [19,20]`j`
                                                   Frame: [0,j,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             BlockNode SourceSection: None
@@ -103,6 +113,8 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                             Identifier: j
                                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                                               Frame: [0,j,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
@@ -110,8 +122,12 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                             LookupAndCallUnaryNodeGen SourceSection: None
                                               Op: __next__
                                           GeneratorAccessNode SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
@@ -120,6 +136,8 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                     GetIteratorNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: [30,31]`t`
                                       Frame: [1,t,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
@@ -128,20 +146,28 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                           Identifier: i
                           ReadGeneratorFrameVariableNode SourceSection: None
                             Frame: [0,i,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [92,93]`t`
                           GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [92,93]`t`
                             Frame: [1,t,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GetNextNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                         Identifier: t
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [1,t,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -149,8 +175,12 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     ReadGeneratorFrameVariableNode SourceSection: None
                       Frame: [2,<return_val>,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                     BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
@@ -159,4 +189,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                 GetIteratorNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [73,82]`something`
                   Identifier: something
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None

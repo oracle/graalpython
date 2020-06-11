@@ -13,24 +13,38 @@ ModuleRootNode Name: <module 'comparision04'> SourceSection: [0,12]`x < y() <= z
               Op: __lt__
             ReadNameNodeGen SourceSection: [0,1]`x`
               Identifier: x
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
         SideEffect:
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             PythonCallNodeGen SourceSection: [4,7]`y()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [4,5]`y`
                 Identifier: y
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
       BinaryComparisonNodeGen SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __le__
         ReadLocalVariableNode SourceSection: None
           Frame: [0,<>temp0,Illegal]
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
           ReadVariableFromFrameNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [11,12]`z`
           Identifier: z
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
       YesNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

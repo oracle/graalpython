@@ -38,6 +38,8 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
                         Identifier: foo
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,foo,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         PythonCallNodeGen SourceSection: [22,34]`await smth()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`smth`
@@ -45,4 +47,6 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

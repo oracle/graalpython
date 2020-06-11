@@ -50,11 +50,6 @@ public final class PNotImplemented extends PythonAbstractObject {
     }
 
     @Override
-    public Object getInternalLazyPythonClass() {
-        return getLazyPythonClass();
-    }
-
-    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object getLazyPythonClass() {

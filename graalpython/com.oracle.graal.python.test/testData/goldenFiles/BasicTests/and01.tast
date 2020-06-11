@@ -8,6 +8,12 @@ ModuleRootNode Name: <module 'and01'> SourceSection: [0,7]`a and b`
     AndNode SourceSection: [0,7]`a and b`
       ReadNameNodeGen SourceSection: [0,1]`a`
         Identifier: a
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [6,7]`b`
         Identifier: b
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       YesNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

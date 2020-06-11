@@ -15,6 +15,8 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,16]`@class_decorator`
               Identifier: class_decorator
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             PythonCallBinary SourceSection: [17,33]`class foo():pass`
               CallBinaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
@@ -60,6 +62,8 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
                           StringLiteralNode SourceSection: None
                           ReadLocalVariableNode SourceSection: None
                             Frame: [0,__class__,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None

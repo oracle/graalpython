@@ -10,13 +10,19 @@ ModuleRootNode Name: <module 'fnCall05'> SourceSection: [0,21]`foo(key=value, *a
       PositionalArgumentsNode SourceSection: None
         ReadNameNodeGen SourceSection: [16,20]`args`
           Identifier: args
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ExecutePositionalStarargsNodeGen SourceSection: None
       KeywordArgumentsNodeGen SourceSection: None
         KeywordLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [8,13]`value`
             Identifier: value
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

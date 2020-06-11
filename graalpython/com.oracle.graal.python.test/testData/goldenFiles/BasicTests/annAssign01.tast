@@ -13,7 +13,11 @@ ModuleRootNode Name: <module 'annAssign01'> SourceSection: [0,10]`a: int = 1`
       SetItemNodeGen SourceSection: [0,0]Empty
         ReadNameNodeGen SourceSection: None
           Identifier: __annotations__
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         StringLiteralNode SourceSection: [0,0]Empty
         ReadNameNodeGen SourceSection: [3,6]`int`
           Identifier: int
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
       EmptyNode SourceSection: None

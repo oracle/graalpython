@@ -10,7 +10,11 @@ ModuleRootNode Name: <module 'getAttr02'> SourceSection: [0,5]`a().b`
         Key: b
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       PythonCallNodeGen SourceSection: [0,3]`a()`
         CallNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [0,1]`a`
           Identifier: a
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None

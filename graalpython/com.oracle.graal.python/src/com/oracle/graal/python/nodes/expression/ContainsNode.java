@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -64,7 +63,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     @Child private GetIteratorNode getIterator;
     @Child private GetNextNode next;
     @Child private BinaryComparisonNode eqNode;
-    @CompilationFinal private IsBuiltinClassProfile errorProfile;
+    @Child private IsBuiltinClassProfile errorProfile;
 
     public static ExpressionNode create(ExpressionNode right, ExpressionNode left) {
         return ContainsNodeGen.create(right, left);
@@ -212,7 +211,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     private IsBuiltinClassProfile getErrorProfile() {
         if (errorProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            errorProfile = IsBuiltinClassProfile.create();
+            errorProfile = insert(IsBuiltinClassProfile.create());
         }
         return errorProfile;
     }

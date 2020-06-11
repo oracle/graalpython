@@ -58,7 +58,7 @@ public interface GlobalNode {
 
     default boolean isBuiltinDict(Object globals, IsBuiltinClassProfile profile) {
         if (globals instanceof PDict) {
-            return profile.profileObject((PDict) globals, PythonBuiltinClassType.PDict);
+            return profile.profileObject(globals, PythonBuiltinClassType.PDict);
         }
         return false;
     }

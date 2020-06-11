@@ -16,3 +16,5 @@ ModuleRootNode Name: <module 'call03'> SourceSection: [0,12]`foo(arg = 1)`
           EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

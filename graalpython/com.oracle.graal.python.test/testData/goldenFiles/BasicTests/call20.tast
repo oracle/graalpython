@@ -37,6 +37,8 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                       Identifier: name
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,name,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -48,6 +50,8 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                             KeywordLiteralNode SourceSection: None
                               ReadLocalVariableNode SourceSection: [31,35]`name`
                                 Frame: [0,name,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             CompactKeywordsNodeGen SourceSection: None
                             ExecuteKeywordStarargsNodeGen SourceSection: None
@@ -56,4 +60,6 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                             StringLiteralNode SourceSection: [14,18]`"in"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

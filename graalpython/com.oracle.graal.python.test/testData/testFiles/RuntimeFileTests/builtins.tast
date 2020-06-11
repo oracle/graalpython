@@ -38,6 +38,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: self
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,self,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -45,6 +47,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: name
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,name,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -52,6 +56,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: mode
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,mode,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -59,6 +65,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: closefd
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,closefd,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 3
@@ -66,6 +74,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: opener
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,opener,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 4
@@ -74,6 +84,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       EmptyNode SourceSection: [2233,2237]`pass`
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2239,2634]`def __import__(filen...`
         Identifier: __import__
@@ -104,6 +116,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: filename
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,filename,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -111,6 +125,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: module_name
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,module_name,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -119,6 +135,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: sys
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,sys,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ImportExpression SourceSection: None
                         ImportNode SourceSection: None
                           Module: sys
@@ -126,6 +144,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: posix
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,posix,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ImportExpression SourceSection: None
                         ImportNode SourceSection: None
                           Module: posix
@@ -133,42 +153,60 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: module
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,module,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       GetItemNodeGen SourceSection: [2313,2337]`sys.modules[module_n...`
                         GetAttributeNodeGen SourceSection: None
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: modules
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [2313,2316]`sys`
                             Frame: [2,sys,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2325,2336]`module_name`
                           Frame: [1,module_name,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [2342,2432]`if filename.startswi...`
                       YesNodeGen SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         PythonCallUnary SourceSection: [2345,2370]`filename.startswith(...`
                           CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2345,2353]`filename`
                               Frame: [0,filename,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [2365,2369]`"%s"`
                       WriteLocalVariableNodeGen SourceSection: [2380,2427]`filename = filename ...`
                         Identifier: filename
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,filename,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         BinaryArithmeticExpression SourceSection: [2391,2427]`filename % __graalpy...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __mod__
                           ReadLocalVariableNode SourceSection: [2391,2399]`filename`
                             Frame: [0,filename,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [2402,2427]`__graalpython__.core...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: core_home
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2402,2417]`__graalpython__`
                               Identifier: __graalpython__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -177,43 +215,63 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       Identifier: fd
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,fd,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       PythonCallBinary SourceSection: [2437,2473]`posix.open(filename,...`
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2437,2442]`posix`
                             Frame: [3,posix,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2448,2456]`filename`
                           Frame: [0,filename,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetAttributeNodeGen SourceSection: [2458,2472]`posix.O_RDONLY`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: O_RDONLY
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [2458,2463]`posix`
                             Frame: [3,posix,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2478,2515]`content = posix.read...`
                       Identifier: content
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [6,content,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       PythonCallBinary SourceSection: [2488,2515]`posix.read(fd, sys.m...`
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2488,2493]`posix`
                             Frame: [3,posix,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2499,2501]`fd`
                           Frame: [5,fd,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetAttributeNodeGen SourceSection: [2503,2514]`sys.maxsize`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: maxsize
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [2503,2506]`sys`
                             Frame: [2,sys,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2520,2535]`posix.close(fd)`
                       PythonCallUnary SourceSection: [2520,2535]`posix.close(fd)`
@@ -221,14 +279,20 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2520,2525]`posix`
                             Frame: [3,posix,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2532,2534]`fd`
                           Frame: [5,fd,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2540,2581]`code = compile(conte...`
                       Identifier: code
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [7,code,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       PythonCallTernary SourceSection: [2547,2581]`compile(content, fil...`
                         CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2547,2554]`compile`
@@ -236,9 +300,13 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2555,2562]`content`
                           Frame: [6,content,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2564,2572]`filename`
                           Frame: [0,filename,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [2574,2580]`"exec"`
                     ExpressionStatementNode SourceSection: [2586,2613]`exec(code, module.__...`
@@ -249,31 +317,45 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2591,2595]`code`
                           Frame: [7,code,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetAttributeNodeGen SourceSection: [2597,2612]`module.__dict__`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: __dict__
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [2597,2603]`module`
                             Frame: [4,module,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2618,2631]`return module`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [8,<return_val>,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [2625,2631]`module`
                           Frame: [4,module,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [8,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [2634,2675]`__import__("%s/funct...`
         PythonCallBinary SourceSection: [2634,2675]`__import__("%s/funct...`
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2634,2644]`__import__`
             Identifier: __import__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2645,2662]`"%s/functions.py"`
           StringLiteralNode SourceSection: [2664,2674]`"builtins"`
       ExpressionStatementNode SourceSection: [2676,2716]`__import__("%s/prope...`
@@ -281,6 +363,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2676,2686]`__import__`
             Identifier: __import__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2687,2703]`"%s/property.py"`
           StringLiteralNode SourceSection: [2705,2715]`"builtins"`
       ExpressionStatementNode SourceSection: [2717,2759]`__import__("%s/excep...`
@@ -288,6 +372,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2717,2727]`__import__`
             Identifier: __import__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2728,2746]`"%s/exceptions.py"`
           StringLiteralNode SourceSection: [2748,2758]`"builtins"`
       ExpressionStatementNode SourceSection: [2760,2797]`__import__("%s/super...`
@@ -295,6 +381,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2760,2770]`__import__`
             Identifier: __import__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2771,2784]`"%s/super.py"`
           StringLiteralNode SourceSection: [2786,2796]`"builtins"`
       ExpressionStatementNode SourceSection: [2798,2838]`__import__("%s/ellip...`
@@ -302,11 +390,15 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2798,2808]`__import__`
             Identifier: __import__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2809,2825]`"%s/ellipsis.py"`
           StringLiteralNode SourceSection: [2827,2837]`"builtins"`
       PythonCallBinary SourceSection: [2839,2878]`__import__("%s/timso...`
         CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [2839,2849]`__import__`
           Identifier: __import__
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         StringLiteralNode SourceSection: [2850,2865]`"%s/timsort.py"`
         StringLiteralNode SourceSection: [2867,2877]`"builtins"`

@@ -40,6 +40,8 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                         Identifier: self
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,self,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -47,6 +49,8 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                         Identifier: msg
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,msg,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -54,6 +58,8 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                         Identifier: offset
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,offset,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -63,6 +69,8 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           PythonCallTernary SourceSection: [42,67]`test(msg, self.strin...`
                             CallTernaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [42,46]`test`
@@ -70,17 +78,25 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [47,50]`msg`
                               Frame: [1,msg,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             GetAttributeNodeGen SourceSection: [52,63]`self.string`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: string
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               ReadLocalVariableNode SourceSection: [52,56]`self`
                                 Frame: [0,self,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [65,66]`1`
                               Value: 1
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

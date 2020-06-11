@@ -18,5 +18,7 @@ ModuleRootNode Name: <module 'try08'> SourceSection: [0,53]`try:↵    pass↵ex
                 EmptyNode SourceSection: [34,38]`pass`
               ReadNameNodeGen SourceSection: [21,28]`OSError`
                 Identifier: OSError
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
             ExpressionStatementNode SourceSection: [49,53]`pass`
               EmptyNode SourceSection: [49,53]`pass`

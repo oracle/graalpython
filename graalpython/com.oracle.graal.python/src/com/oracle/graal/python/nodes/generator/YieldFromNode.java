@@ -82,10 +82,10 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
 
     @Child private GetExceptionTracebackNode getExceptionTracebackNode;
 
-    private final IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile stopIterProfile3 = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile genExitProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile stopIterProfile3 = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile genExitProfile = IsBuiltinClassProfile.create();
 
     @CompilationFinal private int iteratorSlot;
 

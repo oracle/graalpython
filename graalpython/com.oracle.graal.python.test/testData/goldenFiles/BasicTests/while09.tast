@@ -13,6 +13,8 @@ ModuleRootNode Name: <module 'while09'> SourceSection: [0,31]`while True:↵  pa
           WhileNode SourceSection: None
             WhileRepeatingNode SourceSection: None
               YesNodeGen SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 BooleanLiteralNode SourceSection: [6,10]`True`
               ExpressionStatementNode SourceSection: [14,18]`pass`
                 EmptyNode SourceSection: [14,18]`pass`

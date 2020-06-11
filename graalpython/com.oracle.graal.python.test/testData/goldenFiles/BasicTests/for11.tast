@@ -18,19 +18,27 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
                     Identifier: <>temp0
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [0,<>temp0,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <>temp1
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [1,<>temp1,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                   WriteNameNodeGen SourceSection: None
                     Identifier: i
                     ReadLocalVariableNode SourceSection: None
                       Frame: [0,<>temp0,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                   WriteNameNodeGen SourceSection: None
                     Identifier: b
                     ReadLocalVariableNode SourceSection: None
                       Frame: [1,<>temp1,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [16,20]`pass`
                 EmptyNode SourceSection: [16,20]`pass`

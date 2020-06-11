@@ -213,6 +213,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
         }
     }
 
+    public void expectStopIteration(IsBuiltinClassProfile profile, PythonObjectLibrary lib) {
+        if (!profile.profileException(this, PythonBuiltinClassType.StopIteration, lib)) {
+            throw this;
+        }
+    }
+
     public void expectAttributeError(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
             throw this;

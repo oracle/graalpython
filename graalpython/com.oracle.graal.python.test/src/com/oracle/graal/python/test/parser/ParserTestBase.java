@@ -74,6 +74,8 @@ public class ParserTestBase {
     protected boolean printFormatStringLiteralValues = false;
     protected int printOnlyDiffIfLenIsBigger = 1000;
 
+    private static final boolean REGENERATE_TREE = false;
+
     @Rule public TestName name = new TestName();
 
     private ScopeInfo lastGlobalScope;
@@ -155,7 +157,7 @@ public class ParserTestBase {
         File newGoldenFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + NEW_GOLDEN_FILE_EXT)
                         : getGoldenFile(NEW_GOLDEN_FILE_EXT);
-        if (!newGoldenFile.exists()) {
+        if (REGENERATE_TREE || !newGoldenFile.exists()) {
             try (FileWriter fw = new FileWriter(newGoldenFile)) {
                 fw.write(tree);
             }
@@ -172,7 +174,7 @@ public class ParserTestBase {
         File goldenFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + GOLDEN_FILE_EXT)
                         : getGoldenFile(GOLDEN_FILE_EXT);
-        if (!goldenFile.exists()) {
+        if (REGENERATE_TREE || !goldenFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenFile)) {
                 fw.write(tree);
             }
@@ -192,7 +194,7 @@ public class ParserTestBase {
         File newScopeFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + NEW_SCOPE_FILE_EXT)
                         : getGoldenFile(NEW_SCOPE_FILE_EXT);
-        if (!newScopeFile.exists()) {
+        if (REGENERATE_TREE || !newScopeFile.exists()) {
             try (FileWriter fw = new FileWriter(newScopeFile)) {
                 fw.write(scopes.toString());
             }
@@ -210,7 +212,7 @@ public class ParserTestBase {
         File goldenScopeFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
                         : getGoldenFile(SCOPE_FILE_EXT);
-        if (!goldenScopeFile.exists()) {
+        if (REGENERATE_TREE || !goldenScopeFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(scopes.toString());
             }
@@ -223,7 +225,7 @@ public class ParserTestBase {
         Node resultNew = parse(source, name.getMethodName(), mode, frame);
         String tree = printTreeToString(resultNew);
         File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
-        if (!goldenFile.exists()) {
+        if (REGENERATE_TREE || !goldenFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenFile)) {
                 fw.write(tree);
             }
@@ -242,7 +244,7 @@ public class ParserTestBase {
         StringBuilder scopes = new StringBuilder();
         scopeNew.debugPrint(scopes, 0);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
-        if (!goldenScopeFile.exists()) {
+        if (REGENERATE_TREE || !goldenScopeFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(scopes.toString());
             }

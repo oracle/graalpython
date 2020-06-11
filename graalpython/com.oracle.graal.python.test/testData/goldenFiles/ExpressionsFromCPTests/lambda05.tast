@@ -31,6 +31,8 @@ ModuleRootNode Name: <module 'lambda05'> SourceSection: [0,13]`lambda **z: 0`
                 Identifier: z
                 WriteLocalFrameSlotNodeGen SourceSection: None
                   Frame: [0,z,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadVarKeywordsNodeGen SourceSection: None
                     PythonObjectFactoryNodeGen SourceSection: None
@@ -40,8 +42,12 @@ ModuleRootNode Name: <module 'lambda05'> SourceSection: [0,13]`lambda **z: 0`
                     Identifier: <return_val>
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [1,<return_val>,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     IntegerLiteralNode SourceSection: [12,13]`0`
                       Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [1,<return_val>,Illegal]
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
