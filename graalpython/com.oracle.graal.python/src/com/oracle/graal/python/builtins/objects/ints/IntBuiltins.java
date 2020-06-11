@@ -802,26 +802,24 @@ public class IntBuiltins extends PythonBuiltins {
             BigInteger bigMod = integerToBigInteger(mod);
             if (bigMod.signum() == 0) {
                 throw raise(ValueError, ErrorMessages.POW_THIRD_ARG_CANNOT_BE_ZERO);
-            } else if (bigRight.signum() >= 0 && bigMod.signum() > 0) {
-                return bigLeft.modPow(bigRight, bigMod);
-            } else if (bigMod.signum() < 0) {
-                BigInteger bigModPos = bigMod.abs();
+            } else {
+                BigInteger bigModPos;
+                if (bigMod.signum() < 0) {
+                    bigModPos = bigMod.abs();
+                } else {
+                    bigModPos = bigMod;
+                }
                 try {
                     BigInteger pow = bigLeft.modPow(bigRight, bigModPos);
-                    if (!BigInteger.ZERO.equals(pow)) {
+                    if (bigModPos != bigMod && !BigInteger.ZERO.equals(pow)) {
                         return pow.subtract(bigModPos);
                     } else {
                         return pow;
                     }
                 } catch (ArithmeticException e) {
-                    // bigModPos was used, so this exception must mean the exponent was negative
-                    return Math.pow(bigLeft.doubleValue(), bigRight.doubleValue()) % bigMod.doubleValue();
-                }
-            } else {
-                try {
-                    return bigLeft.modPow(bigRight, bigMod);
-                } catch (ArithmeticException e) {
-                    return Math.pow(bigLeft.doubleValue(), bigRight.doubleValue()) % bigMod.doubleValue();
+                    // a positive mod was used, so this exception must mean the exponent was
+                    // negative and the base is not relatively prime to the exponent
+                    throw raise(ValueError, ErrorMessages.POW_BASE_NOT_INVERTIBLE);
                 }
             }
         }

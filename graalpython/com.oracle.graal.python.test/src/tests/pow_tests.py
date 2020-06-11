@@ -117,3 +117,12 @@ def test_pow():
         assert mypow_rev(*args[:-1]) == args[-1], "%r -> %r == %r" % (args, mypow(*args[:-1]), args[-1])
 
     assert 2**1.0 == 2.0
+
+    try:
+        pow(12,-2,100)
+    except ValueError as e:
+        assert "base is not invertible for the given modulus" in str(e)
+    else:
+        assert False
+
+    assert pow(1234567, -2, 100) == 9

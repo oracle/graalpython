@@ -299,7 +299,7 @@ def test_pow():
     # (0xffffffffffffffff >> 63) is used to produce a non-narrowed int
     assert 2**(0xffffffffffffffff >> 63) == 2
 
-    if sys.implementation.name == "graalpython":
+    if sys.version_info.minor >= 8:
         # for some reason this hangs CPython on the CI even if it's just parsed
         from pow_tests import test_pow
         test_pow()
