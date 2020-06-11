@@ -299,73 +299,79 @@ def test_pow():
     # (0xffffffffffffffff >> 63) is used to produce a non-narrowed int
     assert 2**(0xffffffffffffffff >> 63) == 2
 
-    # try:
-    #     2 ** (2**128)
-    # except ArithmeticError:
-    #     assert True
-    # else:
-    #     assert False
+    if sys.implementation.name == "graalpython":
+        try:
+            2 ** (2**128)
+        except ArithmeticError:
+            assert True
+        else:
+            assert False
 
-    # assert 2 ** -(2**128) == 0.0
+    assert 2 ** -(2**128) == 0.0
 
-    # class X(float):
-    #     def __rpow__(self, other):
-    #         return 42
+    class X(float):
+        def __rpow__(self, other):
+            return 42
 
-    # assert 2 ** X() == 42
+    assert 2 ** X() == 42
 
-    # try:
-    #     2.0 .__pow__(2, 2)
-    # except TypeError as e:
-    #     assert True
-    # else:
-    #     assert False
+    try:
+        2.0 .__pow__(2, 2)
+    except TypeError as e:
+        assert True
+    else:
+        assert False
 
-    # try:
-    #     2.0 .__pow__(2.0, 2.0)
-    # except TypeError as e:
-    #     assert True
-    # else:
-    #     assert False
+    try:
+        2.0 .__pow__(2.0, 2.0)
+    except TypeError as e:
+        assert True
+    else:
+        assert False
 
-    # assert 2 ** 2.0 == 4.0
+    assert 2 ** 2.0 == 4.0
 
-    # assert 2 .__pow__("a") == NotImplemented
-    # assert 2 .__pow__("a", 2) == NotImplemented
-    # assert 2 .__pow__(2**30, 2**128) == 0
+    assert 2 .__pow__("a") == NotImplemented
+    assert 2 .__pow__("a", 2) == NotImplemented
+    assert 2 .__pow__(2**30, 2**128) == 0
 
-    # # crafted to try specializations
-    # def mypow(a, b, c):
-    #     return a.__pow__(b, c)
+    # crafted to try specializations
+    def mypow(a, b, c):
+        return a.__pow__(b, c)
 
-    # values = [
-    #     [1, 2, None], # long
-    #     [1, 128, None], # BigInteger
-    #     [1, -2, None], # double result
-    #     [1, 0xffffffffffffffffffffffffffffffff & 0x8000, None], # narrow to long
-    #     [2, 0xffffffffffffffffffffffffffffffff & 0x8000, None], # cannot narrow
-    #     [2, -(0xffffffffffffffffffffffffffffffff & 0x8000), None], # double result
-    #     [2**128, 0, None], # narrow to long
-    #     [2**128, 1, None], # cannot narrow
-    #     [2**128, -2, None], # double
-    #     [2**128, 0xffffffffffffffffffffffffffffffff & 0x8000, None], # large
-    #     [2**128, -(0xffffffffffffffffffffffffffffffff & 0x8000), None], # double result
-    #     [1, 2, 3], # fast path
-    #     [2, 2**30, 2**128], # generic
-    #     ] + []
+    values = [
+        [1, 2, None, 1], # long
+        [1, 128, None, 1], # BigInteger
+        [1, -2, None, 1.0], # double result
+        [1, 0xffffffffffffffffffffffffffffffff & 0x80, None, 1], # narrow to long
+        [2, 0xffffffffffffffffffffffffffffffff & 0x80, None, 340282366920938463463374607431768211456], # cannot narrow
+        [2, -(0xffffffffffffffffffffffffffffffff & 0x80), None, 2.938735877055719e-39], # double result
+        [2**128, 0, None, 1], # narrow to long
+        [2**128, 1, None, 340282366920938463463374607431768211456], # cannot narrow
+        [2**128, -2, None, 8.636168555094445e-78], # double
+        [2**128, 0xffffffffffffffffffffffffffffffff & 0x2, None, 115792089237316195423570985008687907853269984665640564039457584007913129639936], # large
+        [2**128, -(0xffffffffffffffffffffffffffffffff & 0x8), None, 5.562684646268003e-309], # double result
+        [1, 2, 3, 1], # fast path
+        [2, 2**30, 2**128, 0], # generic
+        ] + []
 
-    # if sys.version_info.minor >= 8:
-    #     values += [
-    #         [1, -2, 3], # fast path double
-    #     ]
+    if sys.version_info.minor >= 8:
+        values += [
+            [1, -2, 3, 1], # fast path double
+            [1, 2, -3, -2], # negative mod
+            [1, -2, -3, -2], # negative mod and negative right
+            [1, -2**128, 3, 1], # mod and large negative right
+            [1, -2**128, -3, -2], # negative mod and large negative right
+            [1, -2**128, -2**64, -18446744073709551615], # large negative mod and large negative right
+        ]
 
-    # for args in values:
-    #     assert mypow(*args) == pow(*args), f"{args} -> {mypow(*args)} == {pow(*args)}"
+    for args in values:
+        assert mypow(*args[:-1]) == args[-1], "%r -> %r == %r" % (args, mypow(*args[:-1]), args[-1])
 
-    # def mypow_rev(a, b, c):
-    #     return a.__pow__(b, c)
+    def mypow_rev(a, b, c):
+        return a.__pow__(b, c)
 
-    # for args in reversed(values):
-    #     assert mypow_rev(*args) == pow(*args), f"{args} -> {mypow(*args)} == {pow(*args)}"
+    for args in reversed(values):
+        assert mypow_rev(*args[:-1]) == args[-1], "%r -> %r == %r" % (args, mypow(*args[:-1]), args[-1])
 
-    # assert 2**1.0 == 2.0
+    assert 2**1.0 == 2.0
