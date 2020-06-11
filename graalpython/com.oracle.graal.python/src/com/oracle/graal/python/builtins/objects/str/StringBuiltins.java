@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -339,6 +340,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -450,16 +452,6 @@ public final class StringBuiltins extends PythonBuiltins {
             int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
             int rightLength = LazyString.length(right, rightProfile1, rightProfile2);
             return leftLength > 0 && rightLength > 0;
-        }
-    }
-
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doAll(VirtualFrame frame, Object left, Object right,
-                        @Cached AddNode addNode) {
-            return addNode.execute(frame, right, left);
         }
     }
 
@@ -1447,7 +1439,8 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -1507,11 +1500,6 @@ public final class StringBuiltins extends PythonBuiltins {
                 throw raise(MemoryError);
             }
         }
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)

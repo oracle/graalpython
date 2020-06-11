@@ -956,6 +956,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -1000,11 +1001,6 @@ public class ListBuiltins extends PythonBuiltins {
         protected IMulNode createIMulNode() {
             return ListBuiltinsFactory.IMulNodeFactory.create(new ReadArgumentNode[0]);
         }
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)

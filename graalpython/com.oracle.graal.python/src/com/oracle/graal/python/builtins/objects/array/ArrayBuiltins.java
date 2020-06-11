@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -99,19 +98,15 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         PArray mul(VirtualFrame frame, PArray self, Object times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
             return factory().createArray(repeatNode.execute(frame, self.getSequenceStorage(), times));
         }
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)

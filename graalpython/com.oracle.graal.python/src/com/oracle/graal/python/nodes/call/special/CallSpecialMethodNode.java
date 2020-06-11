@@ -62,6 +62,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -73,13 +74,16 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
+@NodeField(name = "maxSizeExceeded", type = boolean.class)
 abstract class CallSpecialMethodNode extends Node {
 
     /**
-     * for interpreter performance: cache if we exceeded the max caller size. Never allow inlining
-     * in the uncached case.
+     * for interpreter performance: cache if we exceeded the max caller size. We never allow
+     * inlining in the uncached case.
      */
-    private boolean maxSizeExceeded = !isAdoptable();
+    protected abstract boolean isMaxSizeExceeded();
+
+    protected abstract void setMaxSizeExceeded(boolean value);
 
     /**
      * Returns a new instanceof the builtin if it's a subclass of the given class, and null
@@ -106,14 +110,14 @@ abstract class CallSpecialMethodNode extends Node {
 
     private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
         CompilerAsserts.neverPartOfCompilation();
-        if (!maxSizeExceeded) {
+        if (isAdoptable() && !isMaxSizeExceeded()) {
             RootNode root = getRootNode();
             int n = root instanceof PRootNode ? ((PRootNode) root).getNodeCount() : NodeUtil.countNodes(root);
             // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
             // ASTs will only we shared between contexts that have the same value for this option.
             int maxSize = lookupContextReference(PythonLanguage.class).get().getOption(PythonOptions.BuiltinsInliningMaxCallerSize);
             if (n >= maxSize || n + NodeUtil.countNodes(builtinNode) >= maxSize) {
-                maxSizeExceeded = true;
+                setMaxSizeExceeded(true);
                 return true;
             }
             return false;

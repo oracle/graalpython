@@ -153,6 +153,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = SpecialMethodNames.__RADD__, minNumOfPositionalArgs = 2)
     @Builtin(name = SpecialMethodNames.__ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -221,11 +222,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RADD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RAddNode extends AddNode {
-    }
-
+    @Builtin(name = SpecialMethodNames.__RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = SpecialMethodNames.__SUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -300,17 +297,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RSUB__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class RSubNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object doIt(VirtualFrame frame, Object right, Object left,
-                        @Cached SubNode subNode) {
-            return subNode.execute(frame, left, right);
-        }
-    }
-
+    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = SpecialMethodNames.__TRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -378,68 +365,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class RTrueDivNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        double divII(int right, int left) {
-            return divDD(right, left);
-        }
-
-        @Specialization
-        double divLL(long right, long left) {
-            return divDD(right, left);
-        }
-
-        double divDD(double right, double left) {
-            if (right == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
-            }
-            return left / right;
-        }
-
-        @Specialization
-        double doPL(PInt right, long left) {
-            if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
-            }
-            return op(PInt.longToBigInteger(left), right.getValue());
-        }
-
-        @Specialization
-        double doPP(PInt right, PInt left) {
-            if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
-            }
-            return op(left.getValue(), right.getValue());
-        }
-
-        /*
-         * We must take special care to do double conversion late (if possible), to avoid loss of
-         * precision.
-         */
-        @TruffleBoundary
-        private static double op(BigInteger a, BigInteger b) {
-            BigInteger[] divideAndRemainder = a.divideAndRemainder(b);
-            if (divideAndRemainder[1].equals(BigInteger.ZERO)) {
-                return divideAndRemainder[0].doubleValue();
-            } else {
-                return a.doubleValue() / b.doubleValue();
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
-            // TODO: raise error if left is an integer
-            // raise(PythonErrorType.TypeError, "descriptor '__rtruediv__' requires a 'int' object
-            // but received a '%p'", right);
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
+    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = SpecialMethodNames.__FLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -541,17 +467,6 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-    }
-
-    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class RFloorDivNode extends IntBinaryBuiltinNode {
-        @Specialization
-        Object doIt(VirtualFrame frame, Object left, Object right,
-                        @Cached FloorDivNode floorDivNode) {
-            return floorDivNode.execute(frame, right, left);
-        }
     }
 
     @Builtin(name = SpecialMethodNames.__MOD__, minNumOfPositionalArgs = 2)
@@ -660,6 +575,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = SpecialMethodNames.__RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = SpecialMethodNames.__MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -745,11 +661,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
-    }
-
+    @Builtin(name = SpecialMethodNames.__RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
     @Builtin(name = SpecialMethodNames.__POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1396,6 +1308,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = SpecialMethodNames.__RAND__, minNumOfPositionalArgs = 2)
     @Builtin(name = SpecialMethodNames.__AND__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -1418,12 +1331,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RAND__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class RAndNode extends AndNode {
-    }
-
+    @Builtin(name = SpecialMethodNames.__ROR__, minNumOfPositionalArgs = 2)
     @Builtin(name = SpecialMethodNames.__OR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -1446,11 +1354,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class ROrNode extends OrNode {
-    }
-
+    @Builtin(name = SpecialMethodNames.__RXOR__, minNumOfPositionalArgs = 2)
     @Builtin(name = SpecialMethodNames.__XOR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -1470,11 +1374,6 @@ public class IntBuiltins extends PythonBuiltins {
         public BigInteger op(BigInteger left, BigInteger right) {
             return left.xor(right);
         }
-    }
-
-    @Builtin(name = SpecialMethodNames.__RXOR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RXorNode extends XorNode {
     }
 
     @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
