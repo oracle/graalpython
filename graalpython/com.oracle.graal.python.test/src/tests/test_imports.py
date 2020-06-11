@@ -145,9 +145,6 @@ if sys.implementation.name == "graalpython":
         spec = finder.find_spec("encodings", None)
         assert spec.submodule_search_locations
 
-        spec = finder.find_spec("encodings.utf_8", None)
-        assert not spec.submodule_search_locations
-
 
 def test_import_package_all() :
     import package1
