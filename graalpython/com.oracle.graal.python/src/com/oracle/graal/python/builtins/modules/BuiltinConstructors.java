@@ -1876,7 +1876,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
         Object strOneArg(LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             Object result = lib.asPString(obj);
 
             // try to return a primitive if possible
@@ -1923,7 +1923,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doNativeSubclass(@SuppressWarnings("unused") VirtualFrame frame, PythonNativeClass cls, Object obj, @SuppressWarnings("unused") Object encoding,
                         @SuppressWarnings("unused") Object errors,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached CExtNodes.StringSubtypeNew subtypeNew) {
             return subtypeNew.call(cls, lib.asPString(obj));
         }
