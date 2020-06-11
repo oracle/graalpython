@@ -807,12 +807,12 @@ public class IntBuiltins extends PythonBuiltins {
             } else if (bigMod.signum() < 0) {
                 BigInteger bigModPos = bigMod.abs();
                 try {
-                     BigInteger pow = bigLeft.modPow(bigRight, bigModPos);
-                     if (!BigInteger.ZERO.equals(pow)) {
-                         return pow.subtract(bigModPos);
-                     } else {
-                         return pow;
-                     }
+                    BigInteger pow = bigLeft.modPow(bigRight, bigModPos);
+                    if (!BigInteger.ZERO.equals(pow)) {
+                        return pow.subtract(bigModPos);
+                    } else {
+                        return pow;
+                    }
                 } catch (ArithmeticException e) {
                     // bigModPos was used, so this exception must mean the exponent was negative
                     return Math.pow(bigLeft.doubleValue(), bigRight.doubleValue()) % bigMod.doubleValue();
