@@ -208,7 +208,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -273,7 +272,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -2343,15 +2341,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object make(PFunction func, Object errorResult,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            func.getFunctionRootNode().accept(new NodeVisitor() {
-                public boolean visit(Node node) {
-                    if (node instanceof PythonCallNode) {
-                        node.replace(((PythonCallNode) node).asSpecialCall());
-                    }
-                    return true;
-                }
-            });
-
             RootNode rootNode = null;
             Signature funcSignature = func.getSignature();
             if (funcSignature.takesPositionalOnly()) {

@@ -44,14 +44,14 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                         IntegerLiteralNode SourceSection: [23,25]`10`
                           Value: 10
                       ExpressionStatementNode SourceSection: [30,38]`print(x)`
-                        PythonCallNodeGen SourceSection: [30,38]`print(x)`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [36,37]`x`
-                            Frame: [0,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [30,38]`print(x)`
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [30,35]`print`
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [36,37]`x`
+                            Frame: [0,x,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -59,11 +59,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 @ReportPolymorphism
 public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     public static CallBinaryMethodNode create() {
-        return CallBinaryMethodNodeGen.create(false);
-    }
-
-    static CallBinaryMethodNode createReversed() {
-        return CallBinaryMethodNodeGen.create(true);
+        return CallBinaryMethodNodeGen.create();
     }
 
     public static CallBinaryMethodNode getUncached() {

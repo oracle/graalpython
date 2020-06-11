@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,35]`{f(x) for x in seq i...`
-    PythonCallNodeGen SourceSection: [0,35]`{f(x) for x in seq i...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,35]`{f(x) for x in seq i...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: set
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,34]`for x in seq if cond...`
         Name: [].<locals>.<genexp>:setComprehensions03:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -33,25 +36,25 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                 GeneratorIfNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
-                    PythonCallNodeGen SourceSection: [22,34]`condition(x)`
-                      CallNodeGen SourceSection: None
-                      ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
-                        Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
+                    PythonCallUnary SourceSection: [22,34]`condition(x)`
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [22,31]`condition`
                         Identifier: condition
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
                   ExpressionStatementNode SourceSection: [1,5]`f(x)`
                     YieldNode SourceSection: [1,5]`f(x)`
                       flagSlot: 0
-                      PythonCallNodeGen SourceSection: [1,5]`f(x)`
-                        CallNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
-                          Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [1,5]`f(x)`
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1,2]`f`
                           Identifier: f
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -76,6 +79,3 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
           ReadNameNodeGen SourceSection: [15,18]`seq`
             Identifier: seq
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

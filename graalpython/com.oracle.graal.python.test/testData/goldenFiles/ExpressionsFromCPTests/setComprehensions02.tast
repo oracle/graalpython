@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,19]`{f(x) for x in seq}`
-    PythonCallNodeGen SourceSection: [0,19]`{f(x) for x in seq}`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,19]`{f(x) for x in seq}`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: set
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,18]`for x in seq`
         Name: [].<locals>.<genexp>:setComprehensions02:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -33,14 +36,14 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
                 ExpressionStatementNode SourceSection: [1,5]`f(x)`
                   YieldNode SourceSection: [1,5]`f(x)`
                     flagSlot: 0
-                    PythonCallNodeGen SourceSection: [1,5]`f(x)`
-                      CallNodeGen SourceSection: None
-                      ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
-                        Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
+                    PythonCallUnary SourceSection: [1,5]`f(x)`
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [1,2]`f`
                         Identifier: f
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
@@ -64,6 +67,3 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
           ReadNameNodeGen SourceSection: [15,18]`seq`
             Identifier: seq
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

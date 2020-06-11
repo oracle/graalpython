@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
       SideEffect:
         WriteNameNodeGen SourceSection: [0,76]`class Test():â†µ    ""...`
           Identifier: Test
-          PythonCallNodeGen SourceSection: [0,76]`class Test():â†µ    ""...`
-            CallNodeGen SourceSection: None
+          PythonCallBinary SourceSection: [0,76]`class Test():â†µ    ""...`
+            CallBinaryMethodNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: Test SourceSection: None
               Arguments: None
               KwArguments: None
@@ -92,5 +94,3 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None

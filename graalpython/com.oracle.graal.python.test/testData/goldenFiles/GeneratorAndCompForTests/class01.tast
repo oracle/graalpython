@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
       SideEffect:
         WriteNameNodeGen SourceSection: [0,192]`class OrderedDict(di...`
           Identifier: OrderedDict
-          PythonCallNodeGen SourceSection: [0,192]`class OrderedDict(di...`
-            CallNodeGen SourceSection: None
+          PythonCallTernary SourceSection: [0,192]`class OrderedDict(di...`
+            CallTernaryMethodNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: OrderedDict SourceSection: None
               Arguments: None
               KwArguments: None
@@ -165,5 +167,3 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [18,22]`dict`
               Identifier: dict
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None

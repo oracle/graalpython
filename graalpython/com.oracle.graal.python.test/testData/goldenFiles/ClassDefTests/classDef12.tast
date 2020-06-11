@@ -71,8 +71,10 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                       Identifier: Test
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,Test,Illegal]
-                                      PythonCallNodeGen SourceSection: [77,375]`class Test(object):↵...`
-                                        CallNodeGen SourceSection: None
+                                      PythonCallTernary SourceSection: [77,375]`class Test(object):↵...`
+                                        CallTernaryMethodNodeGen SourceSection: None
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          BuiltinsLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: Test SourceSection: None
                                           Arguments: None
                                           KwArguments: None
@@ -237,12 +239,12 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                                         Frame: [2,<return_val>,Illegal]
-                                                                      PythonCallNodeGen SourceSection: [293,306]`str("global")`
-                                                                        CallNodeGen SourceSection: None
-                                                                        StringLiteralNode SourceSection: [297,305]`"global"`
+                                                                      PythonCallUnary SourceSection: [293,306]`str("global")`
+                                                                        CallUnaryMethodNodeGen SourceSection: None
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [293,296]`str`
                                                                           Identifier: str
                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                        StringLiteralNode SourceSection: [297,305]`"global"`
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                                 Frame: [2,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -286,14 +288,14 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                                         Frame: [2,<return_val>,Illegal]
-                                                                      PythonCallNodeGen SourceSection: [357,366]`str(self)`
-                                                                        CallNodeGen SourceSection: None
-                                                                        ReadLocalVariableNode SourceSection: [361,365]`self`
-                                                                          Frame: [0,self,Illegal]
-                                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                                      PythonCallUnary SourceSection: [357,366]`str(self)`
+                                                                        CallUnaryMethodNodeGen SourceSection: None
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [357,360]`str`
                                                                           Identifier: str
                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                        ReadLocalVariableNode SourceSection: [361,365]`self`
+                                                                          Frame: [0,self,Illegal]
+                                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                                 Frame: [2,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -310,8 +312,6 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [88,94]`object`
                                           Identifier: object
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          BuiltinsLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [375,388]`return Test()`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>

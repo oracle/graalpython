@@ -129,12 +129,12 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,125]`inner(" baf\n")`
-                        PythonCallNodeGen SourceSection: [110,125]`inner(" baf\n")`
-                          CallNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [116,124]`" baf\n"`
+                        PythonCallUnary SourceSection: [110,125]`inner(" baf\n")`
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [110,115]`inner`
                             Frame: [0,inner,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [116,124]`" baf\n"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -5,8 +5,10 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`list(x**3 for 
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,29]`list(x**3 for x in r...`
-    PythonCallNodeGen SourceSection: [0,29]`list(x**3 for x in r...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,29]`list(x**3 for x in r...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,4]`list`
+        Identifier: list
       GeneratorExpressionNode SourceSection: [10,28]`for x in range(20)`
         Name: [].<locals>.<genexp>:generator04:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -61,12 +63,10 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`list(x**3 for 
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [19,28]`range(20)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [19,28]`range(20)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [25,27]`20`
-              Value: 20
+          PythonCallUnary SourceSection: [19,28]`range(20)`
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [19,24]`range`
               Identifier: range
+            IntegerLiteralNode SourceSection: [25,27]`20`
+              Value: 20
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: [0,4]`list`
-        Identifier: list

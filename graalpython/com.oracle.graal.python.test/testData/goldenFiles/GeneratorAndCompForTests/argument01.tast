@@ -5,8 +5,10 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,27]`foo(x+2 for x in ran...`
-    PythonCallNodeGen SourceSection: [0,27]`foo(x+2 for x in ran...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,27]`foo(x+2 for x in ran...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
+        Identifier: foo
       GeneratorExpressionNode SourceSection: [8,26]`for x in range(10)`
         Name: [].<locals>.<genexp>:argument01:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -61,12 +63,10 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [17,26]`range(10)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [17,26]`range(10)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [23,25]`10`
-              Value: 10
+          PythonCallUnary SourceSection: [17,26]`range(10)`
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [17,22]`range`
               Identifier: range
+            IntegerLiteralNode SourceSection: [23,25]`10`
+              Value: 10
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: [0,3]`foo`
-        Identifier: foo

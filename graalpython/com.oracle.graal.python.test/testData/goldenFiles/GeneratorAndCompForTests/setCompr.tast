@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,21]`{i for i in range(3)...`
-    PythonCallNodeGen SourceSection: [0,21]`{i for i in range(3)...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,21]`{i for i in range(3)...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: set
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,20]`for i in range(3)`
         Name: [].<locals>.<genexp>:setCompr:1
         FrameDescriptor: 2 slots [i, <return_val>]
@@ -56,13 +59,10 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [12,20]`range(3)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [12,20]`range(3)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [18,19]`3`
-              Value: 3
+          PythonCallUnary SourceSection: [12,20]`range(3)`
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [12,17]`range`
               Identifier: range
+            IntegerLiteralNode SourceSection: [18,19]`3`
+              Value: 3
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

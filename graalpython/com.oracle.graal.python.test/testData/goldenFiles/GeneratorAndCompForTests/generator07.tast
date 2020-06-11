@@ -114,14 +114,14 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                           BinaryComparisonNodeGen SourceSection: [24,34]`len(h) > 1`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
-                            PythonCallNodeGen SourceSection: [24,30]`len(h)`
-                              CallNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [28,29]`h`
-                                Frame: [0,h,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [24,30]`len(h)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [24,27]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [28,29]`h`
+                                Frame: [0,h,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [33,34]`1`
                               Value: 1
                         GeneratorAccessNode SourceSection: None

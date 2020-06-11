@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'classDef01'> SourceSection: [0,16]`class foo():pas
       SideEffect:
         WriteNameNodeGen SourceSection: [0,16]`class foo():pass`
           Identifier: foo
-          PythonCallNodeGen SourceSection: [0,16]`class foo():pass`
-            CallNodeGen SourceSection: None
+          PythonCallBinary SourceSection: [0,16]`class foo():pass`
+            CallBinaryMethodNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: foo SourceSection: None
               Arguments: None
               KwArguments: None
@@ -57,5 +59,3 @@ ModuleRootNode Name: <module 'classDef01'> SourceSection: [0,16]`class foo():pas
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None

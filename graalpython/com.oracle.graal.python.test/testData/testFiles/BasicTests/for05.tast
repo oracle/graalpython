@@ -64,31 +64,31 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                       Value: 1
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [62,76]`print('jedna')`
-                                    PythonCallNodeGen SourceSection: [62,76]`print('jedna')`
-                                      CallNodeGen SourceSection: None
-                                      StringLiteralNode SourceSection: [68,75]`'jedna'`
+                                    PythonCallUnary SourceSection: [62,76]`print('jedna')`
+                                      CallUnaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [62,67]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      StringLiteralNode SourceSection: [68,75]`'jedna'`
                                   BreakNode SourceSection: [83,88]`break`
                                 ExpressionStatementNode SourceSection: [105,113]`print(x)`
-                                  PythonCallNodeGen SourceSection: [105,113]`print(x)`
-                                    CallNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [111,112]`x`
-                                      Frame: [0,x,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  PythonCallUnary SourceSection: [105,113]`print(x)`
+                                    CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [105,110]`print`
                                       Identifier: print
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [111,112]`x`
+                                      Frame: [0,x,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [21,29]`range(3)`
                             GetIteratorNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [21,29]`range(3)`
-                              CallNodeGen SourceSection: None
-                              IntegerLiteralNode SourceSection: [27,28]`3`
-                                Value: 3
+                            PythonCallUnary SourceSection: [21,29]`range(3)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21,26]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [27,28]`3`
+                                Value: 3
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]

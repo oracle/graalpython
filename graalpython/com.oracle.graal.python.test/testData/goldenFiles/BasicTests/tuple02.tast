@@ -8,15 +8,15 @@ ModuleRootNode Name: <module 'tuple02'> SourceSection: [0,27]`(1, call01((1,2,))
     TupleLiteralNode SourceSection: [0,27]`(1, call01((1,2,)), ...`
       IntegerLiteralNode SourceSection: [1,2]`1`
         Value: 1
-      PythonCallNodeGen SourceSection: [4,18]`call01((1,2,))`
-        CallNodeGen SourceSection: None
+      PythonCallUnary SourceSection: [4,18]`call01((1,2,))`
+        CallUnaryMethodNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [4,10]`call01`
+          Identifier: call01
         TupleLiteralNode SourceSection: [11,17]`(1,2,)`
           IntegerLiteralNode SourceSection: [12,13]`1`
             Value: 1
           IntegerLiteralNode SourceSection: [14,15]`2`
             Value: 2
           PythonObjectFactoryNodeGen SourceSection: None
-        ReadNameNodeGen SourceSection: [4,10]`call01`
-          Identifier: call01
       StringLiteralNode SourceSection: [20,26]`'ahoj'`
       PythonObjectFactoryNodeGen SourceSection: None

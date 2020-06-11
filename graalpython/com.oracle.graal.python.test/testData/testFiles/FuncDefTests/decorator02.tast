@@ -159,8 +159,14 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [151,198]`@mydecorator(3)↵def ...`
         Identifier: getNumber
-        PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
-          CallNodeGen SourceSection: None
+        PythonCallUnary SourceSection: [151,166]`@mydecorator(3)`
+          CallUnaryMethodNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [151,166]`@mydecorator(3)`
+            CallUnaryMethodNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: None
+              Identifier: mydecorator
+            IntegerLiteralNode SourceSection: [164,165]`3`
+              Value: 3
           FunctionDefinitionNode Name: getNumber SourceSection: None
             Arguments: None
             KwArguments: None
@@ -194,17 +200,11 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [164,165]`3`
-              Value: 3
-            ReadNameNodeGen SourceSection: None
-              Identifier: mydecorator
-      PythonCallNodeGen SourceSection: [198,216]`print(getNumber())`
-        CallNodeGen SourceSection: None
+      PythonCallUnary SourceSection: [198,216]`print(getNumber())`
+        CallUnaryMethodNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [198,203]`print`
+          Identifier: print
         PythonCallNodeGen SourceSection: [204,215]`getNumber()`
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [204,213]`getNumber`
             Identifier: getNumber
-        ReadNameNodeGen SourceSection: [198,203]`print`
-          Identifier: print

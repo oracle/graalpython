@@ -29,8 +29,8 @@ ModuleRootNode Name: <module 'while08'> SourceSection: [0,86]`while True:↵  if
                   ExpressionStatementNode SourceSection: [60,64]`pass`
                     EmptyNode SourceSection: [60,64]`pass`
           ExpressionStatementNode SourceSection: [73,86]`print('done')`
-            PythonCallNodeGen SourceSection: [73,86]`print('done')`
-              CallNodeGen SourceSection: None
-              StringLiteralNode SourceSection: [79,85]`'done'`
+            PythonCallUnary SourceSection: [73,86]`print('done')`
+              CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [73,78]`print`
                 Identifier: print
+              StringLiteralNode SourceSection: [79,85]`'done'`

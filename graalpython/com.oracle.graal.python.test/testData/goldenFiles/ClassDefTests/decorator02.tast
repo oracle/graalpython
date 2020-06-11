@@ -11,12 +11,18 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
       SideEffect:
         WriteNameNodeGen SourceSection: [0,40]`@decorator1↵@decorat...`
           Identifier: foo
-          PythonCallNodeGen SourceSection: [0,11]`@decorator1`
-            CallNodeGen SourceSection: None
-            PythonCallNodeGen SourceSection: [12,23]`@decorator1`
-              CallNodeGen SourceSection: None
-              PythonCallNodeGen SourceSection: [24,40]`class foo():pass`
-                CallNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [0,11]`@decorator1`
+            CallUnaryMethodNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [0,11]`@decorator1`
+              Identifier: decorator1
+            PythonCallUnary SourceSection: [12,23]`@decorator1`
+              CallUnaryMethodNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [12,23]`@decorator1`
+                Identifier: decorator1
+              PythonCallBinary SourceSection: [24,40]`class foo():pass`
+                CallBinaryMethodNodeGen SourceSection: None
+                GetCallAttributeNodeGen SourceSection: None
+                  BuiltinsLiteralNode SourceSection: None
                 FunctionDefinitionNode Name: foo SourceSection: None
                   Arguments: None
                   KwArguments: None
@@ -61,9 +67,3 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                               ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
-                GetCallAttributeNodeGen SourceSection: None
-                  BuiltinsLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [12,23]`@decorator1`
-                Identifier: decorator1
-            ReadNameNodeGen SourceSection: [0,11]`@decorator1`
-              Identifier: decorator1

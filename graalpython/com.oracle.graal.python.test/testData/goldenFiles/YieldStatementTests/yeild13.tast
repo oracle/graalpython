@@ -38,8 +38,11 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                   flagSlot: 1
                   FunctionBodyNode SourceSection: [9,26]`f((yield from 1))`
                     ExpressionStatementNode SourceSection: [9,26]`f((yield from 1))`
-                      PythonCallNodeGen SourceSection: [9,26]`f((yield from 1))`
-                        CallNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [9,26]`f((yield from 1))`
+                        CallUnaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [9,10]`f`
+                          Identifier: f
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         YieldFromNode SourceSection: [12,24]`yield from 1`
                           GetIteratorNodeGen SourceSection: None
                           GetNextNode SourceSection: None
@@ -48,9 +51,6 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                           GeneratorAccessNode SourceSection: None
                           IntegerLiteralNode SourceSection: [23,24]`1`
                             Value: 1
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [9,10]`f`
-                          Identifier: f
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

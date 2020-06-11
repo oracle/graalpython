@@ -62,14 +62,14 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                                     Frame: [3,<>temp3,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [44,52]`print(a)`
-                              PythonCallNodeGen SourceSection: [44,52]`print(a)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [50,51]`a`
-                                  Frame: [0,a,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [44,52]`print(a)`
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [44,49]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [50,51]`a`
+                                  Frame: [0,a,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [24,38]`((1,2), (3,4))`
                             GetIteratorNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [24,38]`((1,2), (3,4))`

@@ -11,8 +11,11 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
       SideEffect:
         WriteNameNodeGen SourceSection: [0,94]`resutl = {i: tuple(j...`
           Identifier: resutl
-          PythonCallNodeGen SourceSection: [10,93]`i: tuple(j for j in ...`
-            CallNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [10,93]`i: tuple(j for j in ...`
+            CallUnaryMethodNodeGen SourceSection: None
+            ReadGlobalOrBuiltinNodeGen SourceSection: None
+              Identifier: dict
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [64,93]`for t in something f...`
               Name: [].<locals>.<genexp>:comp01:2
               FrameDescriptor: 3 slots [i, t, <return_val>]
@@ -46,8 +49,11 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                   Frame: [0,i,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadFromCellNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [13,42]`tuple(j for j in t i...`
-                                CallNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [13,42]`tuple(j for j in t i...`
+                                CallUnaryMethodNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
+                                  Identifier: tuple
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 GeneratorExpressionNode SourceSection: [21,41]`for j in t if i != j...`
                                   Name: generator10.<locals>.<genexp>:comp01:1
                                   FrameDescriptor: 3 slots [j, i, <return_val>]
@@ -116,9 +122,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                       Frame: [1,t,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
-                                  Identifier: tuple
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteLocalCellNodeGen SourceSection: None
@@ -157,6 +160,3 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                 ReadNameNodeGen SourceSection: [73,82]`something`
                   Identifier: something
               PythonObjectFactoryNodeGen SourceSection: None
-            ReadGlobalOrBuiltinNodeGen SourceSection: None
-              Identifier: dict
-              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -56,13 +56,13 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [21,30]`xrange(3)`
                             GetIteratorNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [21,30]`xrange(3)`
-                              CallNodeGen SourceSection: None
-                              IntegerLiteralNode SourceSection: [28,29]`3`
-                                Value: 3
+                            PythonCallUnary SourceSection: [21,30]`xrange(3)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21,27]`xrange`
                                 Identifier: xrange
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [28,29]`3`
+                                Value: 3
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]

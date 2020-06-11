@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,52]`{x:x for x in seq1 f...`
-    PythonCallNodeGen SourceSection: [0,52]`{x:x for x in seq1 f...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,52]`{x:x for x in seq1 f...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: dict
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [5,51]`for x in seq1 for y ...`
         Name: [].<locals>.<genexp>:dictComprehensions03:1
         FrameDescriptor: 3 slots [y, x, <return_val>]
@@ -34,17 +37,17 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                   GeneratorIfNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     YesNodeGen SourceSection: None
-                      PythonCallNodeGen SourceSection: [36,51]`condition(x, y)`
-                        CallNodeGen SourceSection: None
+                      PythonCallBinary SourceSection: [36,51]`condition(x, y)`
+                        CallBinaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [36,45]`condition`
+                          Identifier: condition
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [46,47]`x`
                           Frame: [1,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [49,50]`y`
                           Frame: [0,y,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [36,45]`condition`
-                          Identifier: condition
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: None
                       YieldNode SourceSection: None
                         flagSlot: 0
@@ -93,6 +96,3 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
           ReadNameNodeGen SourceSection: [14,18]`seq1`
             Identifier: seq1
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: dict
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

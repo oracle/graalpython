@@ -79,17 +79,17 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [82,92]`"nonlocal"`
                                     ExpressionStatementNode SourceSection: [101,119]`print("inner:", x)`
-                                      PythonCallNodeGen SourceSection: [101,119]`print("inner:", x)`
-                                        CallNodeGen SourceSection: None
+                                      PythonCallBinary SourceSection: [101,119]`print("inner:", x)`
+                                        CallBinaryMethodNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [101,106]`print`
+                                          Identifier: print
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [107,115]`"inner:"`
                                         ReadLocalCellNodeGen SourceSection: [117,118]`x`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [0,x,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: [101,106]`print`
-                                          Identifier: print
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -100,17 +100,17 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                             Frame: [1,inner,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [141,159]`print("outer:", x)`
-                        PythonCallNodeGen SourceSection: [141,159]`print("outer:", x)`
-                          CallNodeGen SourceSection: None
+                        PythonCallBinary SourceSection: [141,159]`print("outer:", x)`
+                          CallBinaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [141,146]`print`
+                            Identifier: print
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [147,155]`"outer:"`
                           ReadLocalCellNodeGen SourceSection: [157,158]`x`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,x,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [141,146]`print`
-                            Identifier: print
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

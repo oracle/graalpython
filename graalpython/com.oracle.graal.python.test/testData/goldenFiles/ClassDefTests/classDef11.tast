@@ -55,8 +55,10 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                         Identifier: named_tuple
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,named_tuple,Illegal]
-                        PythonCallNodeGen SourceSection: [46,264]`class named_tuple(tu...`
-                          CallNodeGen SourceSection: None
+                        PythonCallTernary SourceSection: [46,264]`class named_tuple(tu...`
+                          CallTernaryMethodNodeGen SourceSection: None
+                          GetCallAttributeNodeGen SourceSection: None
+                            BuiltinsLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: named_tuple SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -113,8 +115,17 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
                                         StringLiteralNode SourceSection: None
-                                        PythonCallNodeGen SourceSection: [124,135]`len(fields)`
-                                          CallNodeGen SourceSection: None
+                                        PythonCallUnary SourceSection: [124,135]`len(fields)`
+                                          CallUnaryMethodNodeGen SourceSection: None
+                                          ReadClassAttributeNodeGen SourceSection: [124,127]`len`
+                                            GetItemNodeGen SourceSection: None
+                                              ArgumentExpressionNode SourceSection: None
+                                                ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 0
+                                              StringLiteralNode SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              Identifier: len
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadClassAttributeNodeGen SourceSection: [128,134]`fields`
                                             GetItemNodeGen SourceSection: None
                                               ArgumentExpressionNode SourceSection: None
@@ -129,15 +140,6 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                 Frame: [2,fields,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
-                                          ReadClassAttributeNodeGen SourceSection: [124,127]`len`
-                                            GetItemNodeGen SourceSection: None
-                                              ArgumentExpressionNode SourceSection: None
-                                                ReadIndexedArgumentNodeGen SourceSection: None
-                                                  Index: 0
-                                              StringLiteralNode SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                              Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       SetItemNodeGen SourceSection: [144,159]`fields = fields`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -235,8 +237,6 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                           ReadGlobalOrBuiltinNodeGen SourceSection: [64,69]`tuple`
                             Identifier: tuple
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GetCallAttributeNodeGen SourceSection: None
-                            BuiltinsLiteralNode SourceSection: None
                       FrameReturnNode SourceSection: [264,282]`return named_tuple`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>

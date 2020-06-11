@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
       SideEffect:
         WriteNameNodeGen SourceSection: [0,73]`class A:↵    @classm...`
           Identifier: A
-          PythonCallNodeGen SourceSection: [0,73]`class A:↵    @classm...`
-            CallNodeGen SourceSection: None
+          PythonCallBinary SourceSection: [0,73]`class A:↵    @classm...`
+            CallBinaryMethodNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: A SourceSection: None
               Arguments: None
               KwArguments: None
@@ -50,8 +52,17 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                             ReadIndexedArgumentNodeGen SourceSection: None
                               Index: 0
                           StringLiteralNode SourceSection: None
-                          PythonCallNodeGen SourceSection: [13,25]`@classmethod`
-                            CallNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [13,25]`@classmethod`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadClassAttributeNodeGen SourceSection: [13,25]`@classmethod`
+                              GetItemNodeGen SourceSection: None
+                                ArgumentExpressionNode SourceSection: None
+                                  ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
+                                StringLiteralNode SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: classmethod
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             FunctionDefinitionNode Name: method SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -95,15 +106,6 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadClassAttributeNodeGen SourceSection: [13,25]`@classmethod`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: classmethod
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -114,5 +116,3 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None

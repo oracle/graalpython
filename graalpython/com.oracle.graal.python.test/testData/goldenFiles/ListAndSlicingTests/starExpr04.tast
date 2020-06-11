@@ -10,12 +10,12 @@ ModuleRootNode Name: <module 'starExpr04'> SourceSection: [0,14]`*a, = range(5)`
         EmptyNode SourceSection: None
       SideEffect:
         DestructuringAssignmentNodeGen SourceSection: [0,14]`*a, = range(5)`
-          PythonCallNodeGen SourceSection: [6,14]`range(5)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [12,13]`5`
-              Value: 5
+          PythonCallUnary SourceSection: [6,14]`range(5)`
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6,11]`range`
               Identifier: range
+            IntegerLiteralNode SourceSection: [12,13]`5`
+              Value: 5
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0
             WriteLocalFrameSlotNodeGen SourceSection: None

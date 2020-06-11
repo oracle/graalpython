@@ -54,10 +54,10 @@ ModuleRootNode Name: <module 'genExpr'> SourceSection: [0,21]`(i for i in range(
             PRaiseNodeGen SourceSection: None
       GetIteratorExpressionNodeGen SourceSection: [12,20]`range(3)`
         GetIteratorNodeGen SourceSection: None
-        PythonCallNodeGen SourceSection: [12,20]`range(3)`
-          CallNodeGen SourceSection: None
-          IntegerLiteralNode SourceSection: [18,19]`3`
-            Value: 3
+        PythonCallUnary SourceSection: [12,20]`range(3)`
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [12,17]`range`
             Identifier: range
+          IntegerLiteralNode SourceSection: [18,19]`3`
+            Value: 3
       PythonObjectFactoryNodeGen SourceSection: None

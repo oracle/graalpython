@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'dictComprehensions01'> SourceSection: [0,18]`{x:x 
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,18]`{x:x for x in seq}`
-    PythonCallNodeGen SourceSection: [0,18]`{x:x for x in seq}`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,18]`{x:x for x in seq}`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: dict
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [5,17]`for x in seq`
         Name: [].<locals>.<genexp>:dictComprehensions01:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -64,6 +67,3 @@ ModuleRootNode Name: <module 'dictComprehensions01'> SourceSection: [0,18]`{x:x 
           ReadNameNodeGen SourceSection: [14,17]`seq`
             Identifier: seq
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: dict
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

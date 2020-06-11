@@ -11,10 +11,20 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
       SideEffect:
         WriteNameNodeGen SourceSection: [0,44]`@staticmethod↵@funca...`
           Identifier: f
-          PythonCallNodeGen SourceSection: [0,13]`@staticmethod`
-            CallNodeGen SourceSection: None
-            PythonCallNodeGen SourceSection: [14,30]`@funcattrs(x, y)`
-              CallNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [0,13]`@staticmethod`
+            CallUnaryMethodNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
+              Identifier: staticmethod
+            PythonCallUnary SourceSection: [14,30]`@funcattrs(x, y)`
+              CallUnaryMethodNodeGen SourceSection: None
+              PythonCallBinary SourceSection: [14,30]`@funcattrs(x, y)`
+                CallBinaryMethodNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: None
+                  Identifier: funcattrs
+                ReadNameNodeGen SourceSection: [25,26]`x`
+                  Identifier: x
+                ReadNameNodeGen SourceSection: [28,29]`y`
+                  Identifier: y
               FunctionDefinitionNode Name: f SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -43,13 +53,3 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [0,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-              PythonCallNodeGen SourceSection: [14,30]`@funcattrs(x, y)`
-                CallNodeGen SourceSection: None
-                ReadNameNodeGen SourceSection: [25,26]`x`
-                  Identifier: x
-                ReadNameNodeGen SourceSection: [28,29]`y`
-                  Identifier: y
-                ReadNameNodeGen SourceSection: None
-                  Identifier: funcattrs
-            ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
-              Identifier: staticmethod

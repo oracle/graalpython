@@ -17,8 +17,8 @@ ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyb
               NoValueNode SourceSection: None
             BlockNode SourceSection: None
           ExpressionStatementNode SourceSection: [44,68]`print('Goodbye, worl...`
-            PythonCallNodeGen SourceSection: [44,68]`print('Goodbye, worl...`
-              CallNodeGen SourceSection: None
-              StringLiteralNode SourceSection: [50,67]`'Goodbye, world!'`
+            PythonCallUnary SourceSection: [44,68]`print('Goodbye, worl...`
+              CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [44,49]`print`
                 Identifier: print
+              StringLiteralNode SourceSection: [50,67]`'Goodbye, world!'`

@@ -5,8 +5,10 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,48]`''.join(f'{name}' fo...`
-    PythonCallNodeGen SourceSection: [0,48]`''.join(f'{name}' fo...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,48]`''.join(f'{name}' fo...`
+      CallUnaryMethodNodeGen SourceSection: None
+      GetCallAttributeNodeGen SourceSection: None
+        StringLiteralNode SourceSection: [0,2]`''`
       GeneratorExpressionNode SourceSection: [18,47]`for name in ['Pepa',...`
         Name: [].<locals>.<genexp>:topLevelParser02:1
         FrameDescriptor: 2 slots [name, <return_val>]
@@ -60,5 +62,3 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
             StringLiteralNode SourceSection: [39,46]`'Pavel'`
             PythonObjectFactoryNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      GetCallAttributeNodeGen SourceSection: None
-        StringLiteralNode SourceSection: [0,2]`''`

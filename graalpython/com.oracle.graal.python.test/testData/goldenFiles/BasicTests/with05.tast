@@ -37,12 +37,12 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                       WithNode SourceSection: [12,36]`with open('x'):↵    ...`
                         ExpressionStatementNode SourceSection: [32,36]`pass`
                           EmptyNode SourceSection: [32,36]`pass`
-                        PythonCallNodeGen SourceSection: [17,26]`open('x')`
-                          CallNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [22,25]`'x'`
+                        PythonCallUnary SourceSection: [17,26]`open('x')`
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17,21]`open`
                             Identifier: open
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [22,25]`'x'`
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None

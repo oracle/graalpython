@@ -75,8 +75,11 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [61,112]`_tuple_new(_cls, (hi...`
-                            CallNodeGen SourceSection: None
+                          PythonCallBinary SourceSection: [61,112]`_tuple_new(_cls, (hi...`
+                            CallBinaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
+                              Identifier: _tuple_new
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [72,76]`_cls`
                               Frame: [0,_cls,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -94,9 +97,6 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                                 Frame: [4,currsize,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
-                              Identifier: _tuple_new
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

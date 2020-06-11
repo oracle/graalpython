@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,40]`{x**2:x[3] for x in ...`
-    PythonCallNodeGen SourceSection: [0,40]`{x**2:x[3] for x in ...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,40]`{x**2:x[3] for x in ...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: dict
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [11,39]`for x in seq if cond...`
         Name: [].<locals>.<genexp>:dictComprehensions02:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -33,14 +36,14 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                 GeneratorIfNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
-                    PythonCallNodeGen SourceSection: [27,39]`condition(x)`
-                      CallNodeGen SourceSection: None
-                      ReadGeneratorFrameVariableNode SourceSection: [37,38]`x`
-                        Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
+                    PythonCallUnary SourceSection: [27,39]`condition(x)`
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [27,36]`condition`
                         Identifier: condition
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [37,38]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
                   ExpressionStatementNode SourceSection: None
                     YieldNode SourceSection: None
                       flagSlot: 0
@@ -84,6 +87,3 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
           ReadNameNodeGen SourceSection: [20,23]`seq`
             Identifier: seq
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: dict
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

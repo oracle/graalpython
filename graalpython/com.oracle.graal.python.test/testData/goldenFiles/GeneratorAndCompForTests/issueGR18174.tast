@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,31]`[b for b in [a for a...`
-    PythonCallNodeGen SourceSection: [0,31]`[b for b in [a for a...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,31]`[b for b in [a for a...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: list
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,30]`for b in [a for a in...`
         Name: [].<locals>.<genexp>:issueGR18174:1
         FrameDescriptor: 2 slots [b, <return_val>]
@@ -56,8 +59,11 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [13,29]`a for a in (1,2)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [13,29]`a for a in (1,2)`
-            CallNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [13,29]`a for a in (1,2)`
+            CallUnaryMethodNodeGen SourceSection: None
+            ReadGlobalOrBuiltinNodeGen SourceSection: None
+              Identifier: list
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [15,29]`for a in (1,2)`
               Name: [].<locals>.<genexp>:issueGR18174:1
               FrameDescriptor: 2 slots [a, <return_val>]
@@ -114,10 +120,4 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                     Value: 2
                   PythonObjectFactoryNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
-            ReadGlobalOrBuiltinNodeGen SourceSection: None
-              Identifier: list
-              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
       SideEffect:
         WriteNameNodeGen SourceSection: [0,208]`class Counter(dict):...`
           Identifier: Counter
-          PythonCallNodeGen SourceSection: [0,208]`class Counter(dict):...`
-            CallNodeGen SourceSection: None
+          PythonCallTernary SourceSection: [0,208]`class Counter(dict):...`
+            CallTernaryMethodNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: Counter SourceSection: None
               Arguments: None
               KwArguments: None
@@ -84,8 +86,11 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                         Identifier: nonpositive
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,nonpositive,Illegal]
-                                        PythonCallNodeGen SourceSection: [74,127]`elem for elem, count...`
-                                          CallNodeGen SourceSection: None
+                                        PythonCallUnary SourceSection: [74,127]`elem for elem, count...`
+                                          CallUnaryMethodNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            Identifier: list
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [79,127]`for elem, count in s...`
                                             Name: _keep_positive.<locals>.<genexp>:class02:3
                                             FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
@@ -174,9 +179,6 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                            Identifier: list
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ElseNode SourceSection: [137,197]`for elem in nonposit...`
                                         ForNode SourceSection: None
                                           ForRepeatingNode SourceSection: None
@@ -221,5 +223,3 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [14,18]`dict`
               Identifier: dict
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None

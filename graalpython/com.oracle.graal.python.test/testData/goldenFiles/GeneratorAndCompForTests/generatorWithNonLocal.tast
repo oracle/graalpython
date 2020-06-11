@@ -189,14 +189,14 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                             Value: 2
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [225,234]`list(gen)`
-                        PythonCallNodeGen SourceSection: [225,234]`list(gen)`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [230,233]`gen`
-                            Frame: [2,gen,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [225,234]`list(gen)`
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [225,229]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [230,233]`gen`
+                            Frame: [2,gen,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [237,247]`return gen`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>

@@ -13,8 +13,11 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
           SideEffect:
             WriteNameNodeGen SourceSection: [49,98]`double_dict1 = {k:v*...`
               Identifier: double_dict1
-              PythonCallNodeGen SourceSection: [65,97]`k:v*2 for (k,v) in d...`
-                CallNodeGen SourceSection: None
+              PythonCallUnary SourceSection: [65,97]`k:v*2 for (k,v) in d...`
+                CallUnaryMethodNodeGen SourceSection: None
+                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                  Identifier: dict
+                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 GeneratorExpressionNode SourceSection: [71,97]`for (k,v) in dict1.i...`
                   Name: [].<locals>.<genexp>:dict02:2
                   FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
@@ -99,9 +102,6 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                         ReadNameNodeGen SourceSection: [84,89]`dict1`
                           Identifier: dict1
                   PythonObjectFactoryNodeGen SourceSection: None
-                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                  Identifier: dict
-                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,48]`dict1 = {'a': 1, 'b'...`
           Identifier: dict1

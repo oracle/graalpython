@@ -77,8 +77,11 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,inner,Illegal]
-                        PythonCallNodeGen SourceSection: [46,57]`@decorator1`
-                          CallNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [46,57]`@decorator1`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [46,57]`@decorator1`
+                            Frame: [0,decorator1,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                           FunctionDefinitionNode Name: inner SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -107,9 +110,6 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [0,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [46,57]`@decorator1`
-                            Frame: [0,decorator1,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

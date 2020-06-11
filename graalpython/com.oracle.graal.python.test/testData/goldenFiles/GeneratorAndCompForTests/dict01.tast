@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,26]`{x:x*x for x in rang...`
-    PythonCallNodeGen SourceSection: [0,26]`{x:x*x for x in rang...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,26]`{x:x*x for x in rang...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: dict
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [7,25]`for x in range(20)`
         Name: [].<locals>.<genexp>:dict01:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -67,13 +70,10 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [16,25]`range(20)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [16,25]`range(20)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [22,24]`20`
-              Value: 20
+          PythonCallUnary SourceSection: [16,25]`range(20)`
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [16,21]`range`
               Identifier: range
+            IntegerLiteralNode SourceSection: [22,24]`20`
+              Value: 20
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: dict
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

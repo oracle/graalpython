@@ -73,11 +73,11 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-      PythonCallNodeGen SourceSection: [41,49]`foo(1,2)`
-        CallNodeGen SourceSection: None
+      PythonCallBinary SourceSection: [41,49]`foo(1,2)`
+        CallBinaryMethodNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [41,44]`foo`
+          Identifier: foo
         IntegerLiteralNode SourceSection: [45,46]`1`
           Value: 1
         IntegerLiteralNode SourceSection: [47,48]`2`
           Value: 2
-        ReadNameNodeGen SourceSection: [41,44]`foo`
-          Identifier: foo
