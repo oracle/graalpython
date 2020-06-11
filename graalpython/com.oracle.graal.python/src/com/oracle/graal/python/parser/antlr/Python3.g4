@@ -1622,7 +1622,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
                 }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]
                 {
-                    args.addArg($comp_for.result);
+                    args.addNakedForComp($comp_for.result);
                    scopeEnvironment.popScope();
                 }
 	|

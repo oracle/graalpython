@@ -61,6 +61,7 @@ public final class ArgListBuilder {
     private List<String> nameArgNames;
     private List<SSTNode> starArg;
     private List<SSTNode> kwArg;
+    private SSTNode nakedForComp;
 
     public ArgListBuilder() {
         // default
@@ -188,4 +189,16 @@ public final class ArgListBuilder {
         return result;
     }
 
+    public boolean hasNakedForComp() {
+        return nakedForComp != null;
+    }
+
+    public SSTNode getNakedForComp() {
+        return nakedForComp;
+    }
+
+    public void addNakedForComp(SSTNode node) {
+        this.nakedForComp = node;
+        addArg(node);
+    }
 }

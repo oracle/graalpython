@@ -347,6 +347,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode target = (ExpressionNode) node.target.accept(this);
 
         ArgListBuilder argBuilder = node.parameters;
+        if (argBuilder.hasNakedForComp() && argBuilder.getArgs().length != 1) {
+            SSTNode forComp = argBuilder.getNakedForComp();
+            throw errors.raiseInvalidSyntax(source, createSourceSection(forComp.getStartOffset(), forComp.getEndOffset()), ErrorMessages.GENERATOR_EXPR_MUST_BE_PARENTHESIZED);
+        }
         ExpressionNode callNode = PythonCallNode.create(target, argBuilder.getArgs(this), argBuilder.getNameArgs(this), argBuilder.getStarArgs(this), argBuilder.getKwArgs(this));
         callNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return callNode;
@@ -457,6 +461,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode starArg = null;
         ExpressionNode kwArg = null;
         if (node.baseClasses != null) {
+            if (node.baseClasses.hasNakedForComp()) {
+                SSTNode forComp = node.baseClasses.getNakedForComp();
+                throw errors.raiseInvalidSyntax(source, createSourceSection(forComp.getStartOffset(), forComp.getEndOffset()));
+            }
             ExpressionNode[] sstArgs = node.baseClasses.getArgs(this);
             args = new ExpressionNode[sstArgs.length + 2];
             for (int i = 0; i < sstArgs.length; i++) {
