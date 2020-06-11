@@ -53,6 +53,7 @@ class TruffleCodec(codecs.Codec):
         return _codecs.__truffle_decode(input, self.encoding, errors)
 
 
+# TODO - the incremental codec and reader/writer won't work well with stateful encodings, like some of the CJK encodings
 class TruffleIncrementalEncoder(codecs.IncrementalEncoder):
     def __init__(self, encoding, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -62,13 +63,13 @@ class TruffleIncrementalEncoder(codecs.IncrementalEncoder):
         return _codecs.__truffle_encode(input, self.encoding, self.errors)[0]
 
 
-class TruffleIncrementalDecoder(codecs.IncrementalDecoder):
+class TruffleIncrementalDecoder(codecs.BufferedIncrementalDecoder):
     def __init__(self, encoding, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.encoding = encoding
 
-    def decode(self, input, final=False):
-        return _codecs.__truffle_decode(input, self.encoding, self.errors)[0]
+    def _buffer_decode(self, input, errors, final):
+        return _codecs.__truffle_decode(input, self.encoding, errors, final)
 
 
 class TruffleStreamWriter(codecs.StreamWriter):
