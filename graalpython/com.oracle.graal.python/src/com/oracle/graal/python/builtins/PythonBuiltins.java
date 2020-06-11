@@ -74,7 +74,7 @@ public abstract class PythonBuiltins {
             } else {
                 declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(builtin,
+            RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(builtin, factory.getNodeClass(),
                             (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf, builtin.reverseOperation())));
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (builtin.constructsClass().length > 0) {

@@ -28,7 +28,6 @@ package com.oracle.graal.python;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.IdentityHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -50,6 +49,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -129,7 +129,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     private final NodeFactory nodeFactory;
-    private final IdentityHashMap<Builtin, RootCallTarget> builtinCallTargetCache = new IdentityHashMap<>();
+    private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
@@ -581,9 +581,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.disposeThread(thread);
     }
 
-    public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Function<Builtin, RootCallTarget> supplier) {
-        synchronized (this) {
-            return builtinCallTargetCache.computeIfAbsent(builtin, supplier);
-        }
+    public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
+        String key = builtin.name() + nodeClass.getName();
+        return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
     }
 }
