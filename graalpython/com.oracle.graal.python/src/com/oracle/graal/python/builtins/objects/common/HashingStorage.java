@@ -58,7 +58,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Inj
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -163,16 +165,18 @@ public abstract class HashingStorage {
             return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
         }
 
-        @Specialization(guards = "isEmpty(kwargs)")
+        @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(dictLike, dictLib)"}, limit = "1")
         HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @SuppressWarnings("unused") @CachedLibrary("dictLike") PythonObjectLibrary dictLib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
             return lib.copy(getDictStorageNode.execute(dictLike));
         }
 
-        @Specialization(guards = "!isEmpty(kwargs)")
+        @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, iterLib)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
                         @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary iterLib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                         @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
             Object state = IndirectCallContext.enter(frame, context, this);
@@ -185,6 +189,26 @@ public abstract class HashingStorage {
             }
         }
 
+        @Specialization(guards = "hasIterAttrButNotBuiltin(col, colLib)", limit = "1")
+        HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col,
+                        @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @SuppressWarnings("unused") @CachedLibrary("col") PythonObjectLibrary colLib,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, callGetItemNode,
+                            getIteratorNode, nextNode, errorProfile, lib);
+        }
+
+        protected boolean hasIterAttrButNotBuiltin(PHashingCollection col, PythonObjectLibrary lib) {
+            Object attr = lib.lookupAttribute(col, SpecialMethodNames.__ITER__);
+            return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
+        }
+
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
@@ -194,7 +218,7 @@ public abstract class HashingStorage {
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(false, 0);
-            return addMappingToStorage(frame, mapping, kwargs, curStorage, callKeysNode, callGetItemNode, getIteratorNode, nextNode, errorProfile, lib);
+            return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, callGetItemNode, getIteratorNode, nextNode, errorProfile, lib);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
@@ -623,7 +647,7 @@ public abstract class HashingStorage {
      * Adds all items from the given mapping object to storage. It is the caller responsibility to
      * ensure, that mapping has the 'keys' attribute.
      */
-    public static HashingStorage addMappingToStorage(VirtualFrame frame, Object mapping, PKeyword[] kwargs, HashingStorage storage,
+    public static HashingStorage copyToStorage(VirtualFrame frame, Object mapping, PKeyword[] kwargs, HashingStorage storage,
                     LookupAndCallUnaryNode callKeysNode, LookupAndCallBinaryNode callGetItemNode,
                     GetIteratorNode getIteratorNode, GetNextNode nextNode,
                     IsBuiltinClassProfile errorProfile, HashingStorageLibrary lib) {
