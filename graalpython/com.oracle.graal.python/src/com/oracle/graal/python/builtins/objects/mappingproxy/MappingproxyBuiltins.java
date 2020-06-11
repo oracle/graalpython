@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -86,9 +87,11 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object run(PMappingproxy self) {
-            return factory().createDictKeyIterator(self.keys().iterator());
+        @Specialization(limit = "1")
+        Object run(PMappingproxy self,
+                        @Cached GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self)") HashingStorageLibrary lib) {
+            return factory().createDictKeyIterator(lib.keys(getStore.execute(self)).iterator());
         }
     }
 

@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -412,11 +413,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         void handlePDict(VirtualFrame frame, PDict d, int version, DataOutputStream buffer,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("d.getDictStorage()") HashingStorageLibrary lib) {
+                        @Cached GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(d)") HashingStorageLibrary lib) {
             writeByte(TYPE_DICT, version, buffer);
-            int len = lib.lengthWithFrame(d.getDictStorage(), hasFrame, frame);
+            HashingStorage dictStorage = getStore.execute(d);
+            int len = lib.lengthWithFrame(dictStorage, hasFrame, frame);
             writeInt(len, version, buffer);
-            for (DictEntry entry : d.entries()) {
+            for (DictEntry entry : lib.entries(dictStorage)) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
                 getRecursiveNode().execute(frame, entry.value, version, buffer);
             }
@@ -443,16 +446,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
+                        @Cached GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(s)") HashingStorageLibrary lib) {
             writeByte(TYPE_SET, version, buffer);
             int len;
+            HashingStorage dictStorage = getStore.execute(s);
             if (hasFrame.profile(frame != null)) {
-                len = lib.lengthWithState(s.getDictStorage(), PArguments.getThreadState(frame));
+                len = lib.lengthWithState(dictStorage, PArguments.getThreadState(frame));
             } else {
-                len = lib.length(s.getDictStorage());
+                len = lib.length(dictStorage);
             }
             writeInt(len, version, buffer);
-            for (DictEntry entry : s.entries()) {
+            for (DictEntry entry : lib.entries(dictStorage)) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
             }
         }
@@ -460,16 +465,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         void handlePForzenSet(VirtualFrame frame, PFrozenSet s, int version, DataOutputStream buffer,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
+                        @Cached GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(s)") HashingStorageLibrary lib) {
             writeByte(TYPE_FROZENSET, version, buffer);
             int len;
+            HashingStorage dictStorage = getStore.execute(s);
             if (hasFrame.profile(frame != null)) {
-                len = lib.lengthWithState(s.getDictStorage(), PArguments.getThreadState(frame));
+                len = lib.lengthWithState(dictStorage, PArguments.getThreadState(frame));
             } else {
-                len = lib.length(s.getDictStorage());
+                len = lib.length(dictStorage);
             }
             writeInt(len, version, buffer);
-            for (DictEntry entry : s.entries()) {
+            for (DictEntry entry : lib.entries(dictStorage)) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
             }
         }

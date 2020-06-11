@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -66,6 +67,7 @@ public abstract class DictConcatNode extends ExpressionNode {
     @Specialization
     public Object concat(VirtualFrame frame,
                     @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                    @Cached GetDictStorageNode getStore,
                     @CachedLibrary(limit = "2") HashingStorageLibrary firstlib,
                     @CachedLibrary(limit = "1") HashingStorageLibrary otherlib) {
         PDict first = null;
@@ -75,17 +77,18 @@ public abstract class DictConcatNode extends ExpressionNode {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                addAllToDict(frame, first, other, hasFrame, firstlib, otherlib);
+                addAllToDict(frame, first, other, hasFrame, firstlib, otherlib, getStore);
             }
         }
         return first;
     }
 
     private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
-                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib) {
-        HashingStorage dictStorage = dict.getDictStorage();
-        for (Object key : other.keys()) {
-            Object value = otherlib.getItemWithFrame(other.getDictStorage(), key, hasFrame, frame);
+                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib, GetDictStorageNode getStore) {
+        HashingStorage dictStorage = getStore.execute(dict);
+        HashingStorage otherStorage = getStore.execute(other);
+        for (Object key : otherlib.keys(otherStorage)) {
+            Object value = otherlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
             dictStorage = firstlib.setItemWithFrame(dictStorage, key, value, hasFrame, frame);
         }
         dict.setDictStorage(dictStorage);
