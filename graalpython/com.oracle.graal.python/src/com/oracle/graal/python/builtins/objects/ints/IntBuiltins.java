@@ -767,16 +767,6 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "right < 0")
-        @SuppressWarnings("unused")
-        int doLLLNeg(long left, long right, long mod,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            if (errorProfile.profile(left != 1)) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.POW_SECOND_ARG_CANNOT_BE_NEGATIVE);
-            }
-            return 1;
-        }
-
         // see cpython://Objects/longobject.c#long_pow
         @Specialization(replaces = "doPP")
         Object powModulo(Object x, Object y, Object z) {
@@ -806,14 +796,33 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object objectOp(Object left, Object right, Object mod) {
+        private Object objectOp(Object left, Object right, Object mod) {
             BigInteger bigLeft = integerToBigInteger(left);
             BigInteger bigRight = integerToBigInteger(right);
             BigInteger bigMod = integerToBigInteger(mod);
-            try {
+            if (bigMod.signum() == 0) {
+                throw raise(ValueError, ErrorMessages.POW_THIRD_ARG_CANNOT_BE_ZERO);
+            } else if (bigRight.signum() >= 0 && bigMod.signum() > 0) {
                 return bigLeft.modPow(bigRight, bigMod);
-            } catch (ArithmeticException e) {
-                return Math.pow(bigLeft.doubleValue(), bigRight.doubleValue()) % bigMod.doubleValue();
+            } else if (bigMod.signum() < 0) {
+                BigInteger bigModPos = bigMod.abs();
+                try {
+                     BigInteger pow = bigLeft.modPow(bigRight, bigModPos);
+                     if (!BigInteger.ZERO.equals(pow)) {
+                         return pow.subtract(bigModPos);
+                     } else {
+                         return pow;
+                     }
+                } catch (ArithmeticException e) {
+                    // bigModPos was used, so this exception must mean the exponent was negative
+                    return Math.pow(bigLeft.doubleValue(), bigRight.doubleValue()) % bigMod.doubleValue();
+                }
+            } else {
+                try {
+                    return bigLeft.modPow(bigRight, bigMod);
+                } catch (ArithmeticException e) {
+                    return Math.pow(bigLeft.doubleValue(), bigRight.doubleValue()) % bigMod.doubleValue();
+                }
             }
         }
 
@@ -833,6 +842,8 @@ public class IntBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static BigInteger op(long left, long right, long mod) {
+            assert mod > 0;
+            assert right >= 0;
             return BigInteger.valueOf(left).modPow(BigInteger.valueOf(right), BigInteger.valueOf(mod));
         }
 
