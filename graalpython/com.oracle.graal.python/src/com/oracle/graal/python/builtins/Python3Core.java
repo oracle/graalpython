@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -208,6 +210,8 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class Python3Core implements PythonCore {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
+
+    public static final Pattern MISSING_PARENTHESES_PATTERN = Pattern.compile("^(print|exec) +([^(][^;]*).*");
 
     private static final String[] initializeCoreFiles() {
         // Order matters!
@@ -773,6 +777,22 @@ public final class Python3Core implements PythonCore {
             msg = (new ErrorMessageFormatter()).format(message, arguments);
         } else {
             msg = "invalid syntax";
+        }
+        if (section.isAvailable() && type == PythonParser.ErrorType.Generic) {
+            Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(source.getCharacters(section.getStartLine()));
+            if (matcher.matches()) {
+                String fn = matcher.group(1);
+                if (fn.equals("print")) {
+                    String arg = matcher.group(2).trim();
+                    String maybeEnd = "";
+                    if (arg.endsWith(",")) {
+                        maybeEnd = " end=\" \"";
+                    }
+                    msg = (new ErrorMessageFormatter()).format("Missing parentheses in call to 'print'. Did you mean print(%s%s)?", arg, maybeEnd);
+                } else {
+                    msg = "Missing parentheses in call to 'exec'";
+                }
+            }
         }
         instance.setAttribute("msg", msg);
         throw PException.fromObject(instance, location);
