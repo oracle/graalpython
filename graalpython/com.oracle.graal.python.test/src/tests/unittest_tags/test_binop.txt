@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_binop.FallbackBlockingTests.test_fallback_ne_blocking
+*graalpython.lib-python.3.test.test_binop.FallbackBlockingTests.test_fallback_rmethod_blocking
 *graalpython.lib-python.3.test.test_binop.OperationOrderTests.test_comparison_orders
 *graalpython.lib-python.3.test.test_binop.RatTestCase.test_add
 *graalpython.lib-python.3.test.test_binop.RatTestCase.test_constructor
