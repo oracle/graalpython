@@ -141,6 +141,9 @@ public abstract class BuiltinNames {
     public static final String DICT_KEYITERATOR = "dict_keyiterator";
     public static final String DICT_VALUEITERATOR = "dict_valueiterator";
     public static final String DICT_ITEMITERATOR = "dict_itemiterator";
+    public static final String DICT_REVERSE_KEYITERATOR = "dict_reversekeyiterator";
+    public static final String DICT_REVERSE_VALUEITERATOR = "dict_reversevalueiterator";
+    public static final String DICT_REVERSE_ITEMITERATOR = "dict_reverseitemiterator";
     public static final String DICT_KEYS = "dict_keys";
     public static final String DICT_ITEMS = "dict_items";
     public static final String DICT_VALUES = "dict_values";

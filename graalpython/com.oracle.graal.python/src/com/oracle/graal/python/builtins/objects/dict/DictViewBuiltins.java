@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
@@ -118,16 +119,36 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object getKeysViewIter(PDictKeysView self) {
-            return factory().createDictKeysIterator(self.getWrappedDict());
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object getKeysViewIter(PDictKeysView self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return factory().createDictKeyIterator(lib.keys(getStore.execute(self.getWrappedDict())).iterator());
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getItemsViewIter(PDictItemsView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictItemsIterator(lib.entries(getStore.execute(self.getWrappedDict())).iterator());
+            return factory().createDictItemIterator(lib.entries(getStore.execute(self.getWrappedDict())).iterator());
+        }
+    }
+
+    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object getReversedKeysViewIter(PDictKeysView self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return factory().createDictReverseKeyIterator(lib.reverseKeys(getStore.execute(self.getWrappedDict())).iterator());
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object getReversedItemsViewIter(PDictItemsView self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return factory().createDictReverseItemIterator(lib.reverseEntries(getStore.execute(self.getWrappedDict())).iterator());
         }
     }
 

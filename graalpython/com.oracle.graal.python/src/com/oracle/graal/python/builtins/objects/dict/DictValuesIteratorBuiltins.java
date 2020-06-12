@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,7 +34,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesIterator;
+import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValueIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -45,7 +45,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PDictValuesIterator)
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictReverseValueIterator})
 public final class DictValuesIteratorBuiltins extends PythonBuiltins {
 
     @Override
@@ -57,7 +57,7 @@ public final class DictValuesIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run(PDictValuesIterator self,
+        Object run(PDictValueIterator self,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             if (profile.profile(self.getIterator().hasNext())) {
                 return self.getIterator().next();

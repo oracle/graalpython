@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
@@ -348,9 +349,22 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object run(PDict self) {
-            return factory().createDictKeysIterator(self);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object run(PDict self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self)") HashingStorageLibrary lib) {
+            return factory().createDictKeyIterator(lib.keys(getStore.execute(self)).iterator());
+        }
+    }
+
+    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object run(PDict self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self)") HashingStorageLibrary lib) {
+            return factory().createDictKeyIterator(lib.reverseKeys(getStore.execute(self)).iterator());
         }
     }
 

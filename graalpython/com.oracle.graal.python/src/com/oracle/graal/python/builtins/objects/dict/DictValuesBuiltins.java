@@ -39,8 +39,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -77,7 +77,18 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         Object doPDictValuesView(PDictValuesView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictValuesIterator(lib.values(getStore.execute(self.getWrappedDict())).iterator());
+            return factory().createDictValueIterator(lib.values(getStore.execute(self.getWrappedDict())).iterator());
+        }
+    }
+
+    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doPDictValuesView(PDictValuesView self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return factory().createDictReverseValueIterator(lib.reverseValues(getStore.execute(self.getWrappedDict())).iterator());
         }
     }
 
@@ -87,12 +98,13 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         boolean doItemsView(VirtualFrame frame, PDictValuesView self, PDictValuesView other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary libSelf,
+                        @CachedLibrary("getStore.execute(other.getWrappedDict())") HashingStorageLibrary libOther) {
 
-            final PHashingCollection dict = self.getWrappedDict();
-            final HashingStorage storage = other.getWrappedDict().getDictStorage();
-            for (Object selfKey : dict.keys()) {
-                final boolean hasKey = lib.hasKeyWithFrame(storage, selfKey, hasFrame, frame);
+            final HashingStorage storage = getStore.execute(other.getWrappedDict());
+            for (Object selfKey : libSelf.keys(getStore.execute(self.getWrappedDict()))) {
+                final boolean hasKey = libOther.hasKeyWithFrame(storage, selfKey, hasFrame, frame);
                 if (!hasKey) {
                     return false;
                 }

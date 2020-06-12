@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest, sys
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -710,7 +711,13 @@ def test_wrapped_string_get():
     a = 'test'
     dict = locals()
     assert dict['a']
-
+ 
+@unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 8), "skipping for cPython versions < 3.8")
+def test_reverse_locals():
+    a = 'atest'
+    b = 'btest'
+    dict = locals()
+    assert list(reversed(dict)) == ['b', 'a']
 
 def test_concat():
     r = {**{}}

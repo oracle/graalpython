@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,7 +35,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsIterator;
+import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -47,7 +47,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PDictItemsIterator)
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictReverseItemIterator})
 public final class DictItemsIteratorBuiltins extends PythonBuiltins {
 
     @Override
@@ -59,7 +59,7 @@ public final class DictItemsIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run(PDictItemsIterator self,
+        Object run(PDictItemIterator self,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             if (profile.profile(hasNext(self))) {
                 DictEntry value = next(self);
@@ -69,12 +69,12 @@ public final class DictItemsIteratorBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static DictEntry next(PDictItemsIterator self) {
+        private static DictEntry next(PDictItemIterator self) {
             return self.getIterator().next();
         }
 
         @TruffleBoundary
-        private static boolean hasNext(PDictItemsIterator self) {
+        private static boolean hasNext(PDictItemIterator self) {
             return self.getIterator().hasNext();
         }
     }
