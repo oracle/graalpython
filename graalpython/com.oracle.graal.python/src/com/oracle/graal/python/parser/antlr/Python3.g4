@@ -381,6 +381,7 @@ locals
 	}
 	{ loopState = null; }
 	{ int start = start(); }
+	BOM?
 	(
 		NEWLINE
 		| simple_stmt
@@ -401,6 +402,7 @@ locals
 	{  _localctx.scope = scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module); }
 	{ loopState = null; }
 	{ int start = start(); }
+	BOM?
 	(
 		NEWLINE
 		| stmt
@@ -418,7 +420,7 @@ eval_input returns [SSTNode result]
 locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 :
 	{ scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module); }
-	testlist NEWLINE* EOF
+	BOM? testlist NEWLINE* EOF
 	{ $result = $testlist.result; }
 	{scopeEnvironment.popScope(); }
 ;
@@ -1883,6 +1885,8 @@ LONG_QUOTES2 : '\'\'\'' {usedQuote2();};
 SKIP_
  : ( SPACES | COMMENT | LINE_JOINING ) -> skip
  ;
+
+BOM : '\uFEFF';
 
 UNKNOWN_CHAR
  : .

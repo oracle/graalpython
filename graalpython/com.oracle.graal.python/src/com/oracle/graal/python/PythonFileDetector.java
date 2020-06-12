@@ -56,6 +56,7 @@ import com.oracle.truffle.api.TruffleFile;
 
 public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
 
+    private static final String UTF_8_BOM_IN_LATIN_1 = new String(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}, StandardCharsets.ISO_8859_1);
     private static final Pattern ENCODING_COMMENT = Pattern.compile("^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+).*");
 
     @Override
@@ -82,15 +83,21 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
         }
     }
 
-    private static Charset tryGetCharsetFromLine(String line) {
+    private static Charset tryGetCharsetFromLine(String line, boolean hasBOM) {
         if (line == null) {
             return null;
         }
         Matcher matcher = ENCODING_COMMENT.matcher(line);
         if (matcher.matches()) {
-            Charset charset = CharsetMapping.getCharset(matcher.group(1));
+            // Files with UTF-8 BOM but different encoding declared are a SyntaxError
+            // Note that CPython ignores UTF-8 aliases for the BOM check
+            String encoding = matcher.group(1);
+            if (hasBOM && !CharsetMapping.normalize(encoding).equals("utf_8")) {
+                throw new InvalidEncodingException(encoding + " with BOM");
+            }
+            Charset charset = CharsetMapping.getCharset(encoding);
             if (charset == null) {
-                throw new InvalidEncodingException(matcher.group(1));
+                throw new InvalidEncodingException(encoding);
             }
             return charset;
         }
@@ -100,10 +107,17 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
     @TruffleBoundary
     public static Charset findEncodingStrict(BufferedReader reader) throws IOException {
         Charset charset;
-        if ((charset = tryGetCharsetFromLine(reader.readLine())) != null) {
+        // Read first two lines like CPython
+        String firstLine = reader.readLine();
+        boolean hasBOM = false;
+        if (firstLine != null && firstLine.startsWith(UTF_8_BOM_IN_LATIN_1)) {
+            hasBOM = true;
+            firstLine = firstLine.substring(UTF_8_BOM_IN_LATIN_1.length());
+        }
+        if ((charset = tryGetCharsetFromLine(firstLine, hasBOM)) != null) {
             return charset;
         }
-        if ((charset = tryGetCharsetFromLine(reader.readLine())) != null) {
+        if ((charset = tryGetCharsetFromLine(reader.readLine(), hasBOM)) != null) {
             return charset;
         }
         return StandardCharsets.UTF_8;
