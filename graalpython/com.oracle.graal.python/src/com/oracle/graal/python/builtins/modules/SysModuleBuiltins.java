@@ -51,9 +51,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import com.oracle.graal.python.util.OverflowException;
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -85,6 +82,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -98,6 +96,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -193,13 +193,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute("executable", context.getOption(PythonOptions.Executable));
             sys.setAttribute("_base_executable", context.getOption(PythonOptions.Executable));
         }
-        sys.setAttribute("dont_write_bytecode", ImageInfo.inImageBuildtimeCode() || context.getOption(PythonOptions.DontWriteBytecodeFlag));
+        sys.setAttribute("dont_write_bytecode", context.getOption(PythonOptions.DontWriteBytecodeFlag));
         String pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
         sys.setAttribute("pycache_prefix", pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
-                        ImageInfo.inImageBuildtimeCode() || context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
+                        context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
                         false, // hash_randomization
                         context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
                         context.getOption(PythonOptions.InspectFlag), // inspect

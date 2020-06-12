@@ -107,7 +107,7 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> IsolateFlag = new OptionKey<>(false);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -B flag. Don't write bytecode files.", stability = OptionStability.STABLE) //
-    public static final OptionKey<Boolean> DontWriteBytecodeFlag = new OptionKey<>(false);
+    public static final OptionKey<Boolean> DontWriteBytecodeFlag = new OptionKey<>(true);
 
     @Option(category = OptionCategory.USER, help = "If this is set, GraalPython will write .pyc files in a mirror directory tree at this path, " +
                     "instead of in __pycache__ directories within the source tree. " +
