@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.method;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -41,7 +40,7 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     private final PBuiltinFunction function;
     private final Object self;
 
-    public PBuiltinMethod(LazyPythonClass clazz, DynamicObject storage, Object self, PBuiltinFunction function) {
+    public PBuiltinMethod(Object clazz, DynamicObject storage, Object self, PBuiltinFunction function) {
         super(clazz, storage);
         this.self = self;
         this.function = function;

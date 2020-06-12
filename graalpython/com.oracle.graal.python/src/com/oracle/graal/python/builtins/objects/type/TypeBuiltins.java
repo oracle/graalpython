@@ -143,7 +143,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String repr(VirtualFrame frame, LazyPythonClass self,
+        String repr(VirtualFrame frame, Object self,
                         @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
                         @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
             Object moduleName = readModuleNode.executeObject(frame, self);
@@ -164,7 +164,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
-        Object doit(LazyPythonClass klass,
+        Object doit(Object klass,
                         @Cached("create()") TypeNodes.GetMroNode getMroNode) {
             return factory().createTuple(getMroNode.execute(klass));
         }
@@ -401,7 +401,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private TypeNodes.GetNameNode getNameNode;
 
         @Specialization(limit = "3")
-        protected Object doIt(VirtualFrame frame, LazyPythonClass object, Object key,
+        protected Object doIt(VirtualFrame frame, Object object, Object key,
                         @CachedLibrary("object") PythonObjectLibrary libObj,
                         @CachedLibrary(limit = "3") PythonObjectLibrary libDesc) {
             Object type = libObj.getLazyPythonClass(object);
@@ -521,7 +521,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BasesNode extends PythonBuiltinNode {
         @Specialization
-        Object bases(LazyPythonClass self,
+        Object bases(Object self,
                         @Cached("create()") TypeNodes.GetBaseClassesNode getBaseClassesNode) {
             return factory().createTuple(getBaseClassesNode.execute(self));
         }
@@ -531,7 +531,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BaseNode extends PythonBuiltinNode {
         @Specialization
-        static Object base(LazyPythonClass self,
+        static Object base(Object self,
                         @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
             Object baseClass = getBaseClassNode.execute(self);
             return baseClass != null ? baseClass : PNone.NONE;
@@ -686,7 +686,7 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class SubclassesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PList getSubclasses(LazyPythonClass cls,
+        PList getSubclasses(Object cls,
                         @Cached("create()") GetSubclassesNode getSubclassesNode) {
             // TODO: missing: keep track of subclasses
             return factory().createList(toArray(getSubclassesNode.execute(cls)));

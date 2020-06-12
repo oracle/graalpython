@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.map;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -49,7 +48,7 @@ public final class PMap extends PythonBuiltinObject {
     @CompilationFinal private Object function;
     @CompilationFinal(dimensions = 1) private Object[] iterators;
 
-    public PMap(LazyPythonClass clazz, DynamicObject storage) {
+    public PMap(Object clazz, DynamicObject storage) {
         super(clazz, storage);
     }
 

@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -34,7 +33,7 @@ public final class PIntegerSequenceIterator extends PIntegerIterator {
     final IntSequenceStorage sequence;
     int index;
 
-    public PIntegerSequenceIterator(LazyPythonClass clazz, DynamicObject storage, IntSequenceStorage sequence) {
+    public PIntegerSequenceIterator(Object clazz, DynamicObject storage, IntSequenceStorage sequence) {
         super(clazz, storage);
         this.sequence = sequence;
     }

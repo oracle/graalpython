@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public class PBuffer extends PythonBuiltinObject {
@@ -49,7 +48,7 @@ public class PBuffer extends PythonBuiltinObject {
     private final Object delegate;
     private final boolean readOnly;
 
-    public PBuffer(LazyPythonClass cls, DynamicObject storage, Object iterable, boolean readOnly) {
+    public PBuffer(Object cls, DynamicObject storage, Object iterable, boolean readOnly) {
         super(cls, storage);
         this.delegate = iterable;
         this.readOnly = readOnly;

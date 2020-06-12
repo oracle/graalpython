@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -32,7 +32,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -56,7 +55,7 @@ public class RandomModuleBuiltins extends PythonBuiltins {
         @Child LookupAndCallBinaryNode setSeed = LookupAndCallBinaryNode.create("seed");
 
         @Specialization
-        PRandom random(VirtualFrame frame, LazyPythonClass cls, Object seed) {
+        PRandom random(VirtualFrame frame, Object cls, Object seed) {
             PRandom random = factory().createRandom(cls);
             setSeed.executeObject(frame, random, seed);
             return random;

@@ -25,12 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -46,19 +46,18 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.DynamicObject;
-import java.io.UnsupportedEncodingException;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
-    public PBytes(LazyPythonClass cls, DynamicObject storage, byte[] bytes) {
+    public PBytes(Object cls, DynamicObject storage, byte[] bytes) {
         super(cls, storage);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PBytes(LazyPythonClass cls, DynamicObject storage, SequenceStorage store) {
+    public PBytes(Object cls, DynamicObject storage, SequenceStorage store) {
         super(cls, storage);
         setSequenceStorage(store);
     }

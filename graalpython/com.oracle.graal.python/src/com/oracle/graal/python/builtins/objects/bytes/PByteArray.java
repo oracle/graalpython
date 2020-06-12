@@ -29,7 +29,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -47,12 +46,12 @@ public final class PByteArray extends PMutableSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
-    public PByteArray(LazyPythonClass cls, DynamicObject storage, byte[] bytes) {
+    public PByteArray(Object cls, DynamicObject storage, byte[] bytes) {
         super(cls, storage);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PByteArray(LazyPythonClass cls, DynamicObject storage, SequenceStorage store) {
+    public PByteArray(Object cls, DynamicObject storage, SequenceStorage store) {
         super(cls, storage);
         this.store = store;
     }

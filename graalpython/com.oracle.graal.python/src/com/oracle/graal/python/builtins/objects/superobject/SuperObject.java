@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.superobject;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.Truffle;
@@ -53,7 +52,7 @@ public class SuperObject extends PythonBuiltinObject {
     private PythonAbstractClass objecttype;
     private Object object;
 
-    public SuperObject(LazyPythonClass cls, DynamicObject storage) {
+    public SuperObject(Object cls, DynamicObject storage) {
         super(cls, storage);
     }
 

@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -55,11 +54,11 @@ import com.oracle.truffle.api.object.DynamicObject;
 public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
     private Object callable;
 
-    public PDecoratedMethod(LazyPythonClass cls, DynamicObject storage) {
+    public PDecoratedMethod(Object cls, DynamicObject storage) {
         super(cls, storage);
     }
 
-    public PDecoratedMethod(LazyPythonClass cls, DynamicObject storage, Object callable) {
+    public PDecoratedMethod(Object cls, DynamicObject storage, Object callable) {
         this(cls, storage);
         this.callable = callable;
     }

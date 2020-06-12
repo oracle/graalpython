@@ -2142,7 +2142,7 @@ public class IntBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
         }
 
-        private Object createIntObject(LazyPythonClass cl, BigInteger number) {
+        private Object createIntObject(Object cl, BigInteger number) {
             PythonBuiltinClassType type = null;
             if (cl instanceof PythonBuiltinClass) {
                 type = ((PythonBuiltinClass) cl).getType();
@@ -2159,7 +2159,7 @@ public class IntBuiltins extends PythonBuiltins {
             return constructNode.execute(null, cl, new Object[]{cl, factory().createInt(number)});
         }
 
-        private Object compute(LazyPythonClass cl, byte[] bytes, String byteorder, boolean signed) {
+        private Object compute(Object cl, byte[] bytes, String byteorder, boolean signed) {
             BigInteger bi = createBigInteger(bytes, isBigEndian(byteorder), signed);
             return createIntObject(cl, bi);
         }

@@ -111,7 +111,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -353,14 +352,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            LazyPythonClass superClass = getSuperClassNode.execute(object);
+            Object superClass = getSuperClassNode.execute(object);
             if (superClass != null) {
                 return toSulongNode.execute(ensureClassObject(context, superClass));
             }
             return toSulongNode.execute(getNativeNullNode.execute());
         }
 
-        private static PythonAbstractClass ensureClassObject(PythonContext context, LazyPythonClass klass) {
+        private static PythonAbstractClass ensureClassObject(PythonContext context, Object klass) {
             if (klass instanceof PythonBuiltinClassType) {
                 return context.getCore().lookupType((PythonBuiltinClassType) klass);
             }

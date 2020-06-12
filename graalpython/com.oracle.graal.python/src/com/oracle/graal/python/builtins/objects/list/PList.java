@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -41,13 +40,13 @@ public final class PList extends PMutableSequence {
     private final ListLiteralNode origin;
     private SequenceStorage store;
 
-    public PList(LazyPythonClass cls, DynamicObject storage, SequenceStorage store) {
+    public PList(Object cls, DynamicObject storage, SequenceStorage store) {
         super(cls, storage);
         this.origin = null;
         this.store = store;
     }
 
-    public PList(LazyPythonClass cls, DynamicObject storage, SequenceStorage store, ListLiteralNode origin) {
+    public PList(Object cls, DynamicObject storage, SequenceStorage store, ListLiteralNode origin) {
         super(cls, storage);
         this.origin = origin;
         this.store = store;

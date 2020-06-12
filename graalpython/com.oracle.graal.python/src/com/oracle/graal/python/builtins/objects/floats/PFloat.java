@@ -29,7 +29,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -48,7 +47,7 @@ public class PFloat extends PythonBuiltinObject {
 
     protected final double value;
 
-    public PFloat(LazyPythonClass clazz, DynamicObject storage, double value) {
+    public PFloat(Object clazz, DynamicObject storage, double value) {
         super(clazz, storage);
         this.value = value;
     }
@@ -82,7 +81,7 @@ public class PFloat extends PythonBuiltinObject {
         return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.newInstance(), value);
     }
 
-    public static PFloat create(LazyPythonClass cls, DynamicObject storage, double value) {
+    public static PFloat create(Object cls, DynamicObject storage, double value) {
         return new PFloat(cls, storage, value);
     }
 

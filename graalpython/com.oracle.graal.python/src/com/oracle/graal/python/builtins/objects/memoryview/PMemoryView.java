@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -57,7 +56,7 @@ public class PMemoryView extends PythonBuiltinObject {
 
     static final String C_MEMORYVIEW = "__c_memoryview";
 
-    public PMemoryView(LazyPythonClass cls, DynamicObject storage, @SuppressWarnings("unused") Object obj) {
+    public PMemoryView(Object cls, DynamicObject storage, @SuppressWarnings("unused") Object obj) {
         super(cls, storage);
     }
 

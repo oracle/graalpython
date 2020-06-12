@@ -36,7 +36,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -55,14 +54,14 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
 
     private final String name;
-    private final LazyPythonClass enclosingType;
+    private final Object enclosingType;
     private final RootCallTarget callTarget;
     private final boolean isStatic;
     private final Signature signature;
     @CompilationFinal(dimensions = 1) private final PNone[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(String name, LazyPythonClass enclosingType, int numDefaults, RootCallTarget callTarget) {
+    public PBuiltinFunction(String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
         super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.newInstance());
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
@@ -131,7 +130,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return name;
     }
 
-    public LazyPythonClass getEnclosingType() {
+    public Object getEnclosingType() {
         return enclosingType;
     }
 
@@ -141,7 +140,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (enclosingType == null) {
             return String.format("PBuiltinFunction %s at 0x%x", name, hashCode());
         } else {
-            return String.format("PBuiltinFunction %s.%s at 0x%x", enclosingType.getName(), name, hashCode());
+            return String.format("PBuiltinFunction %s.%s at 0x%x", GetNameNode.doSlowPath(enclosingType), name, hashCode());
         }
     }
 

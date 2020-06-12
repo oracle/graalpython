@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -34,7 +33,7 @@ public final class PSequenceIterator extends PBuiltinIterator {
     protected final Object sequence;
     protected int index = 0;
 
-    public PSequenceIterator(LazyPythonClass clazz, DynamicObject storage, Object sequence) {
+    public PSequenceIterator(Object clazz, DynamicObject storage, Object sequence) {
         super(clazz, storage);
         this.sequence = sequence;
     }

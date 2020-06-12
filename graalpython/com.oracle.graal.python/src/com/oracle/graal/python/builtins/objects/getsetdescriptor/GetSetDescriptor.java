@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 
 public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
@@ -51,13 +50,13 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
     private final Object set;
     private final String name;
     private final boolean allowsDelete;
-    private final LazyPythonClass type;
+    private final Object type;
 
-    public GetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {
+    public GetSetDescriptor(Object get, Object set, String name, Object type) {
         this(get, set, name, type, false);
     }
 
-    public GetSetDescriptor(Object get, Object set, String name, LazyPythonClass type, boolean allowsDelete) {
+    public GetSetDescriptor(Object get, Object set, String name, Object type, boolean allowsDelete) {
         super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
         this.get = get;
         this.set = set;
@@ -78,7 +77,7 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         return name;
     }
 
-    public LazyPythonClass getType() {
+    public Object getType() {
         return type;
     }
 

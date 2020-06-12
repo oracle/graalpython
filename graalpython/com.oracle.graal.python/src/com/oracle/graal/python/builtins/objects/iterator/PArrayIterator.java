@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PArrayIterator extends PBuiltinIterator {
@@ -34,7 +33,7 @@ public final class PArrayIterator extends PBuiltinIterator {
     final PArray array;
     int index;
 
-    public PArrayIterator(LazyPythonClass clazz, DynamicObject storage, PArray array) {
+    public PArrayIterator(Object clazz, DynamicObject storage, PArray array) {
         super(clazz, storage);
         this.array = array;
     }

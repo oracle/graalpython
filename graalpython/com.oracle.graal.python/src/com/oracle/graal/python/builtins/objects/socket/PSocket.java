@@ -49,7 +49,6 @@ import java.util.HashMap;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -114,7 +113,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     private HashMap<Object, Object> options;
 
-    public PSocket(LazyPythonClass cls, DynamicObject storage, int family, int type, int proto) {
+    public PSocket(Object cls, DynamicObject storage, int family, int type, int proto) {
         super(cls, storage);
         this.family = family;
         this.proto = proto;
@@ -122,7 +121,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         this.fileno = -1;
     }
 
-    public PSocket(LazyPythonClass cls, DynamicObject storage, int family, int type, int proto, int fileno) {
+    public PSocket(Object cls, DynamicObject storage, int family, int type, int proto, int fileno) {
         super(cls, storage);
         this.fileno = fileno;
         this.family = family;

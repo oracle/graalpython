@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -300,7 +299,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         private static final int INITIAL_BUFFER_SIZE = 8192;
 
         @Specialization
-        PLZMACompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object checkObj, Object presetObj, Object filters,
+        PLZMACompressor doCreate(VirtualFrame frame, Object cls, Object formatObj, Object checkObj, Object presetObj, Object filters,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
 
             int format = FORMAT_XZ;
@@ -415,7 +414,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         @Child private IsBuiltinClassProfile keyErrorProfile;
 
         @Specialization
-        PLZMADecompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object memlimitObj, Object filters,
+        PLZMADecompressor doCreate(VirtualFrame frame, Object cls, Object formatObj, Object memlimitObj, Object filters,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
 
             int format = FORMAT_AUTO;

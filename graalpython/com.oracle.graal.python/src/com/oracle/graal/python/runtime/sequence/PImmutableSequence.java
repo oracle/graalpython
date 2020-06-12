@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -36,7 +35,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 @ExportLibrary(InteropLibrary.class)
 public abstract class PImmutableSequence extends PSequence {
 
-    public PImmutableSequence(LazyPythonClass cls, DynamicObject storage) {
+    public PImmutableSequence(Object cls, DynamicObject storage) {
         super(cls, storage);
     }
 

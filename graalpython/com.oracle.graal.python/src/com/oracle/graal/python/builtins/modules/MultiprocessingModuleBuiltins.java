@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -84,7 +83,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructSemLockNode extends PythonBuiltinNode {
         @Specialization
-        PSemLock construct(LazyPythonClass cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
+        PSemLock construct(Object cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
                         @Cached CastToJavaStringNode castNameNode,
                         @Cached CastToJavaIntExactNode castKindToIntNode,
                         @Cached CastToJavaIntExactNode castValueToIntNode,

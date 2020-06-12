@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 /**
@@ -40,7 +39,7 @@ import com.oracle.truffle.api.object.DynamicObject;
  */
 public abstract class PythonBuiltinObject extends PythonObject {
 
-    public PythonBuiltinObject(LazyPythonClass cls, DynamicObject storage) {
+    public PythonBuiltinObject(Object cls, DynamicObject storage) {
         super(cls, storage);
     }
 }

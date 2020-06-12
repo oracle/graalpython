@@ -50,7 +50,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
@@ -119,7 +118,7 @@ public final class PCode extends PythonBuiltinObject {
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
 
-    public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget) {
+    public PCode(Object cls, DynamicObject storage, RootCallTarget callTarget) {
         super(cls, storage);
         this.callTarget = callTarget;
         if (callTarget.getRootNode() instanceof PRootNode) {
@@ -129,7 +128,7 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
+    public PCode(Object cls, DynamicObject storage, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
         this(cls, storage, callTarget);
         this.codestring = codestring;
         this.flags = flags;
@@ -137,7 +136,7 @@ public final class PCode extends PythonBuiltinObject {
         this.lnotab = lnotab;
     }
 
-    public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget, Signature signature,
+    public PCode(Object cls, DynamicObject storage, RootCallTarget callTarget, Signature signature,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,

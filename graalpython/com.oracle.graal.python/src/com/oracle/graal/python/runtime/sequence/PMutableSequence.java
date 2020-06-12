@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -61,7 +60,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 @ExportLibrary(InteropLibrary.class)
 public abstract class PMutableSequence extends PSequence {
 
-    public PMutableSequence(LazyPythonClass cls, DynamicObject storage) {
+    public PMutableSequence(Object cls, DynamicObject storage) {
         super(cls, storage);
     }
 

@@ -33,7 +33,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -62,7 +61,7 @@ public final class PString extends PImmutableSequence {
 
     private CharSequence value;
 
-    public PString(LazyPythonClass clazz, DynamicObject storage, CharSequence value) {
+    public PString(Object clazz, DynamicObject storage, CharSequence value) {
         super(clazz, storage);
         this.value = value;
     }

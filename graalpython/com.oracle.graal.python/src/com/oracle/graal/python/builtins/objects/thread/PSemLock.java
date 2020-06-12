@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.thread;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -58,7 +57,7 @@ public final class PSemLock extends AbstractPythonLock {
     private int lastThreadID = -1;
     private int count;
 
-    public PSemLock(LazyPythonClass cls, DynamicObject storage, String name, int kind, Semaphore sharedSemaphore) {
+    public PSemLock(Object cls, DynamicObject storage, String name, int kind, Semaphore sharedSemaphore) {
         super(cls, storage);
         this.name = name;
         this.semaphore = sharedSemaphore;

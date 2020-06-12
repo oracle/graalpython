@@ -45,7 +45,6 @@ import java.nio.channels.SeekableByteChannel;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -63,7 +62,7 @@ public final class PMMap extends PythonObject {
     private final long length;
     private final long offset;
 
-    public PMMap(LazyPythonClass pythonClass, DynamicObject storage, SeekableByteChannel mappedByteBuffer, long length, long offset) {
+    public PMMap(Object pythonClass, DynamicObject storage, SeekableByteChannel mappedByteBuffer, long length, long offset) {
         super(pythonClass, storage);
         this.mappedByteBuffer = mappedByteBuffer;
         this.length = length;

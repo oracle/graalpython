@@ -45,7 +45,6 @@ import java.lang.ref.WeakReference;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -73,7 +72,7 @@ public class PReferenceType extends PythonBuiltinObject {
     private long hash = -1;
 
     @TruffleBoundary
-    public PReferenceType(LazyPythonClass cls, DynamicObject storage, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
+    public PReferenceType(Object cls, DynamicObject storage, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
         super(cls, storage);
         this.store = new WeakRefStorage(this, pythonObject, callback, queue);
     }

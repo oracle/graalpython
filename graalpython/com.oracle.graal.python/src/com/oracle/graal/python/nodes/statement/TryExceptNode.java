@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -255,7 +254,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
 
                 for (String c : caughtClasses) {
                     Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
-                    if (cls instanceof LazyPythonClass) {
+                    if (lib.isLazyPythonClass(cls)) {
                         if (isSubtype.execute(lib.getLazyPythonClass(exception), cls)) {
                             return true;
                         }

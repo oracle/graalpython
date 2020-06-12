@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -103,7 +102,7 @@ public final class PBaseException extends PythonObject {
         this.suppressContext = suppressContext;
     }
 
-    public PBaseException(LazyPythonClass cls, DynamicObject storage, PTuple args) {
+    public PBaseException(Object cls, DynamicObject storage, PTuple args) {
         super(cls, storage);
         this.args = args;
         this.hasMessageFormat = false;
@@ -111,7 +110,7 @@ public final class PBaseException extends PythonObject {
         this.messageArgs = null;
     }
 
-    public PBaseException(LazyPythonClass cls, DynamicObject storage) {
+    public PBaseException(Object cls, DynamicObject storage) {
         super(cls, storage);
         this.args = null;
         this.hasMessageFormat = false;
@@ -119,7 +118,7 @@ public final class PBaseException extends PythonObject {
         this.messageArgs = null;
     }
 
-    public PBaseException(LazyPythonClass cls, DynamicObject storage, String format, Object[] args) {
+    public PBaseException(Object cls, DynamicObject storage, String format, Object[] args) {
         super(cls, storage);
         this.args = null;
         this.hasMessageFormat = true;
