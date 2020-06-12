@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -113,13 +114,16 @@ public class GeneratorBuiltins extends PythonBuiltins {
         return arguments;
     }
 
-    private static Object resumeGenerator(PGenerator self) {
+    private static Object resumeGenerator(PGenerator self, Object sendValue) {
         try {
+            self.setRunning(true);
+            PArguments.setSpecialArgument(self.getArguments(), sendValue);
             return self.getCurrentCallTarget().call(prepareArguments(self));
         } catch (PException e) {
             self.markAsFinished();
             throw e;
         } finally {
+            self.setRunning(false);
             self.setNextCallTarget();
             PArguments.setSpecialArgument(self.getArguments(), null);
         }
@@ -159,32 +163,46 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         public Object nextCached(VirtualFrame frame, PGenerator self,
-                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
+                        @Cached BranchProfile alreadyRunning) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
+            if (self.isRunning()) {
+                alreadyRunning.enter();
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
             try {
+                self.setRunning(true);
                 return call.execute(frame, null, null, prepareArguments(self));
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
             } finally {
+                self.setRunning(false);
                 self.setNextCallTarget();
             }
         }
 
         @Specialization(replaces = "nextCached")
         public Object next(VirtualFrame frame, PGenerator self,
-                        @Cached("createIndirectCall()") GenericInvokeNode call) {
+                        @Cached("createIndirectCall()") GenericInvokeNode call,
+                        @Cached BranchProfile alreadyRunning) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
+            if (self.isRunning()) {
+                alreadyRunning.enter();
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
             try {
+                self.setRunning(true);
                 return call.execute(frame, self.getCurrentCallTarget(), prepareArguments(self));
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
             } finally {
+                self.setRunning(false);
                 self.setNextCallTarget();
             }
         }
@@ -195,9 +213,13 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class SendNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object send(PGenerator self, Object value) {
-            PArguments.setSpecialArgument(self.getArguments(), value);
-            return resumeGenerator(self);
+        public Object send(PGenerator self, Object value,
+                        @Cached BranchProfile alreadyRunning) {
+            if (self.isRunning()) {
+                alreadyRunning.enter();
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
+            return resumeGenerator(self, value);
         }
     }
 
@@ -308,14 +330,24 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, @SuppressWarnings("unused") PNone tb,
-                        @Cached PrepareExceptionNode prepareExceptionNode) {
+                        @Cached PrepareExceptionNode prepareExceptionNode,
+                        @Cached BranchProfile alreadyRunning) {
+            if (self.isRunning()) {
+                alreadyRunning.enter();
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             return doThrow(self, instance);
         }
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, PTraceback tb,
-                        @Cached PrepareExceptionNode prepareExceptionNode) {
+                        @Cached PrepareExceptionNode prepareExceptionNode,
+                        @Cached BranchProfile alreadyRunning) {
+            if (self.isRunning()) {
+                alreadyRunning.enter();
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             instance.setTraceback(tb);
             return doThrow(self, instance);
@@ -328,8 +360,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 PException pException = PException.fromObject(instance, null);
-                PArguments.setSpecialArgument(self.getArguments(), pException);
-                return resumeGenerator(self);
+                return resumeGenerator(self, pException);
             } else {
                 // Unstarted generator, we cannot pass the exception into the generator as there is
                 // nothing that would handle it.
