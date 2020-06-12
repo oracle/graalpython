@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -43,7 +42,7 @@ public final class PMethod extends PythonBuiltinObject {
     final Object function;
     private final Object self;
 
-    public PMethod(LazyPythonClass cls, DynamicObject storage, Object self, Object function) {
+    public PMethod(Object cls, DynamicObject storage, Object self, Object function) {
         super(cls, storage);
         this.self = self;
         this.function = function;

@@ -582,13 +582,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
+        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
             getContext().setCurrentException(PException.fromExceptionInfo(val, (LazyTraceback) null));
             return PNone.NONE;
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
+        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
             getContext().setCurrentException(PException.fromExceptionInfo(val, tb));
             return PNone.NONE;
         }
@@ -678,7 +678,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object run(LazyPythonClass typ, PBaseException val, Object tb) {
+        Object run(Object typ, PBaseException val, Object tb) {
             if (val.getException() != null) {
                 ExceptionUtils.printPythonLikeStackTrace(val.getException());
             }
@@ -800,7 +800,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
          *
          */
         @Specialization
-        Object slots(Object module, LazyPythonClass pythonClass, String subKey,
+        Object slots(Object module, Object pythonClass, String subKey,
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             int idx;

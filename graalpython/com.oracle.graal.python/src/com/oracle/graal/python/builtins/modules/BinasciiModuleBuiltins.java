@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -204,11 +203,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         private PException oddLengthError(PythonModule self) {
-            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), ErrorMessages.ODD_LENGTH_STRING);
+            return raise(getAttrNode().execute(self, ERROR), ErrorMessages.ODD_LENGTH_STRING);
         }
 
         private PException nonHexError(PythonModule self) {
-            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), ErrorMessages.NON_HEX_DIGIT_FOUND);
+            return raise(getAttrNode().execute(self, ERROR), ErrorMessages.NON_HEX_DIGIT_FOUND);
         }
 
         private ReadAttributeFromObjectNode getAttrNode() {

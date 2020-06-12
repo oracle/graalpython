@@ -30,7 +30,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -48,7 +47,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 @ExportLibrary(InteropLibrary.class)
 public abstract class PSequence extends PythonBuiltinObject {
 
-    public PSequence(LazyPythonClass cls, DynamicObject storage) {
+    public PSequence(Object cls, DynamicObject storage) {
         super(cls, storage);
     }
 

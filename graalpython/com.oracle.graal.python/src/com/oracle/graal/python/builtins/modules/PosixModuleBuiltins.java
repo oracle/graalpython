@@ -114,7 +114,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -839,7 +838,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ScandirIterNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object doit(VirtualFrame frame, LazyPythonClass cls, Object pathArg,
+        Object doit(VirtualFrame frame, Object cls, Object pathArg,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String path = lib.asPath(pathArg);
             try {
@@ -857,7 +856,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class DirEntryNode extends PythonTernaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object doit(VirtualFrame frame, LazyPythonClass cls, String name, Object pathArg,
+        Object doit(VirtualFrame frame, Object cls, String name, Object pathArg,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String path = lib.asPath(pathArg);
             try {

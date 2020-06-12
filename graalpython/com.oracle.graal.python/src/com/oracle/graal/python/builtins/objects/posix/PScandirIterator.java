@@ -45,7 +45,6 @@ import java.nio.file.DirectoryStream;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -57,7 +56,7 @@ public class PScandirIterator extends PythonBuiltinObject {
     private final String path;
 
     @TruffleBoundary
-    public PScandirIterator(LazyPythonClass cls, DynamicObject storage, String path, DirectoryStream<TruffleFile> stream) {
+    public PScandirIterator(Object cls, DynamicObject storage, String path, DirectoryStream<TruffleFile> stream) {
         super(cls, storage);
         this.path = path;
         this.stream = stream;

@@ -96,9 +96,9 @@ public abstract class PythonBuiltins {
                     callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null, builtin.allowsDelete());
                 } else if (builtin.isClassmethod()) {
                     assert !builtin.isStaticmethod();
-                    callable = core.factory().createClassmethod(function);
+                    callable = core.factory().createClassmethodFromCallableObj(function);
                 } else if (builtin.isStaticmethod()) {
-                    callable = core.factory().createStaticmethod(function);
+                    callable = core.factory().createStaticmethodFromCallableObj(function);
                 }
                 setBuiltinFunction(builtin.name(), callable);
             }

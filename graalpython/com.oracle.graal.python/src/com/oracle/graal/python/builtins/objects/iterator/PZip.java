@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -37,7 +36,7 @@ public final class PZip extends PythonBuiltinObject {
 
     private final Object[] iterators;
 
-    public PZip(LazyPythonClass clazz, DynamicObject storage, Object[] iterators) {
+    public PZip(Object clazz, DynamicObject storage, Object[] iterators) {
         super(clazz, storage);
         this.iterators = iterators;
     }

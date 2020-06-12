@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.thread;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -51,7 +50,7 @@ public final class PLock extends AbstractPythonLock {
     private final Semaphore semaphore;
 
     @TruffleBoundary
-    public PLock(LazyPythonClass cls, DynamicObject storage) {
+    public PLock(Object cls, DynamicObject storage) {
         super(cls, storage);
         semaphore = new Semaphore(1);
     }

@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -158,11 +157,11 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return passExceptionNode.execute(frame);
     }
 
-    public PException raise(LazyPythonClass type, String string) {
+    public PException raise(Object type, String string) {
         return getRaiseNode().raise(factory().createBaseException(type, string, new Object[0]));
     }
 
-    public PException raise(LazyPythonClass exceptionType) {
+    public PException raise(Object exceptionType) {
         return getRaiseNode().raise(exceptionType);
     }
 

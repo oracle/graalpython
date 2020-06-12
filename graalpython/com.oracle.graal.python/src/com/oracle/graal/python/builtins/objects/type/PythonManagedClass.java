@@ -65,7 +65,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    protected PythonManagedClass(LazyPythonClass typeClass, DynamicObject storage, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
+    protected PythonManagedClass(Object typeClass, DynamicObject storage, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
         super(typeClass, storage);
         this.className = name;
 

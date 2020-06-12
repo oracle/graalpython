@@ -1488,7 +1488,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isValidTypeStr(typeStr)")
-        String getFormat(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") String typeStr) {
+        String getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") String typeStr) {
             return getDetectedEndianess();
         }
 

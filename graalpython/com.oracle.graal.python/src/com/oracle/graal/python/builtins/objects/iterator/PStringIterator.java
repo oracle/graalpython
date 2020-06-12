@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PStringIterator extends PBuiltinIterator {
@@ -33,7 +32,7 @@ public final class PStringIterator extends PBuiltinIterator {
     final String value;
     int index;
 
-    public PStringIterator(LazyPythonClass clazz, DynamicObject storage, String value) {
+    public PStringIterator(Object clazz, DynamicObject storage, String value) {
         super(clazz, storage);
         this.value = value;
     }

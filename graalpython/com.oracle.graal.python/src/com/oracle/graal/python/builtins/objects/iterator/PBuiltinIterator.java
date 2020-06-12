@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 /**
@@ -36,7 +35,7 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
 
     private boolean exhausted = false;
 
-    public PBuiltinIterator(LazyPythonClass clazz, DynamicObject storage) {
+    public PBuiltinIterator(Object clazz, DynamicObject storage) {
         super(clazz, storage);
     }
 

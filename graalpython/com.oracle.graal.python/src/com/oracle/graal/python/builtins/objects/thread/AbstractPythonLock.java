@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
@@ -50,7 +49,7 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
     public static final boolean DEFAULT_BLOCKING = true;
     public static final double UNSET_TIMEOUT = -1.0;
 
-    AbstractPythonLock(LazyPythonClass cls, DynamicObject storage) {
+    AbstractPythonLock(Object cls, DynamicObject storage) {
         super(cls, storage);
     }
 

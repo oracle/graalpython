@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -131,12 +130,12 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        LazyPythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
+        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Specialization
-        LazyPythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
+        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
@@ -185,12 +184,12 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPythonObject(self)")
-        LazyPythonClass getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonAbstractClass value) {
+        Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonAbstractClass value) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Fallback
-        LazyPythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
+        Object getClass(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
         }
 

@@ -116,7 +116,6 @@ import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -170,7 +169,7 @@ public abstract class PythonObjectFactory extends Node {
 
     protected abstract AllocationReporter executeTrace(Object o, long size);
 
-    protected abstract DynamicObject executeMakeStorage(LazyPythonClass o, boolean flag);
+    protected abstract DynamicObject executeMakeStorage(Object o, boolean flag);
 
     @Specialization(guards = "cls == cachedCls", limit = "getCallSiteInlineCacheMaxDepth()")
     static final DynamicObject makeStorageCachedType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") boolean flag,
@@ -183,14 +182,14 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     @Specialization(guards = "cls == cachedCls", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "makeStorageCachedType", assumptions = "singleContextAssumption()")
-    static final DynamicObject makeStorageCachedClass(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") boolean flag,
-                    @Cached("cls") LazyPythonClass cachedCls,
+    static final DynamicObject makeStorageCachedClass(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") boolean flag,
+                    @Cached("cls") Object cachedCls,
                     @Cached TypeNodes.GetInstanceShape getShapeNode) {
         return getShapeNode.execute(cachedCls).newInstance();
     }
 
     @Specialization(replaces = "makeStorageCachedClass")
-    static final DynamicObject makeStorageGeneric(LazyPythonClass o, @SuppressWarnings("unused") boolean flag,
+    static final DynamicObject makeStorageGeneric(Object o, @SuppressWarnings("unused") boolean flag,
                     @Cached TypeNodes.GetInstanceShape getShapeNode) {
         return newInstance(getShapeNode.execute(o));
     }
@@ -216,12 +215,8 @@ public abstract class PythonObjectFactory extends Node {
         return contextRef.get().getEnv().lookup(AllocationReporter.class);
     }
 
-    private static LazyPythonClass toLPC(Object cls) {
-        return LazyPythonClass.cast(cls);
-    }
-
     public final DynamicObject makeStorage(Object cls) {
-        return executeMakeStorage(toLPC(cls), true);
+        return executeMakeStorage(cls, true);
     }
 
     public final <T> T trace(T allocatedObject) {
@@ -238,14 +233,14 @@ public abstract class PythonObjectFactory extends Node {
      * shape had been cached, due to the additional shape lookup.
      */
     public PythonObject createPythonObject(Object cls) {
-        return createPythonObject(toLPC(cls), makeStorage(cls));
+        return createPythonObject(cls, makeStorage(cls));
     }
 
     /**
      * Creates a Python object with the given shape. Python object shapes store the class in the
      * ObjectType.
      */
-    public PythonObject createPythonObject(LazyPythonClass klass, DynamicObject storage) {
+    public PythonObject createPythonObject(Object klass, DynamicObject storage) {
         return trace(new PythonObject(klass, storage));
     }
 
@@ -254,7 +249,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public SuperObject createSuperObject(Object self) {
-        return trace(new SuperObject(toLPC(self), makeStorage(self)));
+        return trace(new SuperObject(self, makeStorage(self)));
     }
 
     /*
@@ -281,7 +276,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PInt createInt(Object cls, BigInteger value) {
-        return trace(new PInt(toLPC(cls), makeStorage(cls), value));
+        return trace(new PInt(cls, makeStorage(cls), value));
     }
 
     public PFloat createFloat(double value) {
@@ -289,7 +284,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PFloat createFloat(Object cls, double value) {
-        return trace(new PFloat(toLPC(cls), makeStorage(cls), value));
+        return trace(new PFloat(cls, makeStorage(cls), value));
     }
 
     public PString createString(String string) {
@@ -297,7 +292,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PString createString(Object cls, String string) {
-        return trace(new PString(toLPC(cls), makeStorage(cls), string));
+        return trace(new PString(cls, makeStorage(cls), string));
     }
 
     public PString createString(CharSequence string) {
@@ -305,7 +300,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PString createString(Object cls, CharSequence string) {
-        return trace(new PString(toLPC(cls), makeStorage(cls), string));
+        return trace(new PString(cls, makeStorage(cls), string));
     }
 
     public PBytes createBytes(byte[] array) {
@@ -313,7 +308,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBytes createBytes(Object cls, byte[] array) {
-        return trace(new PBytes(toLPC(cls), makeStorage(cls), array));
+        return trace(new PBytes(cls, makeStorage(cls), array));
     }
 
     public PBytes createBytes(SequenceStorage storage) {
@@ -321,7 +316,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBytes createBytes(Object cls, SequenceStorage storage) {
-        return trace(new PBytes(toLPC(cls), makeStorage(cls), storage));
+        return trace(new PBytes(cls, makeStorage(cls), storage));
     }
 
     public final PTuple createEmptyTuple() {
@@ -341,15 +336,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTuple createTuple(Object cls, Object[] objects) {
-        return trace(new PTuple(toLPC(cls), makeStorage(cls), objects));
+        return trace(new PTuple(cls, makeStorage(cls), objects));
     }
 
     public final PTuple createTuple(Object cls, SequenceStorage store) {
-        return trace(new PTuple(toLPC(cls), makeStorage(cls), store));
+        return trace(new PTuple(cls, makeStorage(cls), store));
     }
 
     public final PComplex createComplex(Object cls, double real, double imag) {
-        return trace(new PComplex(toLPC(cls), makeStorage(cls), real, imag));
+        return trace(new PComplex(cls, makeStorage(cls), real, imag));
     }
 
     public final PComplex createComplex(double real, double imag) {
@@ -373,7 +368,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PRandom createRandom(Object cls) {
-        return trace(new PRandom(toLPC(cls), makeStorage(cls)));
+        return trace(new PRandom(cls, makeStorage(cls)));
     }
 
     /*
@@ -385,19 +380,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PythonModule createPythonModule(Object cls) {
-        return trace(new PythonModule(toLPC(cls), makeStorage(cls)));
+        return trace(new PythonModule(cls, makeStorage(cls)));
     }
 
     public PythonClass createPythonClass(Object metaclass, String name, PythonAbstractClass[] bases) {
-        return trace(new PythonClass(toLPC(metaclass), makeStorage(metaclass), name, bases));
+        return trace(new PythonClass(metaclass, makeStorage(metaclass), name, bases));
     }
 
     public PMemoryView createMemoryView(Object cls, Object value) {
-        return trace(new PMemoryView(toLPC(cls), makeStorage(cls), value));
+        return trace(new PMemoryView(cls, makeStorage(cls), value));
     }
 
     public final PMethod createMethod(Object cls, Object self, Object function) {
-        return trace(new PMethod(toLPC(cls), makeStorage(cls), self, function));
+        return trace(new PMethod(cls, makeStorage(cls), self, function));
     }
 
     public final PMethod createMethod(Object self, Object function) {
@@ -409,7 +404,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object cls, Object self, PBuiltinFunction function) {
-        return trace(new PBuiltinMethod(toLPC(cls), makeStorage(cls), self, function));
+        return trace(new PBuiltinMethod(cls, makeStorage(cls), self, function));
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function) {
@@ -431,35 +426,35 @@ public abstract class PythonObjectFactory extends Node {
                         defaultsStableAssumption));
     }
 
-    public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, int numDefaults, RootCallTarget callTarget) {
+    public PBuiltinFunction createBuiltinFunction(String name, Object type, int numDefaults, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(name, type, numDefaults, callTarget));
     }
 
-    public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {
+    public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {
         return trace(new GetSetDescriptor(get, set, name, type));
     }
 
-    public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, LazyPythonClass type, boolean allowsDelete) {
+    public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type, boolean allowsDelete) {
         return trace(new GetSetDescriptor(get, set, name, type, allowsDelete));
     }
 
-    public HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, LazyPythonClass type) {
+    public HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, Object type) {
         return trace(new HiddenKeyDescriptor(key, type));
     }
 
-    public PDecoratedMethod createClassmethod(LazyPythonClass cls) {
+    public PDecoratedMethod createClassmethod(Object cls) {
         return trace(new PDecoratedMethod(cls, makeStorage(cls)));
     }
 
-    public PDecoratedMethod createClassmethod(Object callable) {
+    public PDecoratedMethod createClassmethodFromCallableObj(Object callable) {
         return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PClassmethod.newInstance(), callable));
     }
 
-    public PDecoratedMethod createStaticmethod(LazyPythonClass cls) {
+    public PDecoratedMethod createStaticmethod(Object cls) {
         return trace(new PDecoratedMethod(cls, makeStorage(cls)));
     }
 
-    public PDecoratedMethod createStaticmethod(Object callable) {
+    public PDecoratedMethod createStaticmethodFromCallableObj(Object callable) {
         return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.newInstance(), callable));
     }
 
@@ -480,7 +475,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PList createList(Object cls, SequenceStorage storage) {
-        return trace(new PList(toLPC(cls), makeStorage(cls), storage));
+        return trace(new PList(cls, makeStorage(cls), storage));
     }
 
     public PList createList(Object cls) {
@@ -492,15 +487,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PList createList(Object cls, Object[] array) {
-        return trace(new PList(toLPC(cls), makeStorage(cls), SequenceStorageFactory.createStorage(array)));
+        return trace(new PList(cls, makeStorage(cls), SequenceStorageFactory.createStorage(array)));
     }
 
     public PSet createSet(Object cls) {
-        return trace(new PSet(toLPC(cls), makeStorage(cls)));
+        return trace(new PSet(cls, makeStorage(cls)));
     }
 
     public PSet createSet(PythonClass cls, HashingStorage storage) {
-        return trace(new PSet(toLPC(cls), makeStorage(cls), storage));
+        return trace(new PSet(cls, makeStorage(cls), storage));
     }
 
     public PSet createSet(HashingStorage storage) {
@@ -508,11 +503,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PFrozenSet createFrozenSet(Object cls) {
-        return trace(new PFrozenSet(toLPC(cls), makeStorage(cls)));
+        return trace(new PFrozenSet(cls, makeStorage(cls)));
     }
 
     public PFrozenSet createFrozenSet(Object cls, HashingStorage storage) {
-        return trace(new PFrozenSet(toLPC(cls), makeStorage(cls), storage));
+        return trace(new PFrozenSet(cls, makeStorage(cls), storage));
     }
 
     public PFrozenSet createFrozenSet(HashingStorage storage) {
@@ -528,7 +523,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PDict createDict(Object cls) {
-        return trace(new PDict(toLPC(cls), makeStorage(cls)));
+        return trace(new PDict(cls, makeStorage(cls)));
     }
 
     public PDict createDict(EconomicMap<? extends Object, Object> map) {
@@ -591,15 +586,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(toLPC(cls), makeStorage(cls), new DynamicObjectStorage(object.getStorage())));
+        return trace(new PMappingproxy(cls, makeStorage(cls), new DynamicObjectStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(Object cls, HashingStorage storage) {
-        return trace(new PMappingproxy(toLPC(cls), makeStorage(cls), storage));
+        return trace(new PMappingproxy(cls, makeStorage(cls), storage));
     }
 
     public PReferenceType createReferenceType(Object cls, Object object, Object callback, ReferenceQueue<Object> queue) {
-        return trace(new PReferenceType(toLPC(cls), makeStorage(cls), object, callback, queue));
+        return trace(new PReferenceType(cls, makeStorage(cls), object, callback, queue));
     }
 
     public PReferenceType createReferenceType(Object object, Object callback, ReferenceQueue<Object> queue) {
@@ -635,16 +630,16 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBaseException createBaseException(Object cls, PTuple args) {
-        return trace(new PBaseException(toLPC(cls), makeStorage(cls), args));
+        return trace(new PBaseException(cls, makeStorage(cls), args));
     }
 
     public PBaseException createBaseException(Object cls, String format, Object[] args) {
         assert format != null;
-        return trace(new PBaseException(toLPC(cls), makeStorage(cls), format, args));
+        return trace(new PBaseException(cls, makeStorage(cls), format, args));
     }
 
     public PBaseException createBaseException(Object cls) {
-        return trace(new PBaseException(toLPC(cls), makeStorage(cls)));
+        return trace(new PBaseException(cls, makeStorage(cls)));
     }
 
     /*
@@ -652,31 +647,31 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PArray createArray(Object cls, byte[] array) {
-        return trace(new PArray(toLPC(cls), makeStorage(cls), new ByteSequenceStorage(array)));
+        return trace(new PArray(cls, makeStorage(cls), new ByteSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, int[] array) {
-        return trace(new PArray(toLPC(cls), makeStorage(cls), new IntSequenceStorage(array)));
+        return trace(new PArray(cls, makeStorage(cls), new IntSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, double[] array) {
-        return trace(new PArray(toLPC(cls), makeStorage(cls), new DoubleSequenceStorage(array)));
+        return trace(new PArray(cls, makeStorage(cls), new DoubleSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, char[] array) {
-        return trace(new PArray(toLPC(cls), makeStorage(cls), new CharSequenceStorage(array)));
+        return trace(new PArray(cls, makeStorage(cls), new CharSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, long[] array) {
-        return trace(new PArray(toLPC(cls), makeStorage(cls), new LongSequenceStorage(array)));
+        return trace(new PArray(cls, makeStorage(cls), new LongSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, SequenceStorage store) {
-        return trace(new PArray(toLPC(cls), makeStorage(cls), store));
+        return trace(new PArray(cls, makeStorage(cls), store));
     }
 
     public PByteArray createByteArray(Object cls, byte[] array) {
-        return trace(new PByteArray(toLPC(cls), makeStorage(cls), array));
+        return trace(new PByteArray(cls, makeStorage(cls), array));
     }
 
     public PByteArray createByteArray(SequenceStorage storage) {
@@ -684,7 +679,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PByteArray createByteArray(Object cls, SequenceStorage storage) {
-        return trace(new PByteArray(toLPC(cls), makeStorage(cls), storage));
+        return trace(new PByteArray(cls, makeStorage(cls), storage));
     }
 
     public PArray createArray(byte[] array) {
@@ -724,7 +719,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PStringReverseIterator createStringReverseIterator(Object cls, String str) {
-        return trace(new PStringReverseIterator(toLPC(cls), makeStorage(cls), str));
+        return trace(new PStringReverseIterator(cls, makeStorage(cls), str));
     }
 
     public PIntegerSequenceIterator createIntegerSequenceIterator(IntSequenceStorage storage) {
@@ -744,7 +739,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PSequenceReverseIterator createSequenceReverseIterator(Object cls, Object sequence, int lengthHint) {
-        return trace(new PSequenceReverseIterator(toLPC(cls), makeStorage(cls), sequence, lengthHint));
+        return trace(new PSequenceReverseIterator(cls, makeStorage(cls), sequence, lengthHint));
     }
 
     public PIntegerIterator createRangeIterator(int start, int stop, int step, ConditionProfile stepPositiveProfile) {
@@ -782,15 +777,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PEnumerate createEnumerate(Object cls, Object iterator, long start) {
-        return trace(new PEnumerate(toLPC(cls), makeStorage(cls), iterator, start));
+        return trace(new PEnumerate(cls, makeStorage(cls), iterator, start));
     }
 
     public PMap createMap(Object cls) {
-        return trace(new PMap(toLPC(cls), makeStorage(cls)));
+        return trace(new PMap(cls, makeStorage(cls)));
     }
 
     public PZip createZip(Object cls, Object[] iterables) {
-        return trace(new PZip(toLPC(cls), makeStorage(cls), iterables));
+        return trace(new PZip(cls, makeStorage(cls), iterables));
     }
 
     public PForeignArrayIterator createForeignArrayIterator(Object iterable) {
@@ -798,7 +793,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBuffer createBuffer(Object cls, Object iterable, boolean readonly) {
-        return trace(new PBuffer(toLPC(cls), makeStorage(cls), iterable, readonly));
+        return trace(new PBuffer(cls, makeStorage(cls), iterable, readonly));
     }
 
     public PBuffer createBuffer(Object iterable, boolean readonly) {
@@ -813,13 +808,13 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.newInstance(), ct, codestring, flags, firstlineno, lnotab));
     }
 
-    public PCode createCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
+    public PCode createCode(Object cls, RootCallTarget callTarget, Signature signature,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
-        return trace(new PCode(toLPC(cls), makeStorage(cls), callTarget, signature,
+        return trace(new PCode(cls, makeStorage(cls), callTarget, signature,
                         nlocals, stacksize, flags,
                         codestring, constants, names,
                         varnames, freevars, cellvars,
@@ -827,7 +822,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, String separator) {
-        return trace(new PZipImporter(toLPC(cls), makeStorage(cls), zipDirectoryCache, separator));
+        return trace(new PZipImporter(cls, makeStorage(cls), zipDirectoryCache, separator));
     }
 
     /*
@@ -839,11 +834,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PSocket createSocket(Object cls, int family, int type, int proto) {
-        return trace(new PSocket(toLPC(cls), makeStorage(cls), family, type, proto));
+        return trace(new PSocket(cls, makeStorage(cls), family, type, proto));
     }
 
     public PSocket createSocket(Object cls, int family, int type, int proto, int fileno) {
-        return trace(new PSocket(toLPC(cls), makeStorage(cls), family, type, proto, fileno));
+        return trace(new PSocket(cls, makeStorage(cls), family, type, proto, fileno));
     }
 
     /*
@@ -855,7 +850,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PLock createLock(Object cls) {
-        return trace(new PLock(toLPC(cls), makeStorage(cls)));
+        return trace(new PLock(cls, makeStorage(cls)));
     }
 
     public PRLock createRLock() {
@@ -863,7 +858,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PRLock createRLock(Object cls) {
-        return trace(new PRLock(toLPC(cls), makeStorage(cls)));
+        return trace(new PRLock(cls, makeStorage(cls)));
     }
 
     public PThread createPythonThread(Thread thread) {
@@ -871,15 +866,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PThread createPythonThread(Object cls, Thread thread) {
-        return trace(new PThread(toLPC(cls), makeStorage(cls), thread));
+        return trace(new PThread(cls, makeStorage(cls), thread));
     }
 
     public PSemLock createSemLock(Object cls, String name, int kind, Semaphore sharedSemaphore) {
-        return trace(new PSemLock(toLPC(cls), makeStorage(cls), name, kind, sharedSemaphore));
+        return trace(new PSemLock(cls, makeStorage(cls), name, kind, sharedSemaphore));
     }
 
     public PScandirIterator createScandirIterator(Object cls, String path, DirectoryStream<TruffleFile> next) {
-        return trace(new PScandirIterator(toLPC(cls), makeStorage(cls), path, next));
+        return trace(new PScandirIterator(cls, makeStorage(cls), path, next));
     }
 
     public PDirEntry createDirEntry(String name, TruffleFile file) {
@@ -887,22 +882,22 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public Object createDirEntry(Object cls, String name, TruffleFile file) {
-        return trace(new PDirEntry(toLPC(cls), makeStorage(cls), name, file));
+        return trace(new PDirEntry(cls, makeStorage(cls), name, file));
     }
 
     public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {
         return trace(new PMMap(PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMMap.newInstance(), channel, length, offset));
     }
 
-    public PMMap createMMap(LazyPythonClass clazz, SeekableByteChannel channel, long length, long offset) {
+    public PMMap createMMap(Object clazz, SeekableByteChannel channel, long length, long offset) {
         return trace(new PMMap(clazz, makeStorage(clazz), channel, length, offset));
     }
 
-    public PLZMACompressor createLZMACompressor(LazyPythonClass clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
         return trace(new PLZMACompressor(clazz, makeStorage(clazz), lzmaStream, bos));
     }
 
-    public PLZMADecompressor createLZMADecompressor(LazyPythonClass clazz, int format, int memlimit) {
+    public PLZMADecompressor createLZMADecompressor(Object clazz, int format, int memlimit) {
         return trace(new PLZMADecompressor(clazz, makeStorage(clazz), format, memlimit));
     }
 }

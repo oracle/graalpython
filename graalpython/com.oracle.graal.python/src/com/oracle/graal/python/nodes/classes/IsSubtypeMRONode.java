@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -67,7 +66,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
         return IsSubtypeMRONodeGen.create();
     }
 
-    public abstract boolean execute(LazyPythonClass derived, LazyPythonClass clazz);
+    public abstract boolean execute(Object derived, Object clazz);
 
     @Specialization
     protected boolean isSubtype(PythonBuiltinClassType derived, PythonBuiltinClassType clazz) {

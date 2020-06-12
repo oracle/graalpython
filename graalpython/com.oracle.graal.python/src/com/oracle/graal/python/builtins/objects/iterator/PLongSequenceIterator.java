@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -35,7 +34,7 @@ public final class PLongSequenceIterator extends PLongIterator {
     int index;
     protected boolean stopIterationReached = false;
 
-    public PLongSequenceIterator(LazyPythonClass clazz, DynamicObject storage, LongSequenceStorage sequence) {
+    public PLongSequenceIterator(Object clazz, DynamicObject storage, LongSequenceStorage sequence) {
         super(clazz, storage);
         this.sequence = sequence;
     }

@@ -34,11 +34,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PythonModule extends PythonObject {
-    public PythonModule(LazyPythonClass clazz, DynamicObject storage) {
+    public PythonModule(Object clazz, DynamicObject storage) {
         super(clazz, storage);
     }
 

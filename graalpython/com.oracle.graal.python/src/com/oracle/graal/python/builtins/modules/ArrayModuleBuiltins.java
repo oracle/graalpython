@@ -269,7 +269,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return n.longValue();
         }
 
-        private PArray makeEmptyArray(LazyPythonClass cls, char type) {
+        private PArray makeEmptyArray(Object cls, char type) {
             switch (type) {
                 case 'c':
                 case 'b':

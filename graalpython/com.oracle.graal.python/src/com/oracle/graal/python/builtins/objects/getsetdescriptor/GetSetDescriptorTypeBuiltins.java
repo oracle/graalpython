@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -114,11 +113,11 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Child private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final BranchProfile errorBranch = BranchProfile.create();
 
-        public abstract boolean execute(LazyPythonClass descrType, String name, Object obj);
+        public abstract boolean execute(Object descrType, String name, Object obj);
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
         @Specialization(limit = "3")
-        boolean descr_check(LazyPythonClass descrType, String name, Object obj,
+        boolean descr_check(Object descrType, String name, Object obj,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
             if (PGuards.isNone(obj)) {
                 // object's descriptors (__class__,...) need to work on every object including None
@@ -215,7 +214,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             throw raise(AttributeError, descr.getKey().getName());
         }
 
-        private Object getTypeName(LazyPythonClass descrType) {
+        private Object getTypeName(Object descrType) {
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());
@@ -255,7 +254,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             return writeNode.execute(obj, descr.getKey(), value);
         }
 
-        private Object getTypeName(LazyPythonClass descrType) {
+        private Object getTypeName(Object descrType) {
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());
@@ -300,7 +299,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private Object getTypeName(LazyPythonClass descrType) {
+        private Object getTypeName(Object descrType) {
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());

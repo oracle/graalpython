@@ -42,18 +42,17 @@ package com.oracle.graal.python.builtins.objects.lzma;
 
 import java.io.ByteArrayOutputStream;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.object.DynamicObject;
-
 import org.tukaani.xz.FinishableOutputStream;
+
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PLZMACompressor extends PythonObject {
 
     private FinishableOutputStream lzmaStream;
     private ByteArrayOutputStream bos;
 
-    public PLZMACompressor(LazyPythonClass clazz, DynamicObject storage, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+    public PLZMACompressor(Object clazz, DynamicObject storage, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
         super(clazz, storage);
         this.lzmaStream = lzmaStream;
         this.bos = bos;

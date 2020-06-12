@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -59,8 +61,6 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class CodeNodes {
 
@@ -82,7 +82,7 @@ public abstract class CodeNodes {
         @CompilationFinal private static Source emptySource;
 
         @SuppressWarnings("try")
-        public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount,
+        public PCode execute(VirtualFrame frame, Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
@@ -103,7 +103,7 @@ public abstract class CodeNodes {
         }
 
         @CompilerDirectives.TruffleBoundary
-        private PCode createCode(PythonContext context, LazyPythonClass cls, @SuppressWarnings("unused") int argcount,
+        private PCode createCode(PythonContext context, Object cls, @SuppressWarnings("unused") int argcount,
                         @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
@@ -122,7 +122,7 @@ public abstract class CodeNodes {
                             firstlineno, lnotab);
         }
 
-        public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, String sourceCode, int flags, byte[] codedata, String filenamePath,
+        public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") Object cls, String sourceCode, int flags, byte[] codedata, String filenamePath,
                         int firstlineno, byte[] lnotab) {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);

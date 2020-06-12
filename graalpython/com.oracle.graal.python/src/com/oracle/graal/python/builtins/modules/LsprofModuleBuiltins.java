@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -87,7 +86,7 @@ public class LsprofModuleBuiltins extends PythonBuiltins {
     abstract static class LsprofNew extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Profiler doit(LazyPythonClass cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        Profiler doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             Env env = getContext().getEnv();
             Map<String, InstrumentInfo> instruments = env.getInstruments();
             InstrumentInfo instrumentInfo = instruments.get(CPUSamplerInstrument.ID);
@@ -110,7 +109,7 @@ class Profiler extends PythonBuiltinObject {
     double time;
     final CPUSampler sampler;
 
-    public Profiler(LazyPythonClass cls, DynamicObject storage, CPUSampler sampler) {
+    public Profiler(Object cls, DynamicObject storage, CPUSampler sampler) {
         super(cls, storage);
         this.sampler = sampler;
         this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());

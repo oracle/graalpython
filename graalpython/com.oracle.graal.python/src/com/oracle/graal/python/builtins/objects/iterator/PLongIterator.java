@@ -25,12 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PLongIterator extends PBuiltinIterator {
 
-    public PLongIterator(LazyPythonClass clazz, DynamicObject storage) {
+    public PLongIterator(Object clazz, DynamicObject storage) {
         super(clazz, storage);
     }
 

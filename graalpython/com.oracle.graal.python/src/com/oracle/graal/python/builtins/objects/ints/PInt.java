@@ -25,16 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
@@ -62,7 +62,7 @@ public final class PInt extends PythonBuiltinObject {
 
     private final BigInteger value;
 
-    public PInt(LazyPythonClass clazz, DynamicObject storage, BigInteger value) {
+    public PInt(Object clazz, DynamicObject storage, BigInteger value) {
         super(clazz, storage);
         assert value != null;
         this.value = value;

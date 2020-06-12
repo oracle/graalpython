@@ -641,7 +641,7 @@ public final class DictBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterable);
         }
 
-        protected boolean isBuiltinType(LazyPythonClass cls) {
+        protected boolean isBuiltinType(Object cls) {
             PythonBuiltinClassType type = null;
             if (cls instanceof PythonBuiltinClass) {
                 type = ((PythonBuiltinClass) cls).getType();
@@ -651,7 +651,7 @@ public final class DictBuiltins extends PythonBuiltins {
             return type == PythonBuiltinClassType.PDict;
         }
 
-        protected boolean hasBuiltinSetItem(LazyPythonClass cls, PythonObjectLibrary lib) {
+        protected boolean hasBuiltinSetItem(Object cls, PythonObjectLibrary lib) {
             Object attr = lib.lookupAttribute(cls, __SETITEM__);
             return attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction;
         }

@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -34,11 +33,11 @@ public class PFrozenSet extends PBaseSet {
 
     private long hash = -1;
 
-    public PFrozenSet(LazyPythonClass clazz, DynamicObject storage) {
+    public PFrozenSet(Object clazz, DynamicObject storage) {
         super(clazz, storage);
     }
 
-    public PFrozenSet(LazyPythonClass clazz, DynamicObject storage, HashingStorage store) {
+    public PFrozenSet(Object clazz, DynamicObject storage, HashingStorage store) {
         super(clazz, storage, store);
     }
 

@@ -333,20 +333,20 @@ public abstract class TypeNodes {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class GetSuperClassNode extends Node {
 
-        public abstract LazyPythonClass execute(Object obj);
+        public abstract Object execute(Object obj);
 
         @Specialization
-        static LazyPythonClass doManaged(PythonManagedClass obj) {
+        static Object doManaged(PythonManagedClass obj) {
             return obj.getSuperClass();
         }
 
         @Specialization
-        static LazyPythonClass doBuiltin(PythonBuiltinClassType obj) {
+        static Object doBuiltin(PythonBuiltinClassType obj) {
             return obj.getBase();
         }
 
         @Specialization
-        static LazyPythonClass doNative(PythonNativeClass obj,
+        static Object doNative(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
@@ -354,7 +354,7 @@ public abstract class TypeNodes {
             if (PGuards.isPNone(result)) {
                 return null;
             } else if (result instanceof PythonAbstractClass) {
-                return (PythonAbstractClass) result;
+                return result;
             }
             CompilerDirectives.transferToInterpreter();
             throw raise.raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
@@ -871,7 +871,7 @@ public abstract class TypeNodes {
     @ReportPolymorphism
     public abstract static class GetInstanceShape extends PNodeWithContext {
 
-        public abstract Shape execute(LazyPythonClass clazz);
+        public abstract Shape execute(Object clazz);
 
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
         Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
@@ -902,7 +902,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
-        Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz,
+        Shape doError(@SuppressWarnings("unused") Object clazz,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }

@@ -239,7 +239,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
 
         @SuppressWarnings("unused")
-        protected Object create(LazyPythonClass cls, byte[] barr) {
+        protected Object create(Object cls, byte[] barr) {
             throw new IllegalStateException("should not reach");
         }
 
@@ -320,7 +320,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BytesNode extends CreateByteOrByteArrayNode {
         @Override
-        protected final Object create(LazyPythonClass cls, byte[] barr) {
+        protected final Object create(Object cls, byte[] barr) {
             return factory().createBytes(cls, barr);
         }
     }
@@ -331,7 +331,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ByteArrayNode extends CreateByteOrByteArrayNode {
         @Override
-        protected final Object create(LazyPythonClass cls, byte[] barr) {
+        protected final Object create(Object cls, byte[] barr) {
             return factory().createByteArray(cls, barr);
         }
     }
@@ -350,14 +350,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile isComplexTypeProfile;
 
-        private PComplex createComplex(LazyPythonClass cls, double real, double imaginary) {
+        private PComplex createComplex(Object cls, double real, double imaginary) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
                 return factory().createComplex(real, imaginary);
             }
             return factory().createComplex(cls, real, imaginary);
         }
 
-        private PComplex createComplex(LazyPythonClass cls, PComplex value) {
+        private PComplex createComplex(Object cls, PComplex value) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
                 return value;
             }
@@ -779,7 +779,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictionaryNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        public PDict dictEmpty(LazyPythonClass cls, Object[] args, PKeyword[] keywordArgs) {
+        public PDict dictEmpty(Object cls, Object[] args, PKeyword[] keywordArgs) {
             return factory().createDict(cls);
         }
     }
@@ -1097,12 +1097,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private HashingCollectionNodes.SetItemNode setItemNode;
 
         @Specialization(guards = "isNoValue(arg)")
-        public PFrozenSet frozensetEmpty(LazyPythonClass cls, @SuppressWarnings("unused") PNone arg) {
+        public PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg) {
             return factory().createFrozenSet(cls);
         }
 
         @Specialization
-        public PFrozenSet frozenset(VirtualFrame frame, LazyPythonClass cls, String arg) {
+        public PFrozenSet frozenset(VirtualFrame frame, Object cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             for (int i = 0; i < PString.length(arg); i++) {
                 getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
@@ -1111,7 +1111,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
-        public PFrozenSet frozensetIterable(VirtualFrame frame, LazyPythonClass cls, Object iterable,
+        public PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
@@ -1999,7 +1999,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ZipNode extends PythonBuiltinNode {
         @Specialization
-        PZip zip(VirtualFrame frame, LazyPythonClass cls, Object[] args,
+        PZip zip(VirtualFrame frame, Object cls, Object[] args,
                         @Cached("create()") GetIteratorNode getIterator) {
             Object[] iterables = new Object[args.length];
             for (int i = 0; i < args.length; i++) {
@@ -2268,7 +2268,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // __class_getitem__: if they are plain functions, make them
                     // classmethods
                     if (value instanceof PFunction) {
-                        pythonClass.setAttribute(key, factory().createClassmethod(value));
+                        pythonClass.setAttribute(key, factory().createClassmethodFromCallableObj(value));
                     } else {
                         pythonClass.setAttribute(key, value);
                     }
@@ -2780,17 +2780,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object method(LazyPythonClass cls, PFunction func, Object self) {
+        Object method(Object cls, PFunction func, Object self) {
             return factory().createMethod(cls, self, func);
         }
 
         @Specialization
-        Object methodBuiltin(@SuppressWarnings("unused") LazyPythonClass cls, PBuiltinFunction func, Object self) {
+        Object methodBuiltin(@SuppressWarnings("unused") Object cls, PBuiltinFunction func, Object self) {
             return factory().createMethod(self, func);
         }
 
         @Specialization
-        Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
+        Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object func, Object self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
@@ -2810,7 +2810,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
         @Specialization
-        Object method(LazyPythonClass cls, Object self, PBuiltinFunction func) {
+        Object method(Object cls, Object self, PBuiltinFunction func) {
             return factory().createBuiltinMethod(cls, self, func);
         }
     }
@@ -2966,12 +2966,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonBuiltinNode {
         @Specialization(guards = "args.length == 0")
-        Object initNoArgs(LazyPythonClass cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        Object initNoArgs(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createBaseException(cls);
         }
 
         @Specialization(guards = "args.length != 0")
-        Object initArgs(LazyPythonClass cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        Object initArgs(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createBaseException(cls, factory().createTuple(args));
         }
     }
@@ -3128,7 +3128,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
         @Specialization
-        public PMemoryView doGeneric(LazyPythonClass cls, Object value) {
+        public PMemoryView doGeneric(Object cls, Object value) {
             return factory().createMemoryView(cls, value);
         }
     }
@@ -3138,7 +3138,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SuperInitNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object doObjectIndirect(LazyPythonClass self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object) {
+        Object doObjectIndirect(Object self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object) {
             return factory().createSuperObject(self);
         }
     }
@@ -3166,7 +3166,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassmethodNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doObjectIndirect(LazyPythonClass self, @SuppressWarnings("unused") Object callable) {
+        Object doObjectIndirect(Object self, @SuppressWarnings("unused") Object callable) {
             return factory().createClassmethod(self);
         }
     }
@@ -3175,7 +3175,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doObjectIndirect(LazyPythonClass self, @SuppressWarnings("unused") Object callable) {
+        Object doObjectIndirect(Object self, @SuppressWarnings("unused") Object callable) {
             return factory().createStaticmethod(self);
         }
     }
@@ -3184,7 +3184,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MapNode extends PythonVarargsBuiltinNode {
         @Specialization
-        PMap doit(LazyPythonClass self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
+        PMap doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createMap(self);
         }
     }

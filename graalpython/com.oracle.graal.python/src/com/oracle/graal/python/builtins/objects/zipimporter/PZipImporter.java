@@ -37,7 +37,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -115,7 +114,7 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(LazyPythonClass cls, DynamicObject storage, PDict zipDirectoryCache, String separator) {
+    public PZipImporter(Object cls, DynamicObject storage, PDict zipDirectoryCache, String separator) {
         super(cls, storage);
         this.archive = null;
         this.prefix = null;
