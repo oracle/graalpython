@@ -74,6 +74,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     protected final String name;
     protected final String rname;
     protected final Supplier<NotImplementedHandler> handlerFactory;
+    private final boolean alwaysCheckReverse;
 
     @Child private CallBinaryMethodNode dispatchNode;
     @Child private CallBinaryMethodNode reverseDispatchNode;
@@ -103,27 +104,32 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
-    LookupAndCallBinaryNode(String name, String rname, Supplier<NotImplementedHandler> handlerFactory) {
+    LookupAndCallBinaryNode(String name, String rname, Supplier<NotImplementedHandler> handlerFactory, boolean alwaysCheckReverse) {
         this.name = name;
         this.rname = rname;
         this.handlerFactory = handlerFactory;
+        this.alwaysCheckReverse = alwaysCheckReverse;
     }
 
     public static LookupAndCallBinaryNode create(String name) {
-        return LookupAndCallBinaryNodeGen.create(name, null, null);
+        return LookupAndCallBinaryNodeGen.create(name, null, null, false);
     }
 
     public static LookupAndCallBinaryNode createReversible(String name, String reverseName, Supplier<NotImplementedHandler> handlerFactory) {
         assert name.startsWith("__") && reverseName.startsWith("__r");
-        return LookupAndCallBinaryNodeGen.create(name, reverseName, handlerFactory);
+        return LookupAndCallBinaryNodeGen.create(name, reverseName, handlerFactory, false);
     }
 
     public static LookupAndCallBinaryNode create(String name, String rname) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, null);
+        return LookupAndCallBinaryNodeGen.create(name, rname, null, false);
+    }
+
+    public static LookupAndCallBinaryNode create(String name, String rname, boolean alwaysCheckReverse) {
+        return LookupAndCallBinaryNodeGen.create(name, rname, null, alwaysCheckReverse);
     }
 
     public static LookupAndCallBinaryNode create(String name, String rname, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, handlerFactory);
+        return LookupAndCallBinaryNodeGen.create(name, rname, handlerFactory, false);
     }
 
     protected Object getMethod(Object receiver, String methodName) {
@@ -316,7 +322,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
         Object leftCallable = getattr.execute(leftClass);
         Object rightClass = libRight.getLazyPythonClass(right);
         Object rightCallable = getattrR.execute(rightClass);
-        if (leftCallable == rightCallable) {
+        if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
         if (leftCallable != PNone.NO_VALUE) {
