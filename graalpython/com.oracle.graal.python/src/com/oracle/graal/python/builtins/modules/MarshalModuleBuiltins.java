@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -74,12 +73,10 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -92,6 +89,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
@@ -425,47 +423,21 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePCode(VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
+        void handlePCode(@SuppressWarnings("unused") VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
-            writeInt(c.getArgcount(), version, buffer);
-            writeInt(c.getPositionalOnlyArgCount(), version, buffer);
-            writeInt(c.getKwonlyargcount(), version, buffer);
-            writeInt(c.getNlocals(), version, buffer);
-            writeInt(c.getStacksize(), version, buffer);
+            writeString(getSourceCode(c), version, buffer);
             writeInt(c.getFlags(), version, buffer);
-            writeBytes(c.getCodestring() == null ? new byte[0] : c.getCodestring(), version, buffer);
-            getRecursiveNode().execute(frame, internStrings(c.getConstants()), version, buffer);
-            getRecursiveNode().execute(frame, internStrings(c.getNames()), version, buffer);
-            getRecursiveNode().execute(frame, internStrings(c.getVarnames()), version, buffer);
-            getRecursiveNode().execute(frame, internStrings(c.getFreeVars()), version, buffer);
-            getRecursiveNode().execute(frame, internStrings(c.getCellVars()), version, buffer);
-            getRecursiveNode().execute(frame, new InternedString(c.getFilename()), version, buffer);
-            getRecursiveNode().execute(frame, new InternedString(c.getName()), version, buffer);
+            byte[] code = c.getCodestring();
+            writeBytes(code == null ? new byte[0] : code, version, buffer);
+            writeString(c.getFilename(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
         }
 
-        private PTuple internStrings(Object[] values) {
-            Object[] interned;
-            if (values == null) {
-                interned = new Object[0];
-            } else {
-                interned = new Object[values.length];
-                for (int i = 0; i < interned.length; i++) {
-                    if (castStrNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        castStrNode = insert(CastToJavaStringNode.create());
-                    }
-                    Object value = values[i];
-                    try {
-                        String strValue = castStrNode.execute(value);
-                        interned[i] = new InternedString(strValue);
-                    } catch (CannotCastException e) {
-                        interned[i] = value;
-                    }
-                }
-            }
-            return factory().createTuple(interned);
+        @TruffleBoundary
+        private static String getSourceCode(PCode c) {
+            SourceSection sourceSection = c.getRootNode().getSourceSection();
+            return sourceSection.getCharacters().toString();
         }
 
         @Specialization(limit = "1")
@@ -622,27 +594,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(bytes);
         }
 
-        private PCode readCode(int depth, HashingStorageLibrary lib) {
-            int argcount = readInt();
-            int posonlyargcount = readInt();
-            int kwonlyargcount = readInt();
-            int nlocals = readInt();
-            int stacksize = readInt();
+        private PCode readCode() {
+            String codetext = readString();
             int flags = readInt();
-            byte[] codestring = readBytes();
-            Object[] constants = getArray((PTuple) readObject(depth + 1, lib));
-            Object[] names = getArray((PTuple) readObject(depth + 1, lib));
-            Object[] varnames = getArray((PTuple) readObject(depth + 1, lib));
-            Object[] freevars = getArray((PTuple) readObject(depth + 1, lib));
-            Object[] cellvars = getArray((PTuple) readObject(depth + 1, lib));
-            String filename = ((String) readObject(depth + 1, lib));
-            String name = ((String) readObject(depth + 1, lib));
+            byte[] serializationData = readBytes();
+            String filename = readString();
             int firstlineno = readInt();
             byte[] lnotab = readBytes();
-
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, argcount, posonlyargcount,
-                            kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names,
-                            varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, codetext, flags, serializationData, filename, firstlineno, lnotab);
         }
 
         private PDict readDict(int depth, HashingStorageLibrary lib) {
@@ -711,12 +670,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(newStorage);
         }
 
-        private static Object[] getArray(PTuple tuple) {
-            CompilerAsserts.neverPartOfCompilation();
-            return GetObjectArrayNodeGen.getUncached().execute(tuple);
-
-        }
-
         @TruffleBoundary
         private Object readObject(int depth, HashingStorageLibrary lib) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
@@ -774,7 +727,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_FROZENSET:
                     return readFrozenSet(depth, lib);
                 case TYPE_CODE:
-                    return readCode(depth, lib);
+                    return readCode();
                 default:
                     throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }

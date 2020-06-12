@@ -130,7 +130,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("abiflags", "");
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
-        builtinConstants.put("dont_write_bytecode", true);
         builtinConstants.put("modules", core.factory().createDict());
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
@@ -194,10 +193,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute("executable", context.getOption(PythonOptions.Executable));
             sys.setAttribute("_base_executable", context.getOption(PythonOptions.Executable));
         }
+        sys.setAttribute("dont_write_bytecode", ImageInfo.inImageBuildtimeCode() || context.getOption(PythonOptions.DontWriteBytecodeFlag));
+        String pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
+        sys.setAttribute("pycache_prefix", pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
-                        true,  // dont_write_bytecode
+                        ImageInfo.inImageBuildtimeCode() || context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
                         false, // hash_randomization
                         context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
                         context.getOption(PythonOptions.InspectFlag), // inspect

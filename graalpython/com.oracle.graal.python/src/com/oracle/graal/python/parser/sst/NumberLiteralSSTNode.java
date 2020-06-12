@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,11 @@ public class NumberLiteralSSTNode extends SSTNode {
         this.value = value.indexOf('_') == -1 ? value : value.replaceAll("_", "");
         this.start = start;
         this.base = base;
+    }
+
+    public NumberLiteralSSTNode(String value, boolean negative, int start, int base, int startIndex, int endIndex) {
+        this(value, start, base, startIndex, endIndex);
+        this.negative = negative;
     }
 
     public boolean isNegative() {

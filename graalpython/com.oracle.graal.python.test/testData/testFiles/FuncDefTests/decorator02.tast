@@ -96,7 +96,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [50,117]`def wrapped_f(*args)...`
                                         Name: wrapped_f
-                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                         CelVars: None
                                         FreeVars: delta, fn
                                         NeedsCellFrame: False

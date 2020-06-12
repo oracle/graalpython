@@ -57,7 +57,7 @@ public final class ArgDefListBuilder {
 
     private static final String SPLAT_MARKER_NAME = "*";
 
-    private class Parameter {
+    protected static class Parameter {
 
         protected final String name;
 
@@ -71,7 +71,7 @@ public final class ArgDefListBuilder {
 
     }
 
-    private class ParameterWithDefValue extends Parameter {
+    protected static class ParameterWithDefValue extends Parameter {
 
         protected final SSTNode value;
 
@@ -82,8 +82,6 @@ public final class ArgDefListBuilder {
 
     }
 
-    private final ScopeEnvironment scopeEnvironment;
-
     private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
@@ -91,13 +89,36 @@ public final class ArgDefListBuilder {
     private List<ParameterWithDefValue> kwargsWithDefValue;
     private final Set<String> paramNames;
     private int splatIndex = -1;
-    private int kwarIndex = -1;
+    private int kwargIndex = -1;
     private int positionalOnlyIndex = -1;  // index to the last positional argument
     private int countOfTypedParams = 0;
 
-    public ArgDefListBuilder(ScopeEnvironment scopeEnvironment) {
+    public ArgDefListBuilder() {
         this.paramNames = new HashSet<>();
-        this.scopeEnvironment = scopeEnvironment;
+    }
+
+    protected Parameter[] getArgs() {
+        return args == null ? null : args.toArray(new Parameter[args.size()]);
+    }
+
+    protected ParameterWithDefValue[] getArgsWithDefValue() {
+        return argsWithDefValue == null ? null : argsWithDefValue.toArray(new ParameterWithDefValue[argsWithDefValue.size()]);
+    }
+
+    protected Parameter[] getKWArgs() {
+        return kwargs == null ? null : kwargs.toArray(new Parameter[kwargs.size()]);
+    }
+
+    protected ParameterWithDefValue[] getKWArgsWithDefValue() {
+        return kwargsWithDefValue == null ? null : kwargsWithDefValue.toArray(new ParameterWithDefValue[kwargsWithDefValue.size()]);
+    }
+
+    protected int getSplatIndex() {
+        return splatIndex;
+    }
+
+    protected int getKWargIndex() {
+        return kwargIndex;
     }
 
     public static enum AddParamResult {
@@ -159,7 +180,7 @@ public final class ArgDefListBuilder {
             kwargs = new ArrayList<>();
         }
         kwargs.add(new Parameter(name, type));
-        kwarIndex = kwargs.size() - 1;
+        kwargIndex = kwargs.size() - 1;
     }
 
     public boolean hasDefaultParameter() {
@@ -205,7 +226,7 @@ public final class ArgDefListBuilder {
         this.positionalOnlyIndex = args.size();
     }
 
-    public StatementNode[] getArgumentNodes() {
+    public StatementNode[] getArgumentNodes(ScopeEnvironment scopeEnvironment) {
         if (args == null && kwargs == null) {
             return new StatementNode[0];
         }
@@ -225,13 +246,13 @@ public final class ArgDefListBuilder {
             }
         }
 
-        String[] kwId = kwarIndex == -1 ? new String[0] : new String[kwargsLen - 1];
+        String[] kwId = kwargIndex == -1 ? new String[0] : new String[kwargsLen - 1];
         delta = argsLen - delta;
         int starMarkerDelta = starMarker ? 0 : 1;
         for (int i = 0; i < kwargsLen; i++) {
-            if (i != kwarIndex) {
+            if (i != kwargIndex) {
                 nodes[i + delta] = scopeEnvironment.getWriteArgumentToLocal(kwargs.get(i).name, i + delta - starMarkerDelta);
-                if (kwarIndex != -1) {
+                if (kwargIndex != -1) {
                     kwId[i] = kwargs.get(i).name;
                 }
             } else {
@@ -297,17 +318,17 @@ public final class ArgDefListBuilder {
             }
         }
         if (kwargs != null) {
-            kwids = new String[kwargs.size() - (kwarIndex == -1 ? 0 : 1)];
+            kwids = new String[kwargs.size() - (kwargIndex == -1 ? 0 : 1)];
             i = 0;
             if (kwids.length > 0) {
                 for (Parameter param : kwargs) {
-                    if (i != kwarIndex) {
+                    if (i != kwargIndex) {
                         kwids[i++] = param.name;
                     }
                 }
             }
         }
-        return new Signature(positionalOnlyIndex, kwarIndex > -1, splatMarker ? -1 : splatIndex, splatMarker, ids, kwids);
+        return new Signature(positionalOnlyIndex, kwargIndex > -1, splatMarker ? -1 : splatIndex, splatMarker, ids, kwids);
     }
 
 }

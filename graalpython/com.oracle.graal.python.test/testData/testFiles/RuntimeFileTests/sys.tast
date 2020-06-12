@@ -1351,7 +1351,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
               CellVarsSlots: None
             FunctionRootNode SourceSection: [5679,6431]`def breakpointhook(*...`
               Name: breakpointhook
-              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                 Keyword Names: None
               CelVars: None
               FreeVars: None
@@ -1476,7 +1476,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
                             StringLiteralNode SourceSection: [5980,5995]`'pdb.set_trace'`
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [6000,6046]`elif hookname == '0'...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None

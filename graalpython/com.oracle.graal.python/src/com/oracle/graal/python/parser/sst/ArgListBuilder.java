@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.literal.KeywordLiteralNode;
 public final class ArgListBuilder {
 
     private static final SSTNode[] EMPTY_SSTN = new SSTNode[0];
+    private static final String[] EMPTY_NAMES = new String[0];
     private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
 
     private List<SSTNode> args;
@@ -84,6 +85,22 @@ public final class ArgListBuilder {
 
     public SSTNode[] getArgs() {
         return args == null ? EMPTY_SSTN : args.toArray(new SSTNode[args.size()]);
+    }
+
+    protected SSTNode[] getNameArgNodes() {
+        return nameArgNodes == null ? EMPTY_SSTN : nameArgNodes.toArray(new SSTNode[nameArgNodes.size()]);
+    }
+
+    protected String[] getNameArgNames() {
+        return nameArgNames == null ? EMPTY_NAMES : nameArgNames.toArray(new String[nameArgNames.size()]);
+    }
+
+    protected SSTNode[] getStarArg() {
+        return starArg == null ? EMPTY_SSTN : starArg.toArray(new SSTNode[starArg.size()]);
+    }
+
+    protected SSTNode[] getKwArg() {
+        return kwArg == null ? EMPTY_SSTN : kwArg.toArray(new SSTNode[kwArg.size()]);
     }
 
     public void addNamedArg(String name, SSTNode value) {

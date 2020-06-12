@@ -87,6 +87,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private List<String> relaunchArgs;
     private boolean wantsExperimental = false;
     private Map<String, String> enginePolyglotOptions;
+    private boolean dontWriteBytecode = false;
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -102,6 +103,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             String arg = arguments.get(i);
             switch (arg) {
                 case "-B":
+                    dontWriteBytecode = true;
                     break;
                 case "-c":
                     i += 1;
@@ -374,6 +376,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
+            dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
+            String cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
+            if (cachePrefix != null) {
+                contextBuilder.option("python.PyCachePrefix", cachePrefix);
+            }
         }
 
         String executable = getContextOptionIfSetViaCommandLine("python.Executable");
@@ -392,6 +399,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.InspectFlag", Boolean.toString(inspectFlag));
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
+        contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
         }
@@ -548,8 +556,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     protected void printHelp(OptionCategory maxCategory) {
         print("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
-                        "-B     : on CPython, this disables writing .py[co] files on import;\n" +
-                        "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
+                        "-B     : this disables writing .py[co] files on import\n" +
                         "-c cmd : program passed in as string (terminates option list)\n" +
                         // "-d : debug output from parser; also PYTHONDEBUG=x\n" +
                         "-E     : ignore PYTHON* environment variables (such as PYTHONPATH)\n" +
@@ -601,6 +608,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
+                        "PYTHONPYCACHEPREFIX: if this is set, GraalPython will write .pyc files in a mirror\n" +
+                        "   directory tree at this path, instead of in __pycache__ directories within the source tree.\n" +
                         "GRAAL_PYTHON_ARGS: the value is added as arguments as if passed on the\n" +
                         "   commandline. There is one special case: any `$$' in the value is replaced\n" +
                         "   with the current process id. To pass a literal `$$', you must escape the\n" +

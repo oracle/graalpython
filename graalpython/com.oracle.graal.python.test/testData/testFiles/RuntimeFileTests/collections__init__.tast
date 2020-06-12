@@ -933,7 +933,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3841,4579]`def __init__(*args, ...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -6382,7 +6382,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [20140,21061]`def __init__(*args, ...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -6924,7 +6924,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [22923,24706]`def update(*args, **...`
                             Name: update
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -7308,7 +7308,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [24706,26171]`def subtract(*args, ...`
                             Name: subtract
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -10515,7 +10515,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [32696,32961]`def __init__(self, *...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                               Param Names: self
                             CelVars: None
                             FreeVars: __class__
@@ -11392,7 +11392,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [34048,34214]`def fromkeys(cls, it...`
                               Name: fromkeys
-                              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                 Param Names: cls, iterable
                               CelVars: None
                               FreeVars: __class__
@@ -12056,7 +12056,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [35408,35707]`def pop(self, key, *...`
                             Name: pop
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, key
                             CelVars: None
                             FreeVars: __class__
@@ -12299,7 +12299,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [36083,36850]`def __init__(*args, ...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -12453,7 +12453,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [36432,36433]`0`
                                             Value: 0
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [36443,36716]`elif 'dict' in kwarg...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -13707,7 +13707,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [38559,38709]`elif isinstance(init...`
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
@@ -14862,7 +14862,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [39582,39684]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -15080,7 +15080,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [39868,39970]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -15288,7 +15288,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [40132,40263]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -16109,7 +16109,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [40792,40862]`def index(self, item...`
                             Name: index
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, item
                             CelVars: None
                             FreeVars: __class__
@@ -16262,7 +16262,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [40905,40970]`def sort(self, *args...`
                             Name: sort
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                               Param Names: self
                               Keyword Names: None
                             CelVars: None
@@ -16599,7 +16599,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [41450,41571]`elif isinstance(seq,...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -18158,7 +18158,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [43067,43157]`elif isinstance(othe...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -18826,7 +18826,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [43838,43936]`def center(self, wid...`
                                 Name: center
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                   Param Names: self, width
                                 CelVars: None
                                 FreeVars: __class__
@@ -19654,7 +19654,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [44781,44865]`def format(self, *ar...`
                                 Name: format
-                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                                   Param Names: self
                                   Keyword Names: None
                                 CelVars: None
@@ -20804,7 +20804,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [45724,45820]`def ljust(self, widt...`
                                 Name: ljust
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                   Param Names: self, width
                                 CelVars: None
                                 FreeVars: __class__
@@ -21642,7 +21642,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [46583,46679]`def rjust(self, widt...`
                                 Name: rjust
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                                   Param Names: self, width
                                 CelVars: None
                                 FreeVars: __class__
@@ -22541,7 +22541,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [47428,47518]`def translate(self, ...`
                                 Name: translate
-                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                                   Param Names: self
                                 CelVars: None
                                 FreeVars: __class__

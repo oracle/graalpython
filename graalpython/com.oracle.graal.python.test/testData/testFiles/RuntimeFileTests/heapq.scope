@@ -8,22 +8,22 @@ Scope: []
         FrameDescriptor: [elem, <>temp18, sentinel, <>temp17, _order, <>temp19, _elem, <>temp16, <>temp15, iterable, it, k, n, result, size, top, _heapreplace, <return_val>, key, order]
         CellVars: [key]
         FreeVars: Empty
-        Scope: generator22590
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, <>temp3, <>temp4, k, <>temp5, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
-        Scope: generator22176
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, i, <>temp3, <>temp4, <return_val>, key]
             CellVars: Empty
             FreeVars: [key]
-        Scope: generator22068
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, <>temp2, <>temp3, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
-        Scope: generator21642
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, <>temp2, i, <>temp3, <return_val>]
             CellVars: Empty
@@ -33,22 +33,22 @@ Scope: []
         FrameDescriptor: [elem, <>temp18, sentinel, <>temp17, _order, <>temp19, _elem, <>temp16, <>temp15, iterable, it, k, n, result, size, top, _heapreplace, <return_val>, key, order]
         CellVars: [key]
         FreeVars: Empty
-        Scope: generator20788
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, <>temp3, <>temp4, k, <>temp5, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
-        Scope: generator20385
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, i, <>temp3, <>temp4, <return_val>, key]
             CellVars: Empty
             FreeVars: [key]
-        Scope: generator20277
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, <>temp2, <>temp3, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
-        Scope: generator19862
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [elem, <>temp2, i, <>temp3, <return_val>]
             CellVars: Empty

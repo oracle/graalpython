@@ -67,7 +67,12 @@ public interface PythonParser {
          * Parse the given input as an expression, as required for Python's compile with
          * mode='eval'.
          */
-        Eval;
+        Eval,
+        /**
+         * Used for building Truffle tree from deserialized ANTLR parser result. The result
+         * expression or statement is not wrapped in any expression.
+         */
+        Deserialization;
     }
 
     public interface ParserErrorCallback {

@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,71]`def __build_class__(...`
               Name: __build_class__
-              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=True, varArgsIdx=2
                 Param Names: func, name
                 Keyword Names: metaclass
               CelVars: None

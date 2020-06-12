@@ -263,7 +263,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Identifier: tuple
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [2195,2215]`for j in t if i != j...`
-                                Name: generator2184.<locals>.<genexp>:sre_compile:62
+                                Name: generator.<locals>.<genexp>:sre_compile:62
                                 FrameDescriptor: 3 slots [j, i, <return_val>]
                                 Enclosing
                                   FrameDescriptor: 3 slots [i, t, <return_val>]
@@ -272,7 +272,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: true
                                 FunctionRootNode SourceSection: [2195,2215]`for j in t if i != j...`
-                                  Name: generator2184.<locals>.<genexp>:sre_compile:62
+                                  Name: generator.<locals>.<genexp>:sre_compile:62
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
                                   FreeVars: i
@@ -925,7 +925,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [3315,4170]`elif flags & SRE_FLA...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -971,7 +971,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [3425,4170]`elif not iscased(av)...`
                                   NotNodeGen SourceSection: [3430,3445]`not iscased(av)`
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -1073,7 +1073,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [3672,4170]`elif lo not in fixes...`
                                         NotNodeGen SourceSection: [3677,3692]`lo not in fixes`
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -1290,7 +1290,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [4170,8912]`elif op is IN:↵     ...`
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -1405,7 +1405,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4357,4370]`IN_LOC_IGNORE`
                                         Identifier: IN_LOC_IGNORE
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [4384,4563]`elif not hascased:↵ ...`
                                     NotNodeGen SourceSection: [4389,4401]`not hascased`
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -1425,7 +1425,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [4424,4426]`IN`
                                           Identifier: IN
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [4440,4563]`elif not fixes:  # a...`
                                       NotNodeGen SourceSection: [4445,4454]`not fixes`
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
@@ -1536,7 +1536,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [4692,8912]`elif op is ANY:↵    ...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -1586,7 +1586,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4817,4820]`ANY`
                                         Identifier: ANY
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [4830,8912]`elif op in REPEATING...`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -1982,7 +1982,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5729,5738]`MIN_UNTIL`
                                                 Identifier: MIN_UNTIL
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [5748,8912]`elif op is SUBPATTER...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -2201,7 +2201,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 IntegerLiteralNode SourceSection: [6141,6142]`1`
                                                   Value: 1
                                         BlockNode SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [6152,8912]`elif op in SUCCESS_C...`
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
@@ -2234,7 +2234,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [6207,8912]`elif op in ASSERT_CO...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -2475,7 +2475,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [6678,8912]`elif op is CALL:↵   ...`
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
@@ -2593,7 +2593,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [6870,8912]`elif op is AT:↵     ...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -2695,7 +2695,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [7090,7212]`elif (flags & SRE_FL...`
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -2764,7 +2764,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [7229,8912]`elif op is BRANCH:↵ ...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -3020,7 +3020,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           CachedDispatchFirst SourceSection: None
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [7740,8912]`elif op is CATEGORY:...`
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
@@ -3077,7 +3077,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [7869,7983]`elif (flags & SRE_FL...`
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
@@ -3139,7 +3139,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [8000,8912]`elif op is GROUPREF:...`
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -3181,7 +3181,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [8106,8325]`elif flags & SRE_FLA...`
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
@@ -3207,7 +3207,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8157,8176]`GROUPREF_LOC_IGNORE`
                                                               Identifier: GROUPREF_LOC_IGNORE
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [8190,8325]`elif not fixes:  # a...`
                                                           NotNodeGen SourceSection: [8195,8204]`not fixes`
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
@@ -3256,7 +3256,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [8333,8334]`1`
                                                             Value: 1
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [8344,8912]`elif op is GROUPREF_...`
                                                     YesNodeGen SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
@@ -3705,7 +3705,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [9093,9097]`pass`
                                 EmptyNode SourceSection: [9093,9097]`pass`
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [9106,9716]`elif op is LITERAL:↵...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -3731,7 +3731,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [9155,9716]`elif op is RANGE or ...`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -3790,7 +3790,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [9243,9244]`1`
                                             Value: 1
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [9255,9716]`elif op is CHARSET:↵...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -3817,7 +3817,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [9311,9716]`elif op is BIGCHARSE...`
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
@@ -3844,7 +3844,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [9370,9716]`elif op is CATEGORY:...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -3889,7 +3889,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [9479,9633]`elif (flags & SRE_FL...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -4315,7 +4315,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [10434,10435]`1`
                                                 Value: 1
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [10452,11323]`elif op is RANGE:↵  ...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -4588,7 +4588,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           CachedDispatchFirst SourceSection: None
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [11187,11323]`elif op is NEGATE:↵ ...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -6492,7 +6492,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
                           ObjectLiteralNode SourceSection: [16174,16178]`None`
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [16183,16326]`elif flags & SRE_FLA...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -6750,7 +6750,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [16660,17317]`elif op is SUBPATTER...`
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -7001,7 +7001,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [17104,17208]`elif prefix_skip1 is...`
                                       NotNodeGen SourceSection: [17109,17133]`prefix_skip1 is not ...`
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
@@ -7490,7 +7490,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [17946,18736]`elif op is BRANCH:↵ ...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -7694,7 +7694,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [18302,18736]`elif op is IN:↵     ...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
@@ -7805,7 +7805,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 CachedDispatchFirst SourceSection: None
                                             ObjectLiteralNode SourceSection: [18494,18498]`None`
                                         BlockNode SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [18515,18717]`elif op is RANGE:↵  ...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -8375,7 +8375,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Identifier: SRE_INFO_LITERAL
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [19895,19952]`elif charset:↵      ...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -8597,7 +8597,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [20412,20560]`elif charset:↵      ...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -9257,7 +9257,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [21131,21446]`def print_(*args, to...`
                                         Name: print_
-                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True, varArgsIdx=0
                                           Keyword Names: to
                                         CelVars: None
                                         FreeVars: end, labels, level, offset_width, start
@@ -9463,7 +9463,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [21446,21575]`def print_2(*args):↵...`
                                         Name: print_2
-                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                         CelVars: None
                                         FreeVars: end, level, offset_width
                                         NeedsCellFrame: False
@@ -9717,7 +9717,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [21891,26234]`elif op in (LITERAL,...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -9826,7 +9826,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               CachedDispatchFirst SourceSection: None
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                         PythonObjectFactoryNodeGen SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [22246,26234]`elif op is AT:↵     ...`
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
@@ -9938,7 +9938,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Value: 3
                                                           EmptyNode SourceSection: None
                                                           EmptyNode SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [22442,26234]`elif op is CATEGORY:...`
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -10050,7 +10050,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               Value: 9
                                                             EmptyNode SourceSection: None
                                                             EmptyNode SourceSection: None
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [22650,26234]`elif op in (IN, IN_I...`
                                                     YesNodeGen SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
@@ -10185,7 +10185,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [22855,26234]`elif op in (RANGE, R...`
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
@@ -10333,7 +10333,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       CachedDispatchFirst SourceSection: None
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                 PythonObjectFactoryNodeGen SourceSection: None
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [23045,26234]`elif op is CHARSET:↵...`
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
@@ -10417,7 +10417,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [23158,23167]`_CODEBITS`
                                                                   Identifier: _CODEBITS
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [23180,26234]`elif op is BIGCHARSE...`
                                                           YesNodeGen SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
@@ -10777,7 +10777,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadFromCellNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [23698,23699]`1`
                                                                   Value: 1
-                                                          IfNode SourceSection: None
+                                                          IfNode SourceSection: [23712,26234]`elif op in (MARK, GR...`
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
@@ -10861,7 +10861,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     IsBuiltinClassProfile SourceSection: None
                                                                       CachedDispatchFirst SourceSection: None
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                            IfNode SourceSection: None
+                                                            IfNode SourceSection: [23921,26234]`elif op is JUMP:↵   ...`
                                                               YesNodeGen SourceSection: None
                                                                 IsBuiltinClassProfile SourceSection: None
                                                                   CachedDispatchFirst SourceSection: None
@@ -10944,7 +10944,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     IntegerLiteralNode SourceSection: [24034,24035]`1`
                                                                       Value: 1
-                                                              IfNode SourceSection: None
+                                                              IfNode SourceSection: [24048,26234]`elif op is BRANCH:↵ ...`
                                                                 YesNodeGen SourceSection: None
                                                                   IsBuiltinClassProfile SourceSection: None
                                                                     CachedDispatchFirst SourceSection: None
@@ -11173,7 +11173,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [24477,24478]`1`
                                                                         Value: 1
-                                                                IfNode SourceSection: None
+                                                                IfNode SourceSection: [24491,26234]`elif op in (REPEAT, ...`
                                                                   YesNodeGen SourceSection: None
                                                                     IsBuiltinClassProfile SourceSection: None
                                                                       CachedDispatchFirst SourceSection: None
@@ -11397,7 +11397,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           IsBuiltinClassProfile SourceSection: None
                                                                             CachedDispatchFirst SourceSection: None
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                                  IfNode SourceSection: None
+                                                                  IfNode SourceSection: [24787,26234]`elif op is GROUPREF_...`
                                                                     YesNodeGen SourceSection: None
                                                                       IsBuiltinClassProfile SourceSection: None
                                                                         CachedDispatchFirst SourceSection: None
@@ -11527,7 +11527,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                           IntegerLiteralNode SourceSection: [24926,24927]`2`
                                                                             Value: 2
-                                                                    IfNode SourceSection: None
+                                                                    IfNode SourceSection: [24940,26234]`elif op in (ASSERT, ...`
                                                                       YesNodeGen SourceSection: None
                                                                         IsBuiltinClassProfile SourceSection: None
                                                                           CachedDispatchFirst SourceSection: None
@@ -11703,7 +11703,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               IsBuiltinClassProfile SourceSection: None
                                                                                 CachedDispatchFirst SourceSection: None
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      IfNode SourceSection: None
+                                                                      IfNode SourceSection: [25135,26234]`elif op is INFO:↵   ...`
                                                                         YesNodeGen SourceSection: None
                                                                           IsBuiltinClassProfile SourceSection: None
                                                                             CachedDispatchFirst SourceSection: None

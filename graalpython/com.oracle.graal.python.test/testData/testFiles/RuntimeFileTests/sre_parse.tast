@@ -1702,7 +1702,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           CachedDispatchFirst SourceSection: None
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [3915,4983]`elif op is BRANCH:↵ ...`
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
@@ -1826,7 +1826,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             IntegerLiteralNode SourceSection: [3999,4000]`1`
                                                               Value: 1
                                                     BlockNode SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [4127,4983]`elif op is GROUPREF_...`
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -1977,7 +1977,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               IntegerLiteralNode SourceSection: [4395,4396]`1`
                                                                 Value: 1
                                                       BlockNode SourceSection: None
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [4410,4983]`elif isinstance(av, ...`
                                                     YesNodeGen SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
@@ -3087,7 +3087,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [6017,7036]`elif op is CALL:↵   ...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -3182,7 +3182,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [6139,7036]`elif op is SUBPATTER...`
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
@@ -3280,7 +3280,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [6271,7036]`elif op in _REPEATCO...`
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -3405,7 +3405,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [6405,6406]`1`
                                                               Value: 1
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [6420,7036]`elif op in _UNITCODE...`
                                                     YesNodeGen SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
@@ -3456,7 +3456,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [6497,6498]`1`
                                                             Value: 1
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [6511,7036]`elif op is GROUPREF:...`
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
@@ -3568,7 +3568,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [6652,7036]`elif op is GROUPREF_...`
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
@@ -3777,7 +3777,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 IsBuiltinClassProfile SourceSection: None
                                                                   CachedDispatchFirst SourceSection: None
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [6986,7036]`elif op is SUCCESS:↵...`
                                                           YesNodeGen SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
@@ -5554,7 +5554,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       IntegerLiteralNode SourceSection: [9827,9829]`16`
                                         Value: 16
                                     PythonObjectFactoryNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [9839,10946]`elif c == "u" and so...`
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -5689,7 +5689,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         IntegerLiteralNode SourceSection: [10133,10135]`16`
                                           Value: 16
                                       PythonObjectFactoryNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [10145,10946]`elif c == "U" and so...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -5846,7 +5846,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [10526,10946]`elif c in OCTDIGITS:...`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -5976,7 +5976,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [10891,10946]`elif c in DIGITS:↵  ...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -6407,7 +6407,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       IntegerLiteralNode SourceSection: [11720,11722]`16`
                                         Value: 16
                                     PythonObjectFactoryNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [11732,13779]`elif c == "u" and so...`
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -6542,7 +6542,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         IntegerLiteralNode SourceSection: [12026,12028]`16`
                                           Value: 16
                                       PythonObjectFactoryNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [12038,13779]`elif c == "U" and so...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -6699,7 +6699,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [12419,13779]`elif c == "0":↵     ...`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -6769,7 +6769,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             IntegerLiteralNode SourceSection: [12557,12558]`8`
                                               Value: 8
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [12568,13779]`elif c in DIGITS:↵  ...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -7776,7 +7776,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [14932,14933]`0`
                                               Value: 0
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [14947,15001]`elif item[0] != pref...`
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
@@ -7966,7 +7966,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonObjectFactoryNodeGen SourceSection: None
-                              IfNode SourceSection: None
+                              IfNode SourceSection: [15488,15593]`elif op is IN and av...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -8476,7 +8476,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: None
+                                IfNode SourceSection: [16795,31400]`elif this not in SPE...`
                                   NotNodeGen SourceSection: [16800,16825]`this not in SPECIAL_...`
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -8519,7 +8519,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [16888,31400]`elif this == "[":↵  ...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -8745,7 +8745,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
                                                 BreakNode SourceSection: [17716,17721]`break`
-                                                IfNode SourceSection: None
+                                                IfNode SourceSection: [17738,18508]`elif this[0] == "\\"...`
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -9673,7 +9673,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [20832,31400]`elif this in REPEAT_...`
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
@@ -9760,7 +9760,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [20999,22478]`elif this == "*":↵  ...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -9815,7 +9815,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [21070,22478]`elif this == "+":↵  ...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -9870,7 +9870,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              IfNode SourceSection: None
+                                              IfNode SourceSection: [21140,22478]`elif this == "{":↵  ...`
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
@@ -10731,7 +10731,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                               PythonObjectFactoryNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [23302,31400]`elif this == ".":↵  ...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -10758,7 +10758,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [23355,23359]`None`
                                               PythonObjectFactoryNodeGen SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [23371,31400]`elif this == "(":↵  ...`
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
@@ -10970,7 +10970,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   Value: 1
                                                             NoValueNode SourceSection: None
                                                         BlockNode SourceSection: None
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [24168,25396]`elif sourcematch("="...`
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
@@ -11294,7 +11294,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               IntegerLiteralNode SourceSection: [25377,25378]`2`
                                                                 Value: 2
                                                           NoValueNode SourceSection: None
-                                                  IfNode SourceSection: None
+                                                  IfNode SourceSection: [25396,30390]`elif char == ":":↵  ...`
                                                     YesNodeGen SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
@@ -11314,7 +11314,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
                                                       ObjectLiteralNode SourceSection: [25484,25488]`None`
-                                                    IfNode SourceSection: None
+                                                    IfNode SourceSection: [25505,30390]`elif char == "#":↵  ...`
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
@@ -11401,7 +11401,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   BlockNode SourceSection: None
                                                           BlockNode SourceSection: None
                                                         ContinueNode SourceSection: [25886,25894]`continue`
-                                                      IfNode SourceSection: None
+                                                      IfNode SourceSection: [25912,30390]`elif char in "=!<":↵...`
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
@@ -11760,7 +11760,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                           ContinueNode SourceSection: [27229,27237]`continue`
-                                                        IfNode SourceSection: None
+                                                        IfNode SourceSection: [27255,30390]`elif char == "(":↵  ...`
                                                           YesNodeGen SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
@@ -12291,7 +12291,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                             ContinueNode SourceSection: [29227,29235]`continue`
-                                                          IfNode SourceSection: None
+                                                          IfNode SourceSection: [29253,30390]`elif char in FLAGS o...`
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
@@ -12865,7 +12865,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                   PythonObjectFactoryNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [31130,31400]`elif this == "^":↵  ...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -12894,7 +12894,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     Identifier: AT_BEGINNING
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   PythonObjectFactoryNodeGen SourceSection: None
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [31206,31400]`elif this == "$":↵  ...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -14210,7 +14210,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34353,34369]`SRE_FLAG_UNICODE`
                                 Identifier: SRE_FLAG_UNICODE
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          IfNode SourceSection: None
+                          IfNode SourceSection: [34378,34486]`elif flags & SRE_FLA...`
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
@@ -15378,7 +15378,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [37372,37373]`1`
                                             Value: 1
-                                  IfNode SourceSection: None
+                                  IfNode SourceSection: [37387,38583]`elif c == "0":↵     ...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -15524,7 +15524,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   Value: 8
                                               IntegerLiteralNode SourceSection: [37607,37611]`0xff`
                                                 Value: 255
-                                    IfNode SourceSection: None
+                                    IfNode SourceSection: [37626,38583]`elif c in DIGITS:↵  ...`
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None

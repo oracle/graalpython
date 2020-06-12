@@ -122,7 +122,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [70,129]`def fn2(*args, **kwd...`
                               Name: fn2
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
                               FreeVars: __class__

@@ -381,7 +381,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(ClassSSTNode node) {
-        ScopeInfo classScope = node.classScope;
+        ScopeInfo classScope = node.scope;
         scopeEnvironment.setCurrentScope(classScope);
         String qualifiedName = getQualifiedName(classScope, node.name);
 
@@ -448,7 +448,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
-        scopeEnvironment.setCurrentScope(node.classScope.getParent());
+        scopeEnvironment.setCurrentScope(node.scope.getParent());
 
         ExpressionNode[] args;
         ExpressionNode[] nameArgs;
@@ -578,10 +578,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         String definitionName;
         if (node.decorated instanceof ClassSSTNode) {
             definitionName = ((ClassSSTNode) node.decorated).name;
-            scopeEnvironment.setCurrentScope(((ClassSSTNode) node.decorated).classScope.getParent());
+            scopeEnvironment.setCurrentScope(((ClassSSTNode) node.decorated).scope.getParent());
         } else {
             definitionName = ((FunctionDefSSTNode) node.decorated).name;
-            scopeEnvironment.setCurrentScope(((FunctionDefSSTNode) node.decorated).functionScope.getParent());
+            scopeEnvironment.setCurrentScope(((FunctionDefSSTNode) node.decorated).scope.getParent());
         }
         PNode[] decorators = new PNode[node.decorators.length];
         for (int i = 0; i < decorators.length; i++) {
@@ -752,9 +752,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(FunctionDefSSTNode node) {
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
-        scopeEnvironment.setCurrentScope(node.functionScope);
+        scopeEnvironment.setCurrentScope(node.scope);
         Signature signature = node.argBuilder.getSignature();
-        StatementNode argumentNodes = nodeFactory.createBlock(node.argBuilder.getArgumentNodes());
+        StatementNode argumentNodes = nodeFactory.createBlock(node.argBuilder.getArgumentNodes(scopeEnvironment));
 
         StatementNode body;
         GeneratorFactorySSTVisitor generatorFactory = null;
@@ -818,7 +818,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         SourceSection sourceSection = createSourceSection(node.startOffset, node.endOffset);
         returnTarget.assignSourceSection(sourceSection);
 
-        scopeEnvironment.setCurrentScope(node.functionScope.getParent());
+        scopeEnvironment.setCurrentScope(node.scope.getParent());
         ExpressionNode[] defaults = node.argBuilder.getDefaultParameterValues(this);
         FunctionDefinitionNode.KwDefaultExpressionNode[] kwDefaults = node.argBuilder.getKwDefaultParameterValues(this);
         Map<String, SSTNode> sstAnnotations = node.argBuilder.getAnnotatedArgs();
@@ -830,7 +830,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 annotations.put(argName, (ExpressionNode) sstType.accept(this));
             }
         }
-        scopeEnvironment.setCurrentScope(node.functionScope);
+        scopeEnvironment.setCurrentScope(node.scope);
 
         /**
          * Function root
@@ -848,7 +848,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             funcDef = new FunctionDefinitionNode(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
                             scopeEnvironment.getExecutionCellSlots(), annotations);
         }
-        scopeEnvironment.setCurrentScope(node.functionScope.getParent());
+        scopeEnvironment.setCurrentScope(node.scope.getParent());
         ReadNode funcVar = scopeEnvironment.findVariable(node.name);
         StatementNode writeNode = funcVar.makeWriteNode(funcDef);
         // TODO I'm not sure, whether this assingning of sourcesection is right.
@@ -939,11 +939,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(LambdaSSTNode node) {
         String funcname = LAMBDA_NAME;
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
-        scopeEnvironment.setCurrentScope(node.functionScope);
+        scopeEnvironment.setCurrentScope(node.scope);
         /**
          * Parameters
          */
-        StatementNode argumentNodes = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes());
+        StatementNode argumentNodes = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes(scopeEnvironment));
         Signature signature = node.args == null ? Signature.EMPTY : node.args.getSignature();
 
         /**
@@ -981,10 +981,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         /**
          * Defaults
          */
-        scopeEnvironment.setCurrentScope(node.functionScope.getParent());
+        scopeEnvironment.setCurrentScope(node.scope.getParent());
         ExpressionNode[] defaults = node.args == null ? new ExpressionNode[0] : node.args.getDefaultParameterValues(this);
         FunctionDefinitionNode.KwDefaultExpressionNode[] kwDefaults = node.args == null ? new FunctionDefinitionNode.KwDefaultExpressionNode[0] : node.args.getKwDefaultParameterValues(this);
-        scopeEnvironment.setCurrentScope(node.functionScope);
+        scopeEnvironment.setCurrentScope(node.scope);
 
         /**
          * Lambda function root

@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'param04'> SourceSection: [0,41]`def fn(*arg):↵  
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,41]`def fn(*arg):↵  for ...`
               Name: fn
-              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False

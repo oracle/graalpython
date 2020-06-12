@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -99,12 +100,18 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
                         kwDefaultValues));
     }
 
+    public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonContext ctx) {
+        if (generatorCallTarget == null) {
+            return new GeneratorFunctionRootNode(ctx.getLanguage(), callTarget, functionName, frameDescriptor,
+                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
+        }
+        return (GeneratorFunctionRootNode) generatorCallTarget.getRootNode();
+    }
+
     protected PCode getGeneratorCode() {
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(getContext().getLanguage(), callTarget, functionName, frameDescriptor,
-                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
-            generatorCallTarget = Truffle.getRuntime().createCallTarget(generatorFunctionRootNode);
+            generatorCallTarget = Truffle.getRuntime().createCallTarget(getGeneratorFunctionRootNode(getContext()));
         }
         PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();
         CompilerAsserts.partialEvaluationConstant(lang);

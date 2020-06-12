@@ -884,7 +884,8 @@ class SourceLoader(_LoaderBasics):
                     }
                     try:
                         flags = _classify_pyc(data, fullname, exc_details)
-                        bytes_data = memoryview(data)[16:]
+                        # See issue GR-23189. Originally there is memoryview(data)[16:]
+                        bytes_data = data[16:]
                         hash_based = flags & 0b1 != 0
                         if hash_based:
                             check_source = flags & 0b10 != 0

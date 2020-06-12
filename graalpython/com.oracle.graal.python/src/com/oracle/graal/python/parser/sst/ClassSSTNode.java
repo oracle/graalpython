@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,18 +43,16 @@ package com.oracle.graal.python.parser.sst;
 
 import com.oracle.graal.python.parser.ScopeInfo;
 
-public class ClassSSTNode extends SSTNode {
+public class ClassSSTNode extends SSTNodeWithScope {
     protected final String name;
     protected final ArgListBuilder baseClasses;
     protected final SSTNode body;
-    protected final ScopeInfo classScope;
 
     public ClassSSTNode(ScopeInfo classScope, String name, ArgListBuilder baseClasses, SSTNode body, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+        super(startOffset, endOffset, classScope);
         this.name = name;
         this.baseClasses = baseClasses;
         this.body = body;
-        this.classScope = classScope;
     }
 
     @Override

@@ -505,7 +505,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             CellVarsSlots: None
           FunctionRootNode SourceSection: [2666,3055]`def __build_class__(...`
             Name: __build_class__
-            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=True, varArgsIdx=2
               Param Names: func, name
               Keyword Names: metaclass
             CelVars: None
@@ -733,7 +733,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3078,3288]`def __init__(self, f...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=3
                               Param Names: self, func, iterable
                             CelVars: None
                             FreeVars: __class__
@@ -1216,7 +1216,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CellVarsSlots: None
             FunctionRootNode SourceSection: [3705,4271]`def vars(*obj):↵    ...`
               Name: vars
-              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -1277,7 +1277,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [4034,4035]`1`
                                   Value: 1
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [4050,4134]`elif len(obj) != 1:↵...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None

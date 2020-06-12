@@ -603,7 +603,7 @@ Scope: []
             FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: [key]
             FreeVars: [__class__]
-            Scope: generator1760
+            Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [m, <return_val>, key]
                 CellVars: Empty

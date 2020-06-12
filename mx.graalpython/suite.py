@@ -291,6 +291,8 @@ suite = {
             "outputDir": "graalpython/lib-python/3",
             "prefix": "lib-python/3",
             "ignorePatterns": [
+                ".pyc",
+                "\/__pycache__\/",
                 "\/test\/",
                 "\/tests\/",
                 "\/idle_test\/",

@@ -18,12 +18,12 @@ Scope: []
             FrameDescriptor: [m, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-        Scope: generator33751
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [v, <>temp2, <>temp3, m, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-        Scope: generator33513
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [v, <>temp2, <>temp3, m, <return_val>]
             CellVars: Empty
@@ -33,7 +33,7 @@ Scope: []
         FrameDescriptor: [duplicates, <>temp6, name, member, <>temp5, enumeration, alias_details, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-        Scope: generator32846
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [name, <>temp2, alias, <>temp3, <return_val>]
             CellVars: Empty
@@ -113,7 +113,7 @@ Scope: []
             FrameDescriptor: [uncovered, <>temp6, <>temp7, members, self, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
-            Scope: generator29023
+            Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [m, <return_val>]
                 CellVars: Empty
@@ -123,7 +123,7 @@ Scope: []
             FrameDescriptor: [uncovered, <>temp6, <>temp7, members, self, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
-            Scope: generator28490
+            Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [m, <return_val>]
                 CellVars: Empty
@@ -178,7 +178,7 @@ Scope: []
                 FrameDescriptor: [t, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
-            Scope: generator25215
+            Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [filter, name, source, <return_val>]
                 CellVars: Empty
@@ -213,7 +213,7 @@ Scope: []
             FrameDescriptor: [self, added_behavior, <return_val>, __class__]
             CellVars: [self]
             FreeVars: [__class__]
-            Scope: generator22699
+            Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [self, cls, m, <return_val>]
                 CellVars: Empty
@@ -273,7 +273,7 @@ Scope: []
             FrameDescriptor: [cls, <return_val>, __class__]
             CellVars: [cls]
             FreeVars: [__class__]
-            Scope: generator14734
+            Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [name, cls, <return_val>]
                 CellVars: Empty
@@ -298,7 +298,7 @@ Scope: []
             FrameDescriptor: [cls, <return_val>, __class__]
             CellVars: [cls]
             FreeVars: [__class__]
-            Scope: generator14218
+            Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [name, cls, <return_val>]
                 CellVars: Empty
@@ -343,17 +343,17 @@ Scope: []
             FrameDescriptor: [member_type, base_attributes, methods, <>temp32, <>temp31, <>temp33, use_args, <>temp30, bases, invalid_names, first_enum, canonical_member, class_method, obj_method, ignore, classdict, value, key, <>temp29, <>temp28, save_new, <>temp27, __new__, cls, member_name, enum_class, __class__, args, metacls, enum_members, name, enum_member, enum_method, <return_val>, _order_]
             CellVars: [classdict, member_type]
             FreeVars: [__class__]
-            Scope: generator7411
+            Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [member_type, m, <return_val>]
                 CellVars: Empty
                 FreeVars: [member_type]
-            Scope: generator6377
+            Scope: generator
                 Kind: SetComp
                 FrameDescriptor: [a, b, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
-            Scope: generator5304
+            Scope: generator
                 Kind: DictComp
                 FrameDescriptor: [k, classdict, <return_val>]
                 CellVars: Empty

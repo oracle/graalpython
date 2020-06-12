@@ -43,7 +43,7 @@ Scope: []
             FrameDescriptor: [data, os, name, self, files, dirs, <return_val>, __class__]
             CellVars: [files, os]
             FreeVars: [__class__]
-            Scope: generator1121
+            Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [filename, os, files, dir, <return_val>]
                 CellVars: Empty

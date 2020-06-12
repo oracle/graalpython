@@ -1464,7 +1464,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CellVarsSlots: None
           FunctionRootNode SourceSection: [5290,6192]`def _format(percent,...`
             Name: _format
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=4
               Param Names: percent, value, grouping, monetary
             CelVars: None
             FreeVars: None
@@ -1770,7 +1770,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [5965,6174]`elif percent[-1] in ...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -2407,7 +2407,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CellVarsSlots: None
           FunctionRootNode SourceSection: [7537,8175]`def format(percent, ...`
             Name: format
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=4
               Param Names: percent, value, grouping, monetary
             CelVars: None
             FreeVars: None
@@ -3088,7 +3088,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [9315,9318]`')'`
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [9323,9659]`elif sign_pos == 1:↵...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -3121,7 +3121,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
-                        IfNode SourceSection: None
+                        IfNode SourceSection: [9368,9659]`elif sign_pos == 2:↵...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
@@ -3154,7 +3154,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          IfNode SourceSection: None
+                          IfNode SourceSection: [9413,9659]`elif sign_pos == 3:↵...`
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
@@ -3188,7 +3188,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [9470,9659]`elif sign_pos == 4:↵...`
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -5429,7 +5429,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 IntegerLiteralNode SourceSection: [16136,16137]`2`
                                   Value: 2
                                 EmptyNode SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [16144,16192]`elif code == 'C':↵  ...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None

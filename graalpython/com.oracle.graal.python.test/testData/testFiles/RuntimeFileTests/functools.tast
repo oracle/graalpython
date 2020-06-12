@@ -1,11 +1,11 @@
-ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.py - To...`
+ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.py - To...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: `functools.py - Tools...`
-  InnerRootNode SourceSection: [0,32198]`"""functools.py - To...`
-    ExpressionWithSideEffects SourceSection: [0,32198]`"""functools.py - To...`
+  InnerRootNode SourceSection: [0,32199]`"""functools.py - To...`
+    ExpressionWithSideEffects SourceSection: [0,32199]`"""functools.py - To...`
       ExpressionStatementNode SourceSection: [0,75]`"""functools.py - To...`
         StringLiteralNode SourceSection: [0,75]`"""functools.py - To...`
       WriteNameNodeGen SourceSection: [445,647]`__all__ = ['update_w...`
@@ -3174,7 +3174,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [9227,10003]`def __new__(*args, *...`
                             Name: __new__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -3564,7 +3564,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [10003,10310]`def __call__(*args, ...`
                             Name: __call__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -4534,7 +4534,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             CachedDispatchFirst SourceSection: None
                                         DictLiteralNodeGen SourceSection: [11512,11514]`{}`
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [11523,11631]`elif type(kwds) is n...`
                                         NotNodeGen SourceSection: [11528,11550]`type(kwds) is not di...`
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -4737,7 +4737,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [12125,13009]`def __init__(self, f...`
                             Name: __init__
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
                               Param Names: self, func
                               Keyword Names: None
                             CelVars: None
@@ -5327,7 +5327,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [13603,13896]`def _method(*args, *...`
                                           Name: _method
-                                          Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                          Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                             Keyword Names: None
                                           CelVars: None
                                           FreeVars: self
@@ -6609,7 +6609,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [16735,16811]`elif len(key) == 1 a...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -7258,7 +7258,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [19149,19387]`def wrapper(*args, *...`
                             Name: wrapper
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: misses, user_function
@@ -7356,7 +7356,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                      IfNode SourceSection: None
+                      IfNode SourceSection: [19387,22710]`elif maxsize is None...`
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -7385,7 +7385,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19418,19864]`def wrapper(*args, *...`
                               Name: wrapper
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
                               FreeVars: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
@@ -7624,7 +7624,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19879,22710]`def wrapper(*args, *...`
                               Name: wrapper
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
                               FreeVars: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
@@ -8050,7 +8050,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [21038,21042]`pass`
                                               EmptyNode SourceSection: [21038,21042]`pass`
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [21059,22667]`elif full:↵         ...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -11090,7 +11090,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
         Expression:
           EmptyNode SourceSection: None
         SideEffect:
-          WriteNameNodeGen SourceSection: [29187,32198]`def singledispatch(f...`
+          WriteNameNodeGen SourceSection: [29187,32199]`def singledispatch(f...`
             Identifier: singledispatch
             FunctionDefinitionNode Name: singledispatch SourceSection: None
               Arguments: None
@@ -11100,7 +11100,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
-              FunctionRootNode SourceSection: [29187,32198]`def singledispatch(f...`
+              FunctionRootNode SourceSection: [29187,32199]`def singledispatch(f...`
                 Name: singledispatch
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: func
@@ -11111,8 +11111,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
-                InnerRootNode SourceSection: [29187,32198]`def singledispatch(f...`
-                  ReturnTargetNode SourceSection: [29187,32198]`def singledispatch(f...`
+                InnerRootNode SourceSection: [29187,32199]`def singledispatch(f...`
+                  ReturnTargetNode SourceSection: [29187,32199]`def singledispatch(f...`
                     Body: BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: func
@@ -11812,7 +11812,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [31866,31953]`def wrapper(*args, *...`
                               Name: wrapper
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
                               FreeVars: dispatch

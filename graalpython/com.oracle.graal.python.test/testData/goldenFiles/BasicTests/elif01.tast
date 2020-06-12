@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       CachedDispatchFirst SourceSection: None
                   IntegerLiteralNode SourceSection: [34,35]`2`
                     Value: 2
-              IfNode SourceSection: None
+              IfNode SourceSection: [37,96]`elif var == 150:↵  p...`
                 YesNodeGen SourceSection: None
                   IsBuiltinClassProfile SourceSection: None
                     CachedDispatchFirst SourceSection: None
@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
                     DoubleLiteralNode SourceSection: [63,66]`1.5`
-                IfNode SourceSection: None
+                IfNode SourceSection: [68,96]`elif var == 100:↵  p...`
                   YesNodeGen SourceSection: None
                     IsBuiltinClassProfile SourceSection: None
                       CachedDispatchFirst SourceSection: None

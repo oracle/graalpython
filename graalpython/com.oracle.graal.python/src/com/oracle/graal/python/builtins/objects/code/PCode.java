@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
+import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -126,6 +127,14 @@ public final class PCode extends PythonBuiltinObject {
         } else {
             this.signature = Signature.createVarArgsAndKwArgsOnly();
         }
+    }
+
+    public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
+        this(cls, storage, callTarget);
+        this.codestring = codestring;
+        this.flags = flags;
+        this.firstlineno = firstlineno;
+        this.lnotab = lnotab;
     }
 
     public PCode(LazyPythonClass cls, DynamicObject storage, RootCallTarget callTarget, Signature signature,
@@ -311,16 +320,9 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static byte[] extractCodeString(RootNode rootNode) {
         RootNode funcRootNode = rootNode;
-        if (rootNode instanceof GeneratorFunctionRootNode) {
-            funcRootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
-        }
-        if (funcRootNode instanceof PClosureRootNode) {
-            SourceSection sourceSection = funcRootNode.getSourceSection();
-            if (sourceSection != null) {
-                String src = sourceSection.getCharacters().toString();
-                // strip the header, we're only interested in the actual source
-                return src.replaceFirst("[^:]+:[ \\t]*", "").getBytes();
-            }
+        if (rootNode instanceof GeneratorFunctionRootNode || funcRootNode instanceof PClosureRootNode) {
+            PythonCodeSerializer serializer = PythonLanguage.getCore().getSerializer();
+            return serializer.serialize(rootNode);
         }
         // no code for non-user functions
         return new byte[0];
@@ -437,6 +439,10 @@ public final class PCode extends PythonBuiltinObject {
 
     public boolean isGenerator() {
         return (getFlags() & FLAG_GENERATOR) > 0;
+    }
+
+    public static boolean isModule(int flags) {
+        return (flags & FLAG_MODULE) > 0;
     }
 
     static boolean takesVarArgs(int flags) {

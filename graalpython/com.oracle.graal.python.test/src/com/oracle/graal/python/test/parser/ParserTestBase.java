@@ -43,6 +43,7 @@ package com.oracle.graal.python.test.parser;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.parser.ScopeInfo;
+import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -79,6 +80,7 @@ public class ParserTestBase {
     @Rule public TestName name = new TestName();
 
     private ScopeInfo lastGlobalScope;
+    private SSTNode lastSST;
 
     public ParserTestBase() {
         PythonTests.enterContext();
@@ -106,11 +108,16 @@ public class ParserTestBase {
         PythonParser parser = context.getCore().getParser();
         Node result = ((PythonParserImpl) parser).parseN(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
+        lastSST = ((PythonParserImpl) parser).getLastSST();
         return result;
     }
 
     protected ScopeInfo getLastGlobalScope() {
         return lastGlobalScope;
+    }
+
+    protected SSTNode getLastSST() {
+        return lastSST;
     }
 
     public void checkSyntaxError(String source) throws Exception {
@@ -253,14 +260,14 @@ public class ParserTestBase {
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
 
-    private String printTreeToString(Node node) {
+    protected String printTreeToString(Node node) {
         ParserTreePrinter visitor = new ParserTreePrinter();
         visitor.printFormatStringLiteralDetail = printFormatStringLiteralValues;
         node.accept(visitor);
         return visitor.getTree();
     }
 
-    protected void assertDescriptionMatches(String actual, File goldenFile) throws IOException {
+    protected void assertDescriptionMatches(String actual, File goldenFile) throws Exception {
         if (!goldenFile.exists()) {
             if (!goldenFile.createNewFile()) {
                 assertTrue("Cannot create file " + goldenFile.getAbsolutePath(), false);
@@ -272,6 +279,10 @@ public class ParserTestBase {
         }
         String expected = readFile(goldenFile);
 
+        assertDescriptionMatches(actual, expected, goldenFile.getName());
+    }
+
+    protected void assertDescriptionMatches(String actual, String expected, String someName) throws Exception {
         final String expectedTrimmed = expected.trim();
         final String actualTrimmed = actual.trim();
 
@@ -290,7 +301,7 @@ public class ParserTestBase {
 
             // There are some diffrerences between expected and actual content --> Test failed
 
-            assertTrue("Not matching goldenfile: " + goldenFile.getName() + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified), false);
+            assertTrue("Not matching results: " + (someName == null ? "" : someName) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified), false);
         }
     }
 

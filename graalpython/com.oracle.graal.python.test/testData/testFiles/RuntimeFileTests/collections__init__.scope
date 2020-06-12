@@ -603,7 +603,7 @@ Scope: []
             FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: [key]
             FreeVars: [__class__]
-            Scope: generator33790
+            Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [m, <return_val>, key]
                 CellVars: Empty
@@ -668,7 +668,7 @@ Scope: []
             FrameDescriptor: [elem, nonpositive, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
-            Scope: generator30346
+            Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [elem, count, <>temp2, <>temp3, <return_val>]
                 CellVars: Empty
@@ -793,7 +793,7 @@ Scope: []
             FrameDescriptor: [result, tuple_new, num_fields, iterable, _len, cls, <return_val>]
             CellVars: Empty
             FreeVars: [_len, num_fields, tuple_new]
-        Scope: generator14106
+        Scope: generator
             Kind: GenExp
             FrameDescriptor: [name, <return_val>]
             CellVars: Empty

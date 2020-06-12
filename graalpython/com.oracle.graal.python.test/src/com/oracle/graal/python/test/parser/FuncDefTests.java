@@ -192,6 +192,18 @@ public class FuncDefTests extends ParserTestBase {
     }
 
     @Test
+    public void functionDef22() throws Exception {
+        checkScopeAndTree(
+                        "def test():\n" +
+                                        "  a = 1;\n" +
+                                        "  def fn1(): pass\n" +
+                                        "  def fn2(): pass\n" +
+                                        "  return locals()\n" +
+                                        "\n" +
+                                        "print(test())\n");
+    }
+
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree();
     }

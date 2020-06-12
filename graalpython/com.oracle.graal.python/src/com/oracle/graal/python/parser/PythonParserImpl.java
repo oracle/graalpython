@@ -25,15 +25,27 @@
  */
 package com.oracle.graal.python.parser;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
+import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
 
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
+import com.oracle.graal.python.parser.sst.BlockSSTNode;
+import com.oracle.graal.python.parser.sst.SSTDeserializer;
 import com.oracle.graal.python.parser.sst.SSTNode;
+import com.oracle.graal.python.parser.sst.SSTNodeWithScope;
+import com.oracle.graal.python.parser.sst.SSTNodeWithScopeFinder;
+import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
+import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.parser.sst.StringUtils;
+import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -43,15 +55,24 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import org.antlr.v4.runtime.Token;
+import org.graalvm.nativeimage.ImageInfo;
 
-public final class PythonParserImpl implements PythonParser {
+public final class PythonParserImpl implements PythonParser, PythonCodeSerializer {
 
     private final boolean logFiles;
     private final int timeStatistics;
     private long timeInParser = 0;
     private long numberOfFiles = 0;
+    private static final boolean IN_IMAGE_BUILD_TIME = ImageInfo.inImageBuildtimeCode();
 
     public static final DescriptiveBailErrorListener ERROR_LISTENER = new DescriptiveBailErrorListener();
 
@@ -61,7 +82,14 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private static Python3Parser getPython3Parser(Source source, ParserErrorCallback errors) {
-        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()));
+        Python3Lexer lexer;
+        try {
+            lexer = source.getPath() == null
+                            ? new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()))
+                            : new Python3Lexer(CharStreams.fromFileName(source.getPath()));
+        } catch (IOException ex) {
+            lexer = new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()));
+        }
         lexer.removeErrorListeners();
         lexer.addErrorListener(ERROR_LISTENER);
         Python3Parser parser = new Python3Parser(new CommonTokenStream(lexer));
@@ -73,10 +101,128 @@ public final class PythonParserImpl implements PythonParser {
         return parser;
     }
 
-    private ScopeInfo lastGlobalScope;
+    @Override
+    @TruffleBoundary
+    public byte[] serialize(RootNode rootNode) {
+        Source source = rootNode.getSourceSection().getSource();
+        assert source != null;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(source.getLength() * 2);
+        DataOutputStream dos = new DataOutputStream(baos);
+        CacheItem lastParserResult = cachedLastAntlrResult;
+        if (!source.equals(lastParserResult.source)) {
+            // we need to parse the source again
+            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source);
+            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null);
+        }
+        try {
+            dos.writeByte(SerializationUtils.VERSION);
+            if (rootNode instanceof ModuleRootNode) {
+                // serialize whole module
+                ScopeInfo.write(dos, lastParserResult.globalScope);
+                dos.writeInt(0);
+                lastParserResult.antlrResult.accept(new SSTSerializerVisitor(dos));
+            } else {
+                // serialize just the part
+                SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
+                SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
+                // store with parent scope
+                ScopeInfo.write(dos, rootSST.getScope().getParent());
+                dos.writeInt(rootSST.getStartOffset());
+                rootSST.accept(new SSTSerializerVisitor(dos));
+            }
+            dos.close();
+        } catch (IOException e) {
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save data during serialization.");
+        }
+
+        return baos.toByteArray();
+    }
+
+    @Override
+    public RootNode deserialize(Source source, byte[] data) {
+        return deserialize(source, data, null, null);
+    }
+
+    @Override
+    @TruffleBoundary
+    public RootNode deserialize(Source source, byte[] data, String[] cellvars, String[] freevars) {
+        ByteArrayInputStream bais = new ByteArrayInputStream(data);
+        DataInputStream dis = new DataInputStream(bais);
+        ScopeInfo globalScope = null;
+        SSTNode sstNode = null;
+        if (data.length != 0) {
+            try {
+                // Just to be sure that the serialization version is ok.
+                byte version = dis.readByte();
+                if (version != SerializationUtils.VERSION) {
+                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
+                }
+                globalScope = ScopeInfo.read(dis, null);
+                int offset = dis.readInt();
+                sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
+                if (cellvars != null || freevars != null) {
+                    ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
+                    if (cellvars != null) {
+                        rootScope.setCellVars(cellvars);
+                    }
+                    if (freevars != null) {
+                        rootScope.setFreeVars(freevars);
+                    }
+                }
+            } catch (IOException e) {
+                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + source.getPath());
+            }
+        } else {
+            return new BadOPCodeNode(PythonLanguage.getCore().getLanguage());
+        }
+        PythonCore core = PythonLanguage.getCore();
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source);
+        sstFactory.getScopeEnvironment().setGlobalScope(globalScope);
+        ParserMode mode = sstNode instanceof BlockSSTNode ? ParserMode.File : ParserMode.Deserialization;
+        try {
+            Node result = sstFactory.createParserResult(sstNode, mode, null);
+            if (mode == ParserMode.Deserialization) {
+                // find function RootNode
+                final Node[] fromVisitor = new Node[1];
+                result.accept((Node node) -> {
+                    if (node instanceof GeneratorFunctionDefinitionNode) {
+                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.getContext());
+                        return false;
+                    } else if (node instanceof FunctionDefinitionNode) {
+                        fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();
+                        return false;
+                    }
+                    return true;
+                });
+                result = fromVisitor[0];
+            }
+            return (RootNode) result;
+        } catch (Exception e) {
+            throw handleParserError(core, source, e);
+        }
+    }
+
+    private static class CacheItem {
+        Source source;
+        SSTNode antlrResult;
+        ScopeInfo globalScope;
+
+        public CacheItem(Source source, SSTNode antlrResult, ScopeInfo globalScope) {
+            this.source = source;
+            this.antlrResult = antlrResult;
+            this.globalScope = globalScope;
+        }
+    }
+
+    private final CacheItem cachedLastAntlrResult = new CacheItem(null, null, null);
 
     public ScopeInfo getLastGlobaScope() {
-        return lastGlobalScope;
+        return cachedLastAntlrResult.globalScope;
+    }
+
+    // for test purposes.
+    public SSTNode getLastSST() {
+        return cachedLastAntlrResult.antlrResult;
     }
 
     @Override
@@ -114,12 +260,10 @@ public final class PythonParserImpl implements PythonParser {
         return result;
     }
 
-    @TruffleBoundary
-    public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
+    private CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
         Python3Parser parser = getPython3Parser(source, errors);
-        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source);
         parser.setFactory(sstFactory);
         SSTNode parserSSTResult = null;
 
@@ -156,9 +300,22 @@ public final class PythonParserImpl implements PythonParser {
             }
         }
 
-        lastGlobalScope = sstFactory.getScopeEnvironment().getGlobalScope();
+        if (!IN_IMAGE_BUILD_TIME) {
+            cachedLastAntlrResult.globalScope = sstFactory.getScopeEnvironment().getGlobalScope();
+            cachedLastAntlrResult.antlrResult = parserSSTResult;
+            cachedLastAntlrResult.source = source;
+            return cachedLastAntlrResult;
+        } else {
+            return new CacheItem(source, parserSSTResult, sstFactory.getScopeEnvironment().getGlobalScope());
+        }
+    }
+
+    @TruffleBoundary
+    public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source);
+        CacheItem parserSSTResult = parseWithANTLR(mode, errors, sstFactory, source, currentFrame);
         try {
-            return sstFactory.createParserResult(parserSSTResult, mode, currentFrame);
+            return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame);
         } catch (Exception e) {
             throw handleParserError(errors, source, e);
         }

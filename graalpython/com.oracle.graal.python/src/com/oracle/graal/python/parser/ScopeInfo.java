@@ -33,10 +33,14 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 public final class ScopeInfo {
 
@@ -99,8 +103,14 @@ public final class ScopeInfo {
     private TreeSet<String> seenVars;
 
     private boolean annotationsField;
+    // Used for serialization and deseraialization
+    private final int serializationId;
 
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
+        this(scopeId, -1, kind, frameDescriptor, parent);
+    }
+
+    private ScopeInfo(String scopeId, int serializationId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
         this.scopeKind = kind;
         this.frameDescriptor = frameDescriptor == null ? new FrameDescriptor() : frameDescriptor;
@@ -112,6 +122,7 @@ public final class ScopeInfo {
             this.nextChildScope = this.parent.firstChildScope;
             this.parent.firstChildScope = this;
         }
+        this.serializationId = serializationId == -1 ? this.hashCode() : serializationId;
     }
 
     public ScopeInfo getFirstChildScope() {
@@ -124,6 +135,10 @@ public final class ScopeInfo {
 
     public String getScopeId() {
         return scopeId;
+    }
+
+    public int getSerializetionId() {
+        return this.serializationId;
     }
 
     public ScopeKind getScopeKind() {
@@ -223,6 +238,18 @@ public final class ScopeInfo {
         }
     }
 
+    public void setCellVars(String[] identifiers) {
+        if (cellVars == null) {
+            cellVars = new TreeSet<>();
+        } else {
+            cellVars.clear();
+        }
+        for (String identifier : identifiers) {
+            cellVars.add(identifier);
+            createSlotIfNotPresent(identifier);
+        }
+    }
+
     public void addFreeVar(String identifier, boolean createFrameSlot) {
         if (freeVars == null) {
             freeVars = new TreeSet<>();
@@ -230,6 +257,18 @@ public final class ScopeInfo {
         freeVars.add(identifier);
         if (createFrameSlot) {
             this.createSlotIfNotPresent(identifier);
+        }
+    }
+
+    public void setFreeVars(String[] identifiers) {
+        if (freeVars == null) {
+            freeVars = new TreeSet<>();
+        } else {
+            freeVars.clear();
+        }
+        for (String identifier : identifiers) {
+            freeVars.add(identifier);
+            createSlotIfNotPresent(identifier);
         }
     }
 
@@ -355,6 +394,148 @@ public final class ScopeInfo {
             }
             sb.append("]");
         }
+    }
+
+    public ScopeInfo getChildScope(String id) {
+        ScopeInfo scope = firstChildScope;
+        while (scope != null) {
+            if (scope.getScopeId().equals(id)) {
+                return scope;
+            }
+            scope = scope.nextChildScope;
+        }
+        return null;
+    }
+
+    public ScopeInfo getChildScope(int serId) {
+        ScopeInfo scope = firstChildScope;
+        while (scope != null) {
+            if (scope.getSerializetionId() == serId) {
+                return scope;
+            }
+            scope = scope.nextChildScope;
+        }
+        return null;
+    }
+
+    public static void write(DataOutput out, ScopeInfo scope) throws IOException {
+        out.writeByte(scope.scopeKind.ordinal());
+        out.writeUTF(scope.scopeId);
+        out.writeInt(scope.getSerializetionId());
+        out.writeBoolean(scope.hasAnnotations());
+        // for recreating frame descriptor
+        Set<Object> identifiers = scope.getFrameDescriptor().getIdentifiers();
+        List<String> names = new ArrayList<>();
+        for (Object identifier : identifiers) {
+            if (identifier instanceof String) {
+                String name = (String) identifier;
+                if (!name.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX) && !name.startsWith(FrameSlotIDs.RETURN_SLOT_ID)) {
+                    names.add((String) identifier);
+                }
+            }
+        }
+        out.writeInt(names.size());
+        for (String name : names) {
+            out.writeUTF(name);
+        }
+
+        if (scope.explicitGlobalVariables == null) {
+            out.writeInt(0);
+        } else {
+            out.writeInt(scope.explicitGlobalVariables.size());
+            for (String identifier : scope.explicitGlobalVariables) {
+                out.writeUTF(identifier);
+            }
+        }
+
+        if (scope.explicitNonlocalVariables == null) {
+            out.writeInt(0);
+        } else {
+            out.writeInt(scope.explicitNonlocalVariables.size());
+            for (String identifier : scope.explicitNonlocalVariables) {
+                out.writeUTF(identifier);
+            }
+        }
+
+        if (scope.cellVars == null) {
+            out.writeInt(0);
+        } else {
+            out.writeInt(scope.cellVars.size());
+            for (String identifier : scope.cellVars) {
+                out.writeUTF(identifier);
+            }
+        }
+
+        if (scope.freeVars == null) {
+            out.writeInt(0);
+        } else {
+            out.writeInt(scope.freeVars.size());
+            for (String identifier : scope.freeVars) {
+                out.writeUTF(identifier);
+            }
+        }
+
+        ScopeInfo child = scope.firstChildScope;
+        if (child == null) {
+            out.writeInt(0);
+        } else {
+            List<ScopeInfo> children = new ArrayList<>();
+            while (child != null) {
+                children.add(child);
+                child = child.nextChildScope;
+            }
+            out.writeInt(children.size());
+            for (int i = children.size() - 1; i >= 0; i--) {
+                write(out, children.get(i));
+            }
+        }
+    }
+
+    public static ScopeInfo read(DataInput input, ScopeInfo parent) throws IOException {
+        byte kindByte = input.readByte();
+        if (kindByte == -1) {
+            // there is end of the scope marker, no other scope in parent.
+            return null;
+        }
+        ScopeKind kind = ScopeKind.values()[kindByte];
+
+        String id = input.readUTF();
+        int serializationId = input.readInt();
+        boolean hasAnnotations = input.readBoolean();
+
+        ScopeInfo scope = new ScopeInfo(id, serializationId, kind, null, parent);
+        scope.annotationsField = hasAnnotations;
+        int len = input.readInt();
+        for (int i = 0; i < len; i++) {
+            scope.createSlotIfNotPresent(input.readUTF());
+        }
+
+        len = input.readInt();
+        for (int i = 0; i < len; i++) {
+            scope.addExplicitGlobalVariable(input.readUTF());
+        }
+
+        len = input.readInt();
+        for (int i = 0; i < len; i++) {
+            scope.addExplicitNonlocalVariable(input.readUTF());
+        }
+
+        len = input.readInt();
+        for (int i = 0; i < len; i++) {
+            scope.addCellVar(input.readUTF());
+        }
+
+        len = input.readInt();
+        for (int i = 0; i < len; i++) {
+            scope.addFreeVar(input.readUTF(), false);
+        }
+
+        int childrenCount = input.readInt();
+        for (int i = 0; i < childrenCount; i++) {
+            read(input, scope);
+        }
+
+        return scope;
     }
 
 }

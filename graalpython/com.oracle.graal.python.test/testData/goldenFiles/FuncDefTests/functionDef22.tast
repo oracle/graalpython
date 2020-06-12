@@ -1,0 +1,144 @@
+ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():↵  a = 1;...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,90]`def test():↵  a = 1;...`
+    ExpressionWithSideEffect SourceSection: [0,89]`def test():↵  a = 1;...`
+      Expression:
+        PythonCallUnary SourceSection: [76,89]`print(test())`
+          CallUnaryMethodNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [76,81]`print`
+            Identifier: print
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
+          PythonCallNodeGen SourceSection: [82,88]`test()`
+            CallNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [82,86]`test`
+              Identifier: test
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,76]`def test():↵  a = 1;...`
+          Identifier: test
+          FunctionDefinitionNode Name: test SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,76]`def test():↵  a = 1;...`
+              Name: test
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 4 slots [a, fn1, fn2, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,76]`def test():↵  a = 1;...`
+                ReturnTargetNode SourceSection: [0,76]`def test():↵  a = 1;...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [14,74]`a = 1;↵  def fn1(): ...`
+                      WriteLocalVariableNodeGen SourceSection: [14,19]`a = 1`
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,a,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                        IntegerLiteralNode SourceSection: [18,19]`1`
+                          Value: 1
+                      WriteLocalVariableNodeGen SourceSection: [23,41]`def fn1(): pass↵  `
+                        Identifier: fn1
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,fn1,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                        FunctionDefinitionNode Name: fn1 SourceSection: None
+                          Arguments: None
+                          KwArguments: None
+                          Documentation: StringLiteralNode: Empty
+                          FreeVarSlots: None
+                          ExecutionSlots:
+                            FreeVarsSlots: None
+                            CellVarsSlots: None
+                          FunctionRootNode SourceSection: [23,41]`def fn1(): pass↵  `
+                            Name: fn1
+                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: None
+                            NeedsCellFrame: False
+                            FrameDescriptor: 1 slots [<return_val>]
+                            ExecutionSlots:
+                              FreeVarsSlots: None
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [23,41]`def fn1(): pass↵  `
+                              ReturnTargetNode SourceSection: [23,41]`def fn1(): pass↵  `
+                                Body: BlockNode SourceSection: None
+                                  BlockNode SourceSection: None
+                                  FunctionBodyNode SourceSection: [34,38]`pass`
+                                    ExpressionStatementNode SourceSection: [34,38]`pass`
+                                      EmptyNode SourceSection: [34,38]`pass`
+                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Frame: [0,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: [41,59]`def fn2(): pass↵  `
+                        Identifier: fn2
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,fn2,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                        FunctionDefinitionNode Name: fn2 SourceSection: None
+                          Arguments: None
+                          KwArguments: None
+                          Documentation: StringLiteralNode: Empty
+                          FreeVarSlots: None
+                          ExecutionSlots:
+                            FreeVarsSlots: None
+                            CellVarsSlots: None
+                          FunctionRootNode SourceSection: [41,59]`def fn2(): pass↵  `
+                            Name: fn2
+                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: None
+                            NeedsCellFrame: False
+                            FrameDescriptor: 1 slots [<return_val>]
+                            ExecutionSlots:
+                              FreeVarsSlots: None
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [41,59]`def fn2(): pass↵  `
+                              ReturnTargetNode SourceSection: [41,59]`def fn2(): pass↵  `
+                                Body: BlockNode SourceSection: None
+                                  BlockNode SourceSection: None
+                                  FunctionBodyNode SourceSection: [52,56]`pass`
+                                    ExpressionStatementNode SourceSection: [52,56]`pass`
+                                      EmptyNode SourceSection: [52,56]`pass`
+                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Frame: [0,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                      FrameReturnNode SourceSection: [59,74]`return locals()`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [3,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                          PythonCallNodeGen SourceSection: [66,74]`locals()`
+                            CallNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [66,72]`locals`
+                              Identifier: locals
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [3,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
+                    ReadVariableFromFrameNodeGen SourceSection: None

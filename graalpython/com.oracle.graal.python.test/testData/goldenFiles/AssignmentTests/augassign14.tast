@@ -21,7 +21,7 @@ ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*a
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,61]`def _method(*args, *...`
               Name: _method
-              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                 Keyword Names: None
               CelVars: None
               FreeVars: None

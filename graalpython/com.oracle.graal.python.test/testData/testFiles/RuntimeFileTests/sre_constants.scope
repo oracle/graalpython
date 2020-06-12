@@ -13,12 +13,12 @@ Scope: []
         FrameDescriptor: [names, items, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-        Scope: generator2075
+        Scope: generator
             Kind: DictComp
             FrameDescriptor: [item, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-        Scope: generator1993
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [name, <>temp2, i, <>temp3, <return_val>]
             CellVars: Empty

@@ -8,12 +8,12 @@ Scope: []
         FrameDescriptor: [other, cls, abcs, <return_val>, base]
         CellVars: [abcs, base]
         FreeVars: Empty
-        Scope: generator164
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
-        Scope: generator66
+        Scope: generator
             Kind: GenExp
             FrameDescriptor: [b, <return_val>, base]
             CellVars: Empty

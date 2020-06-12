@@ -559,7 +559,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             CellVarsSlots: None
           FunctionRootNode SourceSection: [2331,2646]`def _check_methods(C...`
             Name: _check_methods
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
               Param Names: C
             CelVars: None
             FreeVars: None
@@ -4940,7 +4940,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [10289,10350]`def __call__(self, *...`
                               Name: __call__
-                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
                                 Param Names: self
                                 Keyword Names: None
                               CelVars: None
@@ -11009,7 +11009,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [21191,22342]`def update(*args, **...`
                             Name: update
-                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
                             FreeVars: __class__
@@ -11221,7 +11221,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [22057,22275]`elif hasattr(other, ...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None

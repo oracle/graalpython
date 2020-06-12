@@ -8,7 +8,7 @@ Scope: []
         FrameDescriptor: [someset, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-        Scope: generator34
+        Scope: generator
             Kind: GenExp
             FrameDescriptor: [name, <return_val>]
             CellVars: Empty

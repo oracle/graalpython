@@ -63,6 +63,7 @@ import com.oracle.graal.python.parser.sst.CollectionSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
+import com.oracle.graal.python.parser.sst.FunctionDefSSTNode;
 import com.oracle.graal.python.parser.sst.GeneratorFactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
@@ -254,6 +255,13 @@ public final class PythonSSTNodeFactory {
             isGen = true;
             scopeEnvironment.setCurrentScope(new ScopeInfo("evalgen", ScopeKind.Generator, useFrame.getFrameDescriptor(), scopeEnvironment.getGlobalScope()));
         } else {
+            if (mode == PythonParser.ParserMode.Deserialization && parserSSTResult instanceof FunctionDefSSTNode) {
+                // we need to chek, if the deserialized function is not generator
+                FunctionDefSSTNode fDef = (FunctionDefSSTNode) parserSSTResult;
+                if (fDef.getScope().getScopeKind() == ScopeKind.Generator) {
+                    isGen = true;
+                }
+            }
             scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         }
         scopeEnvironment.setFreeVarsInRootScope(useFrame);
@@ -261,42 +269,47 @@ public final class PythonSSTNodeFactory {
         if (isGen) {
             factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source, factoryVisitor);
         }
-        ExpressionNode body = mode == PythonParser.ParserMode.Eval
-                        ? (ExpressionNode) parserSSTResult.accept(factoryVisitor)
-                        : parserSSTResult instanceof BlockSSTNode
-                                        ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
-                                        : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
-        FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
-        switch (mode) {
-            case Eval:
-                scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
-                StatementNode evalReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(body, scopeEnvironment.getReturnSlot()));
-                ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
-                FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(), returnTarget,
-                                scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
-                result = functionRoot;
-                break;
-            case File:
-                result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
-                                scopeEnvironment.getGlobalScope().hasAnnotations());
-                ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
-                break;
-            case InlineEvaluation:
-                result = body;
-                break;
-            case InteractiveStatement:
-                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
-                ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
-                break;
-            case Statement:
-                ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
-                printExpression.assignSourceSection(body.getSourceSection());
-                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
-                                scopeEnvironment.getGlobalScope().hasAnnotations());
-                ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
-                break;
-            default:
-                throw new RuntimeException("unexpected mode: " + mode);
+        if (mode == PythonParser.ParserMode.Deserialization) {
+            result = parserSSTResult.accept(factoryVisitor);
+        } else {
+            ExpressionNode body = mode == PythonParser.ParserMode.Eval
+                            ? (ExpressionNode) parserSSTResult.accept(factoryVisitor)
+                            : parserSSTResult instanceof BlockSSTNode
+                                            ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
+                                            : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
+            FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
+            switch (mode) {
+                case Eval:
+                    scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
+                    StatementNode evalReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(body, scopeEnvironment.getReturnSlot()));
+                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+                    FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                                    returnTarget,
+                                    scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
+                    result = functionRoot;
+                    break;
+                case File:
+                    result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                                    scopeEnvironment.getGlobalScope().hasAnnotations());
+                    ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
+                    break;
+                case InlineEvaluation:
+                    result = body;
+                    break;
+                case InteractiveStatement:
+                    result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
+                    ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
+                    break;
+                case Statement:
+                    ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
+                    printExpression.assignSourceSection(body.getSourceSection());
+                    result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                                    scopeEnvironment.getGlobalScope().hasAnnotations());
+                    ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
+                    break;
+                default:
+                    throw new RuntimeException("unexpected mode: " + mode);
+            }
         }
         return result;
     }

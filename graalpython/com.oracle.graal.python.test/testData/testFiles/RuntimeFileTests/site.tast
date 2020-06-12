@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CellVarsSlots: None
           FunctionRootNode SourceSection: [3526,3696]`def makepath(*paths)...`
             Name: makepath
-            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
@@ -1995,7 +1995,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [8700,8781]`def joinuser(*args):...`
                           Name: joinuser
-                          Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                          Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
@@ -4362,7 +4362,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [16896,16967]`elif key == 'home':↵...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -5517,7 +5517,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [20939,20940]`0`
                                 Value: 0
-                          IfNode SourceSection: None
+                          IfNode SourceSection: [20950,21111]`elif ENABLE_USER_SIT...`
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
@@ -5535,7 +5535,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [21003,21004]`1`
                                   Value: 1
-                            IfNode SourceSection: None
+                            IfNode SourceSection: [21014,21111]`elif ENABLE_USER_SIT...`
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None

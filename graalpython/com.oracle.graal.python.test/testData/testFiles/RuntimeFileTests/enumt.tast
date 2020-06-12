@@ -918,7 +918,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [2448,2872]`elif key == '_ignore...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -1061,7 +1061,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   NoValueNode SourceSection: None
                                                 BlockNode SourceSection: None
                                             BlockNode SourceSection: None
-                                      IfNode SourceSection: None
+                                      IfNode SourceSection: [2872,3691]`elif _is_dunder(key)...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -1096,7 +1096,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 CachedDispatchFirst SourceSection: None
                                             StringLiteralNode SourceSection: [2951,2960]`'_order_'`
                                           BlockNode SourceSection: None
-                                        IfNode SourceSection: None
+                                        IfNode SourceSection: [2969,3691]`elif key in self._me...`
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
@@ -1139,7 +1139,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             NoValueNode SourceSection: None
-                                          IfNode SourceSection: None
+                                          IfNode SourceSection: [3119,3691]`elif key in self._ig...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
@@ -1168,7 +1168,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [3157,3161]`pass`
                                               EmptyNode SourceSection: [3157,3161]`pass`
-                                            IfNode SourceSection: None
+                                            IfNode SourceSection: [3170,3691]`elif not _is_descrip...`
                                               NotNodeGen SourceSection: [3175,3200]`not _is_descriptor(v...`
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
