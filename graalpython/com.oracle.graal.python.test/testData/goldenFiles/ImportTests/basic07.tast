@@ -16,6 +16,8 @@ ModuleRootNode Name: <module 'basic07'> SourceSection: [0,29]`import encodings.a
               Key: aliases
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             ImportExpression SourceSection: None
               ImportNode SourceSection: None
                 Module: encodings.aliases

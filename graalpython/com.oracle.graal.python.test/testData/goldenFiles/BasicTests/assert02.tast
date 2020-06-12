@@ -37,26 +37,34 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                       Identifier: marks
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,marks,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     FunctionBodyNode SourceSection: [20,59]`assert len(marks) !=...`
                       AssertNode SourceSection: [20,59]`assert len(marks) !=...`
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [27,42]`len(marks) != 0`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __ne__
-                            PythonCallNodeGen SourceSection: [27,37]`len(marks)`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [31,36]`marks`
-                                Frame: [0,marks,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [27,37]`len(marks)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [27,30]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [31,36]`marks`
+                                Frame: [0,marks,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [41,42]`0`
                               Value: 0
                         StringLiteralNode SourceSection: [43,59]`"List is empty."`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

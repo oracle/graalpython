@@ -43,8 +43,12 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                         WhileNode SourceSection: None
                           WhileRepeatingNode SourceSection: None
                             YesNodeGen SourceSection: None
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [21,22]`x`
                                 Frame: [0,x,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [29,33]`pass`
                               EmptyNode SourceSection: [29,33]`pass`
@@ -56,11 +60,15 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                               Identifier: x
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [0,x,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               BinaryArithmeticExpression SourceSection: [55,58]`x-1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __sub__
                                 ReadGeneratorFrameVariableNode SourceSection: [55,56]`x`
                                   Frame: [0,x,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [57,58]`1`
                                   Value: 1
@@ -69,23 +77,33 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                                 flagSlot: 0
                                 ReadGeneratorFrameVariableNode SourceSection: [70,71]`x`
                                   Frame: [0,x,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                             GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [43,44]`x`
                               Frame: [0,x,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                         BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: x
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,x,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

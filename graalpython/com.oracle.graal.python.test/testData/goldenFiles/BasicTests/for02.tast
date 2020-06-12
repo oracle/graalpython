@@ -16,18 +16,24 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
                 WriteNameNodeGen SourceSection: None
                   Identifier: i
               ExpressionStatementNode SourceSection: [23,31]`print(i)`
-                PythonCallNodeGen SourceSection: [23,31]`print(i)`
-                  CallNodeGen SourceSection: None
-                  ReadNameNodeGen SourceSection: [29,30]`i`
-                    Identifier: i
+                PythonCallUnary SourceSection: [23,31]`print(i)`
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [23,28]`print`
                     Identifier: print
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
+                  ReadNameNodeGen SourceSection: [29,30]`i`
+                    Identifier: i
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [9,19]`range(210)`
               GetIteratorNodeGen SourceSection: None
-              PythonCallNodeGen SourceSection: [9,19]`range(210)`
-                CallNodeGen SourceSection: None
-                IntegerLiteralNode SourceSection: [15,18]`210`
-                  Value: 210
+              PythonCallUnary SourceSection: [9,19]`range(210)`
+                CallUnaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+                IntegerLiteralNode SourceSection: [15,18]`210`
+                  Value: 210
           BlockNode SourceSection: None

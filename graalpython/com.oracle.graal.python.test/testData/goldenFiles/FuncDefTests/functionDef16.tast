@@ -11,6 +11,8 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [126,130]`test`
             Identifier: test
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,126]`def test():↵  def in...`
           Identifier: test
@@ -41,6 +43,8 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,inner,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         FunctionDefinitionNode Name: inner SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -67,6 +71,8 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                     Identifier: end
                                     ReadLocalVariableNode SourceSection: None
                                       Frame: [0,end,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
@@ -76,6 +82,8 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                       Identifier: inner_inner
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,inner_inner,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       FunctionDefinitionNode Name: inner_inner SourceSection: None
                                         Arguments: None
                                         KwArguments: None
@@ -108,6 +116,8 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                           ReadLocalCellNodeGen SourceSection: [85,88]`end`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [0,end,Illegal]
+                                                              IsBuiltinClassProfile SourceSection: None
+                                                                CachedDispatchFirst SourceSection: None
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                         CompactKeywordsNodeGen SourceSection: None
@@ -118,23 +128,33 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                 Frame: [1,<return_val>,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [94,107]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [94,107]`inner_inner()`
                                         CallNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [94,105]`inner_inner`
                                           Frame: [1,inner_inner,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,125]`inner(" baf\n")`
-                        PythonCallNodeGen SourceSection: [110,125]`inner(" baf\n")`
-                          CallNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [116,124]`" baf\n"`
+                        PythonCallUnary SourceSection: [110,125]`inner(" baf\n")`
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [110,115]`inner`
                             Frame: [0,inner,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [116,124]`" baf\n"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

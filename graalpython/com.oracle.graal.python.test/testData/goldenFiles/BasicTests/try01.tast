@@ -18,4 +18,6 @@ ModuleRootNode Name: <module 'try01'> SourceSection: [0,37]`try:↵  pass↵exce
                 EmptyNode SourceSection: [33,37]`pass`
               ReadNameNodeGen SourceSection: [19,29]`ValueError`
                 Identifier: ValueError
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
             BlockNode SourceSection: None

@@ -109,9 +109,9 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Child private IsSameTypeNode isSameTypeNode;
         @Child private PRaiseNode raiseNode;
 
-        private final IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-        private final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final BranchProfile errorBranch = BranchProfile.create();
 
         public abstract boolean execute(LazyPythonClass descrType, String name, Object obj);

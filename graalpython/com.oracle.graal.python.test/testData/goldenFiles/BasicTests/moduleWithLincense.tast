@@ -7,11 +7,13 @@ ModuleRootNode Name: <module 'moduleWithLincense'> SourceSection: [0,179]`# Copy
   InnerRootNode SourceSection: [0,179]`# Copyright (c) 2018...`
     ExpressionWithSideEffect SourceSection: [142,179]`↵"""MODULE A DOC"""↵...`
       Expression:
-        PythonCallNodeGen SourceSection: [162,179]`print("module A")`
-          CallNodeGen SourceSection: None
-          StringLiteralNode SourceSection: [168,178]`"module A"`
+        PythonCallUnary SourceSection: [162,179]`print("module A")`
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [162,167]`print`
             Identifier: print
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
+          StringLiteralNode SourceSection: [168,178]`"module A"`
       SideEffect:
         ExpressionStatementNode SourceSection: [143,161]`"""MODULE A DOC"""`
           StringLiteralNode SourceSection: [143,161]`"""MODULE A DOC"""`

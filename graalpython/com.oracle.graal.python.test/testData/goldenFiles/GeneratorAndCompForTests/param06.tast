@@ -38,6 +38,8 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                         Identifier: files
                         ReadLocalVariableNode SourceSection: None
                           Frame: [0,files,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -46,6 +48,8 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                         Identifier: dirs
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,dirs,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -54,8 +58,13 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,a,Illegal]
-                        PythonCallNodeGen SourceSection: [28,77]`join(dir, file) for ...`
-                          CallNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                        PythonCallUnary SourceSection: [28,77]`join(dir, file) for ...`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [44,77]`for dir in dirs for ...`
                             Name: fn.<locals>.<genexp>:param06:2
                             FrameDescriptor: 4 slots [file, dir, files, <return_val>]
@@ -83,37 +92,49 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                       ExpressionStatementNode SourceSection: [28,43]`join(dir, file)`
                                         YieldNode SourceSection: [28,43]`join(dir, file)`
                                           flagSlot: 0
-                                          PythonCallNodeGen SourceSection: [28,43]`join(dir, file)`
-                                            CallNodeGen SourceSection: None
-                                            ReadGeneratorFrameVariableNode SourceSection: [33,36]`dir`
-                                              Frame: [1,dir,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGeneratorFrameVariableNode SourceSection: [38,42]`file`
-                                              Frame: [0,file,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                          PythonCallBinary SourceSection: [28,43]`join(dir, file)`
+                                            CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`join`
                                               Identifier: join
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [33,36]`dir`
+                                              Frame: [1,dir,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [38,42]`file`
+                                              Frame: [0,file,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: file
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [0,file,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [72,77]`files`
                                         GetIteratorNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [72,77]`files`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [2,files,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                       GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: dir
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [1,dir,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -121,8 +142,12 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
@@ -131,11 +156,12 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [55,59]`dirs`
                                 Frame: [1,dirs,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

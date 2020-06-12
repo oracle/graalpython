@@ -15,5 +15,7 @@ ModuleRootNode Name: <module 'assignment09'> SourceSection: [0,9]`f().b = 1`
             CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,1]`f`
               Identifier: f
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           IntegerLiteralNode SourceSection: [8,9]`1`
             Value: 1

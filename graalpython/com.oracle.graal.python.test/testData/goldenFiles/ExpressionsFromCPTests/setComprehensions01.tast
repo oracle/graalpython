@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,16]`{x for x in seq}`
-    PythonCallNodeGen SourceSection: [0,16]`{x for x in seq}`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,16]`{x for x in seq}`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: set
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,15]`for x in seq`
         Name: [].<locals>.<genexp>:setComprehensions01:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -35,12 +38,16 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
                     flagSlot: 0
                     ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                       Frame: [0,x,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,x,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -48,8 +55,12 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
@@ -58,7 +69,6 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
           GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [12,15]`seq`
             Identifier: seq
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

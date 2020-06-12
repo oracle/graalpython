@@ -61,7 +61,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class ReadNameNode extends ExpressionNode implements ReadNode, AccessNameNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNode;
-    protected final IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
+    @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final String attributeId;
 
     protected ReadNameNode(String attributeId) {

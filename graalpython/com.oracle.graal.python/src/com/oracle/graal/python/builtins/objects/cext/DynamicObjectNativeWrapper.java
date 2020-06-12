@@ -1120,7 +1120,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
             Object value = asPythonObjectNode.execute(nativeValue);
-            if (value instanceof PDict && isPrimitiveDictProfile.profileObject((PDict) value, PythonBuiltinClassType.PDict)) {
+            if (value instanceof PDict && isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 for (HashingStorage.DictEntry entry : d.entries()) {

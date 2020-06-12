@@ -16,11 +16,15 @@ ModuleRootNode Name: <module 'basic09'> SourceSection: [0,39]`import encodings.a
               Key: something
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             GetAttributeNodeGen SourceSection: None
               GetFixedAttributeNodeGen SourceSection: None
                 Key: aliases
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               ImportExpression SourceSection: None
                 ImportNode SourceSection: None
                   Module: encodings.aliases.something

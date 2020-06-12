@@ -8,8 +8,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
     ExpressionWithSideEffects SourceSection: [1998,4978]`↵@__graalpython__.bu...`
       WriteNameNodeGen SourceSection: [1999,2125]`@__graalpython__.bui...`
         Identifier: hasattr
-        PythonCallNodeGen SourceSection: [1999,2023]`@__graalpython__.bui...`
-          CallNodeGen SourceSection: None
+        PythonCallUnary SourceSection: [1999,2023]`@__graalpython__.bui...`
+          CallUnaryMethodNodeGen SourceSection: None
+          GetCallAttributeNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: None
+              Identifier: __graalpython__
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           FunctionDefinitionNode Name: hasattr SourceSection: None
             Arguments: None
             KwArguments: None
@@ -37,6 +42,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: obj
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,obj,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -44,6 +51,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: key
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,key,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -52,6 +61,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: default
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,default,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         PythonCallNodeGen SourceSection: [2061,2069]`object()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [2061,2067]`object`
@@ -62,35 +73,51 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           NotNodeGen SourceSection: [2081,2122]`getattr(obj, key, de...`
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [2081,2107]`getattr(obj, key, de...`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [2089,2092]`obj`
-                                  Frame: [0,obj,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [2094,2097]`key`
-                                  Frame: [1,key,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [2099,2106]`default`
-                                  Frame: [2,default,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallTernary SourceSection: [2081,2107]`getattr(obj, key, de...`
+                                CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2081,2088]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [2089,2092]`obj`
+                                  Frame: [0,obj,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [2094,2097]`key`
+                                  Frame: [1,key,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [2099,2106]`default`
+                                  Frame: [2,default,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2115,2122]`default`
                                 Frame: [2,default,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [2125,2249]`@__graalpython__.bui...`
+        Identifier: any
+        PythonCallUnary SourceSection: [2125,2149]`@__graalpython__.bui...`
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
-      WriteNameNodeGen SourceSection: [2125,2249]`@__graalpython__.bui...`
-        Identifier: any
-        PythonCallNodeGen SourceSection: [2125,2149]`@__graalpython__.bui...`
-          CallNodeGen SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           FunctionDefinitionNode Name: any SourceSection: None
             Arguments: None
             KwArguments: None
@@ -117,6 +144,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: iterable
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,iterable,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -129,22 +158,32 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 Identifier: i
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [1,i,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                             IfNode SourceSection: [2200,2234]`if i:↵            re...`
                               YesNodeGen SourceSection: None
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadLocalVariableNode SourceSection: [2203,2204]`i`
                                   Frame: [1,i,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               FrameReturnNode SourceSection: [2218,2229]`return True`
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <return_val>
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   BooleanLiteralNode SourceSection: [2225,2229]`True`
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2182,2190]`iterable`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2182,2190]`iterable`
                               Frame: [0,iterable,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       FrameReturnNode SourceSection: [2234,2246]`return False`
@@ -152,17 +191,23 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           BooleanLiteralNode SourceSection: [2241,2246]`False`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [2249,2377]`@__graalpython__.bui...`
+        Identifier: all
+        PythonCallUnary SourceSection: [2249,2273]`@__graalpython__.bui...`
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
-      WriteNameNodeGen SourceSection: [2249,2377]`@__graalpython__.bui...`
-        Identifier: all
-        PythonCallNodeGen SourceSection: [2249,2273]`@__graalpython__.bui...`
-          CallNodeGen SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           FunctionDefinitionNode Name: all SourceSection: None
             Arguments: None
             KwArguments: None
@@ -189,6 +234,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: iterable
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,iterable,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -201,22 +248,32 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 Identifier: i
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [1,i,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                             IfNode SourceSection: [2324,2363]`if not i:↵          ...`
                               NotNodeGen SourceSection: [2327,2332]`not i`
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadLocalVariableNode SourceSection: [2331,2332]`i`
                                   Frame: [1,i,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               FrameReturnNode SourceSection: [2346,2358]`return False`
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <return_val>
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   BooleanLiteralNode SourceSection: [2353,2358]`False`
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2306,2314]`iterable`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2306,2314]`iterable`
                               Frame: [0,iterable,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       FrameReturnNode SourceSection: [2363,2374]`return True`
@@ -224,17 +281,23 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           BooleanLiteralNode SourceSection: [2370,2374]`True`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [2377,2666]`@__graalpython__.bui...`
+        Identifier: filter
+        PythonCallUnary SourceSection: [2377,2401]`@__graalpython__.bui...`
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
-      WriteNameNodeGen SourceSection: [2377,2666]`@__graalpython__.bui...`
-        Identifier: filter
-        PythonCallNodeGen SourceSection: [2377,2401]`@__graalpython__.bui...`
-          CallNodeGen SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           FunctionDefinitionNode Name: filter SourceSection: None
             Arguments: None
             KwArguments: None
@@ -262,6 +325,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: func
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,func,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -269,6 +334,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: iterable
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,iterable,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -277,21 +344,31 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: result
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,result,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ListLiteralNode SourceSection: [2443,2445]`[]`
                           PythonObjectFactoryNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [2450,2503]`predicate = func if ...`
                         Identifier: predicate
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,predicate,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         TernaryIfNode SourceSection: [2462,2503]`func if func is not ...`
                           NotNodeGen SourceSection: [2470,2486]`func is not None`
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2470,2474]`func`
                                 Frame: [0,func,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ObjectLiteralNode SourceSection: [2482,2486]`None`
                           ReadLocalVariableNode SourceSection: [2462,2466]`func`
                             Frame: [0,func,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                           FunctionDefinitionNode Name: <lambda> SourceSection: [2492,2503]`lambda a: a`
                             Arguments: None
@@ -319,6 +396,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: a
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,a,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -328,11 +407,17 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,<return_val>,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [2502,2503]`a`
                                             Frame: [0,a,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [1,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       ElseNode SourceSection: [2508,2585]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
@@ -342,31 +427,45 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 Identifier: i
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [4,i,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                             IfNode SourceSection: [2535,2585]`if predicate(i):↵   ...`
                               YesNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [2538,2550]`predicate(i)`
-                                  CallNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [2548,2549]`i`
-                                    Frame: [4,i,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                PythonCallUnary SourceSection: [2538,2550]`predicate(i)`
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [2538,2547]`predicate`
                                     Frame: [3,predicate,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2548,2549]`i`
+                                    Frame: [4,i,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [2564,2580]`result.append(i)`
-                                PythonCallNodeGen SourceSection: [2564,2580]`result.append(i)`
-                                  CallNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [2578,2579]`i`
-                                    Frame: [4,i,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonCallUnary SourceSection: [2564,2580]`result.append(i)`
+                                  CallUnaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [2564,2570]`result`
                                       Frame: [2,result,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2578,2579]`i`
+                                    Frame: [4,i,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2517,2525]`iterable`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2517,2525]`iterable`
                               Frame: [1,iterable,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       FrameReturnNode SourceSection: [2585,2605]`return tuple(result)...`
@@ -374,20 +473,23 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [2592,2605]`tuple(result)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [2598,2604]`result`
-                              Frame: [2,result,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                          PythonCallUnary SourceSection: [2592,2605]`tuple(result)`
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2592,2597]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [2598,2604]`result`
+                              Frame: [2,result,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                              ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
-              Identifier: __graalpython__
       WriteNameNodeGen SourceSection: [2666,3055]`def __build_class__(...`
         Identifier: __build_class__
         FunctionDefinitionNode Name: __build_class__ SourceSection: None
@@ -421,6 +523,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: func
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,func,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -428,6 +532,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: name
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,name,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -435,6 +541,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: bases
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,bases,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadVarArgsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -442,6 +550,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: metaclass
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,metaclass,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -449,99 +559,133 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: kwargs
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,kwargs,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadVarKeywordsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                   FunctionBodyNode SourceSection: [2809,3052]`if metaclass is not ...`
                     IfNode SourceSection: [2809,2999]`if metaclass is not ...`
                       YesNodeGen SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         OrNode SourceSection: [2812,2852]`metaclass is not Non...`
                           NotNodeGen SourceSection: [2812,2833]`metaclass is not Non...`
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2812,2821]`metaclass`
                                 Frame: [3,metaclass,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ObjectLiteralNode SourceSection: [2829,2833]`None`
                           BinaryComparisonNodeGen SourceSection: [2837,2852]`len(kwargs) > 0`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
-                            PythonCallNodeGen SourceSection: [2837,2848]`len(kwargs)`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [2841,2847]`kwargs`
-                                Frame: [4,kwargs,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [2837,2848]`len(kwargs)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2837,2840]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [2841,2847]`kwargs`
+                                Frame: [4,kwargs,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [2851,2852]`0`
                               Value: 0
                           YesNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [2869,2875]`_posix`
                           Identifier: _posix
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,_posix,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ImportExpression SourceSection: None
                             ImportNode SourceSection: None
                               Module: _posix
                         ExpressionStatementNode SourceSection: [2884,2970]`print("Tried to use ...`
-                          PythonCallNodeGen SourceSection: [2884,2970]`print("Tried to use ...`
-                            CallNodeGen SourceSection: None
-                            StringLiteralNode SourceSection: [2890,2969]`"Tried to use keywor...`
+                          PythonCallUnary SourceSection: [2884,2970]`print("Tried to use ...`
+                            CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2884,2889]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            StringLiteralNode SourceSection: [2890,2969]`"Tried to use keywor...`
                         ExpressionStatementNode SourceSection: [2979,2994]`_posix.exit(-1)`
-                          PythonCallNodeGen SourceSection: [2979,2994]`_posix.exit(-1)`
-                            CallNodeGen SourceSection: None
-                            IntegerLiteralNode SourceSection: [2991,2993]`-1`
-                              Value: -1
+                          PythonCallUnary SourceSection: [2979,2994]`_posix.exit(-1)`
+                            CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2979,2985]`_posix`
                                 Frame: [5,_posix,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                            IntegerLiteralNode SourceSection: [2991,2993]`-1`
+                              Value: -1
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2999,3006]`ns = {}`
                       Identifier: ns
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [6,ns,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       DictLiteralNodeGen SourceSection: [3004,3006]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [3011,3019]`func(ns)`
-                      PythonCallNodeGen SourceSection: [3011,3019]`func(ns)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [3016,3018]`ns`
-                          Frame: [6,ns,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonCallUnary SourceSection: [3011,3019]`func(ns)`
+                        CallUnaryMethodNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [3011,3015]`func`
                           Frame: [0,func,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [3016,3018]`ns`
+                          Frame: [6,ns,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [3024,3052]`return type(name, ba...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [7,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [3031,3052]`type(name, bases, ns...`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [3036,3040]`name`
-                            Frame: [1,name,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [3042,3047]`bases`
-                            Frame: [2,bases,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [3049,3051]`ns`
-                            Frame: [6,ns,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                        PythonCallTernary SourceSection: [3031,3052]`type(name, bases, ns...`
+                          CallTernaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3031,3035]`type`
                             Identifier: type
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [3036,3040]`name`
+                            Frame: [1,name,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [3042,3047]`bases`
+                            Frame: [2,bases,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [3049,3051]`ns`
+                            Frame: [6,ns,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                            ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3055,3636]`class map(object):↵ ...`
         Identifier: map
-        PythonCallNodeGen SourceSection: [3055,3636]`class map(object):↵ ...`
-          CallNodeGen SourceSection: None
+        PythonCallTernary SourceSection: [3055,3636]`class map(object):↵ ...`
+          CallTernaryMethodNodeGen SourceSection: None
+          GetCallAttributeNodeGen SourceSection: None
+            BuiltinsLiteralNode SourceSection: None
           FunctionDefinitionNode Name: map SourceSection: None
             Arguments: None
             KwArguments: None
@@ -606,6 +750,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -613,6 +759,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: func
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,func,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 1
@@ -620,6 +768,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: iterable
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,iterable,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 2
@@ -627,6 +777,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: args
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,args,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadVarArgsNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -635,23 +787,31 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Attribute: __func
                                       ReadLocalVariableNode SourceSection: [3129,3133]`self`
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [3143,3147]`func`
                                         Frame: [1,func,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [3156,3184]`iterators = [iter(it...`
                                       Identifier: iterators
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [4,iterators,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ListLiteralNode SourceSection: [3168,3184]`[iter(iterable)]`
-                                        PythonCallNodeGen SourceSection: [3169,3183]`iter(iterable)`
-                                          CallNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [3174,3182]`iterable`
-                                            Frame: [2,iterable,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                        PythonCallUnary SourceSection: [3169,3183]`iter(iterable)`
+                                          CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3169,3173]`iter`
                                             Identifier: iter
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [3174,3182]`iterable`
+                                            Frame: [2,iterable,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     ElseNode SourceSection: [3193,3254]`for i in args:↵     ...`
                                       ForNode SourceSection: None
@@ -661,37 +821,51 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               Identifier: i
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [5,i,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                           ExpressionStatementNode SourceSection: [3220,3245]`iterators.append(ite...`
-                                            PythonCallNodeGen SourceSection: [3220,3245]`iterators.append(ite...`
-                                              CallNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: [3237,3244]`iter(i)`
-                                                CallNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [3242,3243]`i`
-                                                  Frame: [5,i,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3237,3241]`iter`
-                                                  Identifier: iter
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [3220,3245]`iterators.append(ite...`
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3220,3229]`iterators`
                                                   Frame: [4,iterators,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [3237,3244]`iter(i)`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3237,3241]`iter`
+                                                  Identifier: iter
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [3242,3243]`i`
+                                                  Frame: [5,i,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3202,3206]`args`
                                           GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [3202,3206]`args`
                                             Frame: [3,args,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     SetAttributeNodeGen SourceSection: [3254,3282]`self.__iterators = i...`
                                       Attribute: __iterators
                                       ReadLocalVariableNode SourceSection: [3254,3258]`self`
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [3273,3282]`iterators`
                                         Frame: [4,iterators,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [7,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [3288,3435]`def __next__(self):↵...`
                         ArgumentExpressionNode SourceSection: None
@@ -724,6 +898,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                     Identifier: self
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [0,self,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -732,6 +908,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: args
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,args,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ListLiteralNode SourceSection: [3323,3325]`[]`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     ElseNode SourceSection: [3334,3404]`for it in self.__ite...`
@@ -742,20 +920,26 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               Identifier: it
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [2,it,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                           ExpressionStatementNode SourceSection: [3374,3395]`args.append(next(it)...`
-                                            PythonCallNodeGen SourceSection: [3374,3395]`args.append(next(it)...`
-                                              CallNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: [3386,3394]`next(it)`
-                                                CallNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [3391,3393]`it`
-                                                  Frame: [2,it,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3386,3390]`next`
-                                                  Identifier: next
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [3374,3395]`args.append(next(it)...`
+                                              CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3374,3378]`args`
                                                   Frame: [1,args,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [3386,3394]`next(it)`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3386,3390]`next`
+                                                  Identifier: next
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [3391,3393]`it`
+                                                  Frame: [2,it,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3344,3360]`self.__iterators`
                                           GetIteratorNodeGen SourceSection: None
@@ -764,8 +948,12 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               Key: __iterators
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3344,3348]`self`
                                               Frame: [0,self,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [3404,3429]`return self.__func(*...`
@@ -773,19 +961,27 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         PythonCallNodeGen SourceSection: [3411,3429]`self.__func(*args)`
                                           CallNodeGen SourceSection: None
                                           PositionalArgumentsNode SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3424,3428]`args`
                                               Frame: [1,args,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3411,3415]`self`
                                               Frame: [0,self,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [3435,3480]`def __iter__(self):↵...`
                         ArgumentExpressionNode SourceSection: None
@@ -818,6 +1014,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                     Identifier: self
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [0,self,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -827,11 +1025,17 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [3470,3474]`self`
                                           Frame: [0,self,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [3480,3636]`def __contains__(sel...`
                         ArgumentExpressionNode SourceSection: None
@@ -865,6 +1069,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -872,6 +1078,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       Identifier: x
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,x,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 1
@@ -884,22 +1092,32 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               Identifier: i
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [2,i,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                           IfNode SourceSection: [3573,3620]`if x == i:↵         ...`
                                             YesNodeGen SourceSection: None
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [3576,3582]`x == i`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __eq__
                                                 ReadLocalVariableNode SourceSection: [3576,3577]`x`
                                                   Frame: [1,x,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3581,3582]`i`
                                                   Frame: [2,i,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             FrameReturnNode SourceSection: [3600,3611]`return True`
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <return_val>
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                 BooleanLiteralNode SourceSection: [3607,3611]`True`
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3524,3559]`map(self.__func, *se...`
@@ -912,16 +1130,24 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   Key: __func
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3528,3532]`self`
                                                   Frame: [0,self,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [3542,3558]`self.__iterators`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __iterators
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3542,3546]`self`
                                                   Frame: [0,self,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ExecutePositionalStarargsNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3524,3527]`map`
@@ -933,9 +1159,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         BooleanLiteralNode SourceSection: [3627,3632]`False`
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                     SetItemNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
@@ -944,13 +1174,15 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       StringLiteralNode SourceSection: None
                       ReadLocalVariableNode SourceSection: None
                         Frame: [4,__class__,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [3065,3071]`object`
             Identifier: object
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [3636,3677]`from sys import _get...`
         Importee: sys
         Level: 0
@@ -961,10 +1193,19 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
         GetAnyAttributeNodeGen SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3680,4271]`@__graalpython__.bui...`
         Identifier: vars
-        PythonCallNodeGen SourceSection: [3680,3704]`@__graalpython__.bui...`
-          CallNodeGen SourceSection: None
+        PythonCallUnary SourceSection: [3680,3704]`@__graalpython__.bui...`
+          CallUnaryMethodNodeGen SourceSection: None
+          GetCallAttributeNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: None
+              Identifier: __graalpython__
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           FunctionDefinitionNode Name: vars SourceSection: None
             Arguments: None
             KwArguments: None
@@ -990,23 +1231,29 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       Identifier: obj
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,obj,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadVarArgsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                     FunctionBodyNode SourceSection: [3877,4271]`if len(obj) == 0:↵  ...`
                       IfNode SourceSection: [3877,4134]`if len(obj) == 0:↵  ...`
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [3880,3893]`len(obj) == 0`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
-                            PythonCallNodeGen SourceSection: [3880,3888]`len(obj)`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [3884,3887]`obj`
-                                Frame: [0,obj,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [3880,3888]`len(obj)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [3880,3883]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [3884,3887]`obj`
+                                Frame: [0,obj,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [3892,3893]`0`
                               Value: 0
                         FrameReturnNode SourceSection: [4014,4045]`return __getframe__(...`
@@ -1014,40 +1261,48 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                             GetAttributeNodeGen SourceSection: [4021,4045]`__getframe__(1).f_lo...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: f_locals
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                              PythonCallNodeGen SourceSection: [4021,4036]`__getframe__(1)`
-                                CallNodeGen SourceSection: None
-                                IntegerLiteralNode SourceSection: [4034,4035]`1`
-                                  Value: 1
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                              PythonCallUnary SourceSection: [4021,4036]`__getframe__(1)`
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4033]`__getframe__`
                                   Identifier: __getframe__
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [4034,4035]`1`
+                                  Value: 1
                         IfNode SourceSection: [4050,4134]`elif len(obj) != 1:↵...`
                           YesNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [4055,4068]`len(obj) != 1`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __ne__
-                              PythonCallNodeGen SourceSection: [4055,4063]`len(obj)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [4059,4062]`obj`
-                                  Frame: [0,obj,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [4055,4063]`len(obj)`
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4055,4058]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [4059,4062]`obj`
+                                  Frame: [0,obj,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [4067,4068]`1`
                                 Value: 1
                           RaiseNodeGen SourceSection: [4078,4129]`raise TypeError("var...`
-                            PythonCallNodeGen SourceSection: [4084,4129]`TypeError("vars() ta...`
-                              CallNodeGen SourceSection: None
-                              StringLiteralNode SourceSection: [4094,4128]`"vars() takes at mos...`
+                            PythonCallUnary SourceSection: [4084,4129]`TypeError("vars() ta...`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4084,4093]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              StringLiteralNode SourceSection: [4094,4128]`"vars() takes at mos...`
                             NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                       TryFinallyNode SourceSection: [4134,4271]`try:↵        return ...`
@@ -1057,25 +1312,31 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               Identifier: <return_val>
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               GetAttributeNodeGen SourceSection: [4154,4169]`obj[0].__dict__`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: __dict__
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                 GetItemNodeGen SourceSection: [4154,4160]`obj[0]`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [0,obj,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [4158,4159]`0`
                                     Value: 0
                           ExceptNode SourceSection: None
                             RaiseNodeGen SourceSection: [4205,4268]`raise TypeError("var...`
-                              PythonCallNodeGen SourceSection: [4211,4268]`TypeError("vars() ar...`
-                                CallNodeGen SourceSection: None
-                                StringLiteralNode SourceSection: [4221,4267]`"vars() argument mus...`
+                              PythonCallUnary SourceSection: [4211,4268]`TypeError("vars() ar...`
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4211,4220]`TypeError`
                                   Identifier: TypeError
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                StringLiteralNode SourceSection: [4221,4267]`"vars() argument mus...`
                               NoValueNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4181,4195]`AttributeError`
                               Identifier: AttributeError
@@ -1083,14 +1344,18 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [4271,4575]`@__graalpython__.bui...`
+        Identifier: format
+        PythonCallUnary SourceSection: [4271,4295]`@__graalpython__.bui...`
+          CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
-      WriteNameNodeGen SourceSection: [4271,4575]`@__graalpython__.bui...`
-        Identifier: format
-        PythonCallNodeGen SourceSection: [4271,4295]`@__graalpython__.bui...`
-          CallNodeGen SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           FunctionDefinitionNode Name: format SourceSection: None
             Arguments:
               StringLiteralNode SourceSection: [4326,4328]`''`
@@ -1119,6 +1384,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: value
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,value,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -1126,6 +1393,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: format_spec
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,format_spec,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -1135,37 +1404,49 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [4530,4572]`type(value).__format...`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [4553,4558]`value`
-                              Frame: [0,value,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [4560,4571]`format_spec`
-                              Frame: [1,format_spec,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                          PythonCallBinary SourceSection: [4530,4572]`type(value).__format...`
+                            CallBinaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              PythonCallNodeGen SourceSection: [4530,4541]`type(value)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [4535,4540]`value`
-                                  Frame: [0,value,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [4530,4541]`type(value)`
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4530,4534]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [4535,4540]`value`
+                                  Frame: [0,value,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [4553,4558]`value`
+                              Frame: [0,value,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [4560,4571]`format_spec`
+                              Frame: [1,format_spec,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                              ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
-              Identifier: __graalpython__
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
         SideEffect:
           WriteNameNodeGen SourceSection: [4575,4978]`@__graalpython__.bui...`
             Identifier: sorted
-            PythonCallNodeGen SourceSection: [4575,4599]`@__graalpython__.bui...`
-              CallNodeGen SourceSection: None
+            PythonCallUnary SourceSection: [4575,4599]`@__graalpython__.bui...`
+              CallUnaryMethodNodeGen SourceSection: None
+              GetCallAttributeNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: None
+                  Identifier: __graalpython__
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
               FunctionDefinitionNode Name: sorted SourceSection: None
                 Arguments:
                   ObjectLiteralNode SourceSection: [4625,4629]`None`
@@ -1195,6 +1476,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             Identifier: iterable
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [0,iterable,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 0
@@ -1202,6 +1485,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             Identifier: key
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,key,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 1
@@ -1209,6 +1494,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             Identifier: reverse
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [2,reverse,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 2
@@ -1217,14 +1504,18 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             Identifier: result
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [3,result,Illegal]
-                            PythonCallNodeGen SourceSection: [4903,4917]`list(iterable)`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [4908,4916]`iterable`
-                                Frame: [0,iterable,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                            PythonCallUnary SourceSection: [4903,4917]`list(iterable)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4903,4907]`list`
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [4908,4916]`iterable`
+                                Frame: [0,iterable,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                ReadVariableFromFrameNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [4922,4959]`result.sort(key=key,...`
                             PythonCallNodeGen SourceSection: [4922,4959]`result.sort(key=key,...`
                               CallNodeGen SourceSection: None
@@ -1232,10 +1523,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 KeywordLiteralNode SourceSection: None
                                   ReadLocalVariableNode SourceSection: [4938,4941]`key`
                                     Frame: [1,key,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 KeywordLiteralNode SourceSection: None
                                   ReadLocalVariableNode SourceSection: [4951,4958]`reverse`
                                     Frame: [2,reverse,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 CompactKeywordsNodeGen SourceSection: None
                                 ExecuteKeywordStarargsNodeGen SourceSection: None
@@ -1243,18 +1538,23 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [4922,4928]`result`
                                   Frame: [3,result,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           FrameReturnNode SourceSection: [4964,4977]`return result`
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: <return_val>
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [4,<return_val>,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               ReadLocalVariableNode SourceSection: [4971,4977]`result`
                                 Frame: [3,result,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [4,<return_val>,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                ReadNameNodeGen SourceSection: None
-                  Identifier: __graalpython__

@@ -5,8 +5,10 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,48]`''.join(f'{name}' fo...`
-    PythonCallNodeGen SourceSection: [0,48]`''.join(f'{name}' fo...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,48]`''.join(f'{name}' fo...`
+      CallUnaryMethodNodeGen SourceSection: None
+      GetCallAttributeNodeGen SourceSection: None
+        StringLiteralNode SourceSection: [0,2]`''`
       GeneratorExpressionNode SourceSection: [18,47]`for name in ['Pepa',...`
         Name: [].<locals>.<genexp>:topLevelParser02:1
         FrameDescriptor: 2 slots [name, <return_val>]
@@ -40,6 +42,8 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
                   Identifier: name
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,name,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -47,8 +51,12 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
@@ -60,5 +68,3 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
             StringLiteralNode SourceSection: [39,46]`'Pavel'`
             PythonObjectFactoryNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      GetCallAttributeNodeGen SourceSection: None
-        StringLiteralNode SourceSection: [0,2]`''`

@@ -18,27 +18,39 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
                     Identifier: <>temp0
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [0,<>temp0,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <>temp1
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [1,<>temp1,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                   WriteNameNodeGen SourceSection: None
                     Identifier: a
                     ReadLocalVariableNode SourceSection: None
                       Frame: [0,<>temp0,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                   WriteNameNodeGen SourceSection: None
                     Identifier: b
                     ReadLocalVariableNode SourceSection: None
                       Frame: [1,<>temp1,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [44,52]`print(b)`
-                PythonCallNodeGen SourceSection: [44,52]`print(b)`
-                  CallNodeGen SourceSection: None
-                  ReadNameNodeGen SourceSection: [50,51]`b`
-                    Identifier: b
+                PythonCallUnary SourceSection: [44,52]`print(b)`
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [44,49]`print`
                     Identifier: print
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
+                  ReadNameNodeGen SourceSection: [50,51]`b`
+                    Identifier: b
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
               GetIteratorNodeGen SourceSection: None
               ListLiteralNode SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`

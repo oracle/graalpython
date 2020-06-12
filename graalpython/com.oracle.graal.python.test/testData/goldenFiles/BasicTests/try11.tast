@@ -40,22 +40,28 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                             EmptyNode SourceSection: [27,31]`pass`
                           ExceptNode SourceSection: None
                             ExpressionStatementNode SourceSection: [69,79]`print(err)`
-                              PythonCallNodeGen SourceSection: [69,79]`print(err)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [75,78]`err`
-                                  Frame: [0,err,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [69,79]`print(err)`
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [69,74]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [75,78]`err`
+                                  Frame: [0,err,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: err
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,err,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
                               Identifier: Exception
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

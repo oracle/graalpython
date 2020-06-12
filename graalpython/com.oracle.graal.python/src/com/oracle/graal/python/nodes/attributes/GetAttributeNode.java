@@ -173,7 +173,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         private final String key;
 
         @Child private LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-        @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
         public GetFixedAttributeNode(String key) {
             this.key = key;
@@ -239,7 +239,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
     public abstract static class GetAnyAttributeNode extends GetAttributeBaseNode {
 
         @Child private LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-        @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
         public abstract int executeInt(VirtualFrame frame, Object object, Object key) throws UnexpectedResultException;
 

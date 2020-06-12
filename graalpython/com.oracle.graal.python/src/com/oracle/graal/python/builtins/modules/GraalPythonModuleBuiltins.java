@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
-import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -393,14 +392,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                  * declare the module argument
                  */
                 builtinFunc = func;
-                func.getFunctionRootNode().accept(new NodeVisitor() {
-                    public boolean visit(Node node) {
-                        if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
-                        }
-                        return true;
-                    }
-                });
             } else {
                 /*
                  * Otherwise, we create a new function with a signature that requires one extra
@@ -419,8 +410,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                             node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
                         } else if (node instanceof ReadIndexedArgumentNode) {
                             node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                        } else if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
                         }
                         return true;
                     }

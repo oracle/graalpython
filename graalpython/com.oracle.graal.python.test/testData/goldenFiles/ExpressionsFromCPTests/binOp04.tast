@@ -10,5 +10,9 @@ ModuleRootNode Name: <module 'binOp04'> SourceSection: [0,9]`foo / bar`
         Op: __truediv__
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [6,9]`bar`
         Identifier: bar
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

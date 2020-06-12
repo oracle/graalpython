@@ -66,15 +66,21 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                                           Op: __mul__
                                         ReadGeneratorFrameVariableNode SourceSection: [13,14]`x`
                                           Frame: [0,x,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [15,16]`x`
                                           Frame: [0,x,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: x
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [0,x,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -82,22 +88,28 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26,35]`range(10)`
                             GetIteratorNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [26,35]`range(10)`
-                              CallNodeGen SourceSection: None
-                              IntegerLiteralNode SourceSection: [32,34]`10`
-                                Value: 10
+                            PythonCallUnary SourceSection: [26,35]`range(10)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [26,31]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [32,34]`10`
+                                Value: 10
                           PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

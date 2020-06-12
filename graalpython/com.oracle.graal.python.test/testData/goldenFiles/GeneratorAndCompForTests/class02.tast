@@ -11,8 +11,10 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
       SideEffect:
         WriteNameNodeGen SourceSection: [0,208]`class Counter(dict):...`
           Identifier: Counter
-          PythonCallNodeGen SourceSection: [0,208]`class Counter(dict):...`
-            CallNodeGen SourceSection: None
+          PythonCallTernary SourceSection: [0,208]`class Counter(dict):...`
+            CallTernaryMethodNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
             FunctionDefinitionNode Name: Counter SourceSection: None
               Arguments: None
               KwArguments: None
@@ -76,6 +78,8 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,self,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -84,8 +88,13 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                         Identifier: nonpositive
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,nonpositive,Illegal]
-                                        PythonCallNodeGen SourceSection: [74,127]`elem for elem, count...`
-                                          CallNodeGen SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
+                                        PythonCallUnary SourceSection: [74,127]`elem for elem, count...`
+                                          CallUnaryMethodNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            Identifier: list
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [79,127]`for elem, count in s...`
                                             Name: _keep_positive.<locals>.<genexp>:class02:3
                                             FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
@@ -112,12 +121,18 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
+                                                        IsBuiltinClassProfile SourceSection: None
+                                                          CachedDispatchFirst SourceSection: None
                                                         NotNodeGen SourceSection: [114,127]`not count > 0`
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                           BinaryComparisonNodeGen SourceSection: [118,127]`count > 0`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __gt__
                                                             ReadGeneratorFrameVariableNode SourceSection: [118,123]`count`
                                                               Frame: [1,count,Illegal]
+                                                              IsBuiltinClassProfile SourceSection: None
+                                                                CachedDispatchFirst SourceSection: None
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [126,127]`0`
                                                               Value: 0
@@ -126,6 +141,8 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                           flagSlot: 0
                                                           ReadGeneratorFrameVariableNode SourceSection: [74,78]`elem`
                                                             Frame: [0,elem,Illegal]
+                                                            IsBuiltinClassProfile SourceSection: None
+                                                              CachedDispatchFirst SourceSection: None
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                       BlockNode SourceSection: None
@@ -134,23 +151,35 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                         Identifier: <>temp2
                                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                           Frame: [2,<>temp2,Illegal]
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: <>temp3
                                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                           Frame: [3,<>temp3,Illegal]
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: elem
                                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                           Frame: [0,elem,Illegal]
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                         ReadGeneratorFrameVariableNode SourceSection: None
                                                           Frame: [2,<>temp2,Illegal]
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: count
                                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                           Frame: [1,count,Illegal]
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                         ReadGeneratorFrameVariableNode SourceSection: None
                                                           Frame: [3,<>temp3,Illegal]
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
@@ -159,8 +188,12 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: None
                                                     Frame: [4,<return_val>,Illegal]
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
@@ -172,11 +205,10 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [98,102]`self`
                                                     Frame: [0,self,Illegal]
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                            Identifier: list
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ElseNode SourceSection: [137,197]`for elem in nonposit...`
                                         ForNode SourceSection: None
                                           ForRepeatingNode SourceSection: None
@@ -185,17 +217,25 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                 Identifier: elem
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [2,elem,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                             DeleteItemNodeGen SourceSection: [174,188]`del self[elem]`
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [0,self,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [183,187]`elem`
                                                 Frame: [2,elem,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [149,160]`nonpositive`
                                             GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [149,160]`nonpositive`
                                               Frame: [1,nonpositive,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [197,208]`return self`
@@ -203,11 +243,17 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,<return_val>,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [204,208]`self`
                                             Frame: [0,self,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
@@ -216,10 +262,12 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                         StringLiteralNode SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [1,__class__,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [14,18]`dict`
               Identifier: dict
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None

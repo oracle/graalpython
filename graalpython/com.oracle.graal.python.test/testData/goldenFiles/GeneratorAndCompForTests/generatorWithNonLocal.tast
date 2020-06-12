@@ -38,12 +38,16 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                         Identifier: exec_gen
                         ReadLocalVariableNode SourceSection: None
                           Frame: [0,exec_gen,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         BooleanLiteralNode SourceSection: [27,32]`False`
                       WriteLocalVariableNodeGen SourceSection: [35,190]`def _inner_func():↵ ...`
                         Identifier: _inner_func
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,_inner_func,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         GeneratorFunctionDefinitionNode Name: _inner_func SourceSection: None
                           FrameDescriptor: 6 slots [doit, C, A, exec_gen, Y, <return_val>]
                           Active Flags: 2
@@ -75,6 +79,8 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                       Identifier: doit
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [0,doit,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       FunctionDefinitionNode Name: doit SourceSection: None
                                         Arguments: None
                                         KwArguments: None
@@ -104,6 +110,8 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                                     Identifier: exec_gen
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [0,exec_gen,Illegal]
+                                                      IsBuiltinClassProfile SourceSection: None
+                                                        CachedDispatchFirst SourceSection: None
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     BooleanLiteralNode SourceSection: [111,115]`True`
                                                   FrameReturnNode SourceSection: [122,132]`return [1]`
@@ -111,12 +119,16 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,<return_val>,Illegal]
+                                                        IsBuiltinClassProfile SourceSection: None
+                                                          CachedDispatchFirst SourceSection: None
                                                       ListLiteralNode SourceSection: [129,132]`[1]`
                                                         IntegerLiteralNode SourceSection: [130,131]`1`
                                                           Value: 1
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                 Frame: [1,<return_val>,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     ElseNode SourceSection: [137,190]`for A in doit():↵   ...`
                                       GeneratorForNode SourceSection: None
@@ -127,43 +139,59 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                                 flagSlot: 0
                                                 ReadGeneratorFrameVariableNode SourceSection: [186,187]`A`
                                                   Frame: [2,A,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                                               Identifier: C
                                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                 Frame: [1,C,Illegal]
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [169,170]`Y`
                                               GetIteratorNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [169,170]`Y`
                                                 ReadGeneratorFrameVariableNode SourceSection: None
                                                   Frame: [4,Y,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                             GetNextNode SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                           BlockNode SourceSection: None
                                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                                           Identifier: A
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [2,A,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [146,152]`doit()`
                                           GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [146,152]`doit()`
                                             CallNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [146,150]`doit`
                                               Frame: [0,doit,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         GetNextNode SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
@@ -172,15 +200,21 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                         Identifier: gen
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,gen,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         PythonCallNodeGen SourceSection: [196,209]`_inner_func()`
                           CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [196,207]`_inner_func`
                             Frame: [1,_inner_func,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalCellNodeGen SourceSection: [212,222]`Y = [1, 2]`
                         Identifier: Y
                         ReadLocalVariableNode SourceSection: None
                           Frame: [3,Y,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ListLiteralNode SourceSection: [216,222]`[1, 2]`
                           IntegerLiteralNode SourceSection: [217,218]`1`
@@ -189,22 +223,30 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                             Value: 2
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [225,234]`list(gen)`
-                        PythonCallNodeGen SourceSection: [225,234]`list(gen)`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [230,233]`gen`
-                            Frame: [2,gen,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [225,234]`list(gen)`
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [225,229]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [230,233]`gen`
+                            Frame: [2,gen,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                            ReadVariableFromFrameNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [237,247]`return gen`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [4,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [244,247]`gen`
                             Frame: [2,gen,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

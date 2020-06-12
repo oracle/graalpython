@@ -10,8 +10,12 @@ ModuleRootNode Name: <module 'fnCall11'> SourceSection: [0,25]`foo(a, *args, key
       PositionalArgumentsNode SourceSection: None
         ReadNameNodeGen SourceSection: [4,5]`a`
           Identifier: a
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ReadNameNodeGen SourceSection: [8,12]`args`
           Identifier: args
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ExecutePositionalStarargsNodeGen SourceSection: None
       KeywordArgumentsNodeGen SourceSection: None
         KeywordLiteralNode SourceSection: None
@@ -22,3 +26,5 @@ ModuleRootNode Name: <module 'fnCall11'> SourceSection: [0,25]`foo(a, *args, key
           EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

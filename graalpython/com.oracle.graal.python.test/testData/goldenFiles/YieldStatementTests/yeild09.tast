@@ -50,6 +50,8 @@ ModuleRootNode Name: <module 'yeild09'> SourceSection: [0,20]`def f(): (yield 1)
                           Value: 2
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

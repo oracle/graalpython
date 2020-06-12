@@ -18,6 +18,8 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
             CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [5,6]`A`
               Identifier: A
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
               IsSameTypeNodeGen SourceSection: None
@@ -29,4 +31,6 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
           CallNodeGen SourceSection: None
           CallNodeGen SourceSection: None
           YesNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           GetClassNodeGen SourceSection: None

@@ -38,6 +38,8 @@ ModuleRootNode Name: <module 'functionDefCPT21'> SourceSection: [0,21]`def f(*ar
                         Identifier: args
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,args,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -45,6 +47,8 @@ ModuleRootNode Name: <module 'functionDefCPT21'> SourceSection: [0,21]`def f(*ar
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,a,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -53,4 +57,6 @@ ModuleRootNode Name: <module 'functionDefCPT21'> SourceSection: [0,21]`def f(*ar
                         EmptyNode SourceSection: [17,21]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

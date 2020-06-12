@@ -15,27 +15,37 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
               WhileNode SourceSection: None
                 WhileRepeatingNode SourceSection: None
                   YesNodeGen SourceSection: None
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     BinaryComparisonNodeGen SourceSection: [16,26]`iters < 40`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __lt__
                       ReadNameNodeGen SourceSection: [16,21]`iters`
                         Identifier: iters
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       IntegerLiteralNode SourceSection: [24,26]`40`
                         Value: 40
                   BreakTargetNode SourceSection: [32,147]`while iters < 10:↵  ...`
                     WhileNode SourceSection: None
                       WhileRepeatingNode SourceSection: None
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [38,48]`iters < 10`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __lt__
                             ReadNameNodeGen SourceSection: [38,43]`iters`
                               Identifier: iters
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                             IntegerLiteralNode SourceSection: [46,48]`10`
                               Value: 10
                         BlockNode SourceSection: None
                           IfNode SourceSection: [58,94]`if False:↵          ...`
                             YesNodeGen SourceSection: None
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               BooleanLiteralNode SourceSection: [61,66]`False`
                             BreakNode SourceSection: [80,85]`break`
                             BlockNode SourceSection: None
@@ -44,6 +54,8 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
                             LookupAndCallInplaceNodeGen SourceSection: None
                               ReadNameNodeGen SourceSection: [94,99]`iters`
                                 Identifier: iters
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                               IntegerLiteralNode SourceSection: [103,104]`1`
                                 Value: 1
                     BlockNode SourceSection: None
@@ -52,6 +64,8 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
                         LookupAndCallInplaceNodeGen SourceSection: None
                           ReadNameNodeGen SourceSection: [123,128]`iters`
                             Identifier: iters
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           IntegerLiteralNode SourceSection: [132,133]`1`
                             Value: 1
                       BreakNode SourceSection: [142,147]`break`

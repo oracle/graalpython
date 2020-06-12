@@ -10,9 +10,11 @@ ModuleRootNode Name: <module 'raise03'> SourceSection: [0,24]`raise NameError('P
         EmptyNode SourceSection: None
       SideEffect:
         RaiseNodeGen SourceSection: [0,24]`raise NameError('Pav...`
-          PythonCallNodeGen SourceSection: [6,24]`NameError('Pavel')`
-            CallNodeGen SourceSection: None
-            StringLiteralNode SourceSection: [16,23]`'Pavel'`
+          PythonCallUnary SourceSection: [6,24]`NameError('Pavel')`
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6,15]`NameError`
               Identifier: NameError
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
+            StringLiteralNode SourceSection: [16,23]`'Pavel'`
           NoValueNode SourceSection: None

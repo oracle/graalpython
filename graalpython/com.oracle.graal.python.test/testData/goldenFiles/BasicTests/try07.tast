@@ -20,11 +20,15 @@ ModuleRootNode Name: <module 'try07'> SourceSection: [0,91]`try:↵    pass↵ex
                 Identifier: err
               ReadNameNodeGen SourceSection: [21,28]`OSError`
                 Identifier: OSError
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
             ExceptNode SourceSection: None
               ExpressionStatementNode SourceSection: [69,73]`pass`
                 EmptyNode SourceSection: [69,73]`pass`
               ReadNameNodeGen SourceSection: [53,63]`ValueError`
                 Identifier: ValueError
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
             ExceptNode SourceSection: None
               RaiseNodeGen SourceSection: [86,91]`raise`
                 NoValueNode SourceSection: None

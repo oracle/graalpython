@@ -48,6 +48,8 @@ ModuleRootNode Name: <module 'yeild10'> SourceSection: [0,24]`def f(): return; y
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

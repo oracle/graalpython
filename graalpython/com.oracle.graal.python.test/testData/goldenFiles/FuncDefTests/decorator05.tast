@@ -38,6 +38,8 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                         Identifier: decorator1
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,decorator1,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         FunctionDefinitionNode Name: decorator1 SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -64,6 +66,8 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                     Identifier: fn
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [0,fn,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -72,13 +76,22 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                       EmptyNode SourceSection: [39,43]`pass`
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [46,77]`@decorator1â†µ  def in...`
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,inner,Illegal]
-                        PythonCallNodeGen SourceSection: [46,57]`@decorator1`
-                          CallNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                        PythonCallUnary SourceSection: [46,57]`@decorator1`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [46,57]`@decorator1`
+                            Frame: [0,decorator1,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                            ReadVariableFromFrameNodeGen SourceSection: None
                           FunctionDefinitionNode Name: inner SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -106,10 +119,11 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                         EmptyNode SourceSection: [73,77]`pass`
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [0,<return_val>,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [46,57]`@decorator1`
-                            Frame: [0,decorator1,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

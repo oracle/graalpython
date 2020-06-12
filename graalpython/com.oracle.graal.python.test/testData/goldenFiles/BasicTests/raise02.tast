@@ -12,4 +12,6 @@ ModuleRootNode Name: <module 'raise02'> SourceSection: [0,15]`raise NameError`
         RaiseNodeGen SourceSection: [0,15]`raise NameError`
           ReadNameNodeGen SourceSection: [6,15]`NameError`
             Identifier: NameError
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
           NoValueNode SourceSection: None

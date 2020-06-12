@@ -107,7 +107,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -198,7 +197,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private TypeNodes.IsSameTypeNode isSameTypeNode;
         @Child private TypeNodes.GetNameNode getNameNode;
 
-        private final IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
 
         public static CallNode create() {
             return CallNodeFactory.create();
@@ -628,8 +627,8 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private TypeNodes.IsSameTypeNode isSameTypeNode = IsSameTypeNodeGen.create();
         @Child private GetFixedAttributeNode getBasesAttrNode;
 
-        @CompilationFinal private IsBuiltinClassProfile isAttrErrorProfile;
-        @CompilationFinal private IsBuiltinClassProfile isTupleProfile;
+        @Child private IsBuiltinClassProfile isAttrErrorProfile;
+        @Child private IsBuiltinClassProfile isTupleProfile;
 
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
         boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived) {
@@ -664,8 +663,8 @@ public class TypeBuiltins extends PythonBuiltins {
             if (getBasesAttrNode == null || isAttrErrorProfile == null || isTupleProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getBasesAttrNode = insert(GetFixedAttributeNode.create(SpecialAttributeNames.__BASES__));
-                isAttrErrorProfile = IsBuiltinClassProfile.create();
-                isTupleProfile = IsBuiltinClassProfile.create();
+                isAttrErrorProfile = insert(IsBuiltinClassProfile.create());
+                isTupleProfile = insert(IsBuiltinClassProfile.create());
             }
             Object basesObj;
             try {

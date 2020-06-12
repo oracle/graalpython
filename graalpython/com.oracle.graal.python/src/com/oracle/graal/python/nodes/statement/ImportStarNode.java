@@ -47,7 +47,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -67,7 +66,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private GetAnyAttributeNode readNode;
     @Child private PRaiseNode raiseNode;
 
-    @CompilationFinal private IsBuiltinClassProfile isAttributeErrorProfile;
+    @Child private IsBuiltinClassProfile isAttributeErrorProfile;
 
     private final String moduleName;
     private final int level;
@@ -183,7 +182,7 @@ public class ImportStarNode extends AbstractImportNode {
     private IsBuiltinClassProfile ensureIsAttributeErrorProfile() {
         if (isAttributeErrorProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            isAttributeErrorProfile = IsBuiltinClassProfile.create();
+            isAttributeErrorProfile = insert(IsBuiltinClassProfile.create());
         }
         return isAttributeErrorProfile;
     }

@@ -13,7 +13,13 @@ ModuleRootNode Name: <module 'call12'> SourceSection: [0,25]`foo(**mydict1, **my
           DictConcatNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6,13]`mydict1`
               Identifier: mydict1
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             ReadNameNodeGen SourceSection: [17,24]`mydict2`
               Identifier: mydict2
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

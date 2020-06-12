@@ -40,6 +40,8 @@ ModuleRootNode Name: <module 'if01'> SourceSection: [0,52]`def gen():↵  if b:�
                     GeneratorIfNode SourceSection: [13,52]`if b:↵    yield 12↵ ...`
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [16,17]`b`
                           Identifier: b
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -57,6 +59,8 @@ ModuleRootNode Name: <module 'if01'> SourceSection: [0,52]`def gen():↵  if b:�
                           GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

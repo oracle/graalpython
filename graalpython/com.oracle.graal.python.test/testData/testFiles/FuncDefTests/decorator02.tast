@@ -34,6 +34,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                     Identifier: delta
                     ReadLocalVariableNode SourceSection: None
                       Frame: [0,delta,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
@@ -43,6 +45,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                       Identifier: wrap
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,wrap,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       FunctionDefinitionNode Name: wrap SourceSection: None
                         Arguments: None
                         KwArguments: None
@@ -69,6 +73,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                   Identifier: fn
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [0,fn,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
@@ -78,6 +84,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                     Identifier: wrapped_f
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [1,wrapped_f,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     FunctionDefinitionNode Name: wrapped_f SourceSection: None
                                       Arguments: None
                                       KwArguments: None
@@ -103,6 +111,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                 Identifier: args
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [0,args,Illegal]
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadVarArgsNodeGen SourceSection: None
                                                     PythonObjectFactoryNodeGen SourceSection: None
@@ -112,6 +122,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                     Identifier: <return_val>
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [3,<return_val>,Illegal]
+                                                      IsBuiltinClassProfile SourceSection: None
+                                                        CachedDispatchFirst SourceSection: None
                                                     BinaryArithmeticExpression SourceSection: [91,108]`fn(*args) + delta`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __add__
@@ -120,47 +132,75 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                         PositionalArgumentsNode SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [95,99]`args`
                                                             Frame: [0,args,Illegal]
+                                                            IsBuiltinClassProfile SourceSection: None
+                                                              CachedDispatchFirst SourceSection: None
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ExecutePositionalStarargsNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: [91,93]`fn`
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [1,fn,Illegal]
+                                                            IsBuiltinClassProfile SourceSection: None
+                                                              CachedDispatchFirst SourceSection: None
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [103,108]`delta`
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [2,delta,Illegal]
+                                                          IsBuiltinClassProfile SourceSection: None
+                                                            CachedDispatchFirst SourceSection: None
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadFromCellNodeGen SourceSection: None
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                   FrameReturnNode SourceSection: [117,133]`return wrapped_f`
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                       ReadLocalVariableNode SourceSection: [124,133]`wrapped_f`
                                         Frame: [1,wrapped_f,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [138,149]`return wrap`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [145,149]`wrap`
                           Frame: [1,wrap,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [151,198]`@mydecorator(3)↵def ...`
         Identifier: getNumber
-        PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
-          CallNodeGen SourceSection: None
+        PythonCallUnary SourceSection: [151,166]`@mydecorator(3)`
+          CallUnaryMethodNodeGen SourceSection: None
+          PythonCallUnary SourceSection: [151,166]`@mydecorator(3)`
+            CallUnaryMethodNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: None
+              Identifier: mydecorator
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
+            IntegerLiteralNode SourceSection: [164,165]`3`
+              Value: 3
           FunctionDefinitionNode Name: getNumber SourceSection: None
             Arguments: None
             KwArguments: None
@@ -189,22 +229,24 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [0,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           IntegerLiteralNode SourceSection: [195,196]`1`
                             Value: 1
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [164,165]`3`
-              Value: 3
-            ReadNameNodeGen SourceSection: None
-              Identifier: mydecorator
-      PythonCallNodeGen SourceSection: [198,216]`print(getNumber())`
-        CallNodeGen SourceSection: None
+      PythonCallUnary SourceSection: [198,216]`print(getNumber())`
+        CallUnaryMethodNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [198,203]`print`
+          Identifier: print
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         PythonCallNodeGen SourceSection: [204,215]`getNumber()`
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [204,213]`getNumber`
             Identifier: getNumber
-        ReadNameNodeGen SourceSection: [198,203]`print`
-          Identifier: print
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None

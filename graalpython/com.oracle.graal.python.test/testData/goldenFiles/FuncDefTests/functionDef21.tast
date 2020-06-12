@@ -39,6 +39,8 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                       Identifier: a
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,a,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -46,6 +48,8 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -55,6 +59,8 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         BinaryArithmeticExpression SourceSection: [31,40]`a + b + c`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __add__
@@ -63,21 +69,29 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                               Op: __add__
                             ReadLocalVariableNode SourceSection: [31,32]`a`
                               Frame: [0,a,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [35,36]`b`
                               Frame: [1,b,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`c`
                             Identifier: c
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
-      PythonCallNodeGen SourceSection: [41,49]`foo(1,2)`
-        CallNodeGen SourceSection: None
+      PythonCallBinary SourceSection: [41,49]`foo(1,2)`
+        CallBinaryMethodNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [41,44]`foo`
+          Identifier: foo
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         IntegerLiteralNode SourceSection: [45,46]`1`
           Value: 1
         IntegerLiteralNode SourceSection: [47,48]`2`
           Value: 2
-        ReadNameNodeGen SourceSection: [41,44]`foo`
-          Identifier: foo

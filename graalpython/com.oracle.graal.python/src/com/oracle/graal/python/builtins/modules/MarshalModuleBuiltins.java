@@ -229,7 +229,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Child private CastToJavaStringNode castStrNode;
         @Child private MarshallerNode recursiveNode;
         private int depth = 0;
-        private IsBuiltinClassProfile isBuiltinProfile;
+        @Child private IsBuiltinClassProfile isBuiltinProfile;
 
         protected MarshallerNode getRecursiveNode() {
             if (recursiveNode == null) {
@@ -493,7 +493,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 writeByte(TYPE_NONE, version, buffer);
             } else if (v instanceof LazyPythonClass) {
                 if (isBuiltinProfile == null) {
-                    isBuiltinProfile = IsBuiltinClassProfile.create();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    isBuiltinProfile = insert(IsBuiltinClassProfile.create());
                 }
                 if (isBuiltinProfile.profileClass(v, PythonBuiltinClassType.StopIteration)) {
                     writeByte(TYPE_STOPITER, version, buffer);

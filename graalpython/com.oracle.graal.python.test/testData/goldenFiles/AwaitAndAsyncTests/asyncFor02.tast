@@ -43,23 +43,35 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
                                   Identifier: <>temp2
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [2,<>temp2,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp3
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [3,<>temp3,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: i
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [0,i,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<>temp2,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: b
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [1,b,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<>temp3,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [38,42]`pass`
                               EmptyNode SourceSection: [38,42]`pass`
@@ -70,4 +82,6 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -7,6 +7,8 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,19]`10 if False else 11`
   InnerRootNode SourceSection: [0,19]`10 if False else 11`
     TernaryIfNode SourceSection: [0,19]`10 if False else 11`
       YesNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         BooleanLiteralNode SourceSection: [6,11]`False`
       IntegerLiteralNode SourceSection: [0,2]`10`
         Value: 10

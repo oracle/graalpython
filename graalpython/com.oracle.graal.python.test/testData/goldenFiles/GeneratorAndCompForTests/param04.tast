@@ -44,29 +44,41 @@ ModuleRootNode Name: <module 'param04'> SourceSection: [0,41]`def fn(*arg):↵  
                             flagSlot: 0
                             ReadGeneratorFrameVariableNode SourceSection: [40,41]`p`
                               Frame: [1,p,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                           Identifier: p
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [1,p,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [25,28]`arg`
                           GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [25,28]`arg`
                             Frame: [0,arg,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GetNextNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: arg
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,arg,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadVarArgsNodeGen SourceSection: None
                         PythonObjectFactoryNodeGen SourceSection: None

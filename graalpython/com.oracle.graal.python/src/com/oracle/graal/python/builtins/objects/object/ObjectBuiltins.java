@@ -490,8 +490,8 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
-        private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
-        private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
         protected boolean isExactObjectInstance(PythonObject self) {
             return exactObjInstanceProfile.profileObject(self, PythonBuiltinClassType.PythonObject);

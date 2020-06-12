@@ -48,91 +48,131 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                                   Identifier: <>temp5
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [5,<>temp5,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   GetItemNodeGen SourceSection: [93,97]`h[0]`
                                     ReadGeneratorFrameVariableNode SourceSection: None
                                       Frame: [0,h,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [95,96]`0`
                                       Value: 0
                                 DestructuringAssignmentNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [5,<>temp5,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: <>temp6
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [6,<>temp6,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: <>temp7
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [7,<>temp7,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: <>temp8
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [8,<>temp8,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: value
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [1,value,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: None
                                       Frame: [6,<>temp6,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: order
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [2,order,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: None
                                       Frame: [7,<>temp7,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: next
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [3,next,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: None
                                       Frame: [8,<>temp8,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: s
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [4,s,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [5,<>temp5,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [110,121]`yield value`
                                 YieldNode SourceSection: [110,121]`yield value`
                                   flagSlot: 0
                                   ReadGeneratorFrameVariableNode SourceSection: [116,121]`value`
                                     Frame: [1,value,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                             YesNodeGen SourceSection: None
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               BooleanLiteralNode SourceSection: [50,54]`True`
                             GeneratorAccessNode SourceSection: None
                           BlockNode SourceSection: None
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [24,34]`len(h) > 1`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
-                            PythonCallNodeGen SourceSection: [24,30]`len(h)`
-                              CallNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [28,29]`h`
-                                Frame: [0,h,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [24,30]`len(h)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [24,27]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [28,29]`h`
+                                Frame: [0,h,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [33,34]`1`
                               Value: 1
                         GeneratorAccessNode SourceSection: None
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [9,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: h
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,h,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

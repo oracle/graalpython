@@ -43,33 +43,47 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                                   Identifier: <>temp2
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [2,<>temp2,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp3
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [3,<>temp3,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: a
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [0,a,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<>temp2,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: b
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [1,b,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<>temp3,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [44,52]`print(a)`
-                              PythonCallNodeGen SourceSection: [44,52]`print(a)`
-                                CallNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [50,51]`a`
-                                  Frame: [0,a,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [44,52]`print(a)`
+                                CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [44,49]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [50,51]`a`
+                                  Frame: [0,a,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [24,38]`((1,2), (3,4))`
                             GetIteratorNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [24,38]`((1,2), (3,4))`
@@ -89,4 +103,6 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

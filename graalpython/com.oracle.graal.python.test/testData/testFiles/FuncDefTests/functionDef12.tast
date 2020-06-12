@@ -11,6 +11,8 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [74,79]`outer`
             Identifier: outer
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,74]`def outer ():↵    de...`
           Identifier: outer
@@ -41,6 +43,8 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,inner,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         FunctionDefinitionNode Name: inner SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -65,23 +69,29 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                   BlockNode SourceSection: None
                                   FunctionBodyNode SourceSection: [39,48]`print(x )`
                                     ExpressionStatementNode SourceSection: [39,48]`print(x )`
-                                      PythonCallNodeGen SourceSection: [39,48]`print(x )`
-                                        CallNodeGen SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: [45,46]`x`
-                                          ReadLocalVariableNode SourceSection: None
-                                            Frame: [0,x,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadFromCellNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [39,48]`print(x )`
+                                        CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [39,44]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [45,46]`x`
+                                          ReadLocalVariableNode SourceSection: None
+                                            Frame: [0,x,Illegal]
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalCellNodeGen SourceSection: [54,60]`x = 12`
                         Identifier: x
                         ReadLocalVariableNode SourceSection: None
                           Frame: [1,x,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [58,60]`12`
                           Value: 12
@@ -90,7 +100,11 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                           CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [65,70]`inner`
                             Frame: [0,inner,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

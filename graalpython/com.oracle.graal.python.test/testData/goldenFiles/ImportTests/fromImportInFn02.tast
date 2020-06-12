@@ -42,10 +42,18 @@ ModuleRootNode Name: <module 'fromImportInFn02'> SourceSection: [0,40]`def fn():
                           Identifier: dirname
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [0,dirname,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           EmptyNode SourceSection: None
                         GetAnyAttributeNodeGen SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

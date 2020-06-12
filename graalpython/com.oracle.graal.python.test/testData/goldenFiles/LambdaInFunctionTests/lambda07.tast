@@ -64,6 +64,8 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,29]`def fn():↵  lam
                                     Identifier: foo
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [0,foo,Illegal]
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -73,11 +75,17 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,29]`def fn():↵  lam
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                         IntegerLiteralNode SourceSection: [28,29]`0`
                                           Value: 0
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

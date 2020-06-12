@@ -49,6 +49,21 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
+import org.tukaani.xz.ARMOptions;
+import org.tukaani.xz.ARMThumbOptions;
+import org.tukaani.xz.DeltaOptions;
+import org.tukaani.xz.FilterOptions;
+import org.tukaani.xz.IA64Options;
+import org.tukaani.xz.LZMA2Options;
+import org.tukaani.xz.LZMAOutputStream;
+import org.tukaani.xz.PowerPCOptions;
+import org.tukaani.xz.SPARCOptions;
+import org.tukaani.xz.UnsupportedOptionsException;
+import org.tukaani.xz.X86Options;
+import org.tukaani.xz.XZ;
+import org.tukaani.xz.XZOutputStream;
+import org.tukaani.xz.check.Check;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,7 +89,6 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -83,21 +97,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-
-import org.tukaani.xz.ARMOptions;
-import org.tukaani.xz.ARMThumbOptions;
-import org.tukaani.xz.DeltaOptions;
-import org.tukaani.xz.FilterOptions;
-import org.tukaani.xz.IA64Options;
-import org.tukaani.xz.LZMA2Options;
-import org.tukaani.xz.LZMAOutputStream;
-import org.tukaani.xz.PowerPCOptions;
-import org.tukaani.xz.SPARCOptions;
-import org.tukaani.xz.UnsupportedOptionsException;
-import org.tukaani.xz.X86Options;
-import org.tukaani.xz.XZ;
-import org.tukaani.xz.XZOutputStream;
-import org.tukaani.xz.check.Check;
 
 @CoreFunctions(defineModule = "_lzma")
 public class LZMAModuleBuiltins extends PythonBuiltins {
@@ -175,7 +174,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Child private GetItemNode getItemNode;
         @Child private PythonObjectLibrary castToLongNode;
-        @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
+        @Child private IsBuiltinClassProfile keyErrorProfile;
 
         @TruffleBoundary
         protected static LZMA2Options parseLZMAOptions(int preset) {
@@ -273,7 +272,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         private IsBuiltinClassProfile ensureKeyErrorProfile() {
             if (keyErrorProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                keyErrorProfile = IsBuiltinClassProfile.create();
+                keyErrorProfile = insert(IsBuiltinClassProfile.create());
             }
             return keyErrorProfile;
         }
@@ -413,7 +412,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Child private GetItemNode getItemNode;
 
-        @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
+        @Child private IsBuiltinClassProfile keyErrorProfile;
 
         @Specialization
         PLZMADecompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object memlimitObj, Object filters,

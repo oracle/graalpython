@@ -10,6 +10,10 @@ ModuleRootNode Name: <module 'call09'> SourceSection: [0,12]`foo(*mylist)`
       PositionalArgumentsNode SourceSection: None
         ReadNameNodeGen SourceSection: [5,11]`mylist`
           Identifier: mylist
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
         ExecutePositionalStarargsNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None

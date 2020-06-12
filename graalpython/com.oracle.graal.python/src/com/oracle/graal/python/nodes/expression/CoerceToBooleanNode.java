@@ -39,7 +39,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateWrapper
 public abstract class CoerceToBooleanNode extends UnaryOpNode {
-    protected final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+    @Child protected IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {

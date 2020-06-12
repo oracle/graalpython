@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -75,7 +75,7 @@ public class PRangeTests {
         Object iter = getIter.executeWith(null, range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
-        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
 
         while (true) {
             try {
@@ -99,7 +99,7 @@ public class PRangeTests {
         Object iter = getIter.executeWith(null, range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
-        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
 
         while (true) {
             try {

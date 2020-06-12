@@ -17,11 +17,17 @@ ModuleRootNode Name: <module 'annotationType03'> SourceSection: [0,39]`j = 1↵a
                   Key: __annotations__
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [6,10]`ahoj`
                   Identifier: ahoj
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
               StringLiteralNode SourceSection: [27,30]`'j'`
               ReadNameNodeGen SourceSection: [34,39]`float`
                 Identifier: float
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,5]`j = 1`
           Identifier: j

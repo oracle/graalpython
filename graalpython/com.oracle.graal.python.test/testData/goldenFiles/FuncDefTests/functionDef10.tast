@@ -36,19 +36,25 @@ ModuleRootNode Name: <module 'functionDef10'> SourceSection: [0,30]`def foo(*arg
                       Identifier: args
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,args,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadVarArgsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                     FunctionBodyNode SourceSection: [19,30]`print(args)`
                       ExpressionStatementNode SourceSection: [19,30]`print(args)`
-                        PythonCallNodeGen SourceSection: [19,30]`print(args)`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [25,29]`args`
-                            Frame: [0,args,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [19,30]`print(args)`
+                          CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19,24]`print`
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [25,29]`args`
+                            Frame: [0,args,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                            ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

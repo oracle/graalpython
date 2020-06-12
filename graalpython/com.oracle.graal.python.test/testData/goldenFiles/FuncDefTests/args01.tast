@@ -45,6 +45,8 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -52,6 +54,8 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,b,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -59,6 +63,8 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                         Identifier: arg
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,arg,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -66,6 +72,8 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                         Identifier: k1
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,k1,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -73,6 +81,8 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                         Identifier: k2
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,k2,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
@@ -82,6 +92,8 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,<return_val>,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           BinaryArithmeticExpression SourceSection: [39,65]`a + b + k1 + k2 + su...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
@@ -96,24 +108,36 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                                     Op: __add__
                                   ReadLocalVariableNode SourceSection: [39,40]`a`
                                     Frame: [0,a,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [43,44]`b`
                                     Frame: [1,b,Illegal]
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [47,49]`k1`
                                   Frame: [3,k1,Illegal]
+                                  IsBuiltinClassProfile SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [52,54]`k2`
                                 Frame: [4,k2,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            PythonCallNodeGen SourceSection: [57,65]`sum(arg)`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [61,64]`arg`
-                                Frame: [2,arg,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [57,65]`sum(arg)`
+                              CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [57,60]`sum`
                                 Identifier: sum
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [61,64]`arg`
+                                Frame: [2,arg,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

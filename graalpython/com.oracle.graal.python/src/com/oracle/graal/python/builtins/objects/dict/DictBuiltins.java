@@ -254,21 +254,12 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = "!isNoValue(defaultValue)", limit = "1")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
                         @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             final Object value = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
-            return value != null ? value : defaultValue;
-        }
-
-        @Specialization(limit = "1")
-        public Object doNoDefault(VirtualFrame frame, PDict self, Object key, @SuppressWarnings("unused") PNone defaultValue,
-                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
-            final Object value = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
-            return value != null ? value : PNone.NONE;
+            return value != null ? value : (defaultValue == PNone.NO_VALUE ? PNone.NONE : defaultValue);
         }
     }
 

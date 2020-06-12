@@ -7,12 +7,14 @@ ModuleRootNode Name: <module 'topLevelParser01'> SourceSection: [0,36]`name = 'P
   InnerRootNode SourceSection: [0,36]`name = 'Pepa'↵print(...`
     ExpressionWithSideEffect SourceSection: [0,36]`name = 'Pepa'↵print(...`
       Expression:
-        PythonCallNodeGen SourceSection: [14,36]`print(f"hello {name}...`
-          CallNodeGen SourceSection: None
-          FormatStringLiteralNode SourceSection: [20,35]`f"hello {name}"`
-            Values: <f>hello {name}
+        PythonCallUnary SourceSection: [14,36]`print(f"hello {name}...`
+          CallUnaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [14,19]`print`
             Identifier: print
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
+          FormatStringLiteralNode SourceSection: [20,35]`f"hello {name}"`
+            Values: <f>hello {name}
       SideEffect:
         WriteNameNodeGen SourceSection: [0,13]`name = 'Pepa'`
           Identifier: name

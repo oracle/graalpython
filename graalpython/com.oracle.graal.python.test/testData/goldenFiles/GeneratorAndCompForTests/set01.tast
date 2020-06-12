@@ -5,8 +5,11 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,25]`{x**y for x in range...`
-    PythonCallNodeGen SourceSection: [0,25]`{x**y for x in range...`
-      CallNodeGen SourceSection: None
+    PythonCallUnary SourceSection: [0,25]`{x**y for x in range...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: set
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,24]`for x in range(20)`
         Name: [].<locals>.<genexp>:set01:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -38,6 +41,8 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                         Op: __pow__
                       ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
                         Identifier: y
@@ -47,6 +52,8 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                   Identifier: x
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,x,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -54,21 +61,24 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(20)`
           GetIteratorNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: [15,24]`range(20)`
-            CallNodeGen SourceSection: None
-            IntegerLiteralNode SourceSection: [21,23]`20`
-              Value: 20
+          PythonCallUnary SourceSection: [15,24]`range(20)`
+            CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
+            IntegerLiteralNode SourceSection: [21,23]`20`
+              Value: 20
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadGlobalOrBuiltinNodeGen SourceSection: None
-        Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

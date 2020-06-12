@@ -13,8 +13,10 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
           SideEffect:
             WriteNameNodeGen SourceSection: [22,83]`class FalseRec:â†µ  de...`
               Identifier: FalseRec
-              PythonCallNodeGen SourceSection: [22,83]`class FalseRec:â†µ  de...`
-                CallNodeGen SourceSection: None
+              PythonCallBinary SourceSection: [22,83]`class FalseRec:â†µ  de...`
+                CallBinaryMethodNodeGen SourceSection: None
+                GetCallAttributeNodeGen SourceSection: None
+                  BuiltinsLiteralNode SourceSection: None
                 FunctionDefinitionNode Name: FalseRec SourceSection: None
                   Arguments: None
                   KwArguments: None
@@ -79,6 +81,8 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [0,self,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
@@ -86,6 +90,8 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                             Identifier: arg
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,arg,Illegal]
+                                              IsBuiltinClassProfile SourceSection: None
+                                                CachedDispatchFirst SourceSection: None
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 1
@@ -95,21 +101,27 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,<return_val>,Illegal]
-                                              PythonCallNodeGen SourceSection: [72,83]`test(arg+1)`
-                                                CallNodeGen SourceSection: None
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
+                                              PythonCallUnary SourceSection: [72,83]`test(arg+1)`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
+                                                  Identifier: test
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BinaryArithmeticExpression SourceSection: [77,82]`arg+1`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
                                                   ReadLocalVariableNode SourceSection: [77,80]`arg`
                                                     Frame: [1,arg,Illegal]
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [81,82]`1`
                                                     Value: 1
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
-                                                  Identifier: test
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: None
                             ArgumentExpressionNode SourceSection: None
@@ -118,11 +130,11 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                             StringLiteralNode SourceSection: None
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,__class__,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
-                GetCallAttributeNodeGen SourceSection: None
-                  BuiltinsLiteralNode SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,22]`def test(arg):â†µ  pas...`
           Identifier: test
@@ -152,6 +164,8 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                       Identifier: arg
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,arg,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -160,4 +174,6 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                         EmptyNode SourceSection: [17,21]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

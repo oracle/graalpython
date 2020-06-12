@@ -267,7 +267,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         private IsBuiltinClassProfile getStopProfile() {
             if (stopProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                stopProfile = IsBuiltinClassProfile.create();
+                stopProfile = insert(IsBuiltinClassProfile.create());
             }
             return stopProfile;
         }

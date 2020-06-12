@@ -13,11 +13,15 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,43]`while True:↵  if
           WhileNode SourceSection: None
             WhileRepeatingNode SourceSection: None
               YesNodeGen SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 BooleanLiteralNode SourceSection: [6,10]`True`
               ContinueTargetNode SourceSection: None
                 BlockNode SourceSection: None
                   IfNode SourceSection: [14,39]`if False:↵    contin...`
                     YesNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       BooleanLiteralNode SourceSection: [17,22]`False`
                     ContinueNode SourceSection: [28,36]`continue`
                     BlockNode SourceSection: None

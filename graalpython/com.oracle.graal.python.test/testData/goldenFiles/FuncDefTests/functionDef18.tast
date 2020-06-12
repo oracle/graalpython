@@ -38,6 +38,8 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                         Identifier: _cls
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,_cls,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -45,6 +47,8 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                         Identifier: hits
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,hits,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -52,6 +56,8 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                         Identifier: misses
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,misses,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -59,6 +65,8 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                         Identifier: maxsize
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,maxsize,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
@@ -66,6 +74,8 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                         Identifier: currsize
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,currsize,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 4
@@ -75,28 +85,42 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [5,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [61,112]`_tuple_new(_cls, (hi...`
-                            CallNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                          PythonCallBinary SourceSection: [61,112]`_tuple_new(_cls, (hi...`
+                            CallBinaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
+                              Identifier: _tuple_new
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [72,76]`_cls`
                               Frame: [0,_cls,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
                               ReadLocalVariableNode SourceSection: [79,83]`hits`
                                 Frame: [1,hits,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [85,91]`misses`
                                 Frame: [2,misses,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [93,100]`maxsize`
                                 Frame: [3,maxsize,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [102,110]`currsize`
                                 Frame: [4,currsize,Illegal]
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
-                              Identifier: _tuple_new
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

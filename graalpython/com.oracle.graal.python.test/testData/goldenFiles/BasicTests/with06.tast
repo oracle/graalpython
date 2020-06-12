@@ -42,6 +42,8 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                             Identifier: b
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [0,b,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                           PythonCallNodeGen SourceSection: [36,39]`B()`
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [36,37]`B`
@@ -58,11 +60,15 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                           CallNodeGen SourceSection: None
                           CallNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                           GetClassNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: a
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,a,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                         PythonCallNodeGen SourceSection: [17,20]`A()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17,18]`A`
@@ -79,7 +85,11 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                         CallNodeGen SourceSection: None
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -19,3 +19,7 @@ ModuleRootNode Name: <module 'relativeImport05'> SourceSection: [0,21]`from .pkg
           GetAnyAttributeNodeGen SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            IsBuiltinClassProfile SourceSection: None
+              CachedDispatchFirst SourceSection: None
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None

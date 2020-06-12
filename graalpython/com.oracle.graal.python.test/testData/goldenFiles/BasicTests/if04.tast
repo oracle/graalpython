@@ -13,12 +13,18 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
           Identifier: predicate
           TernaryIfNode SourceSection: [12,53]`func if func is not ...`
             NotNodeGen SourceSection: [20,36]`func is not None`
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
               IsExpressionNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [20,24]`func`
                   Identifier: func
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                 ObjectLiteralNode SourceSection: [32,36]`None`
             ReadNameNodeGen SourceSection: [12,16]`func`
               Identifier: func
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None
             FunctionDefinitionNode Name: <lambda> SourceSection: [42,53]`lambda a: a`
               Arguments: None
               KwArguments: None
@@ -45,6 +51,8 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -54,9 +62,15 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [52,53]`a`
                               Frame: [0,a,Illegal]
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [1,<return_val>,Illegal]
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None

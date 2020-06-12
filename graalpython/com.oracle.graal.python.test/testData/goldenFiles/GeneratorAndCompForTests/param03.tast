@@ -46,6 +46,8 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
                           flagSlot: 0
                           ReadGeneratorFrameVariableNode SourceSection: [24,25]`a`
                             Frame: [0,a,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       ExpressionStatementNode SourceSection: [28,35]`yield b`
@@ -53,17 +55,23 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
                           flagSlot: 1
                           ReadGeneratorFrameVariableNode SourceSection: [34,35]`b`
                             Frame: [1,b,Illegal]
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: a
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [0,a,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -71,6 +79,8 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
                       Identifier: b
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1

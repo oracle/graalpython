@@ -13,51 +13,69 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
           SideEffect:
             IfNode SourceSection: [10,96]`if var == 200:↵  pri...`
               YesNodeGen SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  CachedDispatchFirst SourceSection: None
                 BinaryComparisonNodeGen SourceSection: [13,23]`var == 200`
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __eq__
                   ReadNameNodeGen SourceSection: [13,16]`var`
                     Identifier: var
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                   IntegerLiteralNode SourceSection: [20,23]`200`
                     Value: 200
               ExpressionStatementNode SourceSection: [27,36]`print (2)`
-                PythonCallNodeGen SourceSection: [27,36]`print (2)`
-                  CallNodeGen SourceSection: None
-                  IntegerLiteralNode SourceSection: [34,35]`2`
-                    Value: 2
+                PythonCallUnary SourceSection: [27,36]`print (2)`
+                  CallUnaryMethodNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [27,32]`print`
                     Identifier: print
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
+                  IntegerLiteralNode SourceSection: [34,35]`2`
+                    Value: 2
               IfNode SourceSection: [37,96]`elif var == 150:↵  p...`
                 YesNodeGen SourceSection: None
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
                   BinaryComparisonNodeGen SourceSection: [42,52]`var == 150`
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __eq__
                     ReadNameNodeGen SourceSection: [42,45]`var`
                       Identifier: var
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     IntegerLiteralNode SourceSection: [49,52]`150`
                       Value: 150
                 ExpressionStatementNode SourceSection: [56,67]`print (1.5)`
-                  PythonCallNodeGen SourceSection: [56,67]`print (1.5)`
-                    CallNodeGen SourceSection: None
-                    DoubleLiteralNode SourceSection: [63,66]`1.5`
+                  PythonCallUnary SourceSection: [56,67]`print (1.5)`
+                    CallUnaryMethodNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [56,61]`print`
                       Identifier: print
+                      IsBuiltinClassProfile SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                    DoubleLiteralNode SourceSection: [63,66]`1.5`
                 IfNode SourceSection: [68,96]`elif var == 100:↵  p...`
                   YesNodeGen SourceSection: None
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
                     BinaryComparisonNodeGen SourceSection: [73,83]`var == 100`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __eq__
                       ReadNameNodeGen SourceSection: [73,76]`var`
                         Identifier: var
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                       IntegerLiteralNode SourceSection: [80,83]`100`
                         Value: 100
                   ExpressionStatementNode SourceSection: [87,96]`print (1)`
-                    PythonCallNodeGen SourceSection: [87,96]`print (1)`
-                      CallNodeGen SourceSection: None
-                      IntegerLiteralNode SourceSection: [94,95]`1`
-                        Value: 1
+                    PythonCallUnary SourceSection: [87,96]`print (1)`
+                      CallUnaryMethodNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [87,92]`print`
                         Identifier: print
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
+                      IntegerLiteralNode SourceSection: [94,95]`1`
+                        Value: 1
                   BlockNode SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,9]`var = 100`

@@ -11,3 +11,5 @@ ModuleRootNode Name: <module 'del01'> SourceSection: [0,5]`del x`
       SideEffect:
         DeleteNameNodeGen SourceSection: [0,5]`del x`
           Identifier: x
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
