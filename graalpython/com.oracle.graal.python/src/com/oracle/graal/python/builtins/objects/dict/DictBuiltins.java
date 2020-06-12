@@ -531,7 +531,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached GetDictStorageNode getStorage,
                         @Cached SetDictStorageNode setStorage) {
-            HashingStorage storage = HashingStorage.addMappingToStorage(frame, args[0], kwargs, getStorage.execute(self),
+            HashingStorage storage = HashingStorage.copyToStorage(frame, args[0], kwargs, getStorage.execute(self),
                             callKeysNode, callGetItemNode, getIteratorNode, nextNode, errorProfile, lib);
             setStorage.execute(self, storage);
             return PNone.NONE;
