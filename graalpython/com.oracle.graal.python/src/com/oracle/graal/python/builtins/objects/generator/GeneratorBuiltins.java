@@ -417,6 +417,15 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "gi_running", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetRunningNode extends PythonBuiltinNode {
+        @Specialization
+        Object getRunning(PGenerator self) {
+            return self.isRunning();
+        }
+    }
+
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
