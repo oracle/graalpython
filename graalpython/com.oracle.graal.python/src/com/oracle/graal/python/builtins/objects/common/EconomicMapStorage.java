@@ -372,9 +372,8 @@ public class EconomicMapStorage extends HashingStorage {
     static class Clear {
 
         @Specialization(guards = "!hasSideEffect(self)")
-        static HashingStorage clear(EconomicMapStorage self) {
-            self.map.clear();
-            return self;
+        static HashingStorage clear(@SuppressWarnings("unused") EconomicMapStorage self) {
+            return create();
         }
 
         @Specialization
@@ -382,7 +381,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached CallUnaryMethodNode callNode) {
             if (self.map.size() == 0) {
-                return self;
+                return create();
             }
             Object[] entries = new Object[self.map.size() * 2];
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
@@ -399,7 +398,7 @@ public class EconomicMapStorage extends HashingStorage {
                     callNode.executeObject(lookup.execute(o, __DEL__), o);
                 }
             }
-            return self;
+            return create();
         }
 
     }
