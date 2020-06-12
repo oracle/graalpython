@@ -31,6 +31,8 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_keys_contained
 *graalpython.lib-python.3.test.test_dict.DictTest.test_len
 *graalpython.lib-python.3.test.test_dict.DictTest.test_literal_constructor
+*graalpython.lib-python.3.test.test_dict.DictTest.test_merge_and_mutate
+*graalpython.lib-python.3.test.test_dict.DictTest.test_missing
 *graalpython.lib-python.3.test.test_dict.DictTest.test_mutating_iteration
 *graalpython.lib-python.3.test.test_dict.DictTest.test_mutating_lookup
 *graalpython.lib-python.3.test.test_dict.DictTest.test_object_set_item_single_instance_non_str_key
@@ -54,6 +56,7 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_dynamic
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_literals
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_subtypes
+*graalpython.lib-python.3.test.test_dict.DictTest.test_tuple_keyerror
 *graalpython.lib-python.3.test.test_dict.DictTest.test_update
 *graalpython.lib-python.3.test.test_dict.DictTest.test_values
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_bool
