@@ -26,6 +26,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -67,7 +68,7 @@ public class StringFormatter {
         buffer = new StringBuilder(format.length() + 100);
     }
 
-    Object getarg(LookupAndCallBinaryNode getItemNode) {
+    Object getarg(TupleBuiltins.GetItemNode getTupleItemNode) {
         Object ret = null;
         switch (argIndex) {
             case -3: // special index indicating a mapping
@@ -79,7 +80,14 @@ public class StringFormatter {
                 return args;
             default:
                 // NOTE: passing 'null' frame means we already took care of the global state earlier
-                ret = getItemNode.executeObject(null, args, argIndex++);
+                // args is definitely a tuple at this point. CPython access the tuple storage
+                // directly, so the only error can be IndexError, which we ignore and transform into
+                // the TypeError below.
+                try {
+                    ret = getTupleItemNode.execute(null, args, argIndex++);
+                } catch (PException e) {
+                    // fall through
+                }
                 break;
         }
         if (ret == null) {
@@ -88,10 +96,10 @@ public class StringFormatter {
         return ret;
     }
 
-    int getNumber(LookupAndCallBinaryNode getItemNode) {
+    int getNumber(TupleBuiltins.GetItemNode getTupleItemNode) {
         char c = pop();
         if (c == '*') {
-            Object o = getarg(getItemNode);
+            Object o = getarg(getTupleItemNode);
             if (o instanceof Long) {
                 return ((Long) o).intValue();
             } else if (o instanceof Integer) {
@@ -164,7 +172,7 @@ public class StringFormatter {
      * construction.
      */
     @TruffleBoundary
-    public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
+    public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode) {
         Object mapping = null;
         this.args = args1;
 
@@ -272,7 +280,7 @@ public class StringFormatter {
              * after the minimum field width and optional precision. A custom getNumber() takes care
              * of the '*' case.
              */
-            width = getNumber(getItemNode);
+            width = getNumber(getTupleItemNode);
             if (width < 0) {
                 width = -width;
                 align = '<';
@@ -286,7 +294,7 @@ public class StringFormatter {
              */
             c = pop();
             if (c == '.') {
-                precision = getNumber(getItemNode);
+                precision = getNumber(getTupleItemNode);
                 if (precision < -1) {
                     precision = 0;
                 }
@@ -341,7 +349,7 @@ public class StringFormatter {
 
             switch (spec.type) {
                 case 'b':
-                    Object arg = getarg(getItemNode);
+                    Object arg = getarg(getTupleItemNode);
                     f = ft = new TextFormatter(core, buffer, spec);
                     ft.setBytes(true);
                     Object bytesAttribute;
@@ -360,7 +368,7 @@ public class StringFormatter {
                     break;
                 case 's': // String: converts any object using __str__(), __unicode__() ...
                 case 'r': // ... or repr().
-                    arg = getarg(getItemNode);
+                    arg = getarg(getTupleItemNode);
                     // Get hold of the actual object to display (may set needUnicode)
                     Object attribute = spec.type == 's' ? lookupAttribute.apply(arg, __STR__) : lookupAttribute.apply(arg, __REPR__);
                     if (attribute != PNone.NO_VALUE) {
@@ -383,7 +391,7 @@ public class StringFormatter {
                 case 'i': // Compatibility with scanf().
                     // Format the argument using this Spec.
 
-                    arg = getarg(getItemNode);
+                    arg = getarg(getTupleItemNode);
 
                     // Note various types accepted here as long as they have an __int__ method.
                     Object argAsNumber = asNumber(arg, callNode, lookupAttribute);
@@ -422,7 +430,7 @@ public class StringFormatter {
                     f = ff = new FloatFormatter(core, buffer, spec);
 
                     // Note various types accepted here as long as they have a __float__ method.
-                    arg = getarg(getItemNode);
+                    arg = getarg(getTupleItemNode);
                     Object argAsFloat = asFloat(arg, callNode, lookupAttribute);
 
                     // We have to check what we got back..
