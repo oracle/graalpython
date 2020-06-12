@@ -42,6 +42,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 
 import java.util.List;
 
@@ -51,6 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetDictStorageNode;
@@ -58,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.StorageSupplier;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -452,8 +455,10 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         public PDict clear(PDict dict,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            lib.clear(dict.getDictStorage());
+                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached SetDictStorageNode setStorage) {
+            HashingStorage newStorage = lib.clear(dict.getDictStorage());
+            setStorage.execute(dict, newStorage);
             return dict;
         }
     }
@@ -498,7 +503,7 @@ public final class DictBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isDict(args)", "kwargs.length == 0"})
+        @Specialization(guards = {"isDictButNotEconomicMap(args, getStorage)", "kwargs.length == 0"})
         public Object updateDict(PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached GetDictStorageNode getStorage,
@@ -508,7 +513,7 @@ public final class DictBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isDict(args)", "kwargs.length > 0"})
+        @Specialization(guards = {"isDictButNotEconomicMap(args, getStorage)", "kwargs.length > 0"})
         public Object updateDict(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached HashingStorage.InitNode initNode,
@@ -518,6 +523,45 @@ public final class DictBuiltins extends PythonBuiltins {
             storage = lib.addAllToOther(initNode.execute(frame, PNone.NO_VALUE, kwargs), storage);
             setStorage.execute(self, storage);
             return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isDictEconomicMap(args, getStorage)", "kwargs.length == 0"}, limit = "1")
+        public Object updateDict(PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached GetDictStorageNode getStorage,
+                        @Cached SetDictStorageNode setStorage,
+                        @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary libSelf,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary libOther) {
+            HashingStorage newStorage = addAll(self, (PDict) args[0], getStorage, libSelf, libOther);
+            setStorage.execute(self, newStorage);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isDictEconomicMap(args, getStorage)", "kwargs.length > 0"}, limit = "1")
+        public Object updateDict(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
+                        @Cached GetDictStorageNode getStorage,
+                        @Cached SetDictStorageNode setStorage,
+                        @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary libSelf,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary libOther,
+                        @Cached HashingStorage.InitNode initNode) {
+            HashingStorage newStorage = addAll(self, (PDict) args[0], getStorage, libSelf, libOther);
+            newStorage = libOther.addAllToOther(initNode.execute(frame, PNone.NO_VALUE, kwargs), newStorage);
+            setStorage.execute(self, newStorage);
+            return PNone.NONE;
+        }
+
+        private HashingStorage addAll(PDict self, PDict other, GetDictStorageNode getStorage, HashingStorageLibrary libSelf, HashingStorageLibrary libOther) throws PException {
+            HashingStorage selfStorage = getStorage.execute(self);
+            HashingStorage otherStorage = getStorage.execute(other);
+            HashingStorageIterator<DictEntry> itOther = libOther.entries(otherStorage).iterator();
+            HashingStorage newStorage = selfStorage;
+            while (itOther.hasNext()) {
+                DictEntry next = itOther.next();
+                newStorage = libSelf.setItem(selfStorage, next.key, next.value);
+                if (otherStorage != getStorage.execute(other)) {
+                    throw raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
+                }
+            }
+            return newStorage;
         }
 
         @Specialization(guards = {"args.length == 1", "!isDict(args)", "hasKeysAttr(args, libArg)"})
@@ -568,6 +612,14 @@ public final class DictBuiltins extends PythonBuiltins {
 
         protected boolean isDict(Object[] args) {
             return args.length == 1 && args[0] instanceof PDict;
+        }
+
+        protected boolean isDictEconomicMap(Object[] args, GetDictStorageNode getStorage) {
+            return args.length == 1 && args[0] instanceof PDict && getStorage.execute((PDict) args[0]) instanceof EconomicMapStorage;
+        }
+
+        protected boolean isDictButNotEconomicMap(Object[] args, GetDictStorageNode getStorage) {
+            return args.length == 1 && args[0] instanceof PDict && !(getStorage.execute((PDict) args[0]) instanceof EconomicMapStorage);
         }
 
         protected boolean isSeq(Object[] args) {
