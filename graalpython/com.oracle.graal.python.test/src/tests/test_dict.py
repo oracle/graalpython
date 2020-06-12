@@ -828,3 +828,29 @@ def test_hash_and_eq_for_dynamic_object_storage():
     assert d2[MyObject("1")] == 112
     del d2[MyObject("1")]
     assert "1" not in d2
+
+def test_update_side_effect_on_other():
+    class X:
+        def __hash__(self):
+            return 0
+        def __eq__(self, o):        
+            other.clear()
+            return False
+
+    other = {'a':1, 'b': 2, X(): 3, 'c':4}    
+    d = {X(): 0, 1: 1}
+    assert_raises(RuntimeError, d.update, other)
+    assert 'c' not in d
+    
+    other = {'a':1, 'b': 2, X(): 3, 'c':4}
+    d = {X(): 0, 1: 0}
+    kw = {'kw': 1}
+    
+    raised = False
+    try:
+        d.update(other, **kw)
+    except RuntimeError:
+        raised = True
+    assert raised
+        
+    assert 'kw' not in d
