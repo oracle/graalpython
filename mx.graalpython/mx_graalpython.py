@@ -1065,12 +1065,16 @@ def _python_checkpatchfiles():
         pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
         with open(listfilename, "r") as listfile:
             content = listfile.read()
-        patchfile_pattern = re.compile(r"lib-graalpython/patches/(.*)\.patch")
+        patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
+        checked = set()
         allowed_licenses = ["MIT", "BSD", "MIT license"]
         for line in content.split("\n"):
             match = patchfile_pattern.search(line)
             if match:
                 package_name = match.group(1)
+                if package_name in checked:
+                    break
+                checked.add(package_name)
                 package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
                 mx.log("Checking license of patchfile for " + package_url)
                 response = urllib_request.urlopen(package_url)

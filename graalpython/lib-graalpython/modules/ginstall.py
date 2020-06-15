@@ -36,7 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import re
 from pathlib import Path
 import argparse
 import json
@@ -46,8 +46,8 @@ import site
 import subprocess
 import tempfile
 import importlib
-import sys
 
+import sys
 
 WARNING = '\033[93m'
 FAIL = '\033[91m'
@@ -365,7 +365,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}):
+def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
@@ -407,10 +407,24 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     else:
         xit("Unknown file type: %s" % name)
 
-    patch_file_path = get_patch(package)
+    file_realpath = os.path.dirname(os.path.realpath(__file__))
+    patches_dir = os.path.join(Path(file_realpath).parent, 'patches', package)
+    # empty match group to have the same groups range as in pip_hook
+    # unlike with pip, the version number may not be available at all
+    versions = re.search("()(\\d+)?(.\\d+)?(.\\d+)?", "" if version is None else version)
+
+    patch_file_path = first_existing(package, versions, os.path.join(patches_dir, "sdist"), ".patch")
     if patch_file_path:
         system("patch -d %s/%s/ -p1 < %s" %
                (tempdir, bare_name, patch_file_path))
+
+    whl_patches_dir = os.path.join(patches_dir, "whl")
+    patch_file_path = first_existing(package, versions, whl_patches_dir, ".patch")
+    subdir = read_first_existing(package, versions, whl_patches_dir, ".dir")
+    subdir = "" if subdir is None else "/" + subdir
+    if patch_file_path:
+        system("patch -d %s/%s%s -p1 < %s" %
+               (tempdir, bare_name, subdir, patch_file_path))
 
     if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
         user_arg = "--user"
@@ -420,19 +434,41 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
 
-def get_patch(package):
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    parent_folder = Path(dir_path).parent
-    patch_file_path = os.path.join(
-        parent_folder, 'patches', "%s.patch" % package
-    )
-    if os.path.exists(patch_file_path):
-        return patch_file_path
+# NOTE: Following 3 functions are duplicated in pip_hook.py:
+# creates a search list of a versioned file:
+# {name}-X.Y.Z.{suffix}, {name}-X.Y.{suffix}, {name}-X.{suffix}, {name}.{suffix}
+# 'versions' is a result of re.search
+def list_versioned(pkg_name, versions, dir, suffix):
+    acc = ""
+    res = []
+    for i in range(2,5):
+        v = versions.group(i)
+        if v is not None:
+            acc = acc + v
+            res.append(acc)
+    res.reverse()
+    res = [os.path.join(dir, pkg_name + "-" + ver + suffix) for ver in res]
+    res.append(os.path.join(dir, pkg_name + suffix))
+    return res
+
+def first_existing(pkg_name, versions, dir, suffix):
+    for filename in list_versioned(pkg_name, versions, dir, suffix):
+        if os.path.exists(filename):
+            return filename
+
+def read_first_existing(pkg_name, versions, dir, suffix):
+    filename = first_existing(pkg_name, versions, dir, suffix)
+    if filename:
+        with open(filename, "r") as f:
+            return f.read()
+
+# end of code duplicated in pip_hook.py
 
 def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env={}):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
+    version = None
     if "==" in package:
         package, _, version = package.rpartition("==")
         url = package_version_pattern % (package, version)
@@ -456,7 +492,8 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
                     break
 
     if url:
-        _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags, ignore_errors=ignore_errors, env=env)
+        _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
+                          ignore_errors=ignore_errors, env=env, version=version)
     else:
         xit("Package not found: '%s'" % package)
 
