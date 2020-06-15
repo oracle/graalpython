@@ -64,6 +64,8 @@ public final class PGenerator extends PythonBuiltinObject {
     private int currentCallTarget;
     private final Object iterator;
     private final boolean isPRangeIterator;
+    // running means it is currently on the stack, not just started
+    private boolean running;
 
     public static PGenerator create(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
                     ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, PythonObjectFactory factory,
@@ -143,7 +145,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public boolean isStarted() {
-        return currentCallTarget != 0;
+        return currentCallTarget != 0 && !running;
     }
 
     public Object[] getArguments() {
@@ -189,5 +191,14 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public void setCode(PCode code) {
         this.code = code;
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
+
+    public void setRunning(boolean running) {
+        assert !running || !this.running : "Attempted to set an already running generator as running";
+        this.running = running;
     }
 }
