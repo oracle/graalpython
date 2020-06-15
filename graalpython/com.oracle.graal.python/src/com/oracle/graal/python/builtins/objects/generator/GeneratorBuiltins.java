@@ -404,7 +404,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "gi_code", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class GetCodeNode extends PythonBuiltinNode {
+    public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getCode(PGenerator self,
                         @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
@@ -419,9 +419,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "gi_running", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class GetRunningNode extends PythonBuiltinNode {
+    public abstract static class GetRunningNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getRunning(PGenerator self) {
+        static Object getRunning(PGenerator self) {
             return self.isRunning();
         }
     }

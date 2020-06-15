@@ -198,6 +198,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public void setRunning(boolean running) {
+        assert !running || !this.running : "Attempted to set an already running generator as running";
         this.running = running;
     }
 }
