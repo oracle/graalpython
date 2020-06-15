@@ -173,6 +173,10 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getRaiseNode().raise(type, format, arguments);
     }
 
+    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
+        return getRaiseNode().raise(type, arguments);
+    }
+
     public final PException raise(PythonBuiltinClassType type, Exception e) {
         return getRaiseNode().raise(type, e);
     }

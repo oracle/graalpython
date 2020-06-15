@@ -38,7 +38,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -67,13 +66,15 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -96,9 +97,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -274,18 +277,41 @@ public final class DictBuiltins extends PythonBuiltins {
         Object getItem(VirtualFrame frame, PDict self, Object key,
                         @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile,
-                        @Cached("create(__MISSING__)") LookupAndCallBinaryNode specialNode) {
+                        @Cached DispatchMissingNode missing) {
             final Object result = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             if (result == null) {
-                return specialNode.executeObject(frame, self, key);
+                return missing.execute(frame, self, key);
             }
             return result;
         }
     }
 
-    @Builtin(name = __MISSING__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class MissingNode extends PythonBinaryBuiltinNode {
+    @ImportStatic(SpecialMethodNames.class)
+    protected abstract static class DispatchMissingNode extends Node {
+
+        protected abstract Object execute(VirtualFrame frame, Object self, Object key);
+
+        @Specialization(guards = "hasMissing(self, lib)", limit = "1")
+        protected Object misssing(Object self, Object key,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Exclusive @Cached CallNode callNode) {
+            return callNode.execute(lib.lookupAttribute(self, __MISSING__), key);
+        }
+
+        @Specialization(guards = "!hasMissing(self, lib)", limit = "1")
+        protected Object misssing(VirtualFrame frame, Object self, Object key,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Exclusive @Cached DefaultMissingNode missing) {
+            return missing.execute(frame, self, key);
+        }
+
+        protected boolean hasMissing(Object self, PythonObjectLibrary lib) {
+            Object missing = lib.lookupAttribute(self, __MISSING__);
+            return missing != PNone.NO_VALUE && missing instanceof PMethod;
+        }
+    }
+
+    protected abstract static class DefaultMissingNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         Object run(Object self, PString key,
@@ -301,13 +327,8 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(key)")
-        Object run(VirtualFrame frame, Object self, Object key,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode specialNode) {
-            Object name = specialNode.executeObject(frame, key);
-            if (!PGuards.isString(name)) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", name);
-            }
-            throw raise(KeyError, "%s", name);
+        Object run(VirtualFrame frame, Object self, Object key) {
+            throw raise(KeyError, new Object[]{key});
         }
     }
 
