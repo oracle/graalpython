@@ -49,10 +49,10 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.Conver
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectStealingNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -177,7 +177,7 @@ public abstract class ExternalFunctionNodes {
         @Child private CExtNodes.ConvertArgsToSulongNode toSulongNode;
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private AsPythonObjectStealingNode asPythonObjectNode = AsPythonObjectStealingNodeGen.create();
+        @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;

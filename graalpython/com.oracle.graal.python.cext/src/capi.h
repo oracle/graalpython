@@ -247,9 +247,6 @@ PyObject* native_to_java_stealing(PyObject* obj) {
 }
 
 
-extern void* native_to_java_exported(PyObject* obj);
-extern void* native_to_java_stealing_exported(PyObject* obj);
-
 MUST_INLINE
 PyTypeObject* native_type_to_java(PyTypeObject* type) {
 	if (!truffle_cannot_be_handle(type)) {
@@ -265,8 +262,6 @@ void* native_pointer_to_java(void* obj) {
     }
     return obj;
 }
-
-extern void* native_pointer_to_java_exported(void* ptr);
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);

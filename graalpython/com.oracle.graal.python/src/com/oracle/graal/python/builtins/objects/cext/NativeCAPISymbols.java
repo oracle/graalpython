@@ -48,9 +48,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
 public abstract class NativeCAPISymbols {
 
-    public static final String FUN_NATIVE_POINTER_TO_JAVA = "native_pointer_to_java_exported";
     public static final String FUN_NATIVE_LONG_TO_JAVA = "native_long_to_java";
-    public static final String FUN_NATIVE_TO_JAVA = "native_to_java_exported";
     public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
     public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
     public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
@@ -103,6 +101,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_TRUFFLE_MANAGED_FROM_HANDLE = "truffle_managed_from_handle";
     public static final String FUN_TRUFFLE_CANNOT_BE_HANDLE = "truffle_cannot_be_handle";
     public static final String FUN_GET_LONG_BITS_PER_DIGIT = "get_long_bits_in_digit";
+    public static final String FUN_BULK_SUBREF = "PyTruffle_bulk_SUBREF";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

@@ -247,19 +247,6 @@ static void initialize_capi() {
     initialize_bufferprocs();
 }
 
-void* native_to_java_exported(PyObject* obj) {
-    return native_to_java(obj);
-}
-
-void* native_to_java_stealing_exported(PyObject* obj) {
-    return native_to_java_stealing(obj);
-}
-
-// This function does not guarantee that a pointer object is returned.
-void* native_pointer_to_java_exported(void* val) {
-	return native_pointer_to_java(val);
-}
-
 // Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such
 // that it is guaranteed to return a pointer object.
 void* native_long_to_java(uint64_t val) {
@@ -409,6 +396,26 @@ Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
     }
 #endif
     return new_value;
+}
+
+/** to be used from Java code only; calls DECREF */
+Py_ssize_t PyTruffle_bulk_SUBREF(PyObject* ptrArray[], Py_ssize_t values[], int64_t len) {
+	int64_t i;
+	PyObject* obj;
+
+	for (i=0; i < len; i++) {
+		obj = ptrArray[i];
+		Py_ssize_t new_value = ((obj->ob_refcnt) -= values[i]);
+		if (new_value == 0) {
+			_Py_Dealloc(obj);
+		}
+#ifdef Py_REF_DEBUG
+		else if (new_value < 0) {
+			_Py_NegativeRefcount(filename, lineno, op);
+		}
+#endif
+	}
+    return 0;
 }
 
 typedef struct PyObjectHandle {

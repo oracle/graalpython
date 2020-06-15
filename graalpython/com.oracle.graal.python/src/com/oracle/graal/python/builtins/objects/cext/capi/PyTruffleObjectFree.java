@@ -129,8 +129,8 @@ public class PyTruffleObjectFree implements TruffleObject {
                 // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
                 // necessary distinction.
                 Object nativePointer = lib.getNativePointer(nativeWrapper);
-                if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
+                if (LOGGER.isLoggable(Level.FINER)) {
+                    LOGGER.finer(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
                 }
                 callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
             }

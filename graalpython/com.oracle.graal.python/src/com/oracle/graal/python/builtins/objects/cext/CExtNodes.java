@@ -140,6 +140,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -355,7 +356,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doIntegerSmall")
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallInteger(i)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallInteger(i)) {
                 return doIntegerSmall(cextContext, i, contextRef);
             }
             return PrimitiveNativeWrapper.createInt(i);
@@ -374,7 +375,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doLongSmall")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallLong(l)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallLong(l)) {
                 return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
@@ -603,7 +604,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doIntegerSmall")
         static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallInteger(i)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallInteger(i)) {
                 return doIntegerSmall(cextContext, i, contextRef);
             }
             return PrimitiveNativeWrapper.createInt(i);
@@ -612,7 +613,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doLongSmall")
         static PrimitiveNativeWrapper doLong(CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallLong(l)) {
+            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallLong(l)) {
                 return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
@@ -1279,13 +1280,23 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        static long doLong(@SuppressWarnings("unused") CExtContext nativeContext, long l) {
+            return l;
+        }
+
+        @Specialization
         static byte doByte(@SuppressWarnings("unused") CExtContext nativeContext, byte b) {
             return b;
         }
 
+        @Specialization
+        static double doDouble(@SuppressWarnings("unused") CExtContext nativeContext, double d) {
+            return d;
+        }
+
         protected static boolean isForeignObject(Object obj) {
             return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
-                            obj instanceof Long || obj instanceof Byte);
+                            obj instanceof Long || obj instanceof Byte || obj instanceof Double);
         }
     }
 
@@ -1295,16 +1306,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     public abstract static class ToJavaNode extends ToJavaBaseNode {
-
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode) {
-            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
-            // must try resolving it. At least we know that it's not a native type.
-            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), false));
-        }
 
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
@@ -1328,16 +1329,6 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class ToJavaStealingNode extends ToJavaBaseNode {
 
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode) {
-            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
-            // must try resolving it. At least we know that it's not a native type.
-            return toJavaNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), true));
-        }
-
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
                         @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
@@ -1358,16 +1349,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     public abstract static class VoidPtrToJavaNode extends ToJavaBaseNode {
-
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode) {
-            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
-            // must try resolving it. At least we know that it's not a native type.
-            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), false));
-        }
 
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
@@ -3053,32 +3034,57 @@ public abstract class CExtNodes {
         public abstract void execute(Object delegate, PythonNativeWrapper nativeWrapper);
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(nativeWrapper)")
-        static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper) {
+        static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile) {
             // For non-temporary wrappers (all wrappers that need to preserve identity):
             // If this assertion fails, it indicates that the native code still uses a free'd native
             // wrapper.
             // TODO(fa): explicitly mark native wrappers to be identity preserving
             assert !(nativeWrapper instanceof PythonObjectNativeWrapper) || delegate.getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
-            delegate.clearNativeWrapper();
+            delegate.clearNativeWrapper(hasHandleValidAssumptionProfile);
         }
 
-        @Specialization
-        static void doPrimitiveNativeWrapper(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
-                assert !CApiGuards.isSmallIntegerWrapper(nativeWrapper) : "clearing primitive native wrapper for small integer";
-                delegate.clearNativeWrapper();
+        @Specialization(guards = "delegate == null")
+        static void doPrimitiveNativeWrapper(@SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
+            Assumption handleValidAssumption = nativeWrapper.getHandleValidAssumption();
+            if (hasHandleValidAssumptionProfile.profile(handleValidAssumption != null)) {
+                invalidate(handleValidAssumption);
             }
         }
 
-        @Specialization(guards = "!isAnyPythonObject(delegate)")
+        @Specialization(guards = "delegate != null")
+        static void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
+                assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
+                delegate.clearNativeWrapper(hasHandleValidAssumptionProfile);
+            }
+        }
+
+        @Specialization(guards = {"delegate != null", "!isAnyPythonObject(delegate)"})
         static void doOther(@SuppressWarnings("unused") Object delegate, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper) {
+            assert !isPrimitiveNativeWrapper(nativeWrapper);
             // ignore
+        }
+
+        @TruffleBoundary
+        private static void invalidate(Assumption assumption) {
+            assumption.invalidate("releasing handle for native wrapper");
         }
 
         static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {
             return nativeWrapper instanceof PrimitiveNativeWrapper;
         }
+
+        private static boolean isSmallIntegerWrapperSingleton(ContextReference<PythonContext> contextRef, PrimitiveNativeWrapper nativeWrapper) {
+            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && ToSulongNode.doLongSmall(null, nativeWrapper.getLong(), contextRef) == nativeWrapper;
+        }
+
     }
 
     @GenerateUncached

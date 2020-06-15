@@ -52,20 +52,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.SubRefCntNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -152,7 +153,7 @@ public final class CApiContext extends CExtContext {
                 Thread.currentThread().interrupt();
             }
 
-            ArrayDeque<NativeObjectReference> refs = new ArrayDeque<>();
+            ArrayList<NativeObjectReference> refs = new ArrayList<>();
             do {
                 if (reference instanceof NativeObjectReference) {
                     refs.add((NativeObjectReference) reference);
@@ -162,7 +163,7 @@ public final class CApiContext extends CExtContext {
             } while (reference != null);
 
             if (!refs.isEmpty()) {
-                return new CApiReferenceCleanerAction(refs);
+                return new CApiReferenceCleanerAction(refs.toArray(new NativeObjectReference[0]));
             }
 
             return null;
@@ -299,35 +300,76 @@ public final class CApiContext extends CExtContext {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, new String[0]);
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiReferenceCleanerRootNode.class);
 
-        @Child private SubRefCntNode refCntNode;
-        @Child private CalleeContext calleeContext = CalleeContext.create();
+        @Child private CalleeContext calleeContext;
+        @Child private InteropLibrary pointerObjectLib;
+        @Child private PCallCapiFunction callBulkSubref;
 
         private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
         private final CApiContext cApiContext;
 
         protected CApiReferenceCleanerRootNode(PythonContext context) {
             super(context.getLanguage());
-            refCntNode = SubRefCntNodeGen.create();
             this.cApiContext = context.getCApiContext();
+            this.calleeContext = CalleeContext.create();
+            this.callBulkSubref = PCallCapiFunction.create();
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public Object execute(VirtualFrame frame) {
             CalleeContext.enter(frame, customLocalsProfile);
             try {
-                ArrayDeque<NativeObjectReference> nativeObjectReferences = (ArrayDeque<NativeObjectReference>) PArguments.getArgument(frame, 0);
+                NativeObjectReference[] nativeObjectReferences = (NativeObjectReference[]) PArguments.getArgument(frame, 0);
                 NativeObjectReference nativeObjectReference;
-                while ((nativeObjectReference = pollFirst(nativeObjectReferences)) != null) {
-                    if (!nativeObjectReference.resurrect) {
-                        TruffleObject pointerObject = nativeObjectReference.getPtrObject();
+                int cleaned = 0;
+                long allocatedNativeMem = cApiContext.allocatedMemory;
+                long startTime = 0;
+                long middleTime = 0;
+                final int n = nativeObjectReferences.length;
+                boolean loggable = LOGGER.isLoggable(Level.FINE);
 
-                        cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
-                        if (LOGGER.isLoggable(Level.FINE)) {
-                            LOGGER.fine(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
-                        }
-                        refCntNode.execute(pointerObject, nativeObjectReference.managedRefCount);
+                if (loggable) {
+                    startTime = System.currentTimeMillis();
+                }
+
+                if (LOGGER.isLoggable(Level.FINER)) {
+                    // it's not an OSR loop, so we do this before the loop
+                    if (n > 0 && pointerObjectLib == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        pointerObjectLib = insert(InteropLibrary.getFactory().create(nativeObjectReferences[0].ptrObject));
                     }
+
+                    for (int i = 0; i < n; i++) {
+                        nativeObjectReference = nativeObjectReferences[i];
+                        cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
+                        Object pointerObject = nativeObjectReference.ptrObject;
+                        if (!nativeObjectReference.resurrect && !pointerObjectLib.isNull(pointerObject)) {
+                            cApiContext.checkAccess(pointerObject, pointerObjectLib);
+                            LOGGER.finer(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
+                            cleaned++;
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < n; i++) {
+                        cApiContext.nativeObjectWrapperList.remove(nativeObjectReferences[i].id);
+                    }
+                }
+
+                if (loggable) {
+                    middleTime = System.currentTimeMillis();
+                }
+
+                callBulkSubref.call(NativeCAPISymbols.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
+
+                if (loggable) {
+                    final long countDuration = middleTime - startTime;
+                    final long duration = System.currentTimeMillis() - middleTime;
+                    final int finalCleaned = cleaned;
+                    final long freedNativeMemory = allocatedNativeMem - cApiContext.allocatedMemory;
+                    LOGGER.fine(() -> "Total queued references: " + n);
+                    LOGGER.fine(() -> "Cleaned references: " + finalCleaned);
+                    LOGGER.fine(() -> "Free'd native memory: " + freedNativeMemory);
+                    LOGGER.fine(() -> "Count duration: " + countDuration);
+                    LOGGER.fine(() -> "Duration: " + duration);
                 }
             } finally {
                 calleeContext.exit(frame, this);
@@ -340,14 +382,39 @@ public final class CApiContext extends CExtContext {
             return deque.pollFirst();
         }
 
+        @TruffleBoundary
+        private static int size(ArrayList<NativeObjectReference> deque) {
+            return deque.size();
+        }
+
+        @TruffleBoundary
+        private static NativeObjectReference get(ArrayList<NativeObjectReference> deque, int i) {
+            return deque.get(i);
+        }
+
+        @TruffleBoundary
+        private static NativeObjectReference clear(ArrayList<NativeObjectReference> deque, int i) {
+            return deque.set(i, null);
+        }
+
         @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
 
         @Override
+        public String getName() {
+            return "native_reference_cleaner";
+        }
+
+        @Override
+        public boolean isInternal() {
+            return false;
+        }
+
+        @Override
         public boolean isPythonInternal() {
-            return true;
+            return false;
         }
     }
 
@@ -355,9 +422,10 @@ public final class CApiContext extends CExtContext {
      * Reference cleaner action that will be executed by the {@link AsyncHandler}.
      */
     private static final class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
-        private final ArrayDeque<NativeObjectReference> nativeObjectReferences;
 
-        public CApiReferenceCleanerAction(ArrayDeque<NativeObjectReference> nativeObjectReferences) {
+        private final NativeObjectReference[] nativeObjectReferences;
+
+        public CApiReferenceCleanerAction(NativeObjectReference[] nativeObjectReferences) {
             this.nativeObjectReferences = nativeObjectReferences;
         }
 
@@ -423,34 +491,37 @@ public final class CApiContext extends CExtContext {
         int id = CApiContext.idFromRefCnt(getObRefCntNode.execute(nativePtr));
 
         NativeObjectReference ref;
-        PythonAbstractNativeObject nativeObject;
 
         // If there is no mapping, we need to create a new one.
         if (newRefProfile.profile(id == 0)) {
-            nativeObject = createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
+            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
         } else if (validRefProfile.profile(id > 0)) {
+            PythonAbstractNativeObject nativeObject;
             ref = lookupNativeObjectReference(id);
-            nativeObject = ref.get();
-            if (resurrectProfile.profile(nativeObject == null)) {
-                // Bad luck: the mapping is still there and wasn't cleaned up but we need a new
-                // mapping. Therefore, we need to cancel the cleaner action and set a new native
-                // object reference.
-                ref.markAsResurrected();
-                nativeObject = new PythonAbstractNativeObject(nativePtr);
-                assert id == ref.id;
+            if (ref != null) {
+                nativeObject = ref.get();
+                if (resurrectProfile.profile(nativeObject == null)) {
+                    // Bad luck: the mapping is still there and wasn't cleaned up but we need a new
+                    // mapping. Therefore, we need to cancel the cleaner action and set a new native
+                    // object reference.
+                    ref.markAsResurrected();
+                    nativeObject = new PythonAbstractNativeObject(nativePtr);
+                    assert id == ref.id;
 
-                ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, ref.managedRefCount, id);
-                NativeObjectReference old = nativeObjectWrapperList.resurrect(id, ref);
-                assert isReferenceToSameNativeObject(old, ref) : "resurrected native object reference does not point to same native object";
+                    ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, ref.managedRefCount, id);
+                    NativeObjectReference old = nativeObjectWrapperList.resurrect(id, ref);
+                    assert isReferenceToSameNativeObject(old, ref) : "resurrected native object reference does not point to same native object";
+                }
+                if (steal) {
+                    ref.managedRefCount++;
+                }
+                return nativeObject;
             }
-            if (steal) {
-                ref.managedRefCount++;
-            }
+            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
         } else {
             LOGGER.warning(() -> String.format("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
-            nativeObject = new PythonAbstractNativeObject(nativePtr);
         }
-        return nativeObject;
+        return new PythonAbstractNativeObject(nativePtr);
     }
 
     PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal) {
