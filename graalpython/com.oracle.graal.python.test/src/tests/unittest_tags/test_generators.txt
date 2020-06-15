@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_gen_except
 *graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_next
 *graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_throw
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_throw_exception_context
 *graalpython.lib-python.3.test.test_generators.ExceptionTest.test_return_stopiteration
 *graalpython.lib-python.3.test.test_generators.ExceptionTest.test_return_tuple
 *graalpython.lib-python.3.test.test_generators.ExceptionTest.test_stopiteration_error
