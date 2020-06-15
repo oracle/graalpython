@@ -234,8 +234,15 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object eq(Object self, Object other,
+                        @Cached ConditionProfile isEq,
                         @Cached IsNode isNode) {
-            return isNode.execute(self, other);
+            if (isEq.profile(isNode.execute(self, other))) {
+                return true;
+            } else {
+                // Return NotImplemented instead of False, so if two objects are compared, both get
+                // a chance at the comparison
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
     }
 

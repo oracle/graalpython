@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1512,10 +1513,12 @@ public final class StringBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                         @Shared("lookupAttrNode") @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return new StringFormatter(context.getCore(), self).format(right, callNode, (object, key) -> lookupAttrNode.execute(plib.getLazyPythonClass(object), key), getItemNode);
+                return new StringFormatter(context.getCore(), self).format(right, callNode, (object, key) -> lookupAttrNode.execute(plib.getLazyPythonClass(object), key), getItemNode,
+                                getTupleItemNode);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
@@ -1528,10 +1531,11 @@ public final class StringBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                         @Shared("lookupAttrNode") @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
 
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __MOD__, self);
-            return doStringObject(frame, selfStr, right, callNode, plib, lookupAttrNode, getItemNode, context);
+            return doStringObject(frame, selfStr, right, callNode, plib, lookupAttrNode, getItemNode, getTupleItemNode, context);
         }
     }
 
