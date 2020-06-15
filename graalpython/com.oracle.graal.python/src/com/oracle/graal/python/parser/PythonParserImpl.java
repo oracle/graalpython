@@ -25,16 +25,24 @@
  */
 package com.oracle.graal.python.parser;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-
-import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
@@ -59,13 +67,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import org.antlr.v4.runtime.Token;
-import org.graalvm.nativeimage.ImageInfo;
 
 public final class PythonParserImpl implements PythonParser, PythonCodeSerializer {
 
@@ -82,15 +83,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         this.timeStatistics = env.getOptions().get(PythonOptions.ParserStatistics);
     }
 
-    private static Python3Parser getPython3Parser(Source source, ParserErrorCallback errors) {
-        Python3Lexer lexer;
-        try {
-            lexer = source.getPath() == null
-                            ? new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()))
-                            : new Python3Lexer(CharStreams.fromFileName(source.getPath()));
-        } catch (IOException ex) {
-            lexer = new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()));
-        }
+    private static Python3Parser getPython3Parser(Source source, String sourceText, ParserErrorCallback errors) {
+        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(sourceText));
         lexer.removeErrorListeners();
         lexer.addErrorListener(ERROR_LISTENER);
         Python3Parser parser = new Python3Parser(new CommonTokenStream(lexer));
@@ -281,7 +275,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             }
         }
         // ANTLR parsing
-        Python3Parser parser = getPython3Parser(source, errors);
+        Python3Parser parser = getPython3Parser(source, sourceText, errors);
         parser.setFactory(sstFactory);
         SSTNode parserSSTResult = null;
 
