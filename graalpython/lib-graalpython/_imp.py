@@ -40,12 +40,6 @@
 # Package context -- the full module name for package imports
 _py_package_context = None
 
-
-@__graalpython__.builtin
-def get_magic():
-    return b'\x0c\xaf\xaf\xe1'
-
-
 @__graalpython__.builtin
 def create_dynamic(module_spec, filename=None):
     global _py_package_context

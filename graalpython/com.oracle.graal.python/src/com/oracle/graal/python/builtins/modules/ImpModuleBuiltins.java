@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -148,6 +149,25 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         public boolean run() {
             ReentrantLock importLock = getContext().getImportLock();
             return importLock.isHeldByCurrentThread();
+        }
+    }
+
+    @Builtin(name = "get_magic")
+    @GenerateNodeFactory
+    public abstract static class GetMagic extends PythonBuiltinNode {
+        // it's b'\x0c\xaf\xaf\xe1', original magic number of GraalPython
+        private static int BASE_MAGIC_NUMBER = 212840417;
+
+        @Specialization
+        public PBytes run() {
+            // The magic number in CPython is usually increased by 10.
+            int number = BASE_MAGIC_NUMBER + 10 * SerializationUtils.VERSION;
+            byte[] magicNumber = new byte[4];
+            magicNumber[0] = (byte) (number >>> 24);
+            magicNumber[1] = (byte) (number >>> 16);
+            magicNumber[2] = (byte) (number >>> 8);
+            magicNumber[3] = (byte) (number);
+            return factory().createBytes(magicNumber);
         }
     }
 
