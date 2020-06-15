@@ -50,8 +50,22 @@ def register(search_function):
     __codec_search_path__.append(search_function)
 
 
-def __normalizestring(string):
-    return string.replace(' ', '-').lower()
+def __normalizestring(encoding):
+    # Copied from encodings.normalize_encoding + added lowercasing
+    if isinstance(encoding, bytes):
+        encoding = ascii_decode(encoding)[0]
+
+    chars = []
+    punct = False
+    for c in encoding:
+        if c.isalnum() or c == '.':
+            if punct and chars:
+                chars.append('_')
+            chars.append(c.lower())
+            punct = False
+        else:
+            punct = True
+    return ''.join(chars)
 
 
 @__graalpython__.builtin
@@ -62,13 +76,18 @@ def lookup(encoding):
     if result:
         return result
 
-    # Next, scan the search functions in order of registration
-    for func in __codec_search_path__:
-        result = func(normalized_encoding)
-        if result:
-            if not (isinstance(result, tuple) and len(result) == 4):
-                raise TypeError("codec search functions must return 4-tuples %r")
-            break
+    # Next, try if we have a Java implementation of the encoding
+    if __truffle_lookup(normalized_encoding):
+        import _codecs_truffle
+        result = _codecs_truffle.codec_info_for_truffle(normalized_encoding)
+    else:
+        # Next, scan the search functions in order of registration
+        for func in __codec_search_path__:
+            result = func(normalized_encoding)
+            if result:
+                if not (isinstance(result, tuple) and len(result) == 4):
+                    raise TypeError("codec search functions must return 4-tuples %r")
+                break
 
     if result:
         # Cache and return the result
@@ -272,12 +291,12 @@ def ascii_decode(string, errors=None):
 
 @__graalpython__.builtin
 def charmap_encode(string, errors=None, mapping=None):
-    return __truffle_encode(string, "cp437", errors)
+    raise NotImplementedError("charmap_encode")
 
 
 @__graalpython__.builtin
 def charmap_decode(string, errors=None, mapping=None):
-    return __truffle_decode(string, "cp437", errors)
+    raise NotImplementedError("charmap_decode")
 
 
 @__graalpython__.builtin
@@ -321,10 +340,6 @@ import sys
 sys.path.append(__graalpython__.stdlib_home)
 try:
     import encodings
-    # we import the below two encodings, because they are often used so it's
-    # useful to have them available preloaded
-    import encodings.ascii
-    import encodings.utf_8
 finally:
     assert len(sys.path) == 1
     sys.path.pop()

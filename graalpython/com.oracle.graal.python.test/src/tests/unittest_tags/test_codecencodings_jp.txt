@@ -1,0 +1,13 @@
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_chunkcoding
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_incrementalencoder
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_streamwriter
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_streamwriter_reset_no_pending
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_chunkcoding
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_incrementalencoder
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_streamwriter
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_streamwriter_reset_no_pending
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_SJISX0213.test_streamwriter_reset_no_pending
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_SJIS_COMPAT.test_chunkcoding
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_SJIS_COMPAT.test_incrementalencoder
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_SJIS_COMPAT.test_streamwriter
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_SJIS_COMPAT.test_streamwriter_reset_no_pending
