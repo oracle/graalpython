@@ -70,6 +70,10 @@ public abstract class PRaiseNode extends Node {
         throw execute(type, PNone.NO_VALUE, format, arguments);
     }
 
+    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
+        throw execute(type, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
+    }
+
     public final PException raise(PythonBuiltinClassType type, Exception e) {
         throw execute(type, PNone.NO_VALUE, getMessage(e), new Object[0]);
     }
@@ -156,6 +160,12 @@ public abstract class PRaiseNode extends Node {
     PException doPythonManagedClass(PythonManagedClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         throw raise(factory.createBaseException(exceptionType));
+    }
+
+    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length > 0"})
+    PException doBuiltinType(PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, Object[] arguments,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        throw raise(factory.createBaseException(type, factory.createTuple(arguments)));
     }
 
     @Specialization(guards = {"isNoValue(cause)"})

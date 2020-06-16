@@ -33,7 +33,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PBaseSet extends PHashingCollection {
 
-    protected final HashingStorage set;
+    private HashingStorage set;
 
     public PBaseSet(Object clazz, DynamicObject storage) {
         super(clazz, storage);
@@ -57,5 +57,10 @@ public abstract class PBaseSet extends PHashingCollection {
     @Override
     public HashingStorage getDictStorage() {
         return set;
+    }
+
+    @Override
+    public void setDictStorage(HashingStorage storage) {
+        set = storage;
     }
 }

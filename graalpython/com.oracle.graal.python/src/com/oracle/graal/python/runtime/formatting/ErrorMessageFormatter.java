@@ -111,12 +111,7 @@ public class ErrorMessageFormatter {
                 matchIdx++;
             }
         }
-        try {
-            return String.format(sb.toString(), compact(args, removedCnt));
-        } catch (Throwable t) {
-            System.out.println(" +++ " + format + " " + sb.toString());
-            throw t;
-        }
+        return String.format(sb.toString(), compact(args, removedCnt));
     }
 
     @TruffleBoundary

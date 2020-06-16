@@ -38,6 +38,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -74,9 +76,13 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        public Object clear(PSet self, @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            lib.clear(self.getDictStorage());
+        @Specialization(limit = "1")
+        public Object clear(PSet self,
+                        @Cached GetDictStorageNode getStorage,
+                        @Cached SetDictStorageNode setStorage,
+                        @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary lib) {
+            HashingStorage newStorage = lib.clear(getStorage.execute(self));
+            setStorage.execute(self, newStorage);
             return PNone.NONE;
         }
     }

@@ -323,6 +323,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
+    public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";

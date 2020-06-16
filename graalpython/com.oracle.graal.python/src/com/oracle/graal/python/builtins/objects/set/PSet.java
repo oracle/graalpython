@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PSet extends PBaseSet {
@@ -37,14 +36,5 @@ public final class PSet extends PBaseSet {
 
     public PSet(Object clazz, DynamicObject storage, HashingStorage store) {
         super(clazz, storage, store);
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage newStorage) {
-        // ignore if storage stays unchanged
-        if (newStorage != getDictStorage()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException("set has fixed storage");
-        }
     }
 }
