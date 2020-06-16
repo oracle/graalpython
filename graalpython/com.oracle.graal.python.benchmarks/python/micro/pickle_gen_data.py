@@ -45,44 +45,81 @@ import os
 MOD_DIR = os.path.abspath(os.path.split(__file__)[0])
 
 
-def gen_dics(size=500, size_min=10, size_max=100):
-    DATA = [random_dict(random.randint(size_min, size_max)) for _ in range(size)]
+def gen_dics(size=500, size_min=10, size_max=100, strings=None):
+    print(">>>> gen {} dicts ...".format(size))
+    DATA = []
+    for i in range(size):
+        if i % 10 == 0:
+            print(".", end="", flush=True)
+        DATA.append(random_dict(random.randint(size_min, size_max), strings=strings))
+    print("\npickling dicts ... ")
     with open(os.path.join(MOD_DIR, "dicts.pickle"), "w+b") as FILE:
         pickle.dump(DATA, FILE)
+    print("done")
 
 
-def gen_funcs(size=500):
-    DATA = [random_func() for _ in range(size)]
+def gen_funcs(size=1000):
+    print(">>>> gen {} funcs ...".format(size))
+    DATA = []
+    for i in range(size):
+        if i % 100 == 0:
+            print(".", end="", flush=True)
+        DATA.append(random_func())
+    print("\npickling funcs ...")
     with open(os.path.join(MOD_DIR, "funcs.pickle"), "w+b") as FILE:
         pickle.dump(DATA, FILE)
+    print("done")
 
 
-def gen_lists(size=500, size_min=10, size_max=100):
-    DATA = [random_list(random.randint(size_min, size_max)) for _ in range(size)]
+def gen_lists(size=500, size_min=10, size_max=100, strings=None):
+    print(">>>> gen {} lists ...".format(size))
+    DATA = []
+    for i in range(size):
+        if i % 100 == 0:
+            print(".", end="", flush=True)
+        DATA.append(random_list(random.randint(size_min, size_max), strings=strings))
+    print("\npickling lists ...")
     with open(os.path.join(MOD_DIR, "lists.pickle"), "w+b") as FILE:
         pickle.dump(DATA, FILE)
+    print("done")
 
 
 def gen_objects(size=500):
-    DATA = [random_instance() for _ in range(size)]
+    print(">>>> gen {} objects ...".format(size))
+    DATA = []
+    for i in range(size):
+        if i % 100 == 0:
+            print(".", end="", flush=True)
+        DATA.append(random_instance())
+    print("\npickling objects ...")
     with open(os.path.join(MOD_DIR, "objects.pickle"), "w+b") as FILE:
         pickle.dump(DATA, FILE)
+    print("done")
 
 
 def gen_strings(size=10000, size_min=10, size_max=1000):
-    DATA = [random_string(random.randint(size_min, size_max)) for _ in range(size)]
-    with open(os.path.join(MOD_DIR, "strings.pickle"), "w+b") as FILE:
-        pickle.dump(DATA, FILE)
+    DATA = get_data("strings")
+    if DATA and len(DATA) >= size:
+        print("strings fixture is already generated, reusing ... ")
+        DATA = DATA[:size]
+    else:
+        print(">>>> gen {} strings ...".format(size))
+        DATA = []
+        for i in range(size):
+            if i % 1000 == 0:
+                print(".", end="", flush=True)
+            DATA.append(random_string(random.randint(size_min, size_max)))
+
+        print("\npickling strings ...")
+        with open(os.path.join(MOD_DIR, "strings.pickle"), "w+b") as FILE:
+            pickle.dump(DATA, FILE)
+        print("done")
+    return DATA
 
 
 if __name__ == '__main__':
-    print(">>>> gen dicts ...")
-    gen_dics()
-    print(">>>> gen funcs ...")
+    strings = gen_strings()
+    gen_dics(strings=strings)
     gen_funcs()
-    print(">>>> gen lists ...")
-    gen_lists()
-    print(">>>> gen objects ...")
+    gen_lists(strings=strings)
     gen_objects()
-    print(">>>> gen strings ...")
-    gen_strings()

@@ -44,7 +44,10 @@ PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
 #
 # ----------------------------------------------------------------------------------------------------------------------
 # the argument list contains both the harness and benchmark args
+ITER_50 = ['-i', '50']
+ITER_35 = ['-i', '35']
 ITER_25 = ['-i', '25']
+ITER_20 = ['-i', '20']
 ITER_15 = ['-i', '15']
 ITER_10 = ['-i', '10']
 
@@ -100,11 +103,11 @@ MICRO_BENCHMARKS = {
 
 def _pickling_benchmarks(module='pickle'):
     return {
-        '{}-strings'.format(module): ITER_10,
-        '{}-lists'.format(module): ITER_10,
-        '{}-dicts'.format(module): ITER_10,
-        '{}-objects'.format(module): ITER_10,
-        '{}-funcs'.format(module): ITER_10,
+        '{}-strings'.format(module): ITER_35 + ['10'],
+        '{}-lists'.format(module): ITER_35 + ['5'],
+        '{}-dicts'.format(module): ITER_35 + ['5'],
+        '{}-objects'.format(module): ITER_35 + ['10'],
+        '{}-funcs'.format(module): ITER_35 + ['20'],
     }
 
 

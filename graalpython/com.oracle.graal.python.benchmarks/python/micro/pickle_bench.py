@@ -51,22 +51,22 @@ def get_setup(module, name):
     # this is needed in order to unpickle the funcs references ...
     sys.path.append(os.path.split(__file__)[0])
 
-    def __setup__():
+    def __setup__(multiplier):
         global DATA, dumps, loads
         dumps, loads = get_pickler(module)
-        DATA = get_data(name)
+        DATA = get_data(name) * multiplier
     return __setup__
 
 
-def __process_args__():
+def __process_args__(multiplier):
+    return int(multiplier),
+
+
+def __teardown__(multiplier):
     pass
 
 
-def __teardown__():
-    pass
-
-
-def __benchmark__():
+def __benchmark__(multiplier):
     dumped = [dumps(s) for s in DATA]
     loaded = [loads(b) for b in dumped]
     print("loaded DATA are the same as dumped DATA: ", loaded == DATA)
