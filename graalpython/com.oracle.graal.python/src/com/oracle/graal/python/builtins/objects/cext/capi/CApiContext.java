@@ -318,7 +318,6 @@ public final class CApiContext extends CExtContext {
             CalleeContext.enter(frame, customLocalsProfile);
             try {
                 NativeObjectReference[] nativeObjectReferences = (NativeObjectReference[]) PArguments.getArgument(frame, 0);
-                NativeObjectReference nativeObjectReference;
                 int cleaned = 0;
                 long allocatedNativeMem = cApiContext.allocatedMemory;
                 long startTime = 0;
@@ -338,18 +337,23 @@ public final class CApiContext extends CExtContext {
                     }
 
                     for (int i = 0; i < n; i++) {
-                        nativeObjectReference = nativeObjectReferences[i];
-                        cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
+                        NativeObjectReference nativeObjectReference = nativeObjectReferences[i];
                         Object pointerObject = nativeObjectReference.ptrObject;
-                        if (!nativeObjectReference.resurrect && !pointerObjectLib.isNull(pointerObject)) {
-                            cApiContext.checkAccess(pointerObject, pointerObjectLib);
-                            LOGGER.finer(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
-                            cleaned++;
+                        if (!nativeObjectReference.resurrect) {
+                            cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
+                            if (!nativeObjectReference.resurrect && !pointerObjectLib.isNull(pointerObject)) {
+                                cApiContext.checkAccess(pointerObject, pointerObjectLib);
+                                LOGGER.finer(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
+                                cleaned++;
+                            }
                         }
                     }
                 } else {
                     for (int i = 0; i < n; i++) {
-                        cApiContext.nativeObjectWrapperList.remove(nativeObjectReferences[i].id);
+                        NativeObjectReference nativeObjectReference = nativeObjectReferences[i];
+                        if (!nativeObjectReference.resurrect) {
+                            cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
+                        }
                     }
                 }
 
