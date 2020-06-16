@@ -103,11 +103,11 @@ MICRO_BENCHMARKS = {
 
 def _pickling_benchmarks(module='pickle'):
     return {
-        '{}-strings'.format(module): ITER_35 + ['10'],
-        '{}-lists'.format(module): ITER_35 + ['5'],
-        '{}-dicts'.format(module): ITER_35 + ['5'],
-        '{}-objects'.format(module): ITER_35 + ['10'],
-        '{}-funcs'.format(module): ITER_35 + ['20'],
+        '{}-strings'.format(module): ITER_35 + ['40'],
+        '{}-lists'.format(module): ITER_35 + ['20'],
+        '{}-dicts'.format(module): ITER_35 + ['10'],
+        '{}-objects'.format(module): ITER_35 + ['300'],
+        '{}-funcs'.format(module): ITER_35 + ['400'],
     }
 
 
