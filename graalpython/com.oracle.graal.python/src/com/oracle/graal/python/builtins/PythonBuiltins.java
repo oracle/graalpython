@@ -66,7 +66,8 @@ public abstract class PythonBuiltins {
         initializeEachFactoryWith((factory, builtin) -> {
             CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
             final boolean declaresExplicitSelf;
-            if (annotation.defineModule().length() > 0 && builtin.constructsClass().length == 0) {
+            PythonBuiltinClassType constructsClass = builtin.constructsClass();
+            if (annotation.defineModule().length() > 0 && constructsClass == PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter();
                 assert !builtin.isSetter();
                 assert annotation.extendClasses().length == 0;
@@ -78,15 +79,13 @@ public abstract class PythonBuiltins {
             RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(builtin, factory.getNodeClass(),
                             (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf, builtin.reverseOperation())));
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
-            if (builtin.constructsClass().length > 0) {
+            if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
                 PDecoratedMethod newFunc = core.factory().createStaticmethodFromCallableObj(core.factory().
-                                createBuiltinFunction(__NEW__, null, numDefaults(builtin), callTarget));
-                for (PythonBuiltinClassType type : builtin.constructsClass()) {
-                    PythonBuiltinClass builtinClass = core.lookupType(type);
-                    builtinClass.setAttributeUnsafe(__NEW__, newFunc);
-                    builtinClass.setAttribute(__DOC__, builtinDoc);
-                }
+                                createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), callTarget));
+                PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
+                builtinClass.setAttributeUnsafe(__NEW__, newFunc);
+                builtinClass.setAttribute(__DOC__, builtinDoc);
             } else {
                 PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, numDefaults(builtin), callTarget);
                 function.setAttribute(__DOC__, builtinDoc);

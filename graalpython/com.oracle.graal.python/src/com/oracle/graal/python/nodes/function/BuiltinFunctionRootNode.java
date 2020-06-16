@@ -30,6 +30,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -212,7 +213,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         if (!declaresExplicitSelf) {
             // if we don't take the explicit self, we still need to accept it by signature
             maxNumPosArgs++;
-        } else if (builtin.constructsClass().length > 0 && maxNumPosArgs == 0) {
+        } else if (builtin.constructsClass() != PythonBuiltinClassType.nil && maxNumPosArgs == 0) {
             // we have this convention to always declare the cls argument without setting the num
             // args
             maxNumPosArgs = 1;
@@ -223,7 +224,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 // PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin
                 // " + factory);
                 parameterNames = new String[maxNumPosArgs];
-                parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
+                parameterNames[0] = builtin.constructsClass() != PythonBuiltinClassType.nil ? "$cls" : "$self";
                 for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
                     parameterNames[i] = Character.toString((char) p);
                 }
@@ -235,7 +236,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
                     parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
                     PythonUtils.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
-                    parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
+                    parameterNames[0] = builtin.constructsClass() != PythonBuiltinClassType.nil ? "$cls" : "$self";
                 }
             }
         }

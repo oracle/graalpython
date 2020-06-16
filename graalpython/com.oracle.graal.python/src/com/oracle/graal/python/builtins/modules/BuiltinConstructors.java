@@ -2785,13 +2785,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator}, isPublic = false)
+    @Builtin(name = "iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class IteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object iterator(Object args, Object kwargs) {
             throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'iterator'");
+        }
+    }
+
+    @Builtin(name = "arrayiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PArrayIterator, isPublic = false)
+    @GenerateNodeFactory
+    public abstract static class ArrayIteratorTypeNode extends IteratorTypeNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object iterator(Object args, Object kwargs) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'arrayiterator'");
         }
     }
 
