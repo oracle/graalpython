@@ -332,6 +332,7 @@ class ModuleFinderTest(unittest.TestCase):
     def test_same_name_as_bad(self):
         self._do_test(same_name_as_bad_test)
 
+    @support.impl_detail("bytecode", graalvm=False)
     def test_bytecode(self):
         base_path = os.path.join(TEST_DIR, 'a')
         source_path = base_path + importlib.machinery.SOURCE_SUFFIXES[0]
