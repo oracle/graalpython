@@ -577,7 +577,11 @@ public class IntBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         static BigInteger opNeg(BigInteger a, BigInteger b) {
-            if (a.equals(BigInteger.ZERO)) {
+            if (a.signum() == 0) {
+                return BigInteger.ZERO;
+            }
+            BigInteger mod = a.mod(b.negate());
+            if (mod.signum() == 0) {
                 return BigInteger.ZERO;
             }
             return a.mod(b.negate()).subtract(b.negate());
