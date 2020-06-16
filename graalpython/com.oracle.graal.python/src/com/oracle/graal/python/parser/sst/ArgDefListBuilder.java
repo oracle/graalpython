@@ -40,18 +40,19 @@
  */
 package com.oracle.graal.python.parser.sst;
 
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.parser.ScopeEnvironment;
-import com.oracle.graal.python.parser.ScopeInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.ScopeEnvironment;
+import com.oracle.graal.python.parser.ScopeInfo;
 
 public final class ArgDefListBuilder {
 
@@ -214,6 +215,8 @@ public final class ArgDefListBuilder {
     }
 
     public boolean validateArgumentsAfterSplat() {
+        // Python requires to have named arguments following a bare '*' marker
+        // Check that if there is '*', there are more named parameters than its position in the list
         return !(splatIndex > -1 && args != null && args.get(splatIndex).name == null && paramNames.size() <= splatIndex);
     }
 
