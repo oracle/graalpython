@@ -52,6 +52,10 @@ ModuleRootNode Name: <module 'yeild12'> SourceSection: [0,21]`def f(): yield fro
                           CachedDispatchFirst SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
+                        IsBuiltinClassProfile SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                         IntegerLiteralNode SourceSection: [20,21]`1`
                           Value: 1
                   ReadGeneratorFrameVariableNode SourceSection: None
