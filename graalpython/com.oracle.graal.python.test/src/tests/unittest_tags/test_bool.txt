@@ -23,4 +23,5 @@
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_repr
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_sane_len
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_str
+*graalpython.lib-python.3.test.test_bool.BoolTest.test_string
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_types

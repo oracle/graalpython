@@ -1720,11 +1720,12 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
+            // we cannot use Character.isWhitespace, because Java doesn't consider non-breaking spaces whitespace
             if (self.length() == 0) {
                 return false;
             }
             for (int i = 0; i < self.length(); i++) {
-                if (!Character.isWhitespace(self.codePointAt(i))) {
+                if (!StringUtils.isSpace(self.charAt(i))) {
                     return false;
                 }
             }
