@@ -14,3 +14,4 @@
 *graalpython.lib-python.3.test.test_long.LongTest.test_shift_bool
 *graalpython.lib-python.3.test.test_long.LongTest.test_small_ints
 *graalpython.lib-python.3.test.test_long.LongTest.test_to_bytes
+*graalpython.lib-python.3.test.test_long.LongTest.test_true_division
