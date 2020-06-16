@@ -101,7 +101,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return objectFactory;
     }
 
-    private final PRaiseNode getRaiseNode() {
+    protected final PRaiseNode getRaiseNode() {
         if (raiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             if (isAdoptable()) {
