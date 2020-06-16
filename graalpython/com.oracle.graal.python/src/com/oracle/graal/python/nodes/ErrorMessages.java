@@ -243,6 +243,7 @@ public abstract class ErrorMessages {
     public static final String INT_CANT_CONVERT_STRING_EITH_EXPL_BASE = "int() can't convert non-string with explicit base";
     public static final String INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = "int too large to convert to float";
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
+    public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String INTEGER_EXPECTED_GOT_FLOAT = "integer argument expected, got float";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
     public static final String INTEGER_IS_REQUIRED = "an integer is required";

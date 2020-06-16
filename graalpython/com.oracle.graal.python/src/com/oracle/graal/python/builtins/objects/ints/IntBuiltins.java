@@ -41,9 +41,12 @@
 package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -73,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
@@ -324,7 +328,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (right.isZero()) {
                 throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
-            return op(PInt.longToBigInteger(left), right.getValue());
+            return op(PInt.longToBigInteger(left), right.getValue(), getRaiseNode());
         }
 
         @Specialization
@@ -332,7 +336,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (right == 0) {
                 throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
-            return op(left.getValue(), PInt.longToBigInteger(right));
+            return op(left.getValue(), PInt.longToBigInteger(right), getRaiseNode());
         }
 
         @Specialization
@@ -340,7 +344,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (right.isZero()) {
                 throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
-            return op(left.getValue(), right.getValue());
+            return op(left.getValue(), right.getValue(), getRaiseNode());
         }
 
         /*
@@ -348,13 +352,25 @@ public class IntBuiltins extends PythonBuiltins {
          * precision.
          */
         @TruffleBoundary
-        private static double op(BigInteger a, BigInteger b) {
-            BigInteger[] divideAndRemainder = a.divideAndRemainder(b);
-            if (divideAndRemainder[1].equals(BigInteger.ZERO)) {
-                return divideAndRemainder[0].doubleValue();
-            } else {
+        private static double op(BigInteger a, BigInteger b, PRaiseNode raiseNode) {
+            final int precisionOfDouble = 17;
+            if (fitsIntoDouble(a) && fitsIntoDouble(b)) {
                 return a.doubleValue() / b.doubleValue();
             }
+            BigDecimal aDecimal = new BigDecimal(a);
+            BigDecimal bDecimal = new BigDecimal(b);
+            int aPrec = aDecimal.precision();
+            int bPrec = bDecimal.precision();
+            BigDecimal result = aDecimal.divide(bDecimal, bPrec - aPrec + precisionOfDouble, RoundingMode.HALF_EVEN);
+            double d = result.doubleValue();
+            if (Double.isInfinite(d)) {
+                throw raiseNode.raise(OverflowError, ErrorMessages.INTEGER_DIVISION_RESULT_TOO_LARGE);
+            }
+            return d;
+        }
+
+        private static boolean fitsIntoDouble(BigInteger x) {
+            return x.bitLength() < 53;
         }
 
         @SuppressWarnings("unused")
@@ -724,7 +740,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right < 0")
         double doPLNeg(PInt left, long right, @SuppressWarnings("unused") PNone none) {
-            return TrueDivNode.op(BigInteger.ONE, op(left.getValue(), -right));
+            return TrueDivNode.op(BigInteger.ONE, op(left.getValue(), -right), getRaiseNode());
         }
 
         @Specialization
