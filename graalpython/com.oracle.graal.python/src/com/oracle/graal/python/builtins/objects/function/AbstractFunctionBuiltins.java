@@ -85,12 +85,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = {"self.isStatic()"})
-        protected Object doStatic(PFunction self, Object instance, Object klass) {
-            return self;
-        }
-
-        @Specialization(guards = {"!isPNone(instance)", "!self.isStatic()"})
+        @Specialization(guards = {"!isPNone(instance)"})
         protected PMethod doMethod(PFunction self, Object instance, Object klass) {
             return factory().createMethod(instance, self);
         }
@@ -100,13 +95,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"self.isStatic()"})
-        protected Object doBuiltinStatic(PBuiltinFunction self, Object instance, Object klass) {
-            // a static builtin function does neither require an instance nor a class
-            return self;
-        }
-
-        @Specialization(guards = {"!isPNone(instance)", "!self.isStatic()"})
+        @Specialization(guards = {"!isPNone(instance)"})
         protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
             return factory().createBuiltinMethod(instance, self);
         }

@@ -2304,12 +2304,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (__SLOTS__.equals(key)) {
                     slots = value;
                 } else if (SpecialMethodNames.__NEW__.equals(key)) {
-                    // TODO: see CPython: if it's a plain function, make it a
-                    // static function
-
-                    // tfel: this requires a little bit of refactoring on our
-                    // side that I don't want to do now
-                    pythonClass.setAttribute(key, value);
+                    // see CPython: if it's a plain function, make it a static function
+                    if (value instanceof PFunction) {
+                        pythonClass.setAttribute(key, factory().createStaticmethodFromCallableObj(value));
+                    } else {
+                        pythonClass.setAttribute(key, value);
+                    }
                 } else if (SpecialMethodNames.__INIT_SUBCLASS__.equals(key) ||
                                 SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
                     // see CPython: Special-case __init_subclass__ and

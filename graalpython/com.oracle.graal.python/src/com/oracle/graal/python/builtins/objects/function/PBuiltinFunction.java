@@ -35,7 +35,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -54,7 +53,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final String qualname;
     private final Object enclosingType;
     private final RootCallTarget callTarget;
-    private final boolean isStatic;
     private final Signature signature;
     @CompilationFinal(dimensions = 1) private final PNone[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
@@ -67,7 +65,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         } else {
             this.qualname = name;
         }
-        this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
         this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
@@ -78,10 +75,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
         }
-    }
-
-    public boolean isStatic() {
-        return isStatic;
     }
 
     public RootNode getFunctionRootNode() {
