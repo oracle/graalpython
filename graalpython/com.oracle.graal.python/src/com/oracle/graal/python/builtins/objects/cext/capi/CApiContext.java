@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -375,26 +374,6 @@ public final class CApiContext extends CExtContext {
                 calleeContext.exit(frame, this);
             }
             return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        private static NativeObjectReference pollFirst(ArrayDeque<NativeObjectReference> deque) {
-            return deque.pollFirst();
-        }
-
-        @TruffleBoundary
-        private static int size(ArrayList<NativeObjectReference> deque) {
-            return deque.size();
-        }
-
-        @TruffleBoundary
-        private static NativeObjectReference get(ArrayList<NativeObjectReference> deque, int i) {
-            return deque.get(i);
-        }
-
-        @TruffleBoundary
-        private static NativeObjectReference clear(ArrayList<NativeObjectReference> deque, int i) {
-            return deque.set(i, null);
         }
 
         @Override
