@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -253,6 +253,31 @@ class TestPyDict(CPyExtTestCase):
         resultvars=("PyObject* key", "PyObject* value"),
         callfunction="wrap_PyDict_Next",
         cmpfunc=lambda x, y: type(x) == tuple and type(y) == tuple and len(x) == 3 and len(y) == 3 and (x[0] == 0 and y[0] == 0 or x == y)
+    )
+
+    # _PyDict_SetItem_KnownHash
+    test__PyDict_SetItem_KnownHash = CPyExtFunction(
+        lambda args: {'a': "hello"},
+        lambda: (({'a': "hello"}, ),),
+        code='''PyObject* wrap__PyDict_SetItem_KnownHash(PyObject* dict) {
+            PyObject* result = PyDict_New();
+            
+            Py_ssize_t ppos = 0;
+            PyObject* key;
+            PyObject* value;
+            Py_hash_t phash;
+            
+            int res = 0;
+            
+           _PyDict_Next(dict, &ppos, &key, &value, &phash);
+            res = _PyDict_SetItem_KnownHash(result, key, value, phash);
+            return result;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* dict"],
+        callfunction="wrap__PyDict_SetItem_KnownHash",
     )
 
     # PyDict_Size
