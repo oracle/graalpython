@@ -119,11 +119,18 @@ public abstract class PythonBuiltins {
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Boolean needsFrame = null;
+            boolean constructsClass = false;
             for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
                 if (needsFrame == null) {
                     needsFrame = builtin.needsFrame();
                 } else if (needsFrame != builtin.needsFrame()) {
                     throw new IllegalStateException(String.format("Implementation error in %s: all @Builtin annotations must agree if the node needs a frame.", factory.getNodeClass().getName()));
+                }
+                if (!constructsClass) {
+                    constructsClass = builtin.constructsClass() != PythonBuiltinClassType.nil;
+                } else {
+                    // we rely on this in PythonTpNewBuiltinNode#getOwner
+                    throw new IllegalStateException(String.format("Implementation error in %s: only one @Builtin annotation can declare a class constructor.", factory.getNodeClass().getName()));
                 }
                 func.accept(factory, builtin);
             }
