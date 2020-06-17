@@ -9,5 +9,7 @@
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_negative_zero_repr_str
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_overflow
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_plus_minus_0j
+*graalpython.lib-python.3.test.test_complex.ComplexTest.test_pow
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_repr_str
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_richcompare
+*graalpython.lib-python.3.test.test_complex.ComplexTest.test_truediv

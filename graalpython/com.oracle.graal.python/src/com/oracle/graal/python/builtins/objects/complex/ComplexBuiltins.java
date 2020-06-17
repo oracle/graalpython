@@ -55,14 +55,19 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
 
 import java.util.List;
 
@@ -70,6 +75,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -77,14 +83,18 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -304,8 +314,8 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplexPInt(PComplex right, PInt left) {
-            return doComplexDouble(right, left.doubleValue());
+        PComplex doComplexPInt(PComplex left, PInt right) {
+            return doComplexDouble(left, right.doubleValue());
         }
 
         @Specialization
@@ -338,33 +348,37 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplexDouble(double left, PComplex right) {
-            double oprealSq = right.getReal() * right.getReal();
-            double opimagSq = right.getImag() * right.getImag();
-            double twice = 2 * right.getImag() * right.getReal();
-            double realPart = right.getReal() * left;
-            double imagPart = right.getImag() * left;
-            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
+            return doubleDivComplex(left, right, factory());
         }
 
         @Specialization
         PComplex doComplexInt(long left, PComplex right) {
             double oprealSq = right.getReal() * right.getReal();
             double opimagSq = right.getImag() * right.getImag();
-            double twice = 2 * right.getImag() * right.getReal();
             double realPart = right.getReal() * left;
             double imagPart = right.getImag() * left;
-            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
+            double denom = oprealSq + opimagSq;
+            return factory().createComplex(realPart / denom, -imagPart / denom);
         }
 
         @Specialization
         PComplex doComplexPInt(PInt left, PComplex right) {
-            return doComplexDouble(right, left.doubleValue());
+            return doComplexDouble(left.doubleValue(), right);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        static PComplex doubleDivComplex(double left, PComplex right, PythonObjectFactory factory) {
+            double oprealSq = right.getReal() * right.getReal();
+            double opimagSq = right.getImag() * right.getImag();
+            double realPart = right.getReal() * left;
+            double imagPart = right.getImag() * left;
+            double denom = oprealSq + opimagSq;
+            return factory.createComplex(realPart / denom, -imagPart / denom);
         }
     }
 
@@ -401,9 +415,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplex(PComplex left, PComplex right) {
-            double newReal = left.getReal() * right.getReal() - left.getImag() * right.getImag();
-            double newImag = left.getReal() * right.getImag() + left.getImag() * right.getReal();
-            return factory().createComplex(newReal, newImag);
+            return multiply(left, right, factory());
         }
 
         @Specialization
@@ -420,6 +432,12 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        static PComplex multiply(PComplex left, PComplex right, PythonObjectFactory factory) {
+            double newReal = left.getReal() * right.getReal() - left.getImag() * right.getImag();
+            double newImag = left.getReal() * right.getImag() + left.getImag() * right.getReal();
+            return factory.createComplex(newReal, newImag);
         }
     }
 
@@ -457,6 +475,98 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
+    @Builtin(name = __POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ReportPolymorphism
+    abstract static class PowerNode extends PythonTernaryBuiltinNode {
+
+        static boolean isSmallPositive(long l) {
+            return l > 0 && l <= 100;
+        }
+
+        static boolean isSmallNegative(long l) {
+            return l <= 0 && l >= -100;
+        }
+
+        @Specialization(guards = "isSmallPositive(right)")
+        PComplex doComplexLongSmallPos(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(complexToSmallPositiveIntPower(left, right));
+        }
+
+        @Specialization(guards = "isSmallNegative(right)")
+        PComplex doComplexLongSmallNeg(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -right), factory()));
+        }
+
+        @Specialization(guards = "!isSmallPositive(right) || !isSmallNegative(right)")
+        PComplex doComplexLong(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(complexToComplexPower(left, factory().createComplex(right, 0.0)));
+        }
+
+        @Specialization
+        PComplex doComplexComplex(PComplex left, PComplex right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(complexToComplexPower(left, right));
+        }
+
+        @Specialization
+        PComplex doGeneric(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") PNone mod,
+                        @Cached CoerceToComplexNode coerceLeft,
+                        @Cached CoerceToComplexNode coerceRight) {
+            return checkOverflow(complexToComplexPower(coerceLeft.execute(frame, left), coerceRight.execute(frame, right)));
+        }
+
+        @Specialization(guards = "!isPNone(mod)")
+        @SuppressWarnings("unused")
+        Object doGeneric(Object left, Object right, Object mod) {
+            throw raise(ValueError, ErrorMessages.COMPLEX_MODULO);
+        }
+
+        private PComplex complexToSmallPositiveIntPower(PComplex x, long n) {
+            long mask = 1;
+            PComplex r = factory().createComplex(1.0, 0.0);
+            PComplex p = x;
+            while (mask > 0 && n >= mask) {
+                if ((n & mask) != 0) {
+                    r = MulNode.multiply(r, p, factory());
+                }
+                mask <<= 1;
+                p = MulNode.multiply(p, p, factory());
+            }
+            return r;
+        }
+
+        @TruffleBoundary
+        private PComplex complexToComplexPower(PComplex a, PComplex b) {
+            if (b.getReal() == 0.0 && b.getImag() == 0.0) {
+                return factory().createComplex(1.0, 0.0);
+            }
+            if (a.getReal() == 0.0 && a.getImag() == 0.0) {
+                if (b.getImag() != 0.0 || b.getReal() < 0.0) {
+                    throw raise(ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
+                }
+                return factory().createComplex(0.0, 0.0);
+            }
+            double vabs = Math.hypot(a.getReal(), a.getImag());
+            double len = Math.pow(vabs, b.getReal());
+            double at = Math.atan2(a.getImag(), a.getReal());
+            double phase = at * b.getReal();
+            if (b.getImag() != 0.0) {
+                len /= Math.exp(at * b.getImag());
+                phase += b.getImag() * Math.log(vabs);
+            }
+            return factory().createComplex(len * Math.cos(phase), len * Math.sin(phase));
+        }
+
+        private PComplex checkOverflow(PComplex result) {
+            if (Double.isInfinite(result.getReal()) || Double.isInfinite(result.getImag())) {
+                throw raise(OverflowError, ErrorMessages.COMPLEX_EXPONENTIATION);
+            }
+            return result;
         }
     }
 

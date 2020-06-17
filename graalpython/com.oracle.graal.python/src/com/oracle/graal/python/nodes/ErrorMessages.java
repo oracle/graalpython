@@ -153,6 +153,9 @@ public abstract class ErrorMessages {
     public static final String CODE_OBJ_NO_FREE_VARIABLES = "code object passed to %s may not contain free variables";
     public static final String COMPILE_MUST_BE = "compile() mode must be 'exec', 'eval' or 'single'";
     public static final String COMPLEX_CANT_TAKE_ARG = "complex() can't take second arg if first is a string";
+    public static final String COMPLEX_EXPONENTIATION = "complex exponentiation";
+    public static final String COMPLEX_ZERO_TO_NEGATIVE_POWER = "0.0 to a negative or complex power";
+    public static final String COMPLEX_MODULO = "complex modulo";
     public static final String COMPLEX_RETURNED_NON_COMPLEX = "__complex__ returned non-complex (type %p)";
     public static final String COMPLEX_SHOULD_RETURN_COMPLEX = "__complex__ should return a complex object";
     public static final String CONTIGUOUS_BUFFER = "contiguous buffer";
