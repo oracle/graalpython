@@ -213,6 +213,7 @@ class TestPyErr(CPyExtTestCase):
         argspec='i',
         arguments=["int n"],
         callfunction="wrap_PyErr_PrintEx",
+        stderr_validator=lambda args, stderr: 'unknown key whatsoever' in stderr and 'Traceback' not in stderr,
         cmpfunc=unhandled_error_compare
     )
 
@@ -352,6 +353,7 @@ class TestPyErr(CPyExtTestCase):
             PyErr_WriteUnraisable(object);
         }""",
         callfunction="wrap_PyErr_WriteUnraisable",
+        stderr_validator=lambda args, stderr: 'unraisable exception' in stderr,
         cmpfunc=unhandled_error_compare
     )
 
