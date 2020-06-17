@@ -230,6 +230,10 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                           CachedDispatchFirst SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
+                                        IsBuiltinClassProfile SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                         PythonCallNodeGen SourceSection: [205,213]`MyIter()`
                                           CallNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [205,211]`MyIter`

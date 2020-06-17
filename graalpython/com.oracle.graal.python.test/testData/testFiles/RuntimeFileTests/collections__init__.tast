@@ -394,6 +394,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         CachedDispatchFirst SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       PythonCallUnary SourceSection: [2522,2545]`reversed(self._mappi...`
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2522,2530]`reversed`

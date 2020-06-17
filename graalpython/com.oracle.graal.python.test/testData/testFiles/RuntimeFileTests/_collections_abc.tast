@@ -8483,6 +8483,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CachedDispatchFirst SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
                                       GetAttributeNodeGen SourceSection: [18787,18800]`self._mapping`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: _mapping

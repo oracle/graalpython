@@ -1955,6 +1955,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   CachedDispatchFirst SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
                                 GetAttributeNodeGen SourceSection: [15097,15110]`next.__self__`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: __self__
@@ -2328,6 +2332,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               LookupAndCallUnaryNodeGen SourceSection: None
                                 Op: __next__
                             GeneratorAccessNode SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
+                            IsBuiltinClassProfile SourceSection: None
+                              CachedDispatchFirst SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
                             IsBuiltinClassProfile SourceSection: None

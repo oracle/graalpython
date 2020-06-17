@@ -5642,6 +5642,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     CachedDispatchFirst SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                   PythonCallNodeGen SourceSection: [22635,22669]`self.__cause__.forma...`
                                                     CallNodeGen SourceSection: None
                                                     KeywordArgumentsNodeGen SourceSection: None
@@ -5724,6 +5728,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       CachedDispatchFirst SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
                                                     PythonCallNodeGen SourceSection: [22833,22869]`self.__context__.for...`
                                                       CallNodeGen SourceSection: None
                                                       KeywordArgumentsNodeGen SourceSection: None
@@ -5793,6 +5801,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               CachedDispatchFirst SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             PythonCallNodeGen SourceSection: [23028,23047]`self.stack.format()`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -5813,6 +5825,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
+                                              CachedDispatchFirst SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
