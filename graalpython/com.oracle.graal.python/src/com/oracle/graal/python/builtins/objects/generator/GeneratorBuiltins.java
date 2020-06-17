@@ -25,9 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -45,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -61,6 +64,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -76,6 +80,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -399,6 +404,43 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 getTracebackNode = insert(GetTracebackNode.create());
             }
             return getTracebackNode;
+        }
+    }
+
+    @Builtin(name = "close", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CloseNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object close(PGenerator self,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached IsBuiltinClassProfile isGeneratorExit,
+                        @Cached IsBuiltinClassProfile isStopIteration,
+                        @Cached BranchProfile alreadyRunning) {
+            if (self.isRunning()) {
+                alreadyRunning.enter();
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
+            if (self.isStarted()) {
+                PBaseException pythonException = factory().createBaseException(GeneratorExit);
+                // Pass it to the generator where it will be thrown by the last yield, the location
+                // will be filled there
+                PException pException = PException.fromObject(pythonException, null);
+                try {
+                    resumeGenerator(self, pException);
+                } catch (PException pe) {
+                    if (isGeneratorExit.profileException(pe, GeneratorExit, lib) || isStopIteration.profileException(pe, StopIteration, lib)) {
+                        // This is the "success" path
+                        return PNone.NONE;
+                    }
+                    throw pe;
+                } finally {
+                    self.markAsFinished();
+                }
+                throw raise(RuntimeError, ErrorMessages.GENERATOR_IGNORED_EXIT);
+            } else {
+                self.markAsFinished();
+                return PNone.NONE;
+            }
         }
     }
 

@@ -215,6 +215,7 @@ public abstract class ErrorMessages {
     public static final String FUNC_CONSTRUCTION_NOT_SUPPORTED = "function construction not supported for (%p, %p, %p, %p, %p, %p)";
     public static final String FUNC_TAKES_AT_LEAST_D_ARGS = "function takes at least %d arguments (%d given)";
     public static final String FUNC_TAKES_EXACTLY_D_ARGS = "function takes exaclty %d arguments (%d given)";
+    public static final String GENERATOR_IGNORED_EXIT = "generator ignored GeneratorExit";
     public static final String GENERATOR_RAISED_STOPITER = "generator raised StopIteration";
     public static final String GENERATOR_ALREADY_EXECUTING = "generator already executing";
     public static final String GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = "getting the source is not supported for '%p'";
