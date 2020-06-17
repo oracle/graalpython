@@ -574,11 +574,12 @@ public final class DictBuiltins extends PythonBuiltins {
             HashingStorage selfStorage = getStorage.execute(self);
             HashingStorage otherStorage = getStorage.execute(other);
             HashingStorageIterator<DictEntry> itOther = libOther.entries(otherStorage).iterator();
+            int initialSize = libOther.length(otherStorage);
             HashingStorage newStorage = selfStorage;
             while (itOther.hasNext()) {
                 DictEntry next = itOther.next();
                 newStorage = libSelf.setItem(selfStorage, next.key, next.value);
-                if (otherStorage != getStorage.execute(other)) {
+                if (initialSize != libOther.length(otherStorage)) {
                     throw raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                 }
             }
