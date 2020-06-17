@@ -42,6 +42,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -423,6 +425,30 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         static Object getRunning(PGenerator self) {
             return self.isRunning();
+        }
+    }
+
+    @Builtin(name = "gi_frame", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object getFrame(PGenerator self,
+                        @Cached PythonObjectFactory factory) {
+            if (self.isFinished()) {
+                return PNone.NONE;
+            } else {
+                MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                PDict locals = PArguments.getGeneratorFrameLocals(generatorFrame);
+                Object[] arguments = PArguments.create();
+                // TODO msimacek - this way, the generator will always have lineno == 1
+                Node location = self.getCurrentCallTarget().getRootNode();
+                PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals, false);
+                PArguments.setGlobals(arguments, PArguments.getGlobals(self.getArguments()));
+                PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
+                PArguments.setGeneratorFrame(arguments, generatorFrame);
+                frame.setArguments(arguments);
+                return frame;
+            }
         }
     }
 
