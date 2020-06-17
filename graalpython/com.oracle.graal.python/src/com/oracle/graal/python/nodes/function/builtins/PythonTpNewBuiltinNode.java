@@ -59,9 +59,9 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
  * Implements cpython://Objects/typeobject.c#tp_new_wrapper.
  */
 public abstract class PythonTpNewBuiltinNode extends PythonBuiltinNode {
-    @Child IsTypeNode isType = IsTypeNode.create();
-    @Child IsSubtypeNode isSubtype = IsSubtypeNode.create();
-    @Child GetMroNode getMro = GetMroNode.create();
+    @Child IsTypeNode isType;
+    @Child IsSubtypeNode isSubtype;
+    @Child GetMroNode getMro;
     @CompilationFinal byte state = 0;
     @CompilationFinal PythonBuiltinClassType owner;
 
@@ -73,6 +73,17 @@ public abstract class PythonTpNewBuiltinNode extends PythonBuiltinNode {
 
     @Override
     public final Object execute(VirtualFrame frame) {
+        if (PArguments.isDirectCallToSlot(frame)) {
+            return executeUnwrapped(frame);
+        }
+        // having these nodes acts as branch profile here
+        if (isType == null || isSubtype == null || getMro == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            reportPolymorphicSpecialize();
+            isType = insert(IsTypeNode.create());
+            isSubtype = insert(IsSubtypeNode.create());
+            getMro = insert(GetMroNode.create());
+        }
         Object arg0;
         try {
             arg0 = PArguments.getArgument(frame, 0); // should always succeed, since the signature check was already done

@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -330,6 +331,7 @@ public class TypeBuiltins extends PythonBuiltins {
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
+                PArguments.setDirectCallToSlot(arguments);
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
                 if (isSameType(newInstanceKlass, self)) {
