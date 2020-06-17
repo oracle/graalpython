@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                         Identifier: c
                         ReadLocalVariableNode SourceSection: None
                           Frame: [0,c,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [16,18]`10`
                           Value: 10
@@ -75,14 +73,10 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                           Op: __add__
                                         ReadGeneratorFrameVariableNode SourceSection: [22,23]`x`
                                           Frame: [0,x,Illegal]
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [26,27]`c`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [1,c,Illegal]
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -90,8 +84,6 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                     Identifier: x
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [0,x,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -103,8 +95,6 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                     CachedDispatchFirst SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
@@ -121,6 +111,4 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                           PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

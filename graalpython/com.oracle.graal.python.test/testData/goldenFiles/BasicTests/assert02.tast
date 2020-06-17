@@ -37,8 +37,6 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                       Identifier: marks
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,marks,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -57,14 +55,10 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [31,36]`marks`
                                 Frame: [0,marks,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [41,42]`0`
                               Value: 0
                         StringLiteralNode SourceSection: [43,59]`"List is empty."`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

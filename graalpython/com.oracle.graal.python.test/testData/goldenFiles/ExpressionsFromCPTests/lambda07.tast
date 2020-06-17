@@ -35,8 +35,6 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,17]`lambda foo=bar: 0
                 Identifier: foo
                 WriteLocalFrameSlotNodeGen SourceSection: None
                   Frame: [0,foo,Illegal]
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -46,12 +44,8 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,17]`lambda foo=bar: 0
                     Identifier: <return_val>
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [1,<return_val>,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                     IntegerLiteralNode SourceSection: [16,17]`0`
                       Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [1,<return_val>,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None

@@ -35,16 +35,12 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                       Identifier: var
                       ReadLocalVariableNode SourceSection: None
                         Frame: [0,var,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ObjectLiteralNode SourceSection: [23,27]`None`
                     WriteLocalVariableNodeGen SourceSection: [32,93]`def toInternal(obj):...`
                       Identifier: toInternal
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,toInternal,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       FunctionDefinitionNode Name: toInternal SourceSection: None
                         Arguments: None
                         KwArguments: None
@@ -71,8 +67,6 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                                   Identifier: obj
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [0,obj,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -83,31 +77,21 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                                     Identifier: x
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [1,x,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                     IntegerLiteralNode SourceSection: [86,88]`10`
                                       Value: 10
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [93,110]`return toInternal`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [100,110]`toInternal`
                           Frame: [1,toInternal,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [112,125]`fnc = outer()`
         Identifier: fnc

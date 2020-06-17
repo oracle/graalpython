@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'positionalOnlyArg05'> SourceSection: [0,34]`def na
                         Identifier: p1
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,p1,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -47,8 +45,6 @@ ModuleRootNode Name: <module 'positionalOnlyArg05'> SourceSection: [0,34]`def na
                         Identifier: p2
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,p2,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -56,8 +52,6 @@ ModuleRootNode Name: <module 'positionalOnlyArg05'> SourceSection: [0,34]`def na
                         Identifier: p_or_kw
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,p_or_kw,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -66,6 +60,4 @@ ModuleRootNode Name: <module 'positionalOnlyArg05'> SourceSection: [0,34]`def na
                         EmptyNode SourceSection: [30,34]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

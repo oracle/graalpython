@@ -10,22 +10,16 @@ ModuleRootNode Name: <module 'assignment02'> SourceSection: [0,9]`a = b = 1`
         Identifier: <>temp0
         WriteLocalFrameSlotNodeGen SourceSection: None
           Frame: [0,<>temp0,Illegal]
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IntegerLiteralNode SourceSection: [8,9]`1`
           Value: 1
       WriteNameNodeGen SourceSection: None
         Identifier: a
         ReadLocalVariableNode SourceSection: None
           Frame: [0,<>temp0,Illegal]
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
           ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: None
         Identifier: b
         ReadLocalVariableNode SourceSection: None
           Frame: [0,<>temp0,Illegal]
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
           ReadVariableFromFrameNodeGen SourceSection: None
       EmptyNode SourceSection: None

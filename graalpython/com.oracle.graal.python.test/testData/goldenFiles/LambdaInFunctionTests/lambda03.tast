@@ -60,8 +60,6 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,24]`def fn():↵  lam
                                     Identifier: y
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [0,y,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadVarArgsNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -71,17 +69,11 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,24]`def fn():↵  lam
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                         IntegerLiteralNode SourceSection: [23,24]`0`
                                           Value: 0
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

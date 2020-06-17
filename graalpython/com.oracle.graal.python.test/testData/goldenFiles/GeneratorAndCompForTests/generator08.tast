@@ -48,42 +48,28 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                   Identifier: <>temp4
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [4,<>temp4,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: <>temp5
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [5,<>temp5,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: order
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [2,order,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [4,<>temp4,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: it
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [3,it,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [5,<>temp5,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: [48,62]`value = next()`
                               Identifier: value
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [1,value,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               PythonCallNodeGen SourceSection: [56,62]`next()`
                                 CallNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [56,60]`next`
@@ -104,8 +90,6 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                               flagSlot: 0
                               ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
                                 Frame: [1,value,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
@@ -121,8 +105,6 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
                                   Frame: [0,h,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [82,83]`1`
                                 Value: 1
@@ -131,15 +113,11 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [6,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: h
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,h,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

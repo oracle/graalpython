@@ -36,21 +36,15 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
                       Op: __mul__
                     ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                       Frame: [0,x,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                       Frame: [0,x,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                   GeneratorAccessNode SourceSection: None
               WriteGeneratorFrameVariableNodeGen SourceSection: None
                 Identifier: x
                 WriteGeneraterFrameSlotNodeGen SourceSection: None
                   Frame: [0,x,Illegal]
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
               ArgumentExpressionNode SourceSection: None
                 ReadIndexedArgumentNodeGen SourceSection: None
                   Index: 0
@@ -62,8 +56,6 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
                 CachedDispatchFirst SourceSection: None
             ReadGeneratorFrameVariableNode SourceSection: None
               Frame: [1,<return_val>,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
             BlockNode SourceSection: None
             GeneratorAccessNode SourceSection: None

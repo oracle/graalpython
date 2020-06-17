@@ -45,8 +45,6 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [37,38]`x`
                         Frame: [0,x,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                   ExpressionStatementNode SourceSection: None
                     YieldNode SourceSection: None
@@ -57,16 +55,12 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                             Op: __pow__
                           ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                             Frame: [0,x,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [4,5]`2`
                             Value: 2
                         GetItemNodeGen SourceSection: [6,10]`x[3]`
                           ReadGeneratorFrameVariableNode SourceSection: None
                             Frame: [0,x,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [8,9]`3`
                             Value: 3
@@ -77,8 +71,6 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                   Identifier: x
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,x,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -90,8 +82,6 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                   CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None

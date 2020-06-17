@@ -18,27 +18,19 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
                     Identifier: <>temp0
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [0,<>temp0,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <>temp1
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [1,<>temp1,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                   WriteNameNodeGen SourceSection: None
                     Identifier: a
                     ReadLocalVariableNode SourceSection: None
                       Frame: [0,<>temp0,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
                   WriteNameNodeGen SourceSection: None
                     Identifier: b
                     ReadLocalVariableNode SourceSection: None
                       Frame: [1,<>temp1,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [44,52]`print(b)`
                 PythonCallUnary SourceSection: [44,52]`print(b)`

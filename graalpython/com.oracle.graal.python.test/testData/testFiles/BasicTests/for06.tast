@@ -43,15 +43,11 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                               Identifier: x
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,x,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                           BlockNode SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: [41,46]`x = 4`
                               Identifier: x
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,x,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               IntegerLiteralNode SourceSection: [45,46]`4`
                                 Value: 4
                             IfNode SourceSection: [51,121]`if x == 1:â†µ      pri...`
@@ -63,8 +59,6 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                                     Op: __eq__
                                   ReadLocalVariableNode SourceSection: [54,55]`x`
                                     Frame: [0,x,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [59,60]`1`
                                     Value: 1
@@ -85,8 +79,6 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [117,118]`x`
                                     Frame: [0,x,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [27,35]`range(3)`
                           GetIteratorNodeGen SourceSection: None
@@ -100,8 +92,6 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                   ReadVariableFromFrameNodeGen SourceSection: None
       PythonCallNodeGen SourceSection: [121,125]`fn()`
         CallNodeGen SourceSection: None

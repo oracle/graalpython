@@ -84,8 +84,6 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         Identifier: root
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,root,Illegal]
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                         GetAttributeNodeGen SourceSection: [68,79]`self.__root`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __root
@@ -95,15 +93,11 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                               CachedDispatchFirst SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [68,72]`self`
                                             Frame: [0,self,Illegal]
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: [88,104]`curr = root.prev`
                                         Identifier: curr
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [2,curr,Illegal]
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                         GetAttributeNodeGen SourceSection: [95,104]`root.prev`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: prev
@@ -113,8 +107,6 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                               CachedDispatchFirst SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [95,99]`root`
                                             Frame: [1,root,Illegal]
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       ElseNode SourceSection: [113,192]`while curr is not ro...`
                                         GeneratorWhileNode SourceSection: None
@@ -131,16 +123,12 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                       CachedDispatchFirst SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: [155,159]`curr`
                                                     Frame: [2,curr,Illegal]
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             WriteGeneratorFrameVariableNodeGen SourceSection: [176,192]`curr = curr.prev`
                                               Identifier: curr
                                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                 Frame: [2,curr,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               GetAttributeNodeGen SourceSection: [183,192]`curr.prev`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: prev
@@ -150,8 +138,6 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                     CachedDispatchFirst SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [183,187]`curr`
                                                   Frame: [2,curr,Illegal]
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [119,135]`curr is not root`
@@ -160,28 +146,20 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                             IsExpressionNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [119,123]`curr`
                                                 Frame: [2,curr,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [131,135]`root`
                                                 Frame: [1,root,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                         BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: self
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [0,self,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -194,8 +172,6 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                         StringLiteralNode SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [1,__class__,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

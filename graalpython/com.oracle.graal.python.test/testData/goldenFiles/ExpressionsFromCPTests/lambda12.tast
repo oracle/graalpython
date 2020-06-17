@@ -33,8 +33,6 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,20]`lambda x, *y, **z
                   Identifier: x
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [0,x,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 0
@@ -42,8 +40,6 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,20]`lambda x, *y, **z
                   Identifier: y
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [1,y,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                   ArgumentExpressionNode SourceSection: None
                     ReadVarArgsNodeGen SourceSection: None
                       PythonObjectFactoryNodeGen SourceSection: None
@@ -51,8 +47,6 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,20]`lambda x, *y, **z
                   Identifier: z
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [2,z,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                   ArgumentExpressionNode SourceSection: None
                     ReadVarKeywordsNodeGen SourceSection: None
                       PythonObjectFactoryNodeGen SourceSection: None
@@ -62,12 +56,8 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,20]`lambda x, *y, **z
                     Identifier: <return_val>
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [3,<return_val>,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                     IntegerLiteralNode SourceSection: [19,20]`0`
                       Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [3,<return_val>,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None

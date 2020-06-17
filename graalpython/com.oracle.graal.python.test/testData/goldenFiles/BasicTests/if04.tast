@@ -51,8 +51,6 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -62,15 +60,9 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [52,53]`a`
                               Frame: [0,a,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [1,<return_val>,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None

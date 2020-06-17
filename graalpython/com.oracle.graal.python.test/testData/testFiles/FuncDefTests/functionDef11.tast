@@ -43,8 +43,6 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                         Identifier: x
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,x,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         IntegerLiteralNode SourceSection: [23,25]`10`
                           Value: 10
                       ExpressionStatementNode SourceSection: [30,38]`print(x)`
@@ -55,11 +53,7 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [36,37]`x`
                             Frame: [0,x,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

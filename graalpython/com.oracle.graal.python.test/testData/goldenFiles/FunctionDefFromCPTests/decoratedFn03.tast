@@ -46,6 +46,4 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
                           EmptyNode SourceSection: [22,26]`pass`
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       ReadVariableFromFrameNodeGen SourceSection: None

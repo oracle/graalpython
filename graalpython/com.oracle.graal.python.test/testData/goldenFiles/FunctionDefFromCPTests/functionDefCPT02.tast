@@ -36,8 +36,6 @@ ModuleRootNode Name: <module 'functionDefCPT02'> SourceSection: [0,18]`def f(*ar
                       Identifier: args
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,args,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadVarArgsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -46,6 +44,4 @@ ModuleRootNode Name: <module 'functionDefCPT02'> SourceSection: [0,18]`def f(*ar
                         EmptyNode SourceSection: [14,18]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

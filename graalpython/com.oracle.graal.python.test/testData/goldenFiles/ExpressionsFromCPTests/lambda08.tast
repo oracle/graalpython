@@ -47,8 +47,6 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
                   Identifier: foo
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [0,foo,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 0
@@ -56,8 +54,6 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
                   Identifier: spaz
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [1,spaz,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 1
@@ -67,12 +63,8 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
                     Identifier: <return_val>
                     WriteLocalFrameSlotNodeGen SourceSection: None
                       Frame: [2,<return_val>,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                     IntegerLiteralNode SourceSection: [33,34]`0`
                       Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [2,<return_val>,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None

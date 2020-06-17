@@ -39,16 +39,12 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
                     TupleLiteralNode SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [1,2]`i`
                         Frame: [0,i,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                       BinaryArithmeticExpression SourceSection: [4,9]`i + 1`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __add__
                         ReadGeneratorFrameVariableNode SourceSection: [4,5]`i`
                           Frame: [0,i,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [8,9]`1`
                           Value: 1
@@ -58,8 +54,6 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
                   Identifier: i
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                     Frame: [0,i,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -71,8 +65,6 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
                   CachedDispatchFirst SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None

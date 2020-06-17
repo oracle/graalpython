@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'functionDef04'> SourceSection: [0,31]`def foo(a, b
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -47,8 +45,6 @@ ModuleRootNode Name: <module 'functionDef04'> SourceSection: [0,31]`def foo(a, b
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,b,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -58,23 +54,15 @@ ModuleRootNode Name: <module 'functionDef04'> SourceSection: [0,31]`def foo(a, b
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,<return_val>,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           BinaryArithmeticExpression SourceSection: [25,30]`a + b`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
                             ReadLocalVariableNode SourceSection: [25,26]`a`
                               Frame: [0,a,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [29,30]`b`
                               Frame: [1,b,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

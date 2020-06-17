@@ -43,8 +43,6 @@ ModuleRootNode Name: <module 'functionDefCPT07'> SourceSection: [0,33]`def f(foo
                         Identifier: foo
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,foo,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -52,8 +50,6 @@ ModuleRootNode Name: <module 'functionDefCPT07'> SourceSection: [0,33]`def f(foo
                         Identifier: args
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,args,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -61,8 +57,6 @@ ModuleRootNode Name: <module 'functionDefCPT07'> SourceSection: [0,33]`def f(foo
                         Identifier: kw
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,kw,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -71,6 +65,4 @@ ModuleRootNode Name: <module 'functionDefCPT07'> SourceSection: [0,33]`def f(foo
                         EmptyNode SourceSection: [29,33]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -50,8 +50,6 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                               Identifier: value
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [1,value,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               PythonCallNodeGen SourceSection: [46,52]`next()`
                                 CallNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [46,50]`next`
@@ -65,8 +63,6 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                               flagSlot: 0
                               ReadGeneratorFrameVariableNode SourceSection: [84,89]`value`
                                 Frame: [1,value,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
@@ -77,8 +73,6 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                                 Op: __gt__
                               ReadGeneratorFrameVariableNode SourceSection: [63,64]`h`
                                 Frame: [0,h,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [67,68]`1`
                                 Value: 1
@@ -87,15 +81,11 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: h
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,h,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

@@ -39,8 +39,6 @@ ModuleRootNode Name: <module 'functionDef05'> SourceSection: [0,34]`def foo(par1
                       Identifier: par1
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,par1,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -50,15 +48,9 @@ ModuleRootNode Name: <module 'functionDef05'> SourceSection: [0,34]`def foo(par1
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,<return_val>,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [30,34]`par1`
                             Frame: [0,par1,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

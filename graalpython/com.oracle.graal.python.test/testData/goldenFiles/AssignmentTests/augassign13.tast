@@ -38,18 +38,12 @@ ModuleRootNode Name: <module 'augassign13'> SourceSection: [0,17]`def fn (): x +
                         Identifier: x
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,x,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         LookupAndCallInplaceNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [11,12]`x`
                             Frame: [0,x,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [16,17]`3`
                             Value: 3
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

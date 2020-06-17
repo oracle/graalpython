@@ -41,8 +41,6 @@ ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__
                         Identifier: self
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,self,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -50,8 +48,6 @@ ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__
                         Identifier: max_size
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,max_size,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -59,8 +55,6 @@ ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__
                         Identifier: ctx
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,ctx,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -68,8 +62,6 @@ ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__
                         Identifier: pending_work_items
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,pending_work_items,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
@@ -78,6 +70,4 @@ ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__
                         EmptyNode SourceSection: [60,64]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'assignment06'> SourceSection: [0,29]`def fn():↵ 
                         Identifier: <>temp4
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,<>temp4,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [28,29]`e`
                           Identifier: e
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -47,48 +45,30 @@ ModuleRootNode Name: <module 'assignment06'> SourceSection: [0,29]`def fn():↵ 
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [4,<>temp4,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,b,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [4,<>temp4,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: c
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,c,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [4,<>temp4,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: d
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,d,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: None
                           Frame: [4,<>temp4,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

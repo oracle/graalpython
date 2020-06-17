@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'functionDef03'> SourceSection: [0,35]`↵def foo()
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         IntegerLiteralNode SourceSection: [20,22]`10`
                           Value: 10
                       FrameReturnNode SourceSection: [27,35]`return a`
@@ -47,15 +45,9 @@ ModuleRootNode Name: <module 'functionDef03'> SourceSection: [0,35]`↵def foo()
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,<return_val>,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [34,35]`a`
                             Frame: [0,a,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

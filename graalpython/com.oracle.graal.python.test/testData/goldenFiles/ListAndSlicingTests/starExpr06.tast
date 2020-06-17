@@ -18,25 +18,17 @@ ModuleRootNode Name: <module 'starExpr06'> SourceSection: [0,18]`first, *rest = 
             Identifier: <>temp0
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp1
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [1,<>temp1,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: first
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: rest
             ReadLocalVariableNode SourceSection: None
               Frame: [1,<>temp1,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None

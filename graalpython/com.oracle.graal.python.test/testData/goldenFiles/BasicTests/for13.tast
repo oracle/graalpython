@@ -37,8 +37,6 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                       Identifier: self
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,self,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -51,21 +49,15 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                 Identifier: frame
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [4,frame,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                             ContinueTargetNode SourceSection: None
                               BlockNode SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: [49,59]`count += 1`
                                   Identifier: count
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [1,count,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                   LookupAndCallInplaceNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [49,54]`count`
                                       Frame: [1,count,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [58,59]`1`
                                       Value: 1
@@ -78,8 +70,6 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                         Op: __ge__
                                       ReadLocalVariableNode SourceSection: [71,76]`count`
                                         Frame: [1,count,Illegal]
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [80,81]`3`
                                         Value: 3
@@ -94,8 +84,6 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                         Op: __eq__
                                       ReadLocalVariableNode SourceSection: [115,120]`count`
                                         Frame: [1,count,Illegal]
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [124,125]`4`
                                         Value: 4
@@ -108,42 +96,28 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                               Identifier: <>temp5
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [5,<>temp5,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <>temp6
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [6,<>temp6,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: name
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [2,name,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [5,<>temp5,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: value
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,value,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [6,<>temp6,Illegal]
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [177,186]`count = 1`
                                           Identifier: count
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,count,Illegal]
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           IntegerLiteralNode SourceSection: [185,186]`1`
                                             Value: 1
                                       GetIteratorExpressionNodeGen SourceSection: [158,159]`a`
@@ -157,12 +131,8 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [35,39]`self`
                               Frame: [0,self,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [7,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
