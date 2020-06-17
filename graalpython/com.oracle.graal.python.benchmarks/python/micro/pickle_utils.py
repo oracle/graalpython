@@ -62,18 +62,20 @@ def random_string(size):
     return ''.join([random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(size)])
 
 
-def random_list(size):
+def random_list(size, strings=None):
     def elem():
         t = random.randint(0, 2)
         if t == 0:
             return random.randint(0, 10000000000)
         elif t == 1:
             return float(random.randint(0, 10000000000))
+        elif strings is not None:
+            return strings[random.randint(0, len(strings))-1]
         return random_string(random.randint(100, 1000))
     return [elem() for _ in range(size)]
 
 
-def random_dict(size, ints_only=False):
+def random_dict(size, ints_only=False, strings=None):
     def elem():
         if ints_only:
             return random.randint(0, 10000000000)
@@ -83,6 +85,8 @@ def random_dict(size, ints_only=False):
                 return random.randint(0, 10000000000)
             elif t == 1:
                 return float(random.randint(0, 10000000000))
+            elif strings is not None:
+                return strings[random.randint(0, len(strings)-1)]
             return random_string(random.randint(100, 1000))
     return {'key_'+str(random.randint(0, 1000000000)): elem() for _ in range(size)}
 
@@ -115,8 +119,11 @@ def random_func():
 
 
 def get_data(name):
-    file_name = "{}.pickle".format(name)
-    file_name = os.path.abspath(os.path.join(os.path.split(__file__)[0], file_name))
-    print(">>> loading {} data file ... ".format(file_name))
-    with open(file_name, "r+b") as FILE:
-        return pickle.load(FILE)
+    try:
+        file_name = "{}.pickle".format(name)
+        file_name = os.path.abspath(os.path.join(os.path.split(__file__)[0], file_name))
+        print(">>> loading {} data file ... ".format(file_name))
+        with open(file_name, "r+b") as FILE:
+            return pickle.load(FILE)
+    except:
+        return None
