@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'basicInFn05'> SourceSection: [0,39]`def fn():↵  
                         Identifier: sys
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,sys,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ImportExpression SourceSection: None
                           ImportNode SourceSection: None
                             Module: sys
@@ -47,13 +45,9 @@ ModuleRootNode Name: <module 'basicInFn05'> SourceSection: [0,39]`def fn():↵  
                         Identifier: my_math
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,my_math,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ImportExpression SourceSection: None
                           ImportNode SourceSection: None
                             Module: math
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -42,8 +42,6 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
                                 Identifier: i
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [0,i,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                             ExpressionStatementNode SourceSection: [35,39]`pass`
                               EmptyNode SourceSection: [35,39]`pass`
                           GetIteratorExpressionNodeGen SourceSection: [31,33]`()`
@@ -53,6 +51,4 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

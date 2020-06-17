@@ -41,6 +41,4 @@ ModuleRootNode Name: <module 'funcDoc04'> SourceSection: [0,34]`def fn(): '123' 
                         EmptyNode SourceSection: [30,34]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

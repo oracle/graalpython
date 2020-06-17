@@ -38,12 +38,8 @@ ModuleRootNode Name: <module 'annotationType02'> SourceSection: [0,28]`def fn():
                         Identifier: index
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,index,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         IntegerLiteralNode SourceSection: [26,27]`0`
                           Value: 0
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

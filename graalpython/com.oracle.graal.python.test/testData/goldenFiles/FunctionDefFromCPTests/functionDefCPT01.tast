@@ -38,6 +38,4 @@ ModuleRootNode Name: <module 'functionDefCPT01'> SourceSection: [0,13]`def f(): 
                         EmptyNode SourceSection: [9,13]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

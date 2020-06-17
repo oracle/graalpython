@@ -50,8 +50,6 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
                                   Op: __eq__
                                 ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
                                   Frame: [0,x,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [37,39]`10`
                                   Value: 10
@@ -61,15 +59,11 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
                             Identifier: x
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [0,x,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                             BinaryArithmeticExpression SourceSection: [63,68]`x - 1`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __sub__
                               ReadGeneratorFrameVariableNode SourceSection: [63,64]`x`
                                 Frame: [0,x,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [67,68]`1`
                                 Value: 1
@@ -78,8 +72,6 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
                               flagSlot: 0
                               ReadGeneratorFrameVariableNode SourceSection: [80,81]`x`
                                 Frame: [0,x,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
@@ -88,8 +80,6 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
                             CachedDispatchFirst SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [21,22]`x`
                             Frame: [0,x,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       ExpressionStatementNode SourceSection: [96,105]`yield 100`
@@ -100,15 +90,11 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
                           GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: x
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,x,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

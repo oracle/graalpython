@@ -20,16 +20,12 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
                     CachedDispatchFirst SourceSection: None
               ReadLocalVariableNode SourceSection: None
                 Frame: [0,<>temp0,Illegal]
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
           SideEffect:
             WriteLocalVariableNodeGen SourceSection: None
               Identifier: <>temp0
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
               PythonCallNodeGen SourceSection: [6,9]`y()`
                 CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [6,7]`y`
@@ -43,21 +39,15 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
                 Op: __lt__
               ReadLocalVariableNode SourceSection: None
                 Frame: [0,<>temp0,Illegal]
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
               ReadLocalVariableNode SourceSection: None
                 Frame: [1,<>temp1,Illegal]
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
                 ReadVariableFromFrameNodeGen SourceSection: None
           SideEffect:
             WriteLocalVariableNodeGen SourceSection: None
               Identifier: <>temp1
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [1,<>temp1,Illegal]
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
               PythonCallNodeGen SourceSection: [12,15]`y()`
                 CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [12,13]`y`
@@ -72,8 +62,6 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
           Op: __le__
         ReadLocalVariableNode SourceSection: None
           Frame: [1,<>temp1,Illegal]
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
           ReadVariableFromFrameNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [19,22]`z()`
           CallNodeGen SourceSection: None

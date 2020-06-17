@@ -47,16 +47,12 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                               TupleLiteralNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: [65,66]`k`
                                   Frame: [0,k,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BinaryArithmeticExpression SourceSection: [67,70]`v*2`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __mul__
                                   ReadGeneratorFrameVariableNode SourceSection: [67,68]`v`
                                     Frame: [1,v,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [69,70]`2`
                                     Value: 2
@@ -67,35 +63,23 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                               Identifier: <>temp2
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [2,<>temp2,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: <>temp3
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [3,<>temp3,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: k
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [0,k,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: None
                                 Frame: [2,<>temp2,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: v
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [1,v,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: None
                                 Frame: [3,<>temp3,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -108,8 +92,6 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                             CachedDispatchFirst SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: None
                           Frame: [4,<return_val>,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         GeneratorAccessNode SourceSection: None

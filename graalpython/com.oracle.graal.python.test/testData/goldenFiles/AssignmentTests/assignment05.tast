@@ -22,38 +22,26 @@ ModuleRootNode Name: <module 'assignment05'> SourceSection: [0,17]`a, b, c = 1, 
             Identifier: <>temp0
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp1
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [1,<>temp1,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp2
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [2,<>temp2,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: a
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: b
             ReadLocalVariableNode SourceSection: None
               Frame: [1,<>temp1,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: c
             ReadLocalVariableNode SourceSection: None
               Frame: [2,<>temp2,Illegal]
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               ReadVariableFromFrameNodeGen SourceSection: None

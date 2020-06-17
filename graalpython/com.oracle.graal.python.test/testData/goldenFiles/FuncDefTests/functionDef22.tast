@@ -49,16 +49,12 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,a,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         IntegerLiteralNode SourceSection: [18,19]`1`
                           Value: 1
                       WriteLocalVariableNodeGen SourceSection: [23,41]`def fn1(): passâ†µ  `
                         Identifier: fn1
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,fn1,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         FunctionDefinitionNode Name: fn1 SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -86,15 +82,11 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                                       EmptyNode SourceSection: [34,38]`pass`
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [0,<return_val>,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [41,59]`def fn2(): passâ†µ  `
                         Identifier: fn2
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,fn2,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         FunctionDefinitionNode Name: fn2 SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -122,16 +114,12 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                                       EmptyNode SourceSection: [52,56]`pass`
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [0,<return_val>,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [59,74]`return locals()`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,<return_val>,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           PythonCallNodeGen SourceSection: [66,74]`locals()`
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [66,72]`locals`
@@ -139,6 +127,4 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

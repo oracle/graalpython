@@ -46,16 +46,12 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                           IsExpressionNodeGen SourceSection: [50,59]`f is None`
                             ReadGeneratorFrameVariableNode SourceSection: [50,51]`f`
                               Frame: [0,f,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ObjectLiteralNode SourceSection: [55,59]`None`
                         WriteGeneratorFrameVariableNodeGen SourceSection: [69,76]`f = a()`
                           Identifier: f
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [0,f,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           PythonCallNodeGen SourceSection: [73,76]`a()`
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [73,74]`a`
@@ -69,8 +65,6 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                               flagSlot: 0
                               ReadGeneratorFrameVariableNode SourceSection: [116,117]`f`
                                 Frame: [0,f,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           NotNodeGen SourceSection: [87,100]`f is not None`
@@ -79,8 +73,6 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                             IsExpressionNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [87,88]`f`
                                 Frame: [0,f,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ObjectLiteralNode SourceSection: [96,100]`None`
                           GeneratorAccessNode SourceSection: None
@@ -88,15 +80,11 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: f
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,f,Illegal]
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

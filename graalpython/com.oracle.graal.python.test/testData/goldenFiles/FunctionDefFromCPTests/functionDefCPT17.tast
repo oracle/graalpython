@@ -41,8 +41,6 @@ ModuleRootNode Name: <module 'functionDefCPT17'> SourceSection: [0,21]`def f(*, 
                       Identifier: a
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,a,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -51,6 +49,4 @@ ModuleRootNode Name: <module 'functionDefCPT17'> SourceSection: [0,21]`def f(*, 
                         EmptyNode SourceSection: [17,21]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

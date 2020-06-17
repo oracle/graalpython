@@ -53,8 +53,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             ReadLocalCellNodeGen SourceSection: [75,84]`path_item`
                               ReadGeneratorFrameVariableNode SourceSection: None
                                 Frame: [1,path_item,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadFromCellNodeGen SourceSection: None
                         GeneratorBlockNode SourceSection: None
@@ -66,8 +64,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 ReadLocalCellNodeGen SourceSection: [141,150]`path_item`
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [1,path_item,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
@@ -80,8 +76,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                       ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
                                         ReadGeneratorFrameVariableNode SourceSection: None
                                           Frame: [1,path_item,Illegal]
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       PythonCallBinary SourceSection: [202,237]`os.path.join(path_it...`
@@ -100,8 +94,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [1,path_item,Illegal]
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [226,236]`'EGG-INFO'`
@@ -120,8 +112,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                         Identifier: entries
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [3,entries,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         PythonCallUnary SourceSection: [292,315]`safe_listdir(path_it...`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [292,304]`safe_listdir`
@@ -130,16 +120,12 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           ReadLocalCellNodeGen SourceSection: [305,314]`path_item`
                             ReadGeneratorFrameVariableNode SourceSection: None
                               Frame: [1,path_item,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: [321,430]`filtered = (↵       ...`
                         Identifier: filtered
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [4,filtered,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         GeneratorExpressionNode SourceSection: [356,424]`for entry in entries...`
                           Name: find_on_path.<locals>.<genexp>:genFromPip:14
                           FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
@@ -176,20 +162,14 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         ReadLocalCellNodeGen SourceSection: [401,410]`path_item`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [1,path_item,Illegal]
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [412,417]`entry`
                                           Frame: [0,entry,Illegal]
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [419,423]`only`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [2,only,Illegal]
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [342,347]`entry`
@@ -197,8 +177,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         flagSlot: 0
                                         ReadGeneratorFrameVariableNode SourceSection: [342,347]`entry`
                                           Frame: [0,entry,Illegal]
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                     BlockNode SourceSection: None
@@ -206,8 +184,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     Identifier: entry
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                       Frame: [0,entry,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -219,8 +195,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     CachedDispatchFirst SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
@@ -229,16 +203,12 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             GetIteratorNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [369,376]`entries`
                               Frame: [3,entries,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: [436,488]`path_item_entries = ...`
                         Identifier: path_item_entries
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [5,path_item_entries,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         PythonCallUnary SourceSection: [456,488]`_by_version_descendi...`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [456,478]`_by_version_descendi...`
@@ -246,8 +216,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [479,487]`filtered`
                             Frame: [4,filtered,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadVariableFromFrameNodeGen SourceSection: None
                       ElseNode SourceSection: [493,692]`for entry in path_it...`
                         GeneratorForNode SourceSection: None
@@ -256,8 +224,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               Identifier: fullpath
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [6,fullpath,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               PythonCallBinary SourceSection: [544,574]`os.path.join(path_it...`
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
@@ -274,21 +240,15 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 ReadLocalCellNodeGen SourceSection: [557,566]`path_item`
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [1,path_item,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: [568,573]`entry`
                                   Frame: [9,entry,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: [583,629]`factory = dist_facto...`
                               Identifier: factory
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [7,factory,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               PythonCallTernary SourceSection: [593,629]`dist_factory(path_it...`
                                 CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [593,605]`dist_factory`
@@ -297,20 +257,14 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 ReadLocalCellNodeGen SourceSection: [606,615]`path_item`
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [1,path_item,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: [617,622]`entry`
                                   Frame: [9,entry,Illegal]
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [624,628]`only`
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [2,only,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
                             ElseNode SourceSection: [638,692]`for dist in factory(...`
@@ -320,29 +274,21 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     flagSlot: 3
                                     ReadGeneratorFrameVariableNode SourceSection: [687,691]`dist`
                                       Frame: [8,dist,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: dist
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [8,dist,Illegal]
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [650,667]`factory(fullpath)`
                                   GetIteratorNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [650,667]`factory(fullpath)`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: [650,657]`factory`
                                       Frame: [7,factory,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: [658,666]`fullpath`
                                       Frame: [6,fullpath,Illegal]
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 GetNextNode SourceSection: None
                                   LookupAndCallUnaryNodeGen SourceSection: None
@@ -356,14 +302,10 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             Identifier: entry
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [9,entry,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [506,523]`path_item_entries`
                             GetIteratorNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [506,523]`path_item_entries`
                               Frame: [5,path_item_entries,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                           GetNextNode SourceSection: None
                             LookupAndCallUnaryNodeGen SourceSection: None
@@ -375,16 +317,12 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [10,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: importer
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [0,importer,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -392,8 +330,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                       Identifier: path_item
                       ReadGeneratorFrameVariableNode SourceSection: None
                         Frame: [1,path_item,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
@@ -402,8 +338,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                       Identifier: only
                       ReadGeneratorFrameVariableNode SourceSection: None
                         Frame: [2,only,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None

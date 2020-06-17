@@ -42,15 +42,11 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
                           Identifier: my_dirname
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [0,my_dirname,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           EmptyNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: basename
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,basename,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           EmptyNode SourceSection: None
                         GetAnyAttributeNodeGen SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
@@ -61,6 +57,4 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
                           CachedDispatchFirst SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

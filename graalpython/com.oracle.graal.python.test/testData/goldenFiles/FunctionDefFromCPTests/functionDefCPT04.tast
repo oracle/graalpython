@@ -37,8 +37,6 @@ ModuleRootNode Name: <module 'functionDefCPT04'> SourceSection: [0,17]`def f(**k
                       Identifier: kw
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,kw,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadVarKeywordsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -47,6 +45,4 @@ ModuleRootNode Name: <module 'functionDefCPT04'> SourceSection: [0,17]`def f(**k
                         EmptyNode SourceSection: [13,17]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

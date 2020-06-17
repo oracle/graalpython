@@ -47,6 +47,4 @@ ModuleRootNode Name: <module 'call19'> SourceSection: [0,33]`def fn(): "in".form
                             StringLiteralNode SourceSection: [10,14]`"in"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

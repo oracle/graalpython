@@ -60,6 +60,4 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
                             EmptyNode SourceSection: [40,44]`pass`
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [0,<return_val>,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadVariableFromFrameNodeGen SourceSection: None

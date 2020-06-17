@@ -44,16 +44,12 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                             flagSlot: 0
                             ReadGeneratorFrameVariableNode SourceSection: [47,48]`x`
                               Frame: [0,x,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                           Identifier: x
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [0,x,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [22,31]`range(30)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [22,31]`range(30)`
@@ -72,8 +68,6 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

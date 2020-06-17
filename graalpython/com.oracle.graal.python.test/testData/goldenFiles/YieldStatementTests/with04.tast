@@ -44,16 +44,12 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                             flagSlot: 0
                             ReadGeneratorFrameVariableNode SourceSection: [48,49]`a`
                               Frame: [1,a,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                           Identifier: b
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [0,b,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                         PythonCallNodeGen SourceSection: [28,31]`B()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [28,29]`B`
@@ -78,8 +74,6 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                         Identifier: a
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [1,a,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                       PythonCallNodeGen SourceSection: [18,21]`A()`
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [18,19]`A`
@@ -102,8 +96,6 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

@@ -36,8 +36,6 @@ ModuleRootNode Name: <module 'functionDef09'> SourceSection: [0,23]`def foo(*arg
                       Identifier: args
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,args,Illegal]
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadVarArgsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -46,6 +44,4 @@ ModuleRootNode Name: <module 'functionDef09'> SourceSection: [0,23]`def foo(*arg
                         EmptyNode SourceSection: [19,23]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

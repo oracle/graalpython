@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                         Identifier: x
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,x,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -47,8 +45,6 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                         Identifier: y
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,y,Illegal]
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -59,20 +55,14 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                             Identifier: result
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [2,result,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                             BinaryArithmeticExpression SourceSection: [44,49]`x / y`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __truediv__
                               ReadLocalVariableNode SourceSection: [44,45]`x`
                                 Frame: [0,x,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [48,49]`y`
                                 Frame: [1,y,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           ExceptNode SourceSection: None
                             ExpressionStatementNode SourceSection: [88,114]`print("division by z...`
@@ -94,8 +84,6 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               StringLiteralNode SourceSection: [139,150]`"result is"`
                               ReadLocalVariableNode SourceSection: [152,158]`result`
                                 Frame: [2,result,Illegal]
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [181,214]`print("executing fin...`
                           PythonCallUnary SourceSection: [181,214]`print("executing fin...`
@@ -106,6 +94,4 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                             StringLiteralNode SourceSection: [187,213]`"executing finally c...`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -42,8 +42,6 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                             Identifier: d
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [0,d,Illegal]
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [35,36]`c`
                             Identifier: c
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -65,8 +63,6 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                           Identifier: b
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,b,Illegal]
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [27,28]`a`
                           Identifier: a
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -86,6 +82,4 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     ReadVariableFromFrameNodeGen SourceSection: None

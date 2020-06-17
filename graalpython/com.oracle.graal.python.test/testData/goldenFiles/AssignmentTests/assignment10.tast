@@ -10,8 +10,6 @@ ModuleRootNode Name: <module 'assignment10'> SourceSection: [0,15]`i, j, k = x =
         Identifier: <>temp0
         WriteLocalFrameSlotNodeGen SourceSection: None
           Frame: [0,<>temp0,Illegal]
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         ReadNameNodeGen SourceSection: [14,15]`a`
           Identifier: a
           IsBuiltinClassProfile SourceSection: None
@@ -19,53 +17,37 @@ ModuleRootNode Name: <module 'assignment10'> SourceSection: [0,15]`i, j, k = x =
       DestructuringAssignmentNodeGen SourceSection: None
         ReadLocalVariableNode SourceSection: None
           Frame: [0,<>temp0,Illegal]
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
           ReadVariableFromFrameNodeGen SourceSection: None
         WriteLocalVariableNodeGen SourceSection: None
           Identifier: <>temp1
           WriteLocalFrameSlotNodeGen SourceSection: None
             Frame: [1,<>temp1,Illegal]
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
         WriteLocalVariableNodeGen SourceSection: None
           Identifier: <>temp2
           WriteLocalFrameSlotNodeGen SourceSection: None
             Frame: [2,<>temp2,Illegal]
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
         WriteLocalVariableNodeGen SourceSection: None
           Identifier: <>temp3
           WriteLocalFrameSlotNodeGen SourceSection: None
             Frame: [3,<>temp3,Illegal]
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
         WriteNameNodeGen SourceSection: None
           Identifier: i
           ReadLocalVariableNode SourceSection: None
             Frame: [1,<>temp1,Illegal]
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
             ReadVariableFromFrameNodeGen SourceSection: None
         WriteNameNodeGen SourceSection: None
           Identifier: j
           ReadLocalVariableNode SourceSection: None
             Frame: [2,<>temp2,Illegal]
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
             ReadVariableFromFrameNodeGen SourceSection: None
         WriteNameNodeGen SourceSection: None
           Identifier: k
           ReadLocalVariableNode SourceSection: None
             Frame: [3,<>temp3,Illegal]
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
             ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: None
         Identifier: x
         ReadLocalVariableNode SourceSection: None
           Frame: [0,<>temp0,Illegal]
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
           ReadVariableFromFrameNodeGen SourceSection: None
       EmptyNode SourceSection: None
