@@ -63,11 +63,11 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithState;
@@ -231,6 +231,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Child private MarshallerNode recursiveNode;
         private int depth = 0;
         @Child private IsBuiltinClassProfile isBuiltinProfile;
+        @Child private PythonObjectLibrary plib;
 
         protected MarshallerNode getRecursiveNode() {
             if (recursiveNode == null) {
@@ -492,13 +493,17 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         void writeObject(Object v, int version, DataOutputStream buffer) {
+            if (plib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                plib = insert(PythonObjectLibrary.getFactory().create(v));
+            }
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
                 throw raise(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
             } else if (v == null) {
                 writeByte(TYPE_NULL, version, buffer);
             } else if (v == PNone.NONE) {
                 writeByte(TYPE_NONE, version, buffer);
-            } else if (v instanceof LazyPythonClass) {
+            } else if (plib.isLazyPythonClass(v)) {
                 if (isBuiltinProfile == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     isBuiltinProfile = insert(IsBuiltinClassProfile.create());
