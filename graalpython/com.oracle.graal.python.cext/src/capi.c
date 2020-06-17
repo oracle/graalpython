@@ -402,18 +402,23 @@ Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
 Py_ssize_t PyTruffle_bulk_SUBREF(PyObject* ptrArray[], Py_ssize_t values[], int64_t len) {
 	int64_t i;
 	PyObject* obj;
+	Py_ssize_t value;
 
 	for (i=0; i < len; i++) {
 		obj = ptrArray[i];
-		Py_ssize_t new_value = ((obj->ob_refcnt) -= values[i]);
-		if (new_value == 0) {
-			_Py_Dealloc(obj);
-		}
+		value = values[i];
+		/* IMPORTANT: 'value == 0' indicates we should not process the reference at all */
+		if (value > 0) {
+			Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
+			if (new_value == 0) {
+				_Py_Dealloc(obj);
+			}
 #ifdef Py_REF_DEBUG
-		else if (new_value < 0) {
-			_Py_NegativeRefcount(filename, lineno, op);
-		}
+			else if (new_value < 0) {
+				_Py_NegativeRefcount(filename, lineno, op);
+			}
 #endif
+		}
 	}
     return 0;
 }
