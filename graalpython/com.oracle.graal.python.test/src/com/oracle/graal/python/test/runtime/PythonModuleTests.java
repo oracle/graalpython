@@ -101,7 +101,7 @@ public class PythonModuleTests {
     public void builtinsIntTest() {
         final PythonModule builtins = context.getBuiltins();
         PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
-        Object intNew = intClass.getAttribute(SpecialAttributeNames.__NEW__);
+        Object intNew = intClass.getAttribute(SpecialMethodNames.__NEW__);
         Object returnValue = callBuiltin(intNew, PythonBuiltinClassType.PInt, "42");
         assertEquals(42, returnValue);
     }
