@@ -43,7 +43,12 @@ package com.oracle.graal.python.builtins.objects.dict;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -83,5 +88,12 @@ public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
 
     public final boolean checkSizeChanged(HashingStorageLibrary lib) {
         return lib.length(hashingStorage) != size;
+    }
+
+    protected Object reduceInternal(Object content, int index, PythonContext context, PythonObjectFactory factory, PythonObjectLibrary pol) {
+        PythonModule builtins = context.getCore().getBuiltins();
+        Object iter = pol.lookupAttribute(builtins, "iter");
+        PTuple contents = factory.createTuple(new Object[]{content});
+        return factory.createTuple(new Object[]{iter, contents, index});
     }
 }

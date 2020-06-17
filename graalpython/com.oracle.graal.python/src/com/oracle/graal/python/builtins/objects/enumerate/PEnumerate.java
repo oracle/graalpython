@@ -46,4 +46,8 @@ public final class PEnumerate extends PythonBuiltinObject {
     public long getAndIncrementIndex() {
         return index++;
     }
+
+    public long getIndex() {
+        return index;
+    }
 }

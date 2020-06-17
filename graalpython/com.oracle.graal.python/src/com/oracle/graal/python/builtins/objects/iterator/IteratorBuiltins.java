@@ -28,10 +28,12 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -42,22 +44,29 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator})
@@ -250,6 +259,69 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SUB__, __RSUB__)") LookupAndCallBinaryNode callSub) {
             return callSub.executeObject(frame, callLen.executeObject(frame, self.getObject()), self.index);
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "self.isPSequence()")
+        public Object reduce(PSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            return reduceInternal(self.getPSequence(), self.index, context, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "!self.isPSequence()")
+        public Object reduceNonSeq(VirtualFrame frame, PSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
+            Object content = callUnaryNode.executeObject(frame, reduce);
+            return reduceInternal(content, self.index, context, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PBaseSetIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(self.getStorage()), self.getIndex(), context, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PIntegerSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            return reduceInternal(self.getSequenceStorage(), self.index, context, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PLongSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            return reduceInternal(self.getSequenceStorage(), self.index, context, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PDoubleSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            return reduceInternal(self.getSequenceStorage(), self.index, context, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PStringIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            return reduceInternal(self.value, self.index, context, pol);
+        }
+
+        private PTuple reduceInternal(Object content, int index, PythonContext context, PythonObjectLibrary pol) {
+            PythonModule builtins = context.getCore().getBuiltins();
+            Object iter = pol.lookupAttribute(builtins, "iter");
+            PTuple contents = factory().createTuple(new Object[]{content});
+            return factory().createTuple(new Object[]{iter, contents, index});
         }
     }
 }

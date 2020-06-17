@@ -55,6 +55,10 @@ public final class PRangeIterator extends PIntegerIterator {
         return step;
     }
 
+    public int getIndex() {
+        return index;
+    }
+
     public int getLength(ConditionProfile stepProfile, ConditionProfile positveRangeProfile) {
         if (stepProfile.profile(step > 0)) {
             if (positveRangeProfile.profile(index >= 0 && index < stop)) {
@@ -108,6 +112,14 @@ public final class PRangeIterator extends PIntegerIterator {
         }
 
         public int getStart() {
+            return index;
+        }
+
+        public int getStep() {
+            return step;
+        }
+
+        public int getIndex() {
             return index;
         }
     }
