@@ -58,7 +58,7 @@ public final class IsBuiltinClassProfile extends Node {
     @CompilationFinal private boolean noMatch;
     @CompilationFinal private boolean adoptable;
 
-    @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(3);
+    @Child private PythonObjectLibrary lib;
 
     private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile(false);
 
