@@ -377,7 +377,8 @@ public final class DictBuiltins extends PythonBuiltins {
         Object run(PDict self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self)") HashingStorageLibrary lib) {
-            return factory().createDictKeyIterator(lib.keys(getStore.execute(self)).iterator());
+            HashingStorage storage = getStore.execute(self);
+            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
         }
     }
 
@@ -388,7 +389,8 @@ public final class DictBuiltins extends PythonBuiltins {
         Object run(PDict self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self)") HashingStorageLibrary lib) {
-            return factory().createDictKeyIterator(lib.reverseKeys(getStore.execute(self)).iterator());
+            HashingStorage storage = getStore.execute(self);
+            return factory().createDictKeyIterator(lib.reverseKeys(storage).iterator(), storage, lib.length(storage));
         }
     }
 

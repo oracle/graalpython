@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -91,7 +92,8 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         Object run(PMappingproxy self,
                         @Cached GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self)") HashingStorageLibrary lib) {
-            return factory().createDictKeyIterator(lib.keys(getStore.execute(self)).iterator());
+            HashingStorage store = getStore.execute(self);
+            return factory().createDictKeyIterator(lib.keys(store).iterator(), store, lib.length(store));
         }
     }
 

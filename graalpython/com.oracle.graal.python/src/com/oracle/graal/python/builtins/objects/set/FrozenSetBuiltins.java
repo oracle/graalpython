@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -97,8 +98,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
         public Object iter(PBaseSet self,
+                        @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createBaseSetIterator(self, lib.keys(self.getDictStorage()).iterator());
+            HashingStorage storage = getStorage.execute(self);
+            return factory().createBaseSetIterator(self, lib.keys(storage).iterator(), storage, lib.length(storage));
         }
     }
 

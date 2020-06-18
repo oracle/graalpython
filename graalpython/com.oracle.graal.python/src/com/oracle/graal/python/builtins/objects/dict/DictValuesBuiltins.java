@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -77,7 +78,9 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         Object doPDictValuesView(PDictValuesView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictValueIterator(lib.values(getStore.execute(self.getWrappedDict())).iterator());
+            PHashingCollection dict = self.getWrappedDict();
+            HashingStorage storage = getStore.execute(dict);
+            return factory().createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
         }
     }
 
@@ -88,7 +91,9 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         Object doPDictValuesView(PDictValuesView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictReverseValueIterator(lib.reverseValues(getStore.execute(self.getWrappedDict())).iterator());
+            PHashingCollection dict = self.getWrappedDict();
+            HashingStorage storage = getStore.execute(dict);
+            return factory().createDictReverseValueIterator(lib.reverseValues(storage).iterator(), storage, lib.length(storage));
         }
     }
 
