@@ -43,12 +43,15 @@ package com.oracle.graal.python.parser.sst;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.sst.SerializationUtils.SSTId;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
 
-public class SSTDeserializer {
+public final class SSTDeserializer {
 
     private final DataInputStream stream;
     private final int offsetDelta;
@@ -56,10 +59,14 @@ public class SSTDeserializer {
     private int endIndex;
     private ScopeInfo currentScope;
 
+    private final ArrayList<String> stringTable = new ArrayList<>();
+    private char[] charBuffer = new char[128]; // buffer for decoding strings
+
     public SSTDeserializer(DataInputStream read, ScopeInfo globalScope, int offsetDelta) {
         this.stream = read;
-        currentScope = globalScope;
+        this.currentScope = globalScope;
         this.offsetDelta = offsetDelta;
+        this.stringTable.add(null);
     }
 
     public SSTNode readNode() throws IOException {
@@ -120,8 +127,10 @@ public class SSTDeserializer {
                 return readLambda();
             case NotID:
                 return readNot();
-            case NumberLiteralID:
-                return readNumberLiteral();
+            case IntegerLiteralID:
+                return readIntegerLiteral();
+            case BigIntegerLiteralID:
+                return readBigIntegerLiteral();
             case OrID:
                 return readOr();
             case RaiseID:
@@ -134,8 +143,12 @@ public class SSTDeserializer {
                 return readSlice();
             case StarID:
                 return readStar();
-            case StringLiteralID:
-                return readStringLiteral();
+            case RawStringLiteralID:
+                return readRawStringLiteral();
+            case BytesLiteralID:
+                return readBytesLiteral();
+            case FormatStringLiteralID:
+                return readFormatStringLiteral();
             case SubscriptID:
                 return readSubscript();
             case TernaryIfID:
@@ -160,54 +173,98 @@ public class SSTDeserializer {
         throw new UnsupportedOperationException("Not supported deserialization of id: " + nodeId);
     }
 
-    private int readInt(byte byteLen) throws IOException {
-        switch (byteLen) {
-            case 1:
-                return stream.readByte() & 0xFF;
-            case 2:
+    private int readInt() throws IOException {
+        return readInt(stream.readByte());
+    }
+
+    private int readInt(byte firstByte) throws IOException {
+        switch (firstByte) {
+            case (byte) 0x80: // two bytes
                 return ((stream.readByte() & 0xFF) << 8) |
                                 (stream.readByte() & 0xFF);
-            case 3:
+            case (byte) 0x81: // three bytes
                 return ((stream.readByte() & 0xFF) << 16) |
                                 ((stream.readByte() & 0xFF) << 8) |
                                 (stream.readByte() & 0xFF);
-            case 4:
+            case (byte) 0x82: // four bytes
                 return ((stream.readByte() & 0xFF) << 24) |
                                 ((stream.readByte() & 0xFF) << 16) |
                                 ((stream.readByte() & 0xFF) << 8) |
                                 (stream.readByte() & 0xFF);
-            default:
-                throw new UnsupportedOperationException("Unsupportted length of integer: " + byteLen);
+            default: // 7 bits
+                return firstByte & 0xFF;
+        }
+    }
+
+    private long readLong() throws IOException {
+        byte firstByte = stream.readByte();
+        if (firstByte == (byte) 0x83) {
+            return stream.readLong();
+        } else {
+            return readInt(firstByte);
         }
     }
 
     private void readPosition() throws IOException {
-        byte kind = stream.readByte();
-        switch (kind) {
-            case 0:
-                // no source section
-                startIndex = -1;
-                endIndex = -1;
-                break;
-            case 10:
-                // source section is the same as has the previous node
-                break;
-            default:
-                // source section are two numbers
-                startIndex = readInt(kind);
-                endIndex = readInt(stream.readByte());
-                if (offsetDelta > 0) {
-                    startIndex -= offsetDelta;
-                    endIndex -= offsetDelta;
+        int marker = readInt();
+        if (marker == 0) {
+            // no source section
+            startIndex = -1;
+            endIndex = -1;
+        } else if (marker == 1) {
+            // source section is the same as has the previous node
+        } else {
+            // source section are two numbers
+            startIndex = marker - 2;
+            int length = readInt();
+            endIndex = startIndex + length;
+            if (offsetDelta > 0) {
+                startIndex -= offsetDelta;
+                endIndex -= offsetDelta;
+            }
+        }
+    }
+
+    private String readString() throws IOException {
+        int marker = readInt();
+        if (marker == 0 || marker == 1) {
+            int length = readInt();
+            if (charBuffer.length < length) {
+                int len = charBuffer.length;
+                while (len < length) {
+                    len *= 2;
                 }
+                charBuffer = new char[len];
+            }
+            char[] chars = charBuffer;
+            if (marker == 0) {
+                // new simple string
+                // one byte per character
+                for (int i = 0; i < length; i++) {
+                    chars[i] = (char) stream.readUnsignedByte();
+                }
+            } else {
+                assert marker == 1;
+                // new complex string
+                // read actual char values
+                for (int i = 0; i < length; i++) {
+                    chars[i] = stream.readChar();
+                }
+            }
+            String result = new String(chars, 0, length);
+            stringTable.add(result);
+            return result;
+        } else {
+            // existing string
+            return stringTable.get(marker - 2);
         }
     }
 
     private String[] readStrings() throws IOException {
-        int len = readInt(stream.readByte());
+        int len = readInt();
         String[] values = new String[len];
         for (int i = 0; i < len; i++) {
-            values[i] = stream.readUTF();
+            values[i] = readString();
         }
         return values;
     }
@@ -235,7 +292,7 @@ public class SSTDeserializer {
         int startOffset = startIndex;
         int endOffset = endIndex;
         SSTNode test = readNode();
-        SSTNode message = stream.readByte() == 1 ? readNode() : null;
+        SSTNode message = readNode();
         return new AssertSSTNode(test, message, startOffset, endOffset);
     }
 
@@ -254,11 +311,8 @@ public class SSTDeserializer {
         int endOffset = endIndex;
         SSTNode lhs = readNode();
         SSTNode rhs = readNode();
-        char[] operation = new char[stream.readByte()];
-        for (int i = 0; i < operation.length; i++) {
-            operation[i] = stream.readChar();
-        }
-        return new AugAssignmentSSTNode(lhs, new String(operation), rhs, startOffset, endOffset);
+        String operation = readString();
+        return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
     }
 
     private SSTNode readBinaryArithmetic() throws IOException {
@@ -337,7 +391,7 @@ public class SSTDeserializer {
         int endOffset = endIndex;
 
         SSTNode decorated = readNode();
-        int len = readInt(stream.readByte());
+        int len = readInt();
         DecoratorSSTNode[] decorators = new DecoratorSSTNode[len];
         for (int i = 0; i < len; i++) {
             decorators[i] = (DecoratorSSTNode) readNode();
@@ -367,8 +421,8 @@ public class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        SSTNode test = stream.readByte() == 1 ? readNode() : null;
-        String asName = stream.readByte() == 1 ? stream.readUTF() : null;
+        SSTNode test = readNode();
+        String asName = readString();
         SSTNode body = readNode();
         return new ExceptSSTNode(test, asName, body, startOffset, endOffset);
     }
@@ -383,7 +437,7 @@ public class SSTDeserializer {
         int startOffset = startIndex;
         int endOffset = endIndex;
         boolean imaginary = stream.readBoolean();
-        String value = readString();
+        double value = Double.longBitsToDouble(readLong());
         return new FloatLiteralSSTNode(value, imaginary, startOffset, endOffset);
     }
 
@@ -393,9 +447,9 @@ public class SSTDeserializer {
         int endOffset = endIndex;
         boolean async = stream.readBoolean();
         SSTNode iterator = readNode();
-        int level = readInt(stream.readByte());
-        int line = readInt(stream.readByte());
-        SSTNode name = stream.readByte() == 1 ? readNode() : null;
+        int level = readInt();
+        int line = readInt();
+        SSTNode name = readNode();
         PythonBuiltinClassType type = SerializationUtils.getPythonBuiltinClassTypeFromId(stream.readByte());
         int serializationId = stream.readInt();
         ScopeInfo tmpScope = currentScope;
@@ -417,7 +471,7 @@ public class SSTDeserializer {
         SSTNode[] targets = readNodes();
         SSTNode iterator = readNode();
         SSTNode body = readNode();
-        SSTNode elseStatement = stream.readByte() == 1 ? readNode() : null;
+        SSTNode elseStatement = readNode();
         ForSSTNode forNode = new ForSSTNode(targets, iterator, body, containsContinue, startOffset, endOffset);
         forNode.setContainsBreak(containsBreak);
         forNode.elseStatement = elseStatement;
@@ -429,8 +483,8 @@ public class SSTDeserializer {
         int startOffset = startIndex;
         int endOffset = endIndex;
         int serializationId = stream.readInt();
-        String name = stream.readUTF();
-        String enclosingClassName = stream.readByte() == 1 ? stream.readUTF() : null;
+        String name = readString();
+        String enclosingClassName = readString();
         ArgDefListBuilder argBuilder = readArguments();
         ScopeInfo tmpScope = currentScope;
         ScopeInfo scope = currentScope.getChildScope(serializationId);
@@ -444,7 +498,7 @@ public class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        String name = stream.readUTF();
+        String name = readString();
         SSTNode receiver = readNode();
         return new GetAttributeSSTNode(receiver, name, startOffset, endOffset);
     }
@@ -455,7 +509,7 @@ public class SSTDeserializer {
         int endOffset = endIndex;
         SSTNode test = readNode();
         SSTNode thenStatement = readNode();
-        SSTNode elseStatemtn = stream.readByte() == 1 ? readNode() : null;
+        SSTNode elseStatemtn = readNode();
         return new IfSSTNode(test, thenStatement, elseStatemtn, startOffset, endOffset);
     }
 
@@ -467,11 +521,11 @@ public class SSTDeserializer {
         if (stream.readByte() == 1) {
             asNames = new String[stream.readByte()][2];
             for (String[] names : asNames) {
-                names[0] = stream.readUTF();
-                names[1] = stream.readByte() == 1 ? stream.readUTF() : null;
+                names[0] = readString();
+                names[1] = readString();
             }
         }
-        String from = stream.readUTF();
+        String from = readString();
         return new ImportFromSSTNode(currentScope, from, asNames, startOffset, endOffset);
     }
 
@@ -479,8 +533,8 @@ public class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        String name = stream.readUTF();
-        String asNames = stream.readByte() == 1 ? stream.readUTF() : null;
+        String name = readString();
+        String asNames = readString();
         return new ImportSSTNode(currentScope, name, asNames, startOffset, endOffset);
     }
 
@@ -506,25 +560,22 @@ public class SSTDeserializer {
         return new NotSSTNode(value, startOffset, endOffset);
     }
 
-    private SSTNode readNumberLiteral() throws IOException {
+    private SSTNode readIntegerLiteral() throws IOException {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        byte start = stream.readByte();
-        byte base = stream.readByte();
-        boolean negativ = stream.readBoolean();
-        // String value = source.getCharacters().subSequence(negativ ? startOffset + 1 :
-        // startOffset, endOffset).toString();
-        String value = readString();
-        char c = value.charAt(0);
-        if (c == '(') {
-            value = value.substring(1);
-            c = value.charAt(0);
-        }
-        if (c == ' ') {
-            value = value.trim();
-        }
-        return new NumberLiteralSSTNode(value, negativ, start, base, startOffset, endOffset);
+        long value = readLong();
+        return new NumberLiteralSSTNode.IntegerLiteralSSTNode(value, startOffset, endOffset);
+    }
+
+    private SSTNode readBigIntegerLiteral() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        int length = readInt();
+        byte[] bytes = new byte[length];
+        stream.readFully(bytes);
+        return new NumberLiteralSSTNode.BigIntegerLiteralSSTNode(new BigInteger(bytes), startOffset, endOffset);
     }
 
     private SSTNode readOr() throws IOException {
@@ -539,8 +590,8 @@ public class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        SSTNode value = stream.readByte() == 1 ? readNode() : null;
-        SSTNode from = stream.readByte() == 1 ? readNode() : null;
+        SSTNode value = readNode();
+        SSTNode from = readNode();
         return new RaiseSSTNode(value, from, startOffset, endOffset);
     }
 
@@ -548,7 +599,7 @@ public class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        SSTNode value = stream.readByte() == 1 ? readNode() : null;
+        SSTNode value = readNode();
         return new ReturnSSTNode(value, startOffset, endOffset);
     }
 
@@ -564,9 +615,9 @@ public class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        SSTNode start = stream.readByte() == 1 ? readNode() : null;
-        SSTNode step = stream.readByte() == 1 ? readNode() : null;
-        SSTNode stop = stream.readByte() == 1 ? readNode() : null;
+        SSTNode start = readNode();
+        SSTNode step = readNode();
+        SSTNode stop = readNode();
         return new SliceSSTNode(start, stop, step, startOffset, endOffset);
     }
 
@@ -578,12 +629,34 @@ public class SSTDeserializer {
         return new StarSSTNode(value, startOffset, endOffset);
     }
 
-    private SSTNode readStringLiteral() throws IOException {
+    private SSTNode readRawStringLiteral() throws IOException {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        String[] values = readStrings();
-        return new StringLiteralSSTNode(values, startOffset, endOffset);
+        String value = readString();
+        return new StringLiteralSSTNode.RawStringLiteralSSTNode(value, startOffset, endOffset);
+    }
+
+    private SSTNode readBytesLiteral() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        byte[] value = new byte[readInt()];
+        stream.readFully(value);
+        return new StringLiteralSSTNode.BytesLiteralSSTNode(value, startOffset, endOffset);
+    }
+
+    private SSTNode readFormatStringLiteral() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        StringPart[] value = new StringPart[readInt()];
+        for (int i = 0; i < value.length; i++) {
+            boolean isFormatString = stream.readBoolean();
+            String text = readString();
+            value[i] = new StringPart(text, isFormatString);
+        }
+        return new StringLiteralSSTNode.FormatStringLiteralSSTNode(value, startOffset, endOffset);
     }
 
     private SSTNode readSubscript() throws IOException {
@@ -610,13 +683,13 @@ public class SSTDeserializer {
         int startOffset = startIndex;
         int endOffset = endIndex;
         SSTNode body = readNode();
-        int len = readInt(stream.readByte());
+        int len = readInt();
         ExceptSSTNode[] exceptNodes = new ExceptSSTNode[len];
         for (int i = 0; i < len; i++) {
             exceptNodes[i] = (ExceptSSTNode) readNode();
         }
-        SSTNode elseStatement = stream.readByte() == 1 ? readNode() : null;
-        SSTNode finallyStatement = stream.readByte() == 1 ? readNode() : null;
+        SSTNode elseStatement = readNode();
+        SSTNode finallyStatement = readNode();
         return new TrySSTNode(body, exceptNodes, elseStatement, finallyStatement, startOffset, endOffset);
     }
 
@@ -637,7 +710,7 @@ public class SSTDeserializer {
         boolean containsContinue = stream.readBoolean();
         SSTNode test = readNode();
         SSTNode body = readNode();
-        SSTNode elseStatement = stream.readByte() == 1 ? readNode() : null;
+        SSTNode elseStatement = readNode();
         WhileSSTNode whileNode = new WhileSSTNode(test, body, containsContinue, containsBreak, startOffset, endOffset);
         whileNode.setElse(elseStatement);
         return whileNode;
@@ -648,7 +721,7 @@ public class SSTDeserializer {
         int startOffset = startIndex;
         int endOffset = endIndex;
         SSTNode expression = readNode();
-        SSTNode target = stream.readByte() == 1 ? readNode() : null;
+        SSTNode target = readNode();
         SSTNode body = readNode();
         return new WithSSTNode(expression, target, body, startOffset, endOffset);
     }
@@ -658,7 +731,7 @@ public class SSTDeserializer {
         int startOffset = startIndex;
         int endOffset = endIndex;
         boolean isFrom = stream.readBoolean();
-        SSTNode value = stream.readByte() == 1 ? readNode() : null;
+        SSTNode value = readNode();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
 
@@ -672,7 +745,7 @@ public class SSTDeserializer {
     }
 
     private SSTNode[] readNodes() throws IOException {
-        int len = readInt(stream.readByte());
+        int len = readInt();
         SSTNode[] nodes = new SSTNode[len];
         for (int i = 0; i < len; i++) {
             nodes[i] = readNode();
@@ -681,22 +754,24 @@ public class SSTDeserializer {
     }
 
     private ArgListBuilder readArgListBuilder() throws IOException {
-        SSTNode[] nodes = readNodes();
-        ArgListBuilder alb = new ArgListBuilder();
-        for (SSTNode node : nodes) {
-            alb.addArg(node);
+        int argCount = readInt();
+        int namedArgCount = readInt();
+        int starArgCount = readInt();
+        int kwArgCount = readInt();
+
+        ArgListBuilder alb = new ArgListBuilder(argCount, namedArgCount, starArgCount, kwArgCount);
+
+        for (int i = 0; i < argCount; i++) {
+            alb.addArg(readNode());
         }
-        nodes = readNodes();
-        for (int i = 0; i < nodes.length; i++) {
-            alb.addNamedArg(stream.readUTF(), nodes[i]);
+        for (int i = 0; i < namedArgCount; i++) {
+            alb.addNamedArg(readString(), readNode());
         }
-        nodes = readNodes();
-        for (SSTNode node : nodes) {
-            alb.addStarArg(node);
+        for (int i = 0; i < starArgCount; i++) {
+            alb.addStarArg(readNode());
         }
-        nodes = readNodes();
-        for (SSTNode node : nodes) {
-            alb.addKwArg(node);
+        for (int i = 0; i < kwArgCount; i++) {
+            alb.addKwArg(readNode());
         }
         return alb;
     }
@@ -710,19 +785,19 @@ public class SSTDeserializer {
         SSTNode type;
         SSTNode value;
 
-        int len = readInt(stream.readByte());
+        int len = readInt();
         int i;
         for (i = 0; i < len; i++) {
             if (i == posOnlyIndex) {
                 builder.markPositionalOnlyIndex();
             }
-            name = stream.readUTF();
+            name = readString();
             if (name.isEmpty()) {
                 name = null;
             }
-            type = stream.readByte() == 1 ? type = readNode() : null;
-            if (stream.readByte() == 1) {
-                value = readNode();
+            type = readNode();
+            value = readNode();
+            if (value != null) {
                 builder.addParam(name, type, value);
             } else {
                 if (splatIndex == i) {
@@ -737,12 +812,12 @@ public class SSTDeserializer {
             builder.markPositionalOnlyIndex();
         }
 
-        len = i + readInt(stream.readByte());
+        len = i + readInt();
         for (; i < len; i++) {
-            name = stream.readUTF();
-            type = stream.readByte() == 1 ? type = readNode() : null;
-            if (stream.readByte() == 1) {
-                value = readNode();
+            name = readString();
+            type = readNode();
+            value = readNode();
+            if (value != null) {
                 builder.addParam(name, type, value);
             } else {
                 if (splatIndex == i) {
@@ -758,9 +833,5 @@ public class SSTDeserializer {
         }
 
         return builder;
-    }
-
-    private String readString() throws IOException {
-        return stream.readUTF();
     }
 }

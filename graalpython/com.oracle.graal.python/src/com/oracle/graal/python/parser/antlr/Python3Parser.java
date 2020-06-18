@@ -6307,7 +6307,7 @@ public class Python3Parser extends Parser {
 				                        // solving cases like --2
 				                        _localctx.result =   new UnarySSTNode(UnaryArithmetic.Neg, fResult, getStartIndex(_localctx), getStopIndex((_localctx.factor!=null?(_localctx.factor.stop):null))); 
 				                    } else {
-				                        ((NumberLiteralSSTNode)fResult).setIsNegative(true);
+				                        ((NumberLiteralSSTNode)fResult).negate();
 				                        fResult.setStartOffset(_localctx.m.getStartIndex());
 				                        _localctx.result =   fResult;
 				                    }
@@ -6777,7 +6777,7 @@ public class Python3Parser extends Parser {
 				_localctx.DECIMAL_INTEGER = match(DECIMAL_INTEGER);
 				 
 				                String text = (_localctx.DECIMAL_INTEGER!=null?_localctx.DECIMAL_INTEGER.getText():null);
-				                _localctx.result =  text != null ? new NumberLiteralSSTNode(text, 0, 10, _localctx.DECIMAL_INTEGER.getStartIndex(), _localctx.DECIMAL_INTEGER.getStopIndex() + 1) : null; 
+				                _localctx.result =  text != null ? NumberLiteralSSTNode.create(text, 0, 10, _localctx.DECIMAL_INTEGER.getStartIndex(), _localctx.DECIMAL_INTEGER.getStopIndex() + 1) : null; 
 				            
 				}
 				break;
@@ -6788,7 +6788,7 @@ public class Python3Parser extends Parser {
 				_localctx.OCT_INTEGER = match(OCT_INTEGER);
 				 
 				                String text = (_localctx.OCT_INTEGER!=null?_localctx.OCT_INTEGER.getText():null);
-				                _localctx.result =  text != null ? new NumberLiteralSSTNode(text, 2, 8, _localctx.OCT_INTEGER.getStartIndex(), _localctx.OCT_INTEGER.getStopIndex() + 1) : null; 
+				                _localctx.result =  text != null ? NumberLiteralSSTNode.create(text, 2, 8, _localctx.OCT_INTEGER.getStartIndex(), _localctx.OCT_INTEGER.getStopIndex() + 1) : null; 
 				            
 				}
 				break;
@@ -6799,7 +6799,7 @@ public class Python3Parser extends Parser {
 				_localctx.HEX_INTEGER = match(HEX_INTEGER);
 				 
 				                String text = (_localctx.HEX_INTEGER!=null?_localctx.HEX_INTEGER.getText():null);
-				                _localctx.result =  text != null ? new NumberLiteralSSTNode(text, 2, 16, _localctx.HEX_INTEGER.getStartIndex(), _localctx.HEX_INTEGER.getStopIndex() + 1) : null; 
+				                _localctx.result =  text != null ? NumberLiteralSSTNode.create(text, 2, 16, _localctx.HEX_INTEGER.getStartIndex(), _localctx.HEX_INTEGER.getStopIndex() + 1) : null; 
 				            
 				}
 				break;
@@ -6810,7 +6810,7 @@ public class Python3Parser extends Parser {
 				_localctx.BIN_INTEGER = match(BIN_INTEGER);
 				 
 				                String text = (_localctx.BIN_INTEGER!=null?_localctx.BIN_INTEGER.getText():null);
-				                _localctx.result =  text != null ? new NumberLiteralSSTNode(text, 2, 2, _localctx.BIN_INTEGER.getStartIndex(), _localctx.BIN_INTEGER.getStopIndex() + 1) : null; 
+				                _localctx.result =  text != null ? NumberLiteralSSTNode.create(text, 2, 2, _localctx.BIN_INTEGER.getStartIndex(), _localctx.BIN_INTEGER.getStopIndex() + 1) : null; 
 				            
 				}
 				break;
@@ -6821,7 +6821,7 @@ public class Python3Parser extends Parser {
 				_localctx.FLOAT_NUMBER = match(FLOAT_NUMBER);
 				   
 				                String text = (_localctx.FLOAT_NUMBER!=null?_localctx.FLOAT_NUMBER.getText():null);
-				                _localctx.result =  text != null ? new FloatLiteralSSTNode(text, false, _localctx.FLOAT_NUMBER.getStartIndex(), _localctx.FLOAT_NUMBER.getStopIndex() + 1) : null; 
+				                _localctx.result =  text != null ? FloatLiteralSSTNode.create(text, false, _localctx.FLOAT_NUMBER.getStartIndex(), _localctx.FLOAT_NUMBER.getStopIndex() + 1) : null; 
 				            
 				}
 				break;
@@ -6832,7 +6832,7 @@ public class Python3Parser extends Parser {
 				_localctx.IMAG_NUMBER = match(IMAG_NUMBER);
 				 
 				                String text = (_localctx.IMAG_NUMBER!=null?_localctx.IMAG_NUMBER.getText():null);
-				                _localctx.result =  text != null ? new FloatLiteralSSTNode(text, true, _localctx.IMAG_NUMBER.getStartIndex(), _localctx.IMAG_NUMBER.getStopIndex() + 1) : null; 
+				                _localctx.result =  text != null ? FloatLiteralSSTNode.create(text, true, _localctx.IMAG_NUMBER.getStartIndex(), _localctx.IMAG_NUMBER.getStopIndex() + 1) : null; 
 				            
 				}
 				break;
@@ -6855,7 +6855,7 @@ public class Python3Parser extends Parser {
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				} while ( _la==STRING );
-				 _localctx.result =  new StringLiteralSSTNode(getStringArray(start), getStartIndex(_localctx), getStopIndex(_localctx.STRING)); 
+				 _localctx.result =  factory.createStringLiteral(getStringArray(start), getStartIndex(_localctx), getStopIndex(_localctx.STRING)); 
 				}
 				break;
 			case ELLIPSIS:

@@ -72,7 +72,7 @@ public class FormatStringLiteralNode extends LiteralNode {
     protected static final int TOKEN_TYPE_EXPRESSION_REPR = 4;
     protected static final int TOKEN_TYPE_EXPRESSION_ASCII = 5;
 
-    public static class StringPart {
+    public static final class StringPart {
         /**
          * Marks, whether the value is formatted string
          */

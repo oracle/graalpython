@@ -44,28 +44,13 @@ package com.oracle.graal.python.parser.sst;
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.PythonParser;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.source.Source;
 
 public class StringUtils {
-
-    private static final String CANNOT_MIX_MESSAGE = "cannot mix bytes and nonbytes literals";
 
     public static StringLiteralNode extractDoc(StatementNode node) {
         if (node instanceof ExpressionNode.ExpressionStatementNode) {
@@ -92,122 +77,6 @@ public class StringUtils {
             }
         }
         return null;
-    }
-
-    private static class BytesBuilder {
-        List<byte[]> bytes = new ArrayList<>();
-        int len = 0;
-
-        void append(byte[] b) {
-            len += b.length;
-            bytes.add(b);
-        }
-
-        byte[] build() {
-            byte[] output = new byte[len];
-            int offset = 0;
-            for (byte[] bs : bytes) {
-                PythonUtils.arraycopy(bs, 0, output, offset, bs.length);
-                offset += bs.length;
-            }
-            return output;
-        }
-    }
-
-    public static PNode parseString(Source source, StringLiteralSSTNode node, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
-        StringBuilder sb = null;
-        BytesBuilder bb = null;
-        boolean isFormatString = false;
-        List<FormatStringLiteralNode.StringPart> formatStrings = null;
-        for (String text : node.values) {
-            boolean isRaw = false;
-            boolean isBytes = false;
-            boolean isFormat = false;
-
-            int strStartIndex = 1;
-            int strEndIndex = text.length() - 1;
-
-            for (int i = 0; i < 3; i++) {
-                char chr = Character.toLowerCase(text.charAt(i));
-
-                if (chr == 'r') {
-                    isRaw = true;
-                } else if (chr == 'u') {
-                    // unicode case (default)
-                } else if (chr == 'b') {
-                    isBytes = true;
-                } else if (chr == 'f') {
-                    isFormat = true;
-                } else if (chr == '\'' || chr == '"') {
-                    strStartIndex = i + 1;
-                    break;
-                }
-            }
-
-            if (text.endsWith("'''") || text.endsWith("\"\"\"")) {
-                strStartIndex += 2;
-                strEndIndex -= 2;
-            }
-
-            text = text.substring(strStartIndex, strEndIndex);
-            if (isBytes) {
-                if (sb != null || isFormatString) {
-                    throw errors.raiseInvalidSyntax(source, source.createSection(node.startOffset, node.endOffset - node.startOffset), CANNOT_MIX_MESSAGE);
-                }
-                if (bb == null) {
-                    bb = new BytesBuilder();
-                }
-                if (isRaw) {
-                    bb.append(text.getBytes());
-                } else {
-                    bb.append(BytesUtils.fromString(errors, text));
-                }
-            } else {
-                if (bb != null) {
-                    throw errors.raiseInvalidSyntax(source, source.createSection(node.startOffset, node.endOffset - node.startOffset), CANNOT_MIX_MESSAGE);
-                }
-                if (!isRaw) {
-                    try {
-                        text = unescapeJavaString(text);
-                    } catch (PException e) {
-                        e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
-                        String message = e.getMessage();
-                        message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
-                        throw errors.raiseInvalidSyntax(source, source.createSection(node.startOffset, node.endOffset - node.startOffset), message);
-                    }
-                }
-                if (isFormat) {
-                    isFormatString = true;
-                    if (formatStrings == null) {
-                        formatStrings = new ArrayList<>();
-                    }
-                    if (sb != null && sb.length() > 0) {
-                        formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
-                        sb = null;
-                    }
-                    formatStrings.add(new FormatStringLiteralNode.StringPart(text, true));
-                } else {
-                    if (sb == null) {
-                        sb = new StringBuilder();
-                    }
-                    sb.append(text);
-                }
-            }
-        }
-
-        if (bb != null) {
-            return nodeFactory.createBytesLiteral(bb.build());
-        } else if (isFormatString) {
-            if (sb != null && sb.length() > 0) {
-                formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
-            }
-            return nodeFactory.createFormatStringLiteral(formatStrings.toArray(new FormatStringLiteralNode.StringPart[formatStrings.size()]));
-        }
-        if (sb != null) {
-            return nodeFactory.createStringLiteral(sb.toString());
-        } else {
-            return nodeFactory.createStringLiteral("");
-        }
     }
 
     public static String unescapeJavaString(String st) {
@@ -329,7 +198,7 @@ public class StringUtils {
 
     /**
      * Replace '/N{Unicode Character Name}' with the code point of the character.
-     * 
+     *
      * @param text a text that contains /N{...} escape sequence
      * @param sb string builder where the result code point will be written
      * @param offset this is offset of the open brace

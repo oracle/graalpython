@@ -41,6 +41,9 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.IntegerLiteralSSTNode;
+
 public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
 
     private final int startOffset;
@@ -342,7 +345,12 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     }
 
     @Override
-    public SSTNodeWithScope visit(NumberLiteralSSTNode node) {
+    public SSTNodeWithScope visit(IntegerLiteralSSTNode node) {
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(BigIntegerLiteralSSTNode node) {
         return null;
     }
 
@@ -403,7 +411,17 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     }
 
     @Override
-    public SSTNodeWithScope visit(StringLiteralSSTNode node) {
+    public SSTNodeWithScope visit(StringLiteralSSTNode.RawStringLiteralSSTNode node) {
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
         return null;
     }
 

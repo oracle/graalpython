@@ -70,6 +70,7 @@ import com.oracle.graal.python.parser.sst.ImportSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.StarSSTNode;
+import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
@@ -244,6 +245,10 @@ public final class PythonSSTNodeFactory {
         }
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
+    }
+
+    public StringLiteralSSTNode createStringLiteral(String[] values, int startOffset, int endOffset) {
+        return StringLiteralSSTNode.create(values, startOffset, endOffset, source, errors);
     }
 
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame) {
