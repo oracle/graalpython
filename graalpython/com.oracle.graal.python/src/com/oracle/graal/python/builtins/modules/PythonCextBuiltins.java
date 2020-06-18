@@ -588,13 +588,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            getContext().setCurrentException(PException.fromExceptionInfo(val, (LazyTraceback) null));
+            PythonContext context = getContext();
+            context.setCurrentException(PException.fromExceptionInfo(val, (LazyTraceback) null, context.getOption(PythonOptions.WithJavaStacktrace)));
             return PNone.NONE;
         }
 
         @Specialization
         Object run(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
-            getContext().setCurrentException(PException.fromExceptionInfo(val, tb));
+            PythonContext context = getContext();
+            context.setCurrentException(PException.fromExceptionInfo(val, tb, context.getOption(PythonOptions.WithJavaStacktrace)));
             return PNone.NONE;
         }
     }
@@ -655,7 +657,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
-            getContext().setCaughtException(PException.fromExceptionInfo(val, tb));
+            PythonContext context = getContext();
+            context.setCaughtException(PException.fromExceptionInfo(val, tb, context.getOption(PythonOptions.WithJavaStacktrace)));
             return PNone.NONE;
         }
 
@@ -953,7 +956,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 context.setCurrentException(null);
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
-                throw PException.fromObject(sysExc, this);
+                throw PException.fromObject(sysExc, this, context.getOption(PythonOptions.WithJavaStacktrace));
             }
         }
 
@@ -1579,7 +1582,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     traceback = getTracebackNode.execute(currentException.getTraceback());
                 }
                 PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
-                context.setCurrentException(PException.fromExceptionInfo(currentException.getExceptionObject(), newTraceback));
+                context.setCurrentException(PException.fromExceptionInfo(currentException.getExceptionObject(), newTraceback, context.getOption(PythonOptions.WithJavaStacktrace)));
             }
 
             return 0;

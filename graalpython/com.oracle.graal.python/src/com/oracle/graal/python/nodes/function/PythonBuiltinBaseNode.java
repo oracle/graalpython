@@ -158,7 +158,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
     }
 
     public PException raise(Object type, String string) {
-        return getRaiseNode().raise(factory().createBaseException(type, string, new Object[0]));
+        return getRaiseNode().raiseExceptionObject(factory().createBaseException(type, string, new Object[0]), getContext());
     }
 
     public PException raise(Object exceptionType) {

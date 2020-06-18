@@ -189,7 +189,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
-        PException pe = PException.fromObject(pythonException, node);
+        PException pe = PException.fromObject(pythonException, node, false);
         pe.setHideLocation(true);
         // Re-attach truffle stacktrace
         moveTruffleStackTrace(e, pe);

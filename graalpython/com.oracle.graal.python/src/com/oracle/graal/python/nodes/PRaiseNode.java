@@ -46,12 +46,15 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -102,16 +105,16 @@ public abstract class PRaiseNode extends Node {
         throw execute(type, cause, format, arguments);
     }
 
-    public final PException raise(PBaseException exc) {
-        throw raise(this, exc);
+    public final PException raiseExceptionObject(PBaseException exc, PythonContext context) {
+        throw raise(this, exc, context.getOption(PythonOptions.WithJavaStacktrace));
     }
 
-    public static PException raise(Node raisingNode, PBaseException exc) {
+    public static PException raise(Node raisingNode, PBaseException exc, boolean withJavaStacktrace) {
         exc.ensureReified();
         if (raisingNode.isAdoptable()) {
-            throw PException.fromObject(exc, raisingNode);
+            throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
         } else {
-            throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode());
+            throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode(), withJavaStacktrace);
         }
     }
 
@@ -119,15 +122,17 @@ public abstract class PRaiseNode extends Node {
     PException doPythonBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClassType cachedType,
-                    @Cached PythonObjectFactory factory) {
-        throw raise(factory.createBaseException(cachedType));
+                    @Cached PythonObjectFactory factory,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        throw raiseExceptionObject(factory.createBaseException(cachedType), context);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = "doPythonBuiltinTypeCached")
     PException doPythonBuiltinType(PythonBuiltinClassType exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        throw raise(factory.createBaseException(exceptionType));
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        throw raiseExceptionObject(factory.createBaseException(exceptionType), context);
     }
 
     protected static Assumption singleContextAssumption() {
@@ -138,51 +143,58 @@ public abstract class PRaiseNode extends Node {
     PException doPythonBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClass cachedType,
-                    @Cached PythonObjectFactory factory) {
-        throw raise(factory.createBaseException(cachedType));
+                    @Cached PythonObjectFactory factory,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        throw raiseExceptionObject(factory.createBaseException(cachedType), context);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType.getType() == cachedType"}, limit = "3")
     PException doPythonBuiltinClassCachedMulti(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType.getType()") PythonBuiltinClassType cachedType,
-                    @Cached PythonObjectFactory factory) {
-        throw raise(factory.createBaseException(cachedType));
+                    @Cached PythonObjectFactory factory,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        throw raiseExceptionObject(factory.createBaseException(cachedType), context);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = {"doPythonBuiltinClassCached", "doPythonBuiltinClassCachedMulti"})
     PException doPythonBuiltinClass(PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        throw raise(factory.createBaseException(exceptionType));
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        throw raiseExceptionObject(factory.createBaseException(exceptionType), context);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"})
     PException doPythonManagedClass(PythonManagedClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        throw raise(factory.createBaseException(exceptionType));
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        throw raiseExceptionObject(factory.createBaseException(exceptionType), context);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length > 0"})
     PException doBuiltinType(PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        throw raise(factory.createBaseException(type, factory.createTuple(arguments)));
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        throw raiseExceptionObject(factory.createBaseException(type, factory.createTuple(arguments)), context);
     }
 
     @Specialization(guards = {"isNoValue(cause)"})
     PException doBuiltinType(PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
         assert format != null;
-        throw raise(factory.createBaseException(type, format, arguments));
+        throw raiseExceptionObject(factory.createBaseException(type, format, arguments), context);
     }
 
     @Specialization(guards = {"!isNoValue(cause)"})
     PException doBuiltinTypeWithCause(PythonBuiltinClassType type, PBaseException cause, String format, Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
         assert format != null;
         PBaseException baseException = factory.createBaseException(type, format, arguments);
         baseException.setContext(cause);
         baseException.setCause(cause);
-        throw raise(baseException);
+        throw raiseExceptionObject(baseException, context);
     }
 
     @TruffleBoundary

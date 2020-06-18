@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
@@ -344,7 +345,7 @@ public class PThreadState extends PythonNativeWrapper {
         PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCurrentException();
-            context.setCurrentException(PException.fromExceptionInfo(e.getExceptionObject(), value));
+            context.setCurrentException(PException.fromExceptionInfo(e.getExceptionObject(), value, context.getOption(PythonOptions.WithJavaStacktrace)));
             return value;
         }
 
@@ -367,7 +368,7 @@ public class PThreadState extends PythonNativeWrapper {
         PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCaughtException();
-            context.setCaughtException(PException.fromExceptionInfo(e.getExceptionObject(), value));
+            context.setCaughtException(PException.fromExceptionInfo(e.getExceptionObject(), value, context.getOption(PythonOptions.WithJavaStacktrace)));
             return value;
         }
 
@@ -386,11 +387,11 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         private static void setCurrentException(PythonContext context, PBaseException exceptionObject) {
-            context.setCurrentException(PException.fromExceptionInfo(exceptionObject, context.getCurrentException().getTraceback()));
+            context.setCurrentException(PException.fromExceptionInfo(exceptionObject, context.getCurrentException().getTraceback(), context.getOption(PythonOptions.WithJavaStacktrace)));
         }
 
         private static void setCaughtException(PythonContext context, PBaseException exceptionObject) {
-            context.setCaughtException(PException.fromExceptionInfo(exceptionObject, context.getCaughtException().getTraceback()));
+            context.setCaughtException(PException.fromExceptionInfo(exceptionObject, context.getCaughtException().getTraceback(), context.getOption(PythonOptions.WithJavaStacktrace)));
         }
 
         @Specialization(guards = {"!isCurrentExceptionMember(key)", "!isCaughtExceptionMember(key)"})

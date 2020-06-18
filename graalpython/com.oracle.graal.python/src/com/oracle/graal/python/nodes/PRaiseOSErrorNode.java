@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -108,7 +109,7 @@ public abstract class PRaiseOSErrorNode extends Node {
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PythonCore core = context.getCore();
         PBaseException error = (PBaseException) callNode.execute(frame, core.lookupType(PythonBuiltinClassType.OSError), arguments, PKeyword.EMPTY_KEYWORDS);
-        return PRaiseNode.raise(this, error);
+        return PRaiseNode.raise(this, error, context.getOption(PythonOptions.WithJavaStacktrace));
     }
 
     public static PRaiseOSErrorNode create() {

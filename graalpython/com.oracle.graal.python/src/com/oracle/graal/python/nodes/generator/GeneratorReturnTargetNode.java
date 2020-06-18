@@ -28,17 +28,21 @@ package com.oracle.graal.python.nodes.generator;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -55,6 +59,8 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     private final BranchProfile fallthroughProfile = BranchProfile.create();
     private final BranchProfile yieldProfile = BranchProfile.create();
     @Child private IsBuiltinClassProfile errorProfile;
+
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final int flagSlot;
 
@@ -111,7 +117,11 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());
                 }
-                throw raise.raise(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
+                if (contextRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    contextRef = lookupContextReference(PythonLanguage.class);
+                }
+                throw raise.raiseExceptionObject(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})), contextRef.get());
             } else {
                 throw raise.raise(StopIteration);
             }

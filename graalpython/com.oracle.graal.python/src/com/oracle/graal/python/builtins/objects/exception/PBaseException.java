@@ -267,7 +267,7 @@ public final class PBaseException extends PythonObject {
      **/
     public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
         setTraceback(reraiseTraceback);
-        PException newException = PException.fromObject(this, exception.getLocation());
+        PException newException = PException.fromObject(this, exception.getLocation(), false);
         newException.setHideLocation(true);
         return newException;
     }

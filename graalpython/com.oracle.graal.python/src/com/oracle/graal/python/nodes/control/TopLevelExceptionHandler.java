@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -136,17 +137,11 @@ public class TopLevelExceptionHandler extends RootNode {
                 assert !PArguments.isPythonFrame(frame);
                 PBaseException pythonException = e.getEscapedException();
                 printExc(frame, pythonException);
-                if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
-                    printStackTrace(e);
-                }
                 return null;
             } catch (StackOverflowError e) {
                 PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
                 PBaseException pythonException = pe.getExceptionObject();
                 printExc(frame, pythonException);
-                if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
-                    printStackTrace(e);
-                }
                 return null;
             } catch (Exception e) {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
@@ -201,6 +196,9 @@ public class TopLevelExceptionHandler extends RootNode {
                     // Python code, if we get here, we just fall back to the launcher
                     throw pythonException.getExceptionForReraise(pythonException.getTraceback());
                 }
+                if (theContext.getOption(PythonOptions.WithJavaStacktrace)) {
+                    printJavaStackTrace(pythonException.getException());
+                }
                 if (!getSourceSection().getSource().isInteractive()) {
                     throw new PythonExitException(this, 1);
                 }
@@ -247,6 +245,17 @@ public class TopLevelExceptionHandler extends RootNode {
         PException e = pythonException.getExceptionForReraise(pythonException.getTraceback());
         e.setExit(true);
         throw e;
+    }
+
+    @TruffleBoundary
+    private static void printJavaStackTrace(PException e) {
+        LazyTraceback traceback = e.getTraceback();
+        while (traceback != null && traceback.getNextChain() != null) {
+            traceback = traceback.getNextChain();
+        }
+        if (traceback != null) {
+            traceback.getException().printStackTrace();
+        }
     }
 
     @TruffleBoundary

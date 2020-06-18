@@ -38,6 +38,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -69,6 +70,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -76,7 +79,10 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -387,35 +393,37 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, @SuppressWarnings("unused") PNone tb,
                         @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached BranchProfile alreadyRunning) {
+                        @Cached BranchProfile alreadyRunning,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (self.isRunning()) {
                 alreadyRunning.enter();
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
-            return doThrow(self, instance);
+            return doThrow(self, instance, contextRef.get());
         }
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, PTraceback tb,
                         @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached BranchProfile alreadyRunning) {
+                        @Cached BranchProfile alreadyRunning,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (self.isRunning()) {
                 alreadyRunning.enter();
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             instance.setTraceback(tb);
-            return doThrow(self, instance);
+            return doThrow(self, instance, contextRef.get());
         }
 
-        private Object doThrow(PGenerator self, PBaseException instance) {
+        private Object doThrow(PGenerator self, PBaseException instance, PythonContext context) {
             instance.setContext(null); // Will be filled when caught
             if (self.isStarted()) {
                 instance.ensureReified();
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
-                PException pException = PException.fromObject(instance, null);
+                PException pException = PException.fromObject(instance, null, context.getOption(PythonOptions.WithJavaStacktrace));
                 return resumeGenerator(self, pException);
             } else {
                 // Unstarted generator, we cannot pass the exception into the generator as there is
@@ -431,7 +439,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
                 PTraceback newTraceback = factory().createTraceback(pFrame, pFrame.getLine(), existingTraceback);
                 instance.setTraceback(newTraceback);
-                throw PException.fromObject(instance, location);
+                throw PException.fromObject(instance, location, context.getOption(PythonOptions.WithJavaStacktrace));
             }
         }
 
@@ -466,7 +474,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile isGeneratorExit,
                         @Cached IsBuiltinClassProfile isStopIteration,
-                        @Cached BranchProfile alreadyRunning) {
+                        @Cached BranchProfile alreadyRunning,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (self.isRunning()) {
                 alreadyRunning.enter();
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
@@ -475,7 +484,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PBaseException pythonException = factory().createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
-                PException pException = PException.fromObject(pythonException, null);
+                PException pException = PException.fromObject(pythonException, null, contextRef.get().getOption(PythonOptions.WithJavaStacktrace));
                 try {
                     resumeGenerator(self, pException);
                 } catch (PException pe) {
