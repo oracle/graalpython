@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -86,6 +87,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -104,6 +106,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
 public final class GraalHPyContext extends CExtContext implements TruffleObject {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
     /**
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
@@ -400,14 +403,16 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         if (handle == -1) {
             // resize
             int newSize = Math.max(16, hpyHandleTable.length * 2);
-            PythonLanguage.getLogger().info(() -> "resizing HPy handle table to " + newSize);
+            LOGGER.info(() -> "resizing HPy handle table to " + newSize);
             hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
             handle = allocateHandle();
         }
         assert handle > 0;
         hpyHandleTable[handle] = object;
-        final int handleID = handle;
-//        PythonLanguage.getLogger().fine(() -> String.format("allocating HPy handle %d (object: %s)", handleID, object));
+        if (LOGGER.isLoggable(Level.FINER)) {
+            final int handleID = handle;
+            LOGGER.finer(() -> String.format("allocating HPy handle %d (object: %s)", handleID, object));
+        }
         return handle;
     }
 
@@ -418,7 +423,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public void releaseHPyHandleForObject(int handle) {
         assert hpyHandleTable[handle] != null : "releasing handle that has already been released: " + handle;
-//        PythonLanguage.getLogger().fine(() -> "releasing HPy handle " + handle);
+        if (LOGGER.isLoggable(Level.FINER)) {
+            LOGGER.finer(() -> "releasing HPy handle " + handle);
+        }
         hpyHandleTable[handle] = null;
         freeStack.push(handle);
     }

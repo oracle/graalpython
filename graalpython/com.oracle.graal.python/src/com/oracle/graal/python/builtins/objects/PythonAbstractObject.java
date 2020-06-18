@@ -1833,7 +1833,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             Object attrGetattribute = lookupSetAttrNode.execute(primary, SpecialMethodNames.__SETATTR__);
             if (profile.profile(attrGetattribute != PNone.NO_VALUE)) {
                 try {
-                    callSetAttrNode.execute(attrGetattribute, primary, attrName, value);
+                    callSetAttrNode.execute(null, attrGetattribute, primary, attrName, value);
                 } catch (PException e) {
                     e.expectAttributeError(attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing

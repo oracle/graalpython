@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -443,9 +444,10 @@ public class GraalHPyNodes {
 
         @Specialization(guards = {"hpyContext != null", "interopLibrary.isPointer(handle)"}, limit = "2")
         static GraalHPyHandle doPointer(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object handle,
-                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
+                        @CachedLibrary("handle") InteropLibrary interopLibrary,
+                        @Cached PRaiseNode raiseNode) {
             try {
-                return doLongWithContext(hpyContext, interopLibrary.asPointer(handle));
+                return doLongOvfWithContext(hpyContext, interopLibrary.asPointer(handle), raiseNode);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException("");
@@ -458,9 +460,9 @@ public class GraalHPyNodes {
             return context.getHPyContext().getObjectForHPyHandle(handle);
         }
 
-        @Specialization(guards = "hpyContext == null", rewriteOn = ArithmeticException.class)
+        @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class)
         static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws OverflowException {
             return context.getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
@@ -476,8 +478,8 @@ public class GraalHPyNodes {
             return hpyContext.getObjectForHPyHandle(handle);
         }
 
-        @Specialization(guards = "hpyContext != null", rewriteOn = ArithmeticException.class)
-        static GraalHPyHandle doLongWithContext(GraalHPyContext hpyContext, long handle) {
+        @Specialization(guards = "hpyContext != null", rewriteOn = OverflowException.class)
+        static GraalHPyHandle doLongWithContext(GraalHPyContext hpyContext, long handle) throws OverflowException {
             return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
@@ -486,7 +488,7 @@ public class GraalHPyNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "unknown handle: %d", handle);
             }
         }

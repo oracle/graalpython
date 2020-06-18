@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
@@ -81,8 +80,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -93,11 +92,9 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -248,7 +245,7 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached HPyLongFromLong fromLongNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
@@ -264,7 +261,7 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached HPyLongFromLong fromLongNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
@@ -388,7 +385,7 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached CastToJavaIntNode castToJavaIntNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached PythonObjectFactory factory,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             if (arguments.length != 2) {
@@ -470,15 +467,14 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached GetClassNode getClassNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached IsSubtypeNode isSubtypeNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
-            PythonAbstractClass klass = getClassNode.execute(object);
-            return isSubtypeNode.execute(klass, PythonBuiltinClassType.PBytes);
+            return isSubtypeNode.execute(lib.getLazyPythonClass(object), expectedType);
         }
     }
 
@@ -490,13 +486,14 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsSubtypeNode isSubtypeNode,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached PRaiseNativeNode raiseNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object errTypeObj = asPythonObjectNode.execute(context, arguments[1]);
-            if (!(PGuards.isClass(errTypeObj) && isSubtypeNode.execute((PythonAbstractClass) errTypeObj, PBaseException))) {
+            if (!(PGuards.isClass(errTypeObj, interopLib) && isSubtypeNode.execute(errTypeObj, PBaseException))) {
                 return raiseNode.raiseIntWithoutFrame(-1, SystemError, "exception %s not a BaseException subclass", errTypeObj);
             }
             // the cast is now guaranteed because it is a subtype of PBaseException and there it is
@@ -536,7 +533,8 @@ public abstract class GraalHPyContextFunctions {
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            Object object = asPythonObjectNode.execute(context, arguments[1]);
+            // TODO(fa): ensure string
+            PString object = (PString) asPythonObjectNode.execute(context, arguments[1]);
             try {
                 Object result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, object, "strict");
                 return resultAsHandleNode.execute(context, result);
@@ -554,10 +552,9 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode resultAsHandleNode,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) throws ArityException {
+                        @Cached FromCharPointerNode fromCharPointerNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -752,7 +749,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
-                        @Cached GetLazyClassNode getKeyClassNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile isPStringProfile,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
@@ -770,7 +767,7 @@ public abstract class GraalHPyContextFunctions {
             switch (mode) {
                 case OBJECT:
                     key = keyAsPythonObjectNode.execute(context, arguments[2]);
-                    if (!isPStringProfile.profileClass(getKeyClassNode.execute(key), PString)) {
+                    if (!isPStringProfile.profileClass(lib.getLazyPythonClass(key), PythonBuiltinClassType.PString)) {
                         return raiseNativeNode.raiseInt(null, -1, TypeError, "attribute name must be string, not '%p'", key);
                     }
                     break;
@@ -786,7 +783,7 @@ public abstract class GraalHPyContextFunctions {
             Object attrGetattribute = lookupSetAttrNode.execute(receiver, SpecialMethodNames.__SETATTR__);
             if (profile.profile(attrGetattribute != PNone.NO_VALUE)) {
                 try {
-                    callSetAttrNode.execute(attrGetattribute, receiver, key, value);
+                    callSetAttrNode.execute(null, attrGetattribute, receiver, key, value);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, e);
                     return -1;
