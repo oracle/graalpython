@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -102,7 +101,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
      * we now use the same arguments array every time, the next invocation would think that there is
      * not excepion but in fact, the a subsequent call ot {@code next} may have a different
      * exception state.
-     * 
+     *
      * <pre>
      *     g = my_generator()
      *
@@ -302,23 +301,25 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
             }
 
-            @Specialization
-            PBaseException doException(VirtualFrame frame, LazyPythonClass type, PBaseException value,
+            @Specialization(guards = "lib.isLazyPythonClass(type)")
+            PBaseException doException(VirtualFrame frame, Object type, PBaseException value,
                             @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                             @Cached BranchProfile isNotInstanceProfile,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
+                            @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
                 if (isInstanceNode.executeWith(frame, value, type)) {
                     checkExceptionClass(type);
                     return value;
                 } else {
                     isNotInstanceProfile.enter();
-                    return doCreateObject(frame, type, value, callConstructor);
+                    return doCreateObject(frame, type, value, callConstructor, lib);
                 }
             }
 
-            @Specialization
-            PBaseException doCreate(VirtualFrame frame, LazyPythonClass type, @SuppressWarnings("unused") PNone value,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+            @Specialization(guards = "lib.isLazyPythonClass(type)")
+            PBaseException doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
+                            @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
                 checkExceptionClass(type);
                 Object instance = callConstructor.execute(frame, type, new Object[]{type});
                 if (instance instanceof PBaseException) {
@@ -328,10 +329,11 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization
-            PBaseException doCreateTuple(VirtualFrame frame, LazyPythonClass type, PTuple value,
+            @Specialization(guards = "lib.isLazyPythonClass(type)")
+            PBaseException doCreateTuple(VirtualFrame frame, Object type, PTuple value,
                             @Cached GetObjectArrayNode getObjectArrayNode,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
+                            @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
                 checkExceptionClass(type);
                 Object[] array = getObjectArrayNode.execute(value);
                 Object[] args = new Object[array.length + 1];
@@ -345,9 +347,10 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = {"!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"})
-            PBaseException doCreateObject(VirtualFrame frame, LazyPythonClass type, Object value,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+            @Specialization(guards = {"lib.isLazyPythonClass(type)", "!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"})
+            PBaseException doCreateObject(VirtualFrame frame, Object type, Object value,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
+                            @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
                 checkExceptionClass(type);
                 Object instance = callConstructor.execute(frame, type, new Object[]{type, value});
                 if (instance instanceof PBaseException) {
@@ -370,7 +373,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 return raiseNode;
             }
 
-            private void checkExceptionClass(LazyPythonClass type) {
+            private void checkExceptionClass(Object type) {
                 if (isSubtypeNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     isSubtypeNode = insert(IsSubtypeNode.create());
