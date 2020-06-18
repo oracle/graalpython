@@ -171,10 +171,21 @@ public class Python3Lexer extends Lexer {
 
 	  // new version with semantic actions in parser
 
+	  private static class Indent {
+	    public final int indent;
+	    public final int altindent;
+	    public static final Indent EMPTY = new Indent(0, 0);
+
+	    public Indent(int indent, int altindent) {
+	      this.indent = indent;
+	      this.altindent = altindent;
+	    }
+	  }
+
 	  // A queue where extra tokens are pushed on (see the NEWLINE lexer rule).
 	  private java.util.LinkedList<Token> tokens = new java.util.LinkedList<>();
 	  // The stack that keeps track of the indentation level.
-	  private java.util.Stack<Integer> indents = new java.util.Stack<>();
+	  private java.util.Stack<Indent> indents = new java.util.Stack<>();
 	  // The amount of opened braces, brackets and parenthesis.
 	  private int opened = 0;
 	  // The most recently produced token.
@@ -298,6 +309,20 @@ public class Python3Lexer extends Lexer {
 	    return dedent;
 	  }
 
+	  private Token createIndentError(int type) {
+	    // For some reason, CPython sets the error position to the end of line
+	    int cur = getCharIndex();
+	    String s;
+	    do {
+	        s = _input.getText(new Interval(cur, cur));
+	        cur++;
+	    } while (!s.isEmpty() && s.charAt(0) != '\n');
+	    cur--;
+	    CommonToken error = new CommonToken(this._tokenFactorySourcePair, type, DEFAULT_TOKEN_CHANNEL, cur, cur);
+	    error.setLine(this.lastToken.getLine());
+	    return error;
+	  }
+
 	  private CommonToken commonToken(int type, String text) {
 	    int stop = Math.max(this.getCharIndex() - 1, 0);
 	    int start = Math.max(text.isEmpty() ? stop : stop - text.length() + 1, 0);
@@ -311,9 +336,14 @@ public class Python3Lexer extends Lexer {
 	  //  such that the total number of characters up to and including
 	  //  the replacement is a multiple of eight [...]"
 	  //
+	  // Altindent is an alternative measure of spaces where tabs are
+	  // counted as one space. The purpose is to validate that the code
+	  // doesn't mix tabs and spaces in inconsistent way.
+	  //
 	  //  -- https://docs.python.org/3.1/reference/lexical_analysis.html#indentation
-	  static int getIndentationCount(String spaces) {
-	    int count = 0;
+	  static Indent getIndentationCount(String spaces) {
+	    int indent = 0;
+	    int altindent = 0;
 	    for (char ch : spaces.toCharArray()) {
 	      switch (ch) {
 	        case '\r':
@@ -322,15 +352,17 @@ public class Python3Lexer extends Lexer {
 	          // ignore
 	          break;
 	        case '\t':
-	          count += 8 - (count % 8);
+	          indent += 8 - (indent % 8);
+	          altindent++;
 	          break;
 	        default:
 	          // A normal space char.
-	          count++;
+	          indent++;
+	          altindent++;
 	      }
 	    }
 
-	    return count;
+	    return new Indent(indent, altindent);
 	  }
 
 	  boolean atStartOfInput() {
@@ -405,27 +437,40 @@ public class Python3Lexer extends Lexer {
 			     }
 			     else {
 			       emit(commonToken(NEWLINE, "\n"));
-			       int indent;
+			       Indent indent;
 			       if (next == EOF) {
 			         // don't add indents if we're going to finish
-			         indent = 0;
+			         indent = Indent.EMPTY;
 			       } else {
 			         indent = getIndentationCount(getText());
 			       }
-			       int previous = indents.isEmpty() ? 0 : indents.peek();
-			       if (indent == previous) {
+			       Indent previous = indents.isEmpty() ? Indent.EMPTY : indents.peek();
+			       if (indent.indent == previous.indent) {
+			         if (indent.altindent != previous.altindent) {
+			           this.emit(createIndentError(Python3Parser.TAB_ERROR));
+			         }
 			         // skip indents of the same size as the present indent-size
 			         skip();
 			       }
-			       else if (indent > previous) {
+			       else if (indent.indent > previous.indent) {
+			         if (indent.altindent <= previous.altindent) {
+			           this.emit(createIndentError(Python3Parser.TAB_ERROR));
+			         }
 			         indents.push(indent);
 			         emit(commonToken(Python3Parser.INDENT, ""));
 			       }
 			       else {
 			         // Possibly emit more than 1 DEDENT token.
-			         while(!indents.isEmpty() && indents.peek() > indent) {
+			         while (!indents.isEmpty() && indents.peek().indent > indent.indent) {
 			           this.emit(createDedent());
 			           indents.pop();
+			         }
+			         Indent expectedIndent = indents.isEmpty() ? Indent.EMPTY : indents.peek();
+			         if (expectedIndent.indent != indent.indent) {
+			           this.emit(createIndentError(Python3Parser.INDENT_ERROR));
+			         }
+			         if (expectedIndent.altindent != indent.altindent) {
+			           this.emit(createIndentError(Python3Parser.TAB_ERROR));
 			         }
 			       }
 			     }
