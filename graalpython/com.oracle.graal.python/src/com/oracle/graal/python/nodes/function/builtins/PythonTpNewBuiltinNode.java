@@ -44,12 +44,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -58,7 +58,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 /**
  * Implements cpython://Objects/typeobject.c#tp_new_wrapper.
  */
-public abstract class PythonTpNewBuiltinNode extends PythonBuiltinNode {
+public abstract class PythonTpNewBuiltinNode extends PythonVarargsBuiltinNode {
     @Child IsTypeNode isType;
     @Child IsSubtypeNode isSubtype;
     @Child GetMroNode getMro;
@@ -72,24 +72,23 @@ public abstract class PythonTpNewBuiltinNode extends PythonBuiltinNode {
     private static final short MRO_LENGTH_MASK = 0b00001111;
 
     @Override
+    public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException(getOwner().getName() + " constructor did not override varArgExecute");
+    }
+
     public final Object execute(VirtualFrame frame) {
-        if (PArguments.isDirectCallToSlot(frame)) {
-            return executeUnwrapped(frame);
-        }
-        // having these nodes acts as branch profile here
-        if (isType == null || isSubtype == null || getMro == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            reportPolymorphicSpecialize();
-            isType = insert(IsTypeNode.create());
-            isSubtype = insert(IsSubtypeNode.create());
-            getMro = insert(GetMroNode.create());
-        }
         Object arg0;
         try {
             arg0 = PArguments.getArgument(frame, 0); // should always succeed, since the signature check was already done
         } catch (ArrayIndexOutOfBoundsException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException(getOwner().getName() + ".__new__ called without arguments");
+        }
+        if (isType == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            reportPolymorphicSpecialize();
+            isType = insert(IsTypeNode.create());
         }
         if (!isType.execute(arg0)) {
             if ((state & NOT_CLASS_STATE) == 0) {
@@ -100,6 +99,11 @@ public abstract class PythonTpNewBuiltinNode extends PythonBuiltinNode {
             throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
                             "%s.__new__(X): X is not a type object (%N)", getOwner().getName(), arg0);
         }
+        if (isSubtype == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            reportPolymorphicSpecialize();
+            isSubtype = insert(IsSubtypeNode.create());
+        }
         if (!isSubtype.execute(arg0, getOwner())) {
             if ((state & NOT_SUBTP_STATE) == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -109,6 +113,11 @@ public abstract class PythonTpNewBuiltinNode extends PythonBuiltinNode {
             throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
                             "%s.__new__(%N): %N is not a subtype of %s",
                             getOwner().getName(), arg0, arg0, getOwner().getName());
+        }
+        if (getMro == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            reportPolymorphicSpecialize();
+            getMro = insert(GetMroNode.create());
         }
         // TODO (tfel): not quite correct, since we should just be walking the bases, not the entire
         // MRO
