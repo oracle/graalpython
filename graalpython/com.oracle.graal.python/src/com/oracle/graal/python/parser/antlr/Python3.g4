@@ -416,6 +416,28 @@ locals
         }
 ;
 
+withArguments_input [boolean interactive, FrameDescriptor curInlineLocals] returns [ SSTNode result ]
+locals
+[ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
+:
+	{
+            ScopeInfo functionScope = scopeEnvironment.pushScope("<withArguments_input>", ScopeInfo.ScopeKind.Function, $curInlineLocals);
+            functionScope.setHasAnnotations(true);
+	    
+	}
+	{ loopState = null; }
+	{ int start = start(); }
+	BOM?
+	(
+		NEWLINE
+		| stmt
+	)* EOF
+	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
+	{
+            scopeEnvironment.popScope();
+	}
+;
+
 eval_input returns [SSTNode result]
 locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 :

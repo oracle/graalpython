@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -250,7 +251,7 @@ public final class PythonSSTNodeFactory {
         Node result;
         boolean isGen = false;
         Frame useFrame = currentFrame;
-        if (useFrame != null && PArguments.getGeneratorFrameSafe(useFrame) != null) {
+        if (useFrame != null && PArguments.isPythonFrame(useFrame) && PArguments.getGeneratorFrameSafe(useFrame) != null) {
             useFrame = PArguments.getGeneratorFrame(useFrame);
             isGen = true;
             scopeEnvironment.setCurrentScope(new ScopeInfo("evalgen", ScopeKind.Generator, useFrame.getFrameDescriptor(), scopeEnvironment.getGlobalScope()));
@@ -306,6 +307,18 @@ public final class PythonSSTNodeFactory {
                     result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
+                    break;
+                case WithArguments:
+                    // find created function RootNode
+                    final Node[] fromVisitor = new Node[1];
+                    body.accept((Node node) -> {
+                        if (node instanceof FunctionDefinitionNode) {
+                            fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();
+                            return false;
+                        }
+                        return true;
+                    });
+                    result = fromVisitor[0];
                     break;
                 default:
                     throw new RuntimeException("unexpected mode: " + mode);

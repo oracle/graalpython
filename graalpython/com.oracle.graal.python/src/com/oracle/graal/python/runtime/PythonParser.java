@@ -72,7 +72,11 @@ public interface PythonParser {
          * Used for building Truffle tree from deserialized ANTLR parser result. The result
          * expression or statement is not wrapped in any expression.
          */
-        Deserialization;
+        Deserialization,
+        /**
+         * Handle situation, when there is request to parse with arguments from TruffleAPI.
+         */
+        WithArguments;
     }
 
     public interface ParserErrorCallback {
@@ -90,11 +94,13 @@ public interface PythonParser {
     }
 
     /**
-     * Parses the given {@link Source} object according to the requested {@link ParserMode}.
-     *
+     * Parses the given {@link Source} object according to the requested {@link ParserMode}. Also
+     * according the TruffleLanguage.ParsingRequest can be influence the result of parsing if there
+     * are provided argumentsNames.
+     * 
      * @return {@link PNode} for {@link ParserMode#InlineEvaluation}, and otherwise {@link RootNode}
      */
-    Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame);
+    Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);
 
     /**
      * Check if an expression can be parsed as an identifier

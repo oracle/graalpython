@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.runtime.interop.InteropMap;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PFunctionArgsFinder;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -249,6 +251,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (core.isInitialized()) {
             context.initializeMainModule(source.getPath());
         }
+        if (!request.getArgumentNames().isEmpty()) {
+            return Truffle.getRuntime().createCallTarget(parseWithArguments(request));
+        }
         RootNode root = doParse(context, source);
         if (core.isInitialized()) {
             return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
@@ -258,7 +263,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private RootNode doParse(PythonContext context, Source source) {
-        ParserMode mode = null;
+        ParserMode mode;
         if (source.isInteractive()) {
             if (context.getOption(PythonOptions.TerminalIsInteractive)) {
                 // if we run through our own launcher, the sys.__displayhook__ would provide the
@@ -275,12 +280,52 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         PythonCore pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null);
+            return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
             throw e;
         }
+    }
+
+    private RootNode parseWithArguments(ParsingRequest request) {
+        final String[] argumentNames = request.getArgumentNames().toArray(new String[request.getArgumentNames().size()]);
+        final Source source = request.getSource();
+        CompilerDirectives.transferToInterpreter();
+        final RootNode executableNode = new RootNode(this) {
+            @Node.Child private RootNode rootNode;
+
+            protected Object[] preparePArguments(VirtualFrame frame) {
+                int argumentsLength = frame.getArguments().length;
+                Object[] arguments = PArguments.create(argumentsLength);
+                PArguments.setGlobals(arguments, new PDict());
+                PythonUtils.arraycopy(frame.getArguments(), 0, arguments, PArguments.USER_ARGUMENTS_OFFSET, argumentsLength);
+                return arguments;
+            }
+
+            @Override
+            @TruffleBoundary
+            public Object execute(VirtualFrame frame) {
+                PythonContext context = lookupContextReference(PythonLanguage.class).get();
+                assert context != null;
+                if (!context.isInitialized()) {
+                    context.initialize();
+                }
+                if (rootNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    parse(context, frame);
+                }
+                Object[] args = preparePArguments(frame);
+                Object result = InvokeNode.invokeUncached(rootNode.getCallTarget(), args);
+                return result;
+            }
+
+            private void parse(PythonContext context, VirtualFrame frame) {
+                CompilerAsserts.neverPartOfCompilation();
+                rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, context.getCore(), source, frame, argumentNames);
+            }
+        };
+        return executableNode;
     }
 
     @Override
@@ -334,7 +379,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
         PythonCore pythonCore = context.getCore();
-        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame);
+        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame, null);
     }
 
     @Override
