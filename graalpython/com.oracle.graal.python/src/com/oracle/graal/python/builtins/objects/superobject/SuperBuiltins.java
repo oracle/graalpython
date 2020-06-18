@@ -123,17 +123,17 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetObjectTypeNode extends Node {
-        abstract PythonAbstractClass execute(SuperObject self);
+        abstract Object execute(SuperObject self);
 
         @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
-        PythonAbstractClass cached(@SuppressWarnings("unused") SuperObject self,
+        Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached("self.getObjectType()") PythonAbstractClass type) {
+                        @Cached("self.getObjectType()") Object type) {
             return type;
         }
 
         @Specialization(replaces = "cached")
-        PythonAbstractClass uncached(SuperObject self) {
+        Object uncached(SuperObject self) {
             return self.getObjectType();
         }
     }
@@ -426,7 +426,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object get(VirtualFrame frame, SuperObject self, Object attr) {
-            PythonAbstractClass startType = getObjectType.execute(self);
+            Object startType = getObjectType.execute(self);
             if (startType == null) {
                 return genericGetAttr(frame, self, attr);
             }
@@ -499,7 +499,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return isSameTypeNode.execute(execute, abstractPythonClass);
         }
 
-        private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
+        private PythonAbstractClass[] getMro(Object clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -545,7 +545,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getClass(SuperObject self) {
-            PythonAbstractClass objectType = getObjectType.execute(self);
+            Object objectType = getObjectType.execute(self);
             if (objectType == null) {
                 return PNone.NONE;
             }
