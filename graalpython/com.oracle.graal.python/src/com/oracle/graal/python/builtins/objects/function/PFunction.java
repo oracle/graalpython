@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -36,7 +33,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -48,13 +44,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PFunction extends PythonObject {
     private static final Object[] EMPTY_DEFAULTS = new Object[0];
-    private final String name;
+    private String name;
+    private String qualname;
     private final String enclosingClassName;
     private final Assumption codeStableAssumption;
     private final Assumption defaultsStableAssumption;
@@ -71,13 +67,14 @@ public class PFunction extends PythonObject {
 
     public PFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        this(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, null, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+        this(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
     public PFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.newInstance());
         this.name = name;
+        this.qualname = enclosingClassName != null ? PString.cat(enclosingClassName, ".", name) : name;
         this.code = code;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;
@@ -87,17 +84,6 @@ public class PFunction extends PythonObject {
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
         this.defaultsStableAssumption = defaultsStableAssumption;
-        addDefaultConstants(writeAttrNode, getStorage(), name, enclosingClassName);
-    }
-
-    private static void addDefaultConstants(WriteAttributeToDynamicObjectNode writeAttrNode, DynamicObject storage, String name, String enclosingClassName) {
-        if (writeAttrNode != null) {
-            writeAttrNode.execute(storage, __NAME__, name);
-            writeAttrNode.execute(storage, __QUALNAME__, enclosingClassName != null ? PString.cat(enclosingClassName, ".", name) : name);
-        } else {
-            storage.define(__NAME__, name);
-            storage.define(__QUALNAME__, enclosingClassName != null ? PString.cat(enclosingClassName, ".", name) : name);
-        }
     }
 
     public boolean isStatic() {
@@ -128,12 +114,16 @@ public class PFunction extends PythonObject {
         return name;
     }
 
-    public String getQualifiedName() {
-        if (enclosingClassName == null) {
-            return name;
-        } else {
-            return enclosingClassName + "." + name;
-        }
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getQualname() {
+        return this.qualname;
+    }
+
+    public void setQualname(String qualname) {
+        this.qualname = qualname;
     }
 
     public Signature getSignature() {
@@ -155,7 +145,7 @@ public class PFunction extends PythonObject {
     @Override
     public final String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("PFunction %s at 0x%x", getQualifiedName(), hashCode());
+        return String.format("PFunction %s at 0x%x", getQualname(), hashCode());
     }
 
     public PCode getCode() {

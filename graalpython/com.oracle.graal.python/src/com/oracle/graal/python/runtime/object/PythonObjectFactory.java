@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -424,8 +423,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return trace(new PFunction(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, writeAttrNode, codeStableAssumption,
+                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+        return trace(new PFunction(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption,
                         defaultsStableAssumption));
     }
 

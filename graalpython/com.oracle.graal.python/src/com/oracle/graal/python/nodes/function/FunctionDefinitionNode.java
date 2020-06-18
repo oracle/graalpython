@@ -38,7 +38,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
@@ -67,7 +66,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Children protected KwDefaultExpressionNode[] kwDefaults;
     @Child private ExpressionNode doc;
     @Child private WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.create();
-    @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private HashingCollectionNodes.SetItemNode setItemNode;
 
@@ -150,8 +148,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         }
 
         PFunction func = withDocString(frame, factory().createFunction(functionName, enclosingClassName, code, PArguments.getGlobals(frame),
-                        defaultValues, kwDefaultValues, closure, writeNameNode,
-                        codeStableAssumption, defaultsStableAssumption));
+                        defaultValues, kwDefaultValues, closure, codeStableAssumption, defaultsStableAssumption));
 
         // Processing annotated arguments.
         // The __annotations__ dictionary is created even there are is not any annotated arg.
