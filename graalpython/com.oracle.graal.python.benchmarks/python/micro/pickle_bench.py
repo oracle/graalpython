@@ -67,6 +67,7 @@ def __teardown__():
 
 
 def __benchmark__(multiplier):
-    dumped = [dumps(s) for s in DATA]
-    loaded = [loads(b) for b in dumped]
-    print("loaded DATA are the same as dumped DATA: ", loaded == DATA)
+    for s in DATA:
+        b = dumps(s)
+        v = loads(b)
+
