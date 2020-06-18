@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -136,12 +135,13 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         @Child private CExtNodes.GetTypeMemberNode getTpWeaklistoffsetNode;
 
         @Specialization(guards = "!isNativeObject(object)")
-        public PReferenceType refType(LazyPythonClass cls, Object object, @SuppressWarnings("unused") PNone none) {
+        public PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none) {
             return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
         }
 
-        @Specialization(guards = "!isNativeObject(object)")
-        public PReferenceType refType(LazyPythonClass cls, Object object, Object callback) {
+        @Specialization(guards = {"lib.isLazyPythonClass(cls)", "!isNativeObject(object)"})
+        public PReferenceType refType(Object cls, Object object, Object callback,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             if (callback instanceof PNone) {
                 return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
             } else {
@@ -150,7 +150,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "2")
-        public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
+        public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
                         @CachedLibrary("pythonObject") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile profile) {
             Object actualCallback = callback instanceof PNone ? null : callback;
