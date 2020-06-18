@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,24 @@
  */
 package com.oracle.graal.python;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import com.oracle.truffle.api.TruffleFile;
+import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 
 public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
+
+    private static final String UTF_8_BOM_IN_LATIN_1 = new String(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}, StandardCharsets.ISO_8859_1);
+    private static final Pattern ENCODING_COMMENT = Pattern.compile("^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+).*");
 
     @Override
     public String findMimeType(TruffleFile file) throws IOException {
@@ -55,8 +68,99 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
         return null;
     }
 
+    public static class InvalidEncodingException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        private final String encodingName;
+
+        public InvalidEncodingException(String encodingName) {
+            super("Invalid or unsupported encoding: " + encodingName);
+            this.encodingName = encodingName;
+        }
+
+        public String getEncodingName() {
+            return encodingName;
+        }
+    }
+
+    private static Charset tryGetCharsetFromLine(String line, boolean hasBOM) {
+        if (line == null) {
+            return null;
+        }
+        Matcher matcher = ENCODING_COMMENT.matcher(line);
+        if (matcher.matches()) {
+            // Files with UTF-8 BOM but different encoding declared are a SyntaxError
+            // Note that CPython ignores UTF-8 aliases for the BOM check
+            String encoding = matcher.group(1);
+            if (hasBOM && !CharsetMapping.normalize(encoding).equals("utf_8")) {
+                throw new InvalidEncodingException(encoding + " with BOM");
+            }
+            Charset charset = CharsetMapping.getCharset(encoding);
+            if (charset == null) {
+                throw new InvalidEncodingException(encoding);
+            }
+            return charset;
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public static Charset findEncodingStrict(BufferedReader reader) throws IOException {
+        Charset charset;
+        // Read first two lines like CPython
+        String firstLine = reader.readLine();
+        boolean hasBOM = false;
+        if (firstLine != null && firstLine.startsWith(UTF_8_BOM_IN_LATIN_1)) {
+            hasBOM = true;
+            firstLine = firstLine.substring(UTF_8_BOM_IN_LATIN_1.length());
+        }
+        if ((charset = tryGetCharsetFromLine(firstLine, hasBOM)) != null) {
+            return charset;
+        }
+        if ((charset = tryGetCharsetFromLine(reader.readLine(), hasBOM)) != null) {
+            return charset;
+        }
+        return StandardCharsets.UTF_8;
+    }
+
+    @TruffleBoundary
+    public static Charset findEncodingStrict(TruffleFile file) throws IOException {
+        // Using Latin-1 to read the header avoids exceptions on non-ascii characters
+        try (BufferedReader reader = file.newBufferedReader(StandardCharsets.ISO_8859_1)) {
+            return findEncodingStrict(reader);
+        }
+    }
+
+    @TruffleBoundary
+    public static Charset findEncodingStrict(String source) {
+        try (BufferedReader reader = new BufferedReader(new StringReader(source))) {
+            return findEncodingStrict(reader);
+        } catch (IOException e) {
+            // Shouldn't happen on a string
+            throw new RuntimeException(e);
+        }
+    }
+
+    @TruffleBoundary
+    public static Charset findEncodingStrict(byte[] source) {
+        // Using Latin-1 to read the header avoids exceptions on non-ascii characters
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(source), StandardCharsets.ISO_8859_1))) {
+            return findEncodingStrict(reader);
+        } catch (IOException e) {
+            // Shouldn't happen on a string
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public Charset findEncoding(TruffleFile file) throws IOException {
-        return null;
+        try {
+            return findEncodingStrict(file);
+        } catch (InvalidEncodingException e) {
+            // We cannot throw a SyntaxError at this point, but the parser will revalidate this.
+            // Return Latin-1 so that it doesn't throw encoding errors before getting to the
+            // parser, because Truffle would otherwise default to UTF-8
+            return StandardCharsets.ISO_8859_1;
+        }
     }
 }

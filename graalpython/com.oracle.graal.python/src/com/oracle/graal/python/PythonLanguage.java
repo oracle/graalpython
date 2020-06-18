@@ -483,7 +483,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             SourceBuilder sourceBuilder = null;
             if (mayBeFile) {
                 try {
-                    TruffleFile truffleFile = ctxt.getEnv().getInternalTruffleFile(name);
+                    TruffleFile truffleFile = ctxt.getPublicTruffleFileRelaxed(name, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
                     if (truffleFile.exists()) {
                         // XXX: (tfel): We don't know if the expression has anything to do with the
                         // filename that's given. We would really have to compare the entire

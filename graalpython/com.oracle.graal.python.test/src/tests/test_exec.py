@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -311,3 +311,28 @@ class ExecTests:
         exec("global x; x = y", ns, m)
         assert ns["x"] == "y";
         assert eval("x", None, m) == "x"
+
+    def test_exec_encoding(self):
+        x = {}
+        exec(b'#!/usr/bin/python\n# vim:fileencoding=cp1250\nx = "\x9elu\x9dou\xe8k\xfd k\xf9\xf2"', x)
+        assert x['x'] == 'žluťoučký kůň'
+
+    def test_exec_invalid_encoding(self):
+        def fn():
+            exec(b'# encoding: cp12413254\nx=1')
+        raises(SyntaxError, fn)
+
+    def test_exec_ignore_decoded(self):
+        x = {}
+        exec('# encoding: cp12413254\nx=1', x)
+        assert x['x'] == 1
+
+    def test_exec_bom(self):
+        x = {}
+        exec(b'\xef\xbb\xbfx = "\xe6\xa5\xbd\xe3\x81\x97\xe3\x81\x84"', x)
+        assert x['x'] == '楽しい'
+
+    def test_exec_bom_invalid(self):
+        def fn():
+            exec(b'\xef\xbb\xbf#encoding:latin-1\nx = "\xe9\xa7\x84\xe7\x9b\xae"')
+        raises(SyntaxError, fn)

@@ -25,15 +25,24 @@
  */
 package com.oracle.graal.python.parser;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
@@ -58,13 +67,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import org.antlr.v4.runtime.Token;
-import org.graalvm.nativeimage.ImageInfo;
 
 public final class PythonParserImpl implements PythonParser, PythonCodeSerializer {
 
@@ -81,15 +83,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         this.timeStatistics = env.getOptions().get(PythonOptions.ParserStatistics);
     }
 
-    private static Python3Parser getPython3Parser(Source source, ParserErrorCallback errors) {
-        Python3Lexer lexer;
-        try {
-            lexer = source.getPath() == null
-                            ? new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()))
-                            : new Python3Lexer(CharStreams.fromFileName(source.getPath()));
-        } catch (IOException ex) {
-            lexer = new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()));
-        }
+    private static Python3Parser getPython3Parser(Source source, String sourceText, ParserErrorCallback errors) {
+        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(sourceText));
         lexer.removeErrorListeners();
         lexer.addErrorListener(ERROR_LISTENER);
         Python3Parser parser = new Python3Parser(new CommonTokenStream(lexer));
@@ -262,8 +257,25 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
     private CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
+        String sourceText = source.getCharacters().toString();
+        // Preprocessing
+
+        // Check that declared encoding (if any) is valid. The file detector picks an encoding
+        // for the file, but it doesn't have a means of communicating that the declared encoding
+        // wasn't valid or supported, so in that case it defaults to Latin-1 and we have to
+        // recheck it here.
+        // msimacek: The encoding check should happen only when the source encoding was
+        // determined by PythonFileDetector. But we currently have no way to tell, so we
+        // assume that it is the case when it is a file.
+        if (source.getURI().getScheme().equals("file")) {
+            try {
+                PythonFileDetector.findEncodingStrict(sourceText);
+            } catch (PythonFileDetector.InvalidEncodingException e) {
+                throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
+            }
+        }
         // ANTLR parsing
-        Python3Parser parser = getPython3Parser(source, errors);
+        Python3Parser parser = getPython3Parser(source, sourceText, errors);
         parser.setFactory(sstFactory);
         SSTNode parserSSTResult = null;
 

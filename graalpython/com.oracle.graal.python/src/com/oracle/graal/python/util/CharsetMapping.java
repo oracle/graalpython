@@ -65,7 +65,7 @@ public class CharsetMapping {
         return null;
     }
 
-    private static String normalize(String encoding) {
+    public static String normalize(String encoding) {
         return encoding.toLowerCase(Locale.ENGLISH).replaceAll("[^\\w.]+", "_");
     }
 
