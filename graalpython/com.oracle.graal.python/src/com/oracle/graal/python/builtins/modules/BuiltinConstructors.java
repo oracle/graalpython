@@ -179,7 +179,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTpNewBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -1142,7 +1141,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // int(x, base=10)
     @Builtin(name = INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
-    public abstract static class IntNode extends PythonTpNewBuiltinNode {
+    public abstract static class IntNode extends PythonTernaryBuiltinNode {
 
         private final ConditionProfile invalidBase = ConditionProfile.createBinaryProfile();
         private final BranchProfile invalidValueProfile = BranchProfile.create();
@@ -1155,8 +1154,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callIndexNode;
         @Child private LookupAndCallUnaryNode callTruncNode;
         @Child private LookupAndCallUnaryNode callReprNode;
-
-        public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object base);
 
         @TruffleBoundary
         private static Object stringToIntInternal(String num, int base) {

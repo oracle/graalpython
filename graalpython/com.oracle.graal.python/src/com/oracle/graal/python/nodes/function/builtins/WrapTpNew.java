@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -54,11 +53,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 /**
  * Implements cpython://Objects/typeobject.c#tp_new_wrapper.
  */
-public abstract class PythonTpNewBuiltinNode extends PythonVarargsBuiltinNode {
+public final class WrapTpNew extends SlotWrapper {
     @Child IsTypeNode isType;
     @Child IsSubtypeNode isSubtype;
     @Child GetMroNode getMro;
@@ -71,13 +71,12 @@ public abstract class PythonTpNewBuiltinNode extends PythonVarargsBuiltinNode {
     private static final short NOTCONSTANT_MRO = 0b00010000;
     private static final short MRO_LENGTH_MASK = 0b00001111;
 
-    @Override
-    public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException(getOwner().getName() + " constructor did not override varArgExecute");
+    public WrapTpNew(BuiltinCallNode func) {
+        super(func);
     }
 
-    public final Object execute(VirtualFrame frame) {
+    @Override
+    public Object execute(VirtualFrame frame) {
         Object arg0;
         try {
             arg0 = PArguments.getArgument(frame, 0); // should always succeed, since the signature check was already done
@@ -154,7 +153,7 @@ public abstract class PythonTpNewBuiltinNode extends PythonVarargsBuiltinNode {
                             "%s.__new__(%N) is not safe, use %N.__new__()",
                             getOwner().getName(), arg0, arg0);
         }
-        return executeUnwrapped(frame);
+        return super.execute(frame);
     }
 
     @ExplodeLoop
@@ -212,5 +211,19 @@ public abstract class PythonTpNewBuiltinNode extends PythonVarargsBuiltinNode {
         return owner;
     }
 
-    protected abstract Object executeUnwrapped(VirtualFrame frame);
+    @Override
+    public NodeCost getCost() {
+        if (state == 0) {
+            return NodeCost.UNINITIALIZED;
+        } else if ((state & ~MRO_LENGTH_MASK) == 0) {
+            // no error states, single mro
+            return NodeCost.MONOMORPHIC;
+        } else if (((state & ~MRO_LENGTH_MASK) & NOTCONSTANT_MRO) == NOTCONSTANT_MRO) {
+            // no error states, multiple mros
+            return NodeCost.POLYMORPHIC;
+        } else {
+            // error states
+            return NodeCost.MEGAMORPHIC;
+        }
+    }
 }
