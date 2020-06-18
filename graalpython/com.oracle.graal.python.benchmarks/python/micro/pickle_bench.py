@@ -62,7 +62,7 @@ def __process_args__(multiplier):
     return int(multiplier),
 
 
-def __teardown__(multiplier):
+def __teardown__():
     pass
 
 
