@@ -36,7 +36,6 @@ import java.util.Map.Entry;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -81,8 +80,8 @@ public abstract class PythonBuiltins {
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
-                PDecoratedMethod newFunc = core.factory().createStaticmethodFromCallableObj(core.factory().
-                                createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), callTarget));
+                // we explicitly do not make these "classmethods" here, since CPython also doesn't for builtin types
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), callTarget);
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
                 builtinClass.setAttributeUnsafe(__NEW__, newFunc);
                 builtinClass.setAttribute(__DOC__, builtinDoc);
