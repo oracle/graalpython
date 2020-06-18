@@ -107,6 +107,11 @@ public class LockBuiltins extends PythonBuiltins {
             return pythonObjectLibrary;
         }
 
+        @TruffleBoundary
+        private static boolean acquireBlocking(AbstractPythonLock self) {
+            return self.acquireBlocking();
+        }
+
         @Specialization
         boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout) {
             // args setup
@@ -133,7 +138,7 @@ public class LockBuiltins extends PythonBuiltins {
                 return self.acquireNonBlocking();
             } else {
                 if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
-                    return self.acquireBlocking();
+                    return acquireBlocking(self);
                 } else {
                     return self.acquireTimeout(timeoutSeconds);
                 }

@@ -1406,7 +1406,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                 e--;
             }
 
-            BigInteger numerator = BigInteger.valueOf((new Double(m)).longValue());
+            BigInteger numerator = BigInteger.valueOf(((Double) m).longValue());
             BigInteger denominator = BigInteger.ONE;
             BigInteger py_exponent = denominator.shiftLeft(Math.abs(e));
             if (e > 0) {

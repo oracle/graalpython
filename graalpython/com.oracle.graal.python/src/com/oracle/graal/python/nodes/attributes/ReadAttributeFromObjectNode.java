@@ -122,13 +122,14 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "getStorage(object, cachedDict) == cachedStorage",
                     "isBuiltinDict(cachedDict, isBuiltinDict)",
     }, assumptions = "singleContextAssumption", limit = "1")
-    protected Object readFromBuiltinModuleDictUnchanged(@SuppressWarnings("unused") PythonModule object, String key,
-                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
-                    @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
-                    @SuppressWarnings("unused") @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+    @SuppressWarnings("unused")
+    protected Object readFromBuiltinModuleDictUnchanged(PythonModule object, String key,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @Cached("object") PythonModule cachedObject,
+                    @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
+                    @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached("getStorage(object, cachedDict)") HashingStorage cachedStorage,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
+                    @Cached IsBuiltinClassProfile isBuiltinDict,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         // note that we don't need to pass the state here - string keys are hashable by definition
         Object value = hlib.getItem(cachedStorage, key);
@@ -144,15 +145,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "cachedObject == object",
                     "lib.getDict(cachedObject) == cachedDict",
                     "hasBuiltinDict(cachedObject, lib, isBuiltinDict, isBuiltinMappingproxy)",
-    }, assumptions = "singleContextAssumption", limit = "1", replaces = "readFromBuiltinModuleDictUnchanged")
-    protected Object readFromBuiltinModuleDict(@SuppressWarnings("unused") PythonModule object, String key,
-                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
-                    @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
-                    @SuppressWarnings("unused") @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+    }, assumptions = "singleContextAssumption", replaces = "readFromBuiltinModuleDictUnchanged")
+    @SuppressWarnings("unused")
+    protected Object readFromBuiltinModuleDict(PythonModule object, String key,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Cached("object") PythonModule cachedObject,
+                    @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
+                    @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
+                    @Cached IsBuiltinClassProfile isBuiltinDict,
+                    @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         Object value = hlib.getItem(getDictStorage.execute(cachedDict), key);
         if (value == null) {

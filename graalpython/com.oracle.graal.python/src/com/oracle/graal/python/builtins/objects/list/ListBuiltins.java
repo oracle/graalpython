@@ -141,15 +141,17 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object repr(VirtualFrame frame, PList self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
+                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItem) {
             StringBuilder result = new StringBuilder();
             sbAppend(result, "[");
             SequenceStorage storage = self.getSequenceStorage();
             boolean initial = true;
             Object value;
             Object reprString;
-            for (int index = 0; index < storage.length(); index++) {
-                value = storage.getItemNormalized(index);
+            for (int index = 0; index < lenNode.execute(storage); index++) {
+                value = getItem.execute(frame, storage, index);
                 if (self != value) {
                     reprString = repr.executeObject(frame, value);
                     if (reprString instanceof PString) {
