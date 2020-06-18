@@ -331,7 +331,6 @@ public class TypeBuiltins extends PythonBuiltins {
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
-                PArguments.setDirectCallToSlot(arguments);
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
                 if (isSameType(newInstanceKlass, self)) {

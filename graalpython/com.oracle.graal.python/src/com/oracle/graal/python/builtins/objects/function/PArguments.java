@@ -93,8 +93,6 @@ public final class PArguments {
 
     private static final FrameDescriptor EMTPY_FD = new FrameDescriptor();
 
-    private static final Object CALL_SLOT_WRAPPER = new Object();
-
     private static final int INDEX_VARIABLE_ARGUMENTS = 0;
     private static final int INDEX_KEYWORD_ARGUMENTS = 1;
     private static final int INDEX_GENERATOR_FRAME = 2;
@@ -181,7 +179,6 @@ public final class PArguments {
      * <li>An exception thrown through a generator via <code>throw</code></li>
      * <li>The {@link ClassBodyRootNode} when we are executing a class body</li>
      * <li>The custom locals in a module scope when called through <code>exec</code></li>
-     * <li>A marker when invocation is meant to invoke a slot directly, without the slot wrapper</li>
      * </ul>
      */
     public static Object getSpecialArgument(Frame frame) {
@@ -193,24 +190,6 @@ public final class PArguments {
      */
     public static Object getSpecialArgument(Object[] arguments) {
         return arguments[INDEX_SPECIAL_ARGUMENT];
-    }
-
-    /**
-     * @return true is the slot wrapper (if any) should be skipped
-     * @see #setDirectCallToSlot
-     */
-    public static boolean isDirectCallToSlot(Frame frame) {
-        return frame.getArguments()[INDEX_SPECIAL_ARGUMENT] == CALL_SLOT_WRAPPER;
-    }
-
-    /**
-     * When an internal call is made to a method that may represent something encapsulated in a
-     * "slot wrapper" (like the __new__ method for built-in types), the caller can use this to
-     * signal the callee that the wrapper should be skipped.
-     */
-    public static void setDirectCallToSlot(Object[] arguments) {
-        assert arguments[INDEX_SPECIAL_ARGUMENT] == null;
-        arguments[INDEX_SPECIAL_ARGUMENT] = CALL_SLOT_WRAPPER;
     }
 
     public static void setGlobals(Object[] arguments, PythonObject globals) {
