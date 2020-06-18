@@ -68,14 +68,17 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfGeneratorTryNode;
     private final ExecutionCellSlots cellSlots;
     private final String name;
+    private final String qualname;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, String qualname, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
+                    Signature signature,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
         this.name = name;
+        this.qualname = qualname;
         this.frameDescriptor = frameDescriptor;
         this.cellSlots = executionCellSlots;
         this.numOfActiveFlags = numOfActiveFlags;
@@ -91,7 +94,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
             callTargets = createYieldTargets(callTarget);
         }
         CompilerAsserts.partialEvaluationConstant(cellSlots);
-        return factory.createGenerator(getName(), callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode, numOfGeneratorTryNode, null);
     }
 
@@ -118,7 +121,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<generator function " + name + ">";
+        return "<generator function " + qualname + ">";
     }
 
     @Override

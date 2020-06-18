@@ -30,7 +30,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
@@ -61,20 +60,20 @@ public class PFunction extends PythonObject {
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
-    public PFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
-        this(name, enclosingClassName, code, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
+    public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
+        this(name, qualname, enclosingClassName, code, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
-    public PFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        this(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+        this(name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
-    public PFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.newInstance());
         this.name = name;
-        this.qualname = enclosingClassName != null ? PString.cat(enclosingClassName, ".", name) : name;
+        this.qualname = qualname;
         this.code = code;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;

@@ -352,7 +352,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return callNode;
     }
 
-    private static String getQualifiedName(ScopeInfo scope, String name) {
+    protected static String getQualifiedName(ScopeInfo scope, String name) {
         StringBuilder qualifiedName = new StringBuilder(name);
         ScopeInfo tmpScope = scope.getParent();
         while (tmpScope != null) {
@@ -449,7 +449,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         bodyAsExpr.assignSourceSection(nodeSourceSection);
         ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, qualifiedName, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(),
+                        scopeEnvironment.getExecutionCellSlots(), null);
         scopeEnvironment.setCurrentScope(node.scope.getParent());
 
         ExpressionNode[] args;
@@ -832,24 +833,26 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         scopeEnvironment.setCurrentScope(node.scope);
 
-        /**
+        /*
          * Function root
          */
         FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, node.name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(),
+        String name = node.name;
+        String qualname = getQualifiedName(node.scope, name);
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(),
                         signature);
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
-            funcDef = GeneratorFunctionDefinitionNode.create(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
+            funcDef = GeneratorFunctionDefinitionNode.create(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
                             generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(),
                             generatorFactory.getNumOfGeneratorTryNode(), annotations);
         } else {
-            funcDef = new FunctionDefinitionNode(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
+            funcDef = new FunctionDefinitionNode(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
                             scopeEnvironment.getExecutionCellSlots(), annotations);
         }
         scopeEnvironment.setCurrentScope(node.scope.getParent());
-        ReadNode funcVar = scopeEnvironment.findVariable(node.name);
+        ReadNode funcVar = scopeEnvironment.findVariable(name);
         StatementNode writeNode = funcVar.makeWriteNode(funcDef);
         // TODO I'm not sure, whether this assingning of sourcesection is right.
         writeNode.assignSourceSection(((FunctionDefinitionNode) funcDef).getFunctionRoot().getSourceSection());
@@ -938,6 +941,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(LambdaSSTNode node) {
         String funcname = LAMBDA_NAME;
+        String qualname = getQualifiedName(node.scope, funcname);
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope);
         /**
@@ -999,12 +1003,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode funcDef;
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
+            funcDef = GeneratorFunctionDefinitionNode.create(funcname, qualname, null, null, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
                             generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(),
                             generatorFactory.getNumOfGeneratorTryNode(), null);
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
+            funcDef = new FunctionDefinitionNode(funcname, qualname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
                             scopeEnvironment.getExecutionCellSlots(), null);
             funcDef.assignSourceSection(returnTargetNode.getSourceSection());
         }

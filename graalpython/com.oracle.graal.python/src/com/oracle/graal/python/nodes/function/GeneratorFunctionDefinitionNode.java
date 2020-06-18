@@ -58,10 +58,10 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     @CompilationFinal private RootCallTarget generatorCallTarget;
     @CompilationFinal private PCode generatorCode;
 
-    public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+    public GeneratorFunctionDefinitionNode(String name, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
                     int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, Map<String, ExpressionNode> annotations) {
-        super(name, enclosingClassName, doc, defaults, kwDefaults, callTarget, definitionCellSlots, executionCellSlots, annotations);
+        super(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget, definitionCellSlots, executionCellSlots, annotations);
         this.frameDescriptor = frameDescriptor;
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
@@ -69,10 +69,10 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         this.numOfGeneratorTryNode = numOfGeneratorTryNode;
     }
 
-    public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+    public static GeneratorFunctionDefinitionNode create(String name, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
                     int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, Map<String, ExpressionNode> annotations) {
-        return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, defaults, kwDefaults, callTarget,
+        return new GeneratorFunctionDefinitionNode(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget,
                         frameDescriptor, definitionCellSlots, executionCellSlots,
                         numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode, annotations);
     }
@@ -96,13 +96,15 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
             }
         }
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createGeneratorFunction(functionName, enclosingClassName, getGeneratorCode(), PArguments.getGlobals(frame), closure, defaultValues,
+        return withDocString(frame, factory().createGeneratorFunction(functionName, qualname, enclosingClassName, getGeneratorCode(), PArguments.getGlobals(frame), closure, defaultValues,
                         kwDefaultValues));
     }
 
     public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonContext ctx) {
         if (generatorCallTarget == null) {
-            return new GeneratorFunctionRootNode(ctx.getLanguage(), callTarget, functionName, frameDescriptor,
+            // TODO msimacek: the name/qualname passing is not entirely correct, it can change later
+            // and the change should be reflected on the created generators
+            return new GeneratorFunctionRootNode(ctx.getLanguage(), callTarget, functionName, qualname, frameDescriptor,
                             executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
         }
         return (GeneratorFunctionRootNode) generatorCallTarget.getRootNode();

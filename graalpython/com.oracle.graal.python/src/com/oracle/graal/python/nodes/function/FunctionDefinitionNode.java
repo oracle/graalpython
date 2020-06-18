@@ -58,6 +58,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     protected final String functionName;
+    protected final String qualname;
     protected final String enclosingClassName;
     protected final RootCallTarget callTarget;
     @CompilationFinal private PCode cachedCode;
@@ -75,12 +76,13 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
     private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
-    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+    public FunctionDefinitionNode(String functionName, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget,
                     DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
                     Map<String, ExpressionNode> annotations) {
         super(definitionCellSlots, executionCellSlots);
         this.functionName = functionName;
+        this.qualname = qualname;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
         this.callTarget = callTarget;
@@ -147,7 +149,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             code = factory().createCode(callTarget);
         }
 
-        PFunction func = withDocString(frame, factory().createFunction(functionName, enclosingClassName, code, PArguments.getGlobals(frame),
+        PFunction func = withDocString(frame, factory().createFunction(functionName, qualname, enclosingClassName, code, PArguments.getGlobals(frame),
                         defaultValues, kwDefaultValues, closure, codeStableAssumption, defaultsStableAssumption));
 
         // Processing annotated arguments.

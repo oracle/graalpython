@@ -41,9 +41,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
-
-    // name = "generator_exp:" + line number of the generator;
     private final String name;
+    private final String qualname;
     private final RootCallTarget callTarget;
     @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
@@ -58,11 +57,12 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @Child private ExpressionNode getIterator;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorExpressionNode(String name, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
+    public GeneratorExpressionNode(String name, String qualname, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
                     ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode) {
         super(definitionCellSlots, executionCellSlots);
         this.name = name;
+        this.qualname = qualname;
         this.callTarget = callTarget;
         this.getIterator = getIterator;
         this.frameDescriptor = descriptor;
@@ -150,7 +150,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         }
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory.createGenerator(name, callTargets, frameDescriptor, arguments, closure, executionCellSlots,
+        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, executionCellSlots,
                         numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode, iterator);
     }
 

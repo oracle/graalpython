@@ -414,17 +414,17 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
-        return trace(new PFunction(name, enclosingClassName, code, globals, closure));
+        return trace(new PFunction(name, name, enclosingClassName, code, globals, closure));
     }
 
     public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        return trace(new PFunction(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
+        return trace(new PFunction(name, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction createFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return trace(new PFunction(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption,
+        return trace(new PFunction(name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption,
                         defaultsStableAssumption));
     }
 
@@ -568,15 +568,15 @@ public abstract class PythonObjectFactory extends Node {
      * Special objects: generators, proxies, references
      */
 
-    public PGenerator createGenerator(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
+    public PGenerator createGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, Object iterator) {
-        return trace(PGenerator.create(name, callTargets, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+        return trace(PGenerator.create(name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode, numOfGeneratorTryNode, this, iterator));
     }
 
-    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
+    public PGeneratorFunction createGeneratorFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
                     PKeyword[] kwDefaultValues) {
-        return trace(PGeneratorFunction.create(name, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues));
+        return trace(PGeneratorFunction.create(name, qualname, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

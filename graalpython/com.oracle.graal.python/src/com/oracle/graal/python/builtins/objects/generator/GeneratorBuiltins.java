@@ -26,6 +26,8 @@
 package com.oracle.graal.python.builtins.objects.generator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -48,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -63,6 +66,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -137,6 +141,48 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GeneratorBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class NameNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(noValue)")
+        Object getName(PGenerator self, @SuppressWarnings("unused") PNone noValue) {
+            return self.getName();
+        }
+
+        @Specialization
+        Object setName(PGenerator self, String value) {
+            self.setName(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(PGenerator self, Object value,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
+            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__name__"));
+        }
+    }
+
+    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class QualnameNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(noValue)")
+        Object getQualname(PGenerator self, @SuppressWarnings("unused") PNone noValue) {
+            return self.getQualname();
+        }
+
+        @Specialization
+        Object setQualname(PGenerator self, String value) {
+            self.setQualname(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setQualname(PGenerator self, Object value,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
+            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__qualname__"));
+        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
