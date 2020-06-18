@@ -188,7 +188,6 @@ import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -478,20 +477,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isNoValue(wrapper)", limit = "3")
+        @Specialization(guards = {"lib.isLazyPythonClass(type)", "isNoValue(wrapper)"}, limit = "3")
         static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") PNone wrapper,
-                        @SuppressWarnings("unused") LazyPythonClass type,
-                        @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+                        @SuppressWarnings("unused") Object type,
+                        @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
             return nativeWrapperLibrary.getDelegate(callable);
         }
 
-        @Specialization(limit = "3")
-        Object doPythonCallable(String name, PythonNativeWrapper callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") LazyPythonClass type,
+        @Specialization(guards = "lib.isLazyPythonClass(type)", limit = "3")
+        Object doPythonCallable(String name, PythonNativeWrapper callable, PExternalFunctionWrapper wrapper, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
-                        @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+                        @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
@@ -504,10 +505,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return managedCallable;
         }
 
-        @Specialization(guards = {"isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"})
+        @Specialization(guards = {"lib.isLazyPythonClass(type)", "isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"})
         static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable, @SuppressWarnings("unused") PNone wrapper,
-                        @SuppressWarnings("unused") LazyPythonClass type,
-                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+                        @SuppressWarnings("unused") Object type,
+                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
@@ -517,7 +519,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isDecoratedManagedFunction(callable)")
-        Object doDecoratedManaged(String name, PyCFunctionDecorator callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") LazyPythonClass type,
+        Object doDecoratedManaged(String name, PyCFunctionDecorator callable, PExternalFunctionWrapper wrapper, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
@@ -537,9 +539,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return managedCallable;
         }
 
-        @Specialization(guards = "!isNativeWrapper(callable)")
-        PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, LazyPythonClass type,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+        @Specialization(guards = {"lib.isLazyPythonClass(type)", "!isNativeWrapper(callable)"})
+        PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, Object type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, callable, wrapper.createConvertArgsToSulongNode());
             return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
         }
@@ -547,12 +550,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
         PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return doNativeCallableWithType(name, callable, wrapper, null, lang);
+            return doNativeCallableWithType(name, callable, wrapper, null, lang, null);
         }
 
-        @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
-        PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, LazyPythonClass type, @SuppressWarnings("unused") PNone wrapper,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+        @Specialization(guards = {"lib.isLazyPythonClass(type)", "isNoValue(wrapper)", "!isNativeWrapper(callable)"})
+        PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget callTarget = PExternalFunctionWrapper.createCallTarget(MethDirectRoot.create(lang, name, callable));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
@@ -560,7 +564,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
         PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang);
+            return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang, null);
         }
 
         static boolean isNativeWrapper(Object obj) {
@@ -1663,17 +1667,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
-        Object call(Object get, Object set, String name, LazyPythonClass owner) {
+        Object call(Object get, Object set, String name, Object owner) {
             return factory().createGetSetDescriptor(get, set, name, owner, true);
         }
 
         @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
-        Object call(Object get, @SuppressWarnings("unused") PNone set, String name, LazyPythonClass owner) {
+        Object call(Object get, @SuppressWarnings("unused") PNone set, String name, Object owner) {
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
 
         @Specialization(guards = {"isNoValue(get)", "!isNoValue(set)"})
-        Object call(@SuppressWarnings("unused") PNone get, Object set, String name, LazyPythonClass owner) {
+        Object call(@SuppressWarnings("unused") PNone get, Object set, String name, Object owner) {
             return factory().createGetSetDescriptor(null, set, name, owner, true);
         }
     }
