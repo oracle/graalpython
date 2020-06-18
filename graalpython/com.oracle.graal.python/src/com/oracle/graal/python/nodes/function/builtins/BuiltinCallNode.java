@@ -49,6 +49,8 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class BuiltinCallNode extends Node {
     public abstract Object execute(VirtualFrame frame);
 
+    protected abstract Node getNode();
+
     public static final class BuiltinAnyCallNode extends BuiltinCallNode {
         @Child PythonBuiltinNode node;
 
@@ -59,6 +61,11 @@ public abstract class BuiltinCallNode extends Node {
         @Override
         public Object execute(VirtualFrame frame) {
             return node.execute(frame);
+        }
+
+        @Override
+        protected Node getNode() {
+            return node;
         }
     }
 
@@ -74,6 +81,11 @@ public abstract class BuiltinCallNode extends Node {
         @Override
         public Object execute(VirtualFrame frame) {
             return node.execute(frame, arg.execute(frame));
+        }
+
+        @Override
+        protected Node getNode() {
+            return node;
         }
     }
 
@@ -91,6 +103,11 @@ public abstract class BuiltinCallNode extends Node {
         @Override
         public Object execute(VirtualFrame frame) {
             return node.execute(frame, arg1.execute(frame), arg2.execute(frame));
+        }
+
+        @Override
+        protected Node getNode() {
+            return node;
         }
     }
 
@@ -110,6 +127,11 @@ public abstract class BuiltinCallNode extends Node {
         @Override
         public Object execute(VirtualFrame frame) {
             return node.execute(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame));
+        }
+
+        @Override
+        protected Node getNode() {
+            return node;
         }
     }
 
@@ -132,6 +154,11 @@ public abstract class BuiltinCallNode extends Node {
         public Object execute(VirtualFrame frame) {
             return node.execute(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame), arg4.execute(frame));
         }
+
+        @Override
+        protected Node getNode() {
+            return node;
+        }
     }
 
     public static final class BuiltinVarArgsCallNode extends BuiltinCallNode {
@@ -150,6 +177,11 @@ public abstract class BuiltinCallNode extends Node {
         @Override
         public Object execute(VirtualFrame frame) {
             return node.execute(frame, arg1.execute(frame), (Object[]) arg2.execute(frame), (PKeyword[]) arg3.execute(frame));
+        }
+
+        @Override
+        protected Node getNode() {
+            return node;
         }
     }
 }

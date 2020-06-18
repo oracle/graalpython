@@ -200,7 +200,7 @@ public final class WrapTpNew extends SlotWrapper {
         if (owner == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             Builtin[] builtins = null;
-            Class<?> cls = getClass();
+            Class<?> cls = getNode().getClass();
             while (cls != null ) {
                 builtins = cls.getAnnotationsByType(Builtin.class);
                 if (builtins.length == 0) {

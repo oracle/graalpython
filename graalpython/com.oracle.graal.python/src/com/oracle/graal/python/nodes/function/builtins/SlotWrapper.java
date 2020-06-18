@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class SlotWrapper extends BuiltinCallNode {
     @Child BuiltinCallNode func;
@@ -52,5 +53,10 @@ public abstract class SlotWrapper extends BuiltinCallNode {
     @Override
     public Object execute(VirtualFrame frame) {
         return func.execute(frame);
+    }
+
+    @Override
+    protected Node getNode() {
+        return func.getNode();
     }
 }
