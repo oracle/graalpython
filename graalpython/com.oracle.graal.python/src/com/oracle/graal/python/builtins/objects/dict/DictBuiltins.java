@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -228,8 +229,11 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         public Object popItem(PDict dict,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            for (DictEntry entry : lib.entries(dict.getDictStorage())) {
-                return factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
+            HashingStorage storage = dict.getDictStorage();
+            for (DictEntry entry : lib.entries(storage)) {
+                PTuple result = factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
+                lib.delItem(storage, entry.getKey());
+                return result;
             }
             throw raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
         }
