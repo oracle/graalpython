@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -129,3 +129,16 @@ def test_iter():
     mp_keys = set([k for k in mp])
     assert d.keys() == mp_keys
 
+def test_iter_changed_size():
+    class A:
+        pass
+
+    def foo():
+        pass
+
+    try:
+        for i in A.__dict__:
+            setattr(A, 'foo', foo)
+    except RuntimeError:
+        raised = True
+    assert raised

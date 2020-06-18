@@ -854,3 +854,48 @@ def test_update_side_effect_on_other():
     assert raised
         
     assert 'kw' not in d
+    
+def test_iter_changed_size():
+    def just_iterate(it):
+        for i in it:
+            pass
+
+    def iterate_and_update(it):
+        for i in it:
+            d.update({3:3})
+
+    # dict
+    d = {1:1, 2:2} 
+    it = iter(d)
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+    
+    d = {1:1, 2:2}
+    assert_raises(RuntimeError, iterate_and_update, d)
+
+    # keys
+    d = {1:1, 2:2}
+    it = iter(d.keys())
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+
+    d = {1:1}
+    assert_raises(RuntimeError, iterate_and_update, d.keys())
+
+    # values
+    d = {1:1, 2:2} 
+    it = iter(d.values())
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+
+    d = {1:1}
+    assert_raises(RuntimeError, iterate_and_update, d.values())
+
+    # items
+    d = {1:1, 2:2}
+    it = iter(d.items())
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+
+    d = {1:1}
+    assert_raises(RuntimeError, iterate_and_update, d.items())
