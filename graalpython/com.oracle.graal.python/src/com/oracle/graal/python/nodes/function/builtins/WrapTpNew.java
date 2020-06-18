@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -62,6 +63,7 @@ public final class WrapTpNew extends SlotWrapper {
     @Child IsTypeNode isType;
     @Child IsSubtypeNode isSubtype;
     @Child GetMroNode getMro;
+    @Child PRaiseNode raiseNode;
     @CompilationFinal byte state = 0;
     @CompilationFinal PythonBuiltinClassType owner;
 
@@ -184,6 +186,14 @@ public final class WrapTpNew extends SlotWrapper {
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("there is no non-heap type in the mro, broken class");
+    }
+
+    private final PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
     }
 
     private PythonBuiltinClassType getOwner() {
