@@ -55,6 +55,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public class CharsetMapping {
     private static final Map<String, Charset> JAVA_CHARSETS = new HashMap<>();
     private static final Map<String, String> CHARSET_NAME_MAP = new HashMap<>();
+    private static final Map<String, String> CHARSET_NAME_MAP_REVERSE = new HashMap<>();
 
     @TruffleBoundary
     public static Charset getCharset(String encoding) {
@@ -63,6 +64,11 @@ public class CharsetMapping {
             return getJavaCharset(name);
         }
         return null;
+    }
+
+    @TruffleBoundary
+    public static String getPythonEncodingNameFromJavaName(String javaEncodingName) {
+        return CHARSET_NAME_MAP_REVERSE.get(javaEncodingName.toLowerCase());
     }
 
     public static String normalize(String encoding) {
@@ -84,6 +90,9 @@ public class CharsetMapping {
 
     private static void addMapping(String pythonName, String javaName) {
         CHARSET_NAME_MAP.put(normalize(pythonName), javaName);
+        if (javaName != null) {
+            CHARSET_NAME_MAP_REVERSE.put(javaName.toLowerCase(), pythonName.replace('_', '-'));
+        }
     }
 
     private static void addAlias(String alias, String pythonName) {
