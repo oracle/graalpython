@@ -351,9 +351,7 @@ public class GraalHPyNodes {
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, selfAsHandleNode.execute(self), new HPyArrayWrapper(args), (long) args.length);
-                return invokeNode.execute(frame, callable, arguments, PKeyword.EMPTY_KEYWORDS);
+                return invokeNode.execute(frame, callable, new Object[]{selfAsHandleNode.execute(self), new HPyArrayWrapper(args), (long) args.length}, PKeyword.EMPTY_KEYWORDS);
             } finally {
                 calleeContext.exit(frame, this);
             }
