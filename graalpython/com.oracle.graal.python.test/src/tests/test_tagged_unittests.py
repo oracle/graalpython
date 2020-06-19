@@ -50,6 +50,9 @@ else:
     TAGS_DIR = "null"
 
 
+RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
+
+
 def working_selectors(tagfile):
     if os.path.exists(tagfile):
         with open(tagfile) as f:
@@ -84,7 +87,7 @@ for idx, working_test in enumerate(WORKING_TESTS):
                 cmd.append("--inspect")
             if "-debug-java" in sys.argv:
                 cmd.append("-debug-java")
-            cmd += ["-S", "-m", "unittest"]
+            cmd += ["-S", RUNNER]
             for testpattern in working_test[1]:
                 cmd.extend(["-k", testpattern])
             testmod = working_test[0].rpartition(".")[2]
@@ -169,7 +172,7 @@ if __name__ == "__main__":
                 # (there will be one even if everything succeeds) filter out possible false-passes caused by
                 # the tests catching all exceptions somewhere
                 cmd += ['--experimental-options', '--python.CatchAllExceptions']
-            cmd += ["-S", "-m", "unittest", "-v"]
+            cmd += ["-S", RUNNER, "-v"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
             if retag and repeat == 0:
                 test_selectors = []
