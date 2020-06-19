@@ -1514,7 +1514,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isString(arg)", "!isNoValue(base)"})
         Object fail(LazyPythonClass cls, Object arg, Object base) {
-            throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_EITH_EXPL_BASE);
+            throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
         }
 
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
