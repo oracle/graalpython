@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -33,6 +32,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -240,58 +240,90 @@ public final class BytesUtils {
         int j = 0;
         for (int i = 0; i < str.length(); i++) {
             int ch = str.codePointAt(i);
-            /* U+0000-U+00ff range */
-            if (ch < 0x100) {
-                if (ch >= ' ' && ch < 127) {
-                    if (ch != '\\') {
-                        /* Copy printable US ASCII as-is */
-                        bytes[j++] = (byte) ch;
-                    } else {
-                        /* Escape backslashes */
-                        bytes[j++] = '\\';
-                        bytes[j++] = '\\';
-                    }
-                } else if (ch == '\t') {
-                    /* Map special whitespace to '\t', \n', '\r' */
-                    bytes[j++] = '\\';
-                    bytes[j++] = 't';
-                } else if (ch == '\n') {
-                    bytes[j++] = '\\';
-                    bytes[j++] = 'n';
-                } else if (ch == '\r') {
-                    bytes[j++] = '\\';
-                    bytes[j++] = 'r';
-                } else {
-                    /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
-                    bytes[j++] = '\\';
-                    bytes[j++] = 'x';
-                    bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
-                    bytes[j++] = hexdigits[ch & 0x000F];
-                }
-            } else if (ch < 0x10000) {
-                /* U+0100-U+ffff range: Map 16-bit characters to '\\uHHHH' */
-                bytes[j++] = '\\';
-                bytes[j++] = 'u';
-                bytes[j++] = hexdigits[(ch >> 12) & 0x000F];
-                bytes[j++] = hexdigits[(ch >> 8) & 0x000F];
-                bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
-                bytes[j++] = hexdigits[ch & 0x000F];
-            } else {
-                /* U+010000-U+10ffff range: Map 21-bit characters to '\U00HHHHHH' */
-                /* Make sure that the first two digits are zero */
-                bytes[j++] = '\\';
-                bytes[j++] = 'U';
-                bytes[j++] = '0';
-                bytes[j++] = '0';
-                bytes[j++] = hexdigits[(ch >> 20) & 0x0000000F];
-                bytes[j++] = hexdigits[(ch >> 16) & 0x0000000F];
-                bytes[j++] = hexdigits[(ch >> 12) & 0x0000000F];
-                bytes[j++] = hexdigits[(ch >> 8) & 0x0000000F];
-                bytes[j++] = hexdigits[(ch >> 4) & 0x0000000F];
-                bytes[j++] = hexdigits[ch & 0x0000000F];
-            }
+            j = unicodeEscape(ch, j, bytes);
         }
         bytes = Arrays.copyOf(bytes, j);
         return bytes;
+    }
+
+    @TruffleBoundary
+    public static byte[] unicodeNonAsciiEscape(String str) {
+        byte[] bytes = new byte[str.length() * 10];
+        int j = 0;
+        for (int i = 0; i < str.length(); i++) {
+            int ch = str.codePointAt(i);
+            j = unicodeNonAsciiEscape(ch, j, bytes);
+        }
+        bytes = Arrays.copyOf(bytes, j);
+        return bytes;
+    }
+
+    /**
+     * Puts the escape sequence for given code point into given byte array starting from given
+     * index. Returns index of the last written buffer plus one.
+     */
+    public static int unicodeEscape(int codePoint, int startIndex, byte[] buffer) {
+        int i = startIndex;
+        /* U+0000-U+00ff range */
+        if (codePoint < 0x100) {
+            if (codePoint >= ' ' && codePoint < 127) {
+                if (codePoint != '\\') {
+                    /* Copy printable US ASCII as-is */
+                    buffer[i++] = (byte) codePoint;
+                } else {
+                    /* Escape backslashes */
+                    buffer[i++] = '\\';
+                    buffer[i++] = '\\';
+                }
+            } else if (codePoint == '\t') {
+                /* Map special whitespace to '\t', \n', '\r' */
+                buffer[i++] = '\\';
+                buffer[i++] = 't';
+            } else if (codePoint == '\n') {
+                buffer[i++] = '\\';
+                buffer[i++] = 'n';
+            } else if (codePoint == '\r') {
+                buffer[i++] = '\\';
+                buffer[i++] = 'r';
+            } else {
+                /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
+                buffer[i++] = '\\';
+                buffer[i++] = 'x';
+                buffer[i++] = hexdigits[(codePoint >> 4) & 0x000F];
+                buffer[i++] = hexdigits[codePoint & 0x000F];
+            }
+        } else {
+            i = unicodeNonAsciiEscape(codePoint, i, buffer);
+        }
+        return i;
+    }
+
+    private static int unicodeNonAsciiEscape(int codePoint, int startIndex, byte[] buffer) {
+        int i = startIndex;
+        if (codePoint < 0x100) {
+            buffer[i++] = (byte) codePoint;
+        } else if (codePoint < 0x10000) {
+            /* U+0100-U+ffff range: Map 16-bit characters to '\\uHHHH' */
+            buffer[i++] = '\\';
+            buffer[i++] = 'u';
+            buffer[i++] = hexdigits[(codePoint >> 12) & 0x000F];
+            buffer[i++] = hexdigits[(codePoint >> 8) & 0x000F];
+            buffer[i++] = hexdigits[(codePoint >> 4) & 0x000F];
+            buffer[i++] = hexdigits[codePoint & 0x000F];
+        } else {
+            /* U+010000-U+10ffff range: Map 21-bit characters to '\U00HHHHHH' */
+            /* Make sure that the first two digits are zero */
+            buffer[i++] = '\\';
+            buffer[i++] = 'U';
+            buffer[i++] = '0';
+            buffer[i++] = '0';
+            buffer[i++] = hexdigits[(codePoint >> 20) & 0x0000000F];
+            buffer[i++] = hexdigits[(codePoint >> 16) & 0x0000000F];
+            buffer[i++] = hexdigits[(codePoint >> 12) & 0x0000000F];
+            buffer[i++] = hexdigits[(codePoint >> 8) & 0x0000000F];
+            buffer[i++] = hexdigits[(codePoint >> 4) & 0x0000000F];
+            buffer[i++] = hexdigits[codePoint & 0x0000000F];
+        }
+        return i;
     }
 }

@@ -6,69 +6,95 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public class StringFormatter {
-    int index;
-    String formatText;
-    StringBuilder buffer;
-    int argIndex;
-    Object args;
-    private final PythonCore core;
+/**
+ * Processes a printf-style formatting string or byte array and creates the resulting string or byte
+ * array. The task of formatting individual elements is delegated to subclasses of
+ * {@link InternalFormat.Formatter}. The result is buffered in an appropriate subclass of
+ * {@link FormattingBuffer}.
+ * 
+ * This class contains logic common to {@link BytesFormatProcessor} and
+ * {@link StringFormatProcessor}.
+ * 
+ * @param <T> The type of the result: {@code String} or {@code byte[]}.
+ */
+abstract class FormatProcessor<T> {
+    /** see {@link #getArg()} for the meaning of this value. */
+    private int argIndex = -1;
+    private Object args;
+    private final LookupAndCallBinaryNode getItemNode;
+    private final TupleBuiltins.GetItemNode getTupleItemNode;
 
-    final char pop() {
-        try {
-            return formatText.charAt(index++);
-        } catch (StringIndexOutOfBoundsException e) {
-            throw core.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
-        }
+    protected int index;
+    protected final PythonCore core;
+    protected final FormattingBuffer buffer;
+
+    public FormatProcessor(PythonCore core, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
+        this.core = core;
+        this.getItemNode = getItemNode;
+        this.getTupleItemNode = getTupleItemNode;
+        this.buffer = buffer;
+        index = 0;
     }
 
-    final char peek() {
-        return formatText.charAt(index);
-    }
+    protected abstract String getFormatType();
+
+    abstract char pop();
 
     final void push() {
         index--;
     }
 
-    public StringFormatter(PythonCore core, String format) {
-        this.core = core;
-        index = 0;
-        this.formatText = format;
-        buffer = new StringBuilder(format.length() + 100);
+    abstract boolean hasNext();
+
+    <F extends InternalFormat.Formatter> F setupFormat(F f) {
+        return f;
     }
 
-    Object getarg(TupleBuiltins.GetItemNode getTupleItemNode) {
+    abstract int parseNumber(int start, int end);
+
+    abstract Object parseMappingKey(int start, int end);
+
+    static Object lookupAttribute(Object owner, String name) {
+        PythonObjectLibrary plib = PythonObjectLibrary.getUncached();
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(plib.getLazyPythonClass(owner), name);
+    }
+
+    static Object call(Object callable, Object... args) {
+        return CallNode.getUncached().execute(null, callable, args, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    Object getItem(Object arg, Object arg2) {
+        return getItemNode.executeObject(null, arg, arg2);
+    }
+
+    Object getArg() {
         Object ret = null;
         switch (argIndex) {
             case -3: // special index indicating a mapping
@@ -96,10 +122,10 @@ public class StringFormatter {
         return ret;
     }
 
-    int getNumber(TupleBuiltins.GetItemNode getTupleItemNode) {
+    int getNumber() {
         char c = pop();
         if (c == '*') {
-            Object o = getarg(getTupleItemNode);
+            Object o = getArg();
             if (o instanceof Long) {
                 return ((Long) o).intValue();
             } else if (o instanceof Integer) {
@@ -108,6 +134,8 @@ public class StringFormatter {
                 return ((PInt) o).intValue();
             } else if (o instanceof Double) {
                 return ((Double) o).intValue();
+            } else if (o instanceof Boolean) {
+                return (Boolean) o ? 1 : 0;
             } else if (o instanceof PFloat) {
                 return (int) ((PFloat) o).getValue();
             }
@@ -119,52 +147,76 @@ public class StringFormatter {
                     // empty
                 }
                 index -= 1;
-                Integer i = Integer.valueOf(formatText.substring(numStart, index));
-                return i.intValue();
+                return parseNumber(numStart, index);
             }
             index -= 1;
             return 0;
         }
     }
 
-    private static Object asNumber(Object arg, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
+    // Whether an integer format allows floats
+    private static boolean allowsFloat(char specType) {
+        return !(specType == 'x' || specType == 'X' || specType == 'o' || specType == 'c');
+    }
+
+    // Whether we should use __index__ or __int__ for given spec type
+    private static boolean useIndexMagicMethod(char specType) {
+        return specType == 'x' || specType == 'X' || specType == 'o' || specType == 'c';
+    }
+
+    protected final Object asNumber(Object arg, char specType) {
         if (arg instanceof Integer || arg instanceof Long || arg instanceof PInt) {
             // arg is already acceptable
             return arg;
         } else if (arg instanceof Double) {
-            // A common case where it is safe to return arg.__int__()
-            return ((Double) arg).intValue();
+            if (allowsFloat(specType)) {
+                // Fast path for simple double values, instead of __int__
+                BigDecimal decimal = new BigDecimal((Double) arg, MathContext.UNLIMITED);
+                return core.factory().createInt(decimal.toBigInteger());
+            } else {
+                // non-integer result indicates to the caller that it could not be converted
+                return arg;
+            }
         } else if (arg instanceof Boolean) {
+            // Fast path for simple booleans
             return (Boolean) arg ? 1 : 0;
-        } else if (arg instanceof PFloat) {
-            return (int) ((PFloat) arg).getValue();
         } else if (arg instanceof PythonAbstractObject) {
-            // Try again with arg.__int__()
+            // Try again with arg.__int__() or __index__() depending on the spec type
             try {
-                // Result is the result of arg.__int__() if that works
-                Object attribute = lookupAttribute.apply(arg, __INT__);
-                return callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                String magicName = useIndexMagicMethod(specType) ? __INDEX__ : __INT__;
+                Object attribute = lookupAttribute(arg, magicName);
+                return call(attribute, arg);
             } catch (PException e) {
-                // No __int__ defined (at Python level)
+                // No __int__/__index__ defined (at Python level)
             }
         }
         return arg;
     }
 
-    private static Object asFloat(Object arg, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
-        if (arg instanceof Double) {
-            // arg is already acceptable
-            return arg;
-        } else if (arg instanceof PFloat) {
-            return ((PFloat) arg).getValue();
+    protected double asFloat(Object arg) {
+        return PythonObjectLibrary.getUncached().asJavaDouble(arg);
+    }
+
+    protected abstract InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec);
+
+    protected abstract InternalFormat.Formatter handleSingleCharacterFormat(InternalFormat.Spec spec);
+
+    protected InternalFormat.Formatter formatInteger(Object intObj, InternalFormat.Spec spec) {
+        IntegerFormatter.Traditional fi;
+        if (intObj instanceof Integer) {
+            fi = setupFormat(new IntegerFormatter.Traditional(core, buffer, spec));
+            fi.format((Integer) intObj);
+        } else if (intObj instanceof Long) {
+            fi = setupFormat(new IntegerFormatter.Traditional(core, buffer, spec));
+            fi.format((BigInteger.valueOf((Long) intObj)));
+        } else if (intObj instanceof PInt) {
+            fi = setupFormat(new IntegerFormatter.Traditional(core, buffer, spec));
+            fi.format(((PInt) intObj).getValue());
         } else {
-            try {
-                Object attribute = lookupAttribute.apply(arg, __FLOAT__);
-                return callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
-            } catch (PException e) {
-            }
+            // It couldn't be converted, null indicates error
+            return null;
         }
-        return arg;
+        return fi;
     }
 
     /**
@@ -172,7 +224,15 @@ public class StringFormatter {
      * construction.
      */
     @TruffleBoundary
-    public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode) {
+    public T format(Object args1) {
+        try {
+            return formatImpl(args1);
+        } catch (OutOfMemoryError e) {
+            throw core.raise(MemoryError, null);
+        }
+    }
+
+    private T formatImpl(Object args1) {
         Object mapping = null;
         this.args = args1;
 
@@ -186,17 +246,18 @@ public class StringFormatter {
         } else {
             // Not a tuple, but possibly still some kind of container: use
             // special argIndex values.
-            argIndex = -1;
-            if (lookupAttribute.apply(args1, __GETITEM__) != PNone.NO_VALUE) {
+            if (!PGuards.isString(args1) && PythonObjectLibrary.getUncached().isMapping(args1)) {
                 mapping = args1;
                 argIndex = -3;
             }
-        }
+        } // otherwise argIndex is left as -1
 
-        while (index < formatText.length()) {
+        while (hasNext()) {
             // Read one character from the format string
             char c = pop();
             if (c != '%') {
+                // In the case of bytes formatter, we're going to convert it back to a byte and
+                // append
                 buffer.append(c);
                 continue;
             }
@@ -221,6 +282,13 @@ public class StringFormatter {
             // + Conversion type.
 
             c = pop();
+            if (c == '%') {
+                // '%' was escaped using '%%'
+                // note that, unlike python2, python3 does not support padding in such case, e.g.,
+                // %5% is not supported anymore
+                buffer.append(c);
+                continue;
+            }
             if (c == '(') {
                 // Mapping key, consisting of a parenthesised sequence of characters.
                 if (mapping == null) {
@@ -238,10 +306,10 @@ public class StringFormatter {
                     }
                 }
                 // Last c=pop() is the closing ')' while indexKey is just after the opening '('
-                String tmp = formatText.substring(keyStart, index - 1);
+                Object tmp = parseMappingKey(keyStart, index - 1);
                 // Look it up using this extent as the (right type of) key. The caller must have
                 // pushed the frame.
-                this.args = getItemNode.executeObject(null, mapping, tmp);
+                this.args = getItem(mapping, tmp);
             } else {
                 // Not a mapping key: next clause will re-read c.
                 push();
@@ -249,7 +317,7 @@ public class StringFormatter {
 
             // Conversion flags (optional) that affect the result of some conversion types.
             while (true) {
-                switch (c = pop()) {
+                switch (pop()) {
                     case '-':
                         align = '<';
                         continue;
@@ -280,7 +348,7 @@ public class StringFormatter {
              * after the minimum field width and optional precision. A custom getNumber() takes care
              * of the '*' case.
              */
-            width = getNumber(getTupleItemNode);
+            width = getNumber();
             if (width < 0) {
                 width = -width;
                 align = '<';
@@ -294,7 +362,7 @@ public class StringFormatter {
              */
             c = pop();
             if (c == '.') {
-                precision = getNumber(getTupleItemNode);
+                precision = getNumber();
                 if (precision < -1) {
                     precision = 0;
                 }
@@ -343,80 +411,31 @@ public class StringFormatter {
 
             // Depending on the type of conversion, we use one of these formatters:
             FloatFormatter ff;
-            IntegerFormatter fi;
-            TextFormatter ft;
             InternalFormat.Formatter f; // = ff, fi or ft, whichever we actually use.
+            Object arg;
 
             switch (spec.type) {
-                case 'b':
-                    Object arg = getarg(getTupleItemNode);
-                    f = ft = new TextFormatter(core, buffer, spec);
-                    ft.setBytes(true);
-                    Object bytesAttribute;
-                    if (arg instanceof String) {
-                        ft.format((String) arg);
-                    } else if (arg instanceof PString) {
-                        ft.format(((PString) arg).toString());
-                    } else if (arg instanceof PBytes) {
-                        ft.format(((PBytes) arg).toString());
-                    } else if (arg instanceof PythonAbstractObject && ((bytesAttribute = lookupAttribute.apply(arg, __BYTES__)) != PNone.NO_VALUE)) {
-                        Object result = callNode.execute(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
-                        ft.format(result.toString());
-                    } else {
-                        throw core.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, __BYTES__, arg);
-                    }
+                case 'c': // Single character (accepts integer or single character string).
+                    f = handleSingleCharacterFormat(spec);
                     break;
-                case 's': // String: converts any object using __str__(), __unicode__() ...
-                case 'r': // ... or repr().
-                    arg = getarg(getTupleItemNode);
-                    // Get hold of the actual object to display (may set needUnicode)
-                    Object attribute = spec.type == 's' ? lookupAttribute.apply(arg, __STR__) : lookupAttribute.apply(arg, __REPR__);
-                    if (attribute != PNone.NO_VALUE) {
-                        Object result = callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
-                        if (PGuards.isString(result)) {
-                            // Format the str/unicode form of the argument using this Spec.
-                            f = ft = new TextFormatter(core, buffer, spec);
-                            ft.format(result.toString());
-                            break;
-                        }
-                    }
-                    throw core.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, (spec.type == 's' ? __STR__ : __REPR__));
 
                 case 'd': // All integer formats (+case for X).
                 case 'o':
                 case 'x':
                 case 'X':
-                case 'c': // Single character (accepts integer or single character string).
                 case 'u': // Obsolete type identical to 'd'.
                 case 'i': // Compatibility with scanf().
                     // Format the argument using this Spec.
-
-                    arg = getarg(getTupleItemNode);
-
                     // Note various types accepted here as long as they have an __int__ method.
-                    Object argAsNumber = asNumber(arg, callNode, lookupAttribute);
-
-                    // We have to check what we got back.
-                    if (argAsNumber instanceof Integer) {
-                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                        fi.format((Integer) argAsNumber);
-                    } else if (argAsNumber instanceof Long) {
-                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                        fi.format((BigInteger.valueOf((Long) argAsNumber)));
-                    } else if (argAsNumber instanceof PInt) {
-                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                        fi.format(((PInt) argAsNumber).getValue());
-                    } else if (arg instanceof String && ((String) arg).length() == 1) {
-                        f = ft = new TextFormatter(core, buffer, spec);
-                        ft.format((String) arg);
-                    } else if (arg instanceof PString && ((PString) arg).getValue().length() == 1) {
-                        f = ft = new TextFormatter(core, buffer, spec);
-                        ft.format(((PString) arg).getCharSequence());
-                    } else {
-                        // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
+                    arg = getArg();
+                    f = formatInteger(asNumber(arg, spec.type), spec);
+                    if (f == null) {
+                        if (allowsFloat(spec.type)) {
+                            throw core.raise(TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
+                        } else {
+                            throw core.raise(TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
+                        }
                     }
-
                     break;
 
                 case 'e': // All floating point formats (+case).
@@ -425,33 +444,19 @@ public class StringFormatter {
                 case 'F':
                 case 'g':
                 case 'G':
-
                     // Format using this Spec the double form of the argument.
                     f = ff = new FloatFormatter(core, buffer, spec);
 
                     // Note various types accepted here as long as they have a __float__ method.
-                    arg = getarg(getTupleItemNode);
-                    Object argAsFloat = asFloat(arg, callNode, lookupAttribute);
-
-                    // We have to check what we got back..
-                    if (argAsFloat instanceof Double) {
-                        ff.format((Double) argAsFloat);
-                    } else if (argAsFloat instanceof PFloat) {
-                        ff.format(((PFloat) argAsFloat).getValue());
-                    } else {
-                        // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
-                    }
-
-                    break;
-                case '%': // Percent symbol, but surprisingly, padded.
-                    // We use an integer formatter.
-                    f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
-                    fi.format('%');
+                    arg = getArg();
+                    ff.format(asFloat(arg));
                     break;
 
                 default:
-                    throw core.raise(ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
+                    f = handleRemainingFormats(spec);
+                    if (f == null) {
+                        throw core.raise(ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
+                    }
             }
 
             // Pad the result as specified (in-place, in the buffer).
@@ -466,15 +471,17 @@ public class StringFormatter {
          * that has not yet been used.
          */
         if (argIndex == -1 || (argIndex >= 0 && PythonObjectLibrary.getUncached().length(args1) > argIndex + 1)) {
-            throw core.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING);
+            throw core.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 
         // Return the final buffer contents as a str or unicode as appropriate.
-        return buffer.toString();
+        return toResult();
     }
 
-    private static Object[] createArgs(Object self) {
-        return new Object[]{self};
+    @SuppressWarnings("unchecked")
+    private T toResult() {
+        // We do unchecked cast to avoid proliferation of the generic type everywhere. Implementors
+        // are responsible for providing "buffer" that returns the right type from "toResult"
+        return (T) buffer.toResult();
     }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,9 +11,9 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 
 /**
  * A class that provides the implementation of <code>str</code> and <code>unicode</code> formatting.
- * In a limited way, it acts like a StringBuilder to which text, formatted according to the format
- * specifier supplied at construction. These are ephemeral objects that are not, on their own,
- * thread safe.
+ * In a limited way, it acts like a StringFormattingBuffer to which text, formatted according to the
+ * format specifier supplied at construction. These are ephemeral objects that are not, on their
+ * own, thread safe.
  */
 public class TextFormatter extends InternalFormat.Formatter {
 
@@ -24,17 +24,8 @@ public class TextFormatter extends InternalFormat.Formatter {
      * @param result destination buffer
      * @param spec parsed conversion specification
      */
-    public TextFormatter(PythonCore core, StringBuilder result, Spec spec) {
+    public TextFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
         super(core, result, spec);
-    }
-
-    /**
-     * Construct the formatter from a specification, allocating a buffer internally for the result.
-     *
-     * @param spec parsed conversion specification
-     */
-    public TextFormatter(PythonCore core, Spec spec) {
-        this(core, new StringBuilder(), spec);
     }
 
     /*
@@ -81,7 +72,7 @@ public class TextFormatter extends InternalFormat.Formatter {
         if (Spec.specified(p) && p < n) {
             // Estimate the space for the converted result (preempt multiple re-allocation)
             int space = Math.max(spec.width, p);
-            result.ensureCapacity(result.length() + space + (bytes ? 0 : space / 4));
+            result.ensureAdditionalCapacity(space + (bytes ? 0 : space / 4));
             /*
              * A precision p was specified less than the length: we may have to truncate. Note we
              * compared p with the UTF-16 length, even though it is the code point length that

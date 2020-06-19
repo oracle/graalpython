@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -58,9 +59,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.prepareSpecForFloat;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.shouldBeAsStr;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.ByteOrder;
 import java.util.List;
@@ -94,7 +98,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
-import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -133,7 +136,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', InternalFormat.Spec.NONE, false, InternalFormat.Spec.UNSPECIFIED, false, 0, 'r');
             FloatFormatter f = new FloatFormatter(getCore(), spec);
             f.setMinFracDigits(1);
-            return f.format(self).getResult();
+            return doFormat(self, f);
         }
 
         public static StrNode create() {
@@ -147,6 +150,11 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @SuppressWarnings("unused") @Cached FromNativeSubclassNode getFloat) {
             return PFloat.doubleToString(getFloat.execute(frame, object));
+        }
+
+        @TruffleBoundary
+        private static String doFormat(double d, FloatFormatter f) {
+            return f.format(d).getResult();
         }
     }
 
@@ -164,58 +172,19 @@ public final class FloatBuiltins extends PythonBuiltins {
         @TruffleBoundary
         String format(double self, String formatString,
                         @Cached("create()") StrNode strNode,
-                        @Cached("createBinaryProfile()") ConditionProfile strProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile unknownProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile strProfile) {
             if (strProfile.profile(shouldBeAsStr(formatString))) {
                 return strNode.str(self);
             }
             InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
-            FloatFormatter formatter = prepareFormatter(spec);
-            if (unknownProfile.profile(formatter == null)) {
-                // The type code was not recognised in prepareFormatter
-                throw Formatter.unknownFormat(getCore(), spec.type, "float");
-            }
+            FloatFormatter formatter = new FloatFormatter(getCore(), prepareSpecForFloat(spec, getCore(), "float"));
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
-        private FloatFormatter prepareFormatter(InternalFormat.Spec spec) {
-            // Slight differences between format types
-            switch (spec.type) {
-                case 'n':
-                case InternalFormat.Spec.NONE:
-                case 'e':
-                case 'f':
-                case 'g':
-                case 'E':
-                case 'F':
-                case 'G':
-                case '%':
-                    if (spec.type == 'n' && spec.grouping) {
-                        throw Formatter.notAllowed(getCore(), "Grouping", "float", spec.type);
-                    }
-                    // Check for disallowed parts of the specification
-                    if (spec.alternate) {
-                        throw Formatter.alternateFormNotAllowed(getCore(), "float");
-                    }
-                    // spec may be incomplete. The defaults are those commonly used for numeric
-                    // formats.
-                    InternalFormat.Spec usedSpec = spec.withDefaults(InternalFormat.Spec.NUMERIC);
-                    return new FloatFormatter(getCore(), usedSpec);
-                default:
-                    return null;
-            }
-        }
-
-        private static boolean shouldBeAsStr(String spec) {
-            if (spec.isEmpty()) {
-                return true;
-            }
-            if (spec.length() == 1) {
-                char c = spec.charAt(0);
-                return ((c >= '0' && c <= '9') || c == ' ' || c == '_' || c == '+' || c == '-' || c == '<' || c == '>' || c == '=' || c == '^');
-            }
-            return false;
+        @Fallback
+        String other(@SuppressWarnings("unused") Object self, Object formatString) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", formatString);
         }
     }
 
@@ -274,7 +243,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static BigInteger fromDouble(double self) {
-            return BigDecimal.valueOf(self).toBigInteger();
+            return new BigDecimal(self, MathContext.UNLIMITED).toBigInteger();
         }
     }
 

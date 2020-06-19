@@ -59,6 +59,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.List;
 
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -66,6 +69,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -88,9 +92,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -111,7 +113,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.formatting.StringFormatter;
+import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -167,35 +169,12 @@ public final class StringBuiltins extends PythonBuiltins {
             boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
 
             StringBuilder str = new StringBuilder(self.length() + 2);
+            byte[] buffer = new byte[12];
             str.append(useDoubleQuotes ? '"' : '\'');
             int offset = 0;
             while (offset < self.length()) {
                 int codepoint = self.codePointAt(offset);
                 switch (codepoint) {
-                    case '\n':
-                        str.append("\\n");
-                        break;
-                    case '\r':
-                        str.append("\\r");
-                        break;
-                    case '\t':
-                        str.append("\\t");
-                        break;
-                    case '\b':
-                        str.append("\\b");
-                        break;
-                    case 7:
-                        str.append("\\a");
-                        break;
-                    case '\f':
-                        str.append("\\f");
-                        break;
-                    case 11:
-                        str.append("\\v");
-                        break;
-                    case '\\':
-                        str.append("\\\\");
-                        break;
                     case '"':
                         if (useDoubleQuotes) {
                             str.append("\\\"");
@@ -211,16 +190,14 @@ public final class StringBuiltins extends PythonBuiltins {
                         }
                         break;
                     default:
-                        if (codepoint < 32 || (codepoint >= 0x7f && codepoint <= 0xa0)) {
-                            str.append("\\x").append(String.format("%02x", codepoint));
-                        } else if (codepoint > 0xd7fc) { // determined by experimentation
-                            if (codepoint < 0x10000) {
-                                str.append("\\u").append(String.format("%04x", codepoint));
-                            } else {
-                                str.append("\\U").append(String.format("%08x", codepoint));
-                            }
-                        } else {
+                        if (isPrintable(codepoint)) {
                             str.appendCodePoint(codepoint);
+                        } else {
+                            int len = BytesUtils.unicodeEscape(codepoint, 0, buffer);
+                            str.ensureCapacity(str.length() + len);
+                            for (int i = 0; i < len; i++) {
+                                str.append((char) buffer[i]);
+                            }
                         }
                         break;
                 }
@@ -228,6 +205,20 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             str.append(useDoubleQuotes ? '"' : '\'');
             return str.toString();
+        }
+
+        private static boolean isPrintable(int codepoint) {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                // Executing ICU4J at image build time causes issues with runtime/build time
+                // initialization
+                assert codepoint < 0x100;
+                return codepoint >= 32;
+            }
+            return isPrintableNonAscii(codepoint);
+        }
+
+        private static boolean isPrintableNonAscii(int codepoint) {
+            return UCharacter.isPrintable(codepoint);
         }
     }
 
@@ -278,7 +269,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static final boolean op(String left, String right) {
+        private static boolean op(String left, String right) {
             return left.contains(right);
         }
     }
@@ -1409,6 +1400,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object encodeString(String self, String encoding, String errors) {
+            // Note: to support custom actions, we can use CharsetEncoderICU from icu4j-charset
             CodingErrorAction errorAction;
             switch (errors) {
                 case "ignore":
@@ -1509,16 +1501,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doStringObject(VirtualFrame frame, String self, Object right,
-                        @Shared("callNode") @Cached CallNode callNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                        @Shared("lookupAttrNode") @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return new StringFormatter(context.getCore(), self).format(right, callNode, (object, key) -> lookupAttrNode.execute(plib.getLazyPythonClass(object), key), getItemNode,
-                                getTupleItemNode);
+                return new StringFormatProcessor(context.getCore(), getItemNode, getTupleItemNode, self).format(right);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
@@ -1527,15 +1515,12 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("callNode") @Cached CallNode callNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                        @Shared("lookupAttrNode") @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
 
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __MOD__, self);
-            return doStringObject(frame, selfStr, right, callNode, plib, lookupAttrNode, getItemNode, getTupleItemNode, context);
+            return doStringObject(frame, selfStr, right, getItemNode, getTupleItemNode, context);
         }
     }
 

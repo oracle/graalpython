@@ -83,6 +83,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.OverflowException;
@@ -153,7 +154,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         2,                      // FLT_RADIX
                         1                       // FLT_ROUNDS
         }));
-        builtinConstants.put("maxunicode", Character.MAX_CODE_POINT);
+        builtinConstants.put("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);

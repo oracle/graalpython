@@ -38,6 +38,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -52,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -81,6 +84,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -92,7 +96,10 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceCompo
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.formatting.BytesFormatProcessor;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -103,6 +110,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -436,6 +444,46 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         public Object mul(Object self, Object other) {
             throw raise(TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, other);
+        }
+    }
+
+    @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ModNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(limit = "3")
+        Object doBytes(VirtualFrame frame, PBytes self, Object right,
+                        @CachedLibrary("self") PythonObjectLibrary selfLib,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Cached TupleBuiltins.GetItemNode getTupleItemNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            byte[] data = format(frame, self, right, selfLib, getItemNode, getTupleItemNode, context);
+            return factory().createBytes(data);
+        }
+
+        @Specialization(limit = "3")
+        Object doByteArray(VirtualFrame frame, PByteArray self, Object right,
+                        @CachedLibrary("self") PythonObjectLibrary selfLib,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Cached TupleBuiltins.GetItemNode getTupleItemNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            byte[] data = format(frame, self, right, selfLib, getItemNode, getTupleItemNode, context);
+            return factory().createByteArray(data);
+        }
+
+        private byte[] format(VirtualFrame frame, Object self, Object right, PythonObjectLibrary selfLib, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode,
+                        PythonContext context) {
+            assert self instanceof PBytes || self instanceof PByteArray;
+            Object state = IndirectCallContext.enter(frame, context, this);
+            try {
+                BytesFormatProcessor formatter = new BytesFormatProcessor(context.getCore(), getItemNode, getTupleItemNode, selfLib.getBufferBytes(self));
+                return formatter.format(right);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException();
+            } finally {
+                IndirectCallContext.exit(frame, context, state);
+            }
         }
     }
 
@@ -1929,10 +1977,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
         public static final GenNodeSupplier SUPPLIER = new GenNodeSupplier() {
 
+            @Override
             public GeneralizationNode create() {
                 return BytesLikeNoGeneralizationNodeGen.create();
             }
 
+            @Override
             public GeneralizationNode getUncached() {
                 return BytesLikeNoGeneralizationNodeGen.getUncached();
             }
