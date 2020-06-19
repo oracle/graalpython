@@ -265,55 +265,55 @@ public class IteratorBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "self.isPSequence()")
+        @Specialization(guards = "self.isPSequence()")
         public Object reduce(PSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             return reduceInternal(self.getPSequence(), self.index, context, pol);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "!self.isPSequence()")
+        @Specialization(guards = "!self.isPSequence()")
         public Object reduceNonSeq(VirtualFrame frame, PSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
             Object content = callUnaryNode.executeObject(frame, reduce);
             return reduceInternal(content, self.index, context, pol);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public Object reduce(PBaseSetIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             return reduceInternal(factory().createList(self.getStorage()), self.getIndex(), context, pol);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public Object reduce(PIntegerSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            return reduceInternal(self.getSequenceStorage(), self.index, context, pol);
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(self.getSequenceStorage()), self.index, context, pol);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public Object reduce(PLongSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            return reduceInternal(self.getSequenceStorage(), self.index, context, pol);
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(self.getSequenceStorage()), self.index, context, pol);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public Object reduce(PDoubleSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            return reduceInternal(self.getSequenceStorage(), self.index, context, pol);
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(self.getSequenceStorage()), self.index, context, pol);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public Object reduce(PStringIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             return reduceInternal(self.value, self.index, context, pol);
         }
 
