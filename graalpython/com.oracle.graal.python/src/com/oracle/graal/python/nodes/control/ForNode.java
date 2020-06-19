@@ -26,9 +26,9 @@
 package com.oracle.graal.python.nodes.control;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.iterator.PDoubleIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PLongIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -116,29 +116,25 @@ abstract class ForNextElementNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
-    protected boolean doLongIterator(VirtualFrame frame, PLongIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PLongIterator> clazz,
+    @Specialization
+    protected boolean doLongIterator(VirtualFrame frame, PLongSequenceIterator iterator,
                     @Cached("createCountingProfile()") ConditionProfile profile) {
-        PLongIterator profiledIterator = clazz.cast(iterator);
-        if (!profile.profile(profiledIterator.hasNext())) {
-            profiledIterator.setExhausted();
+        if (!profile.profile(iterator.hasNext())) {
+            iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, profiledIterator.next());
+        ((WriteNode) target).doWrite(frame, iterator.next());
         return true;
     }
 
-    @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
-    protected boolean doDoubleIterator(VirtualFrame frame, PDoubleIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PDoubleIterator> clazz,
+    @Specialization
+    protected boolean doDoubleIterator(VirtualFrame frame, PDoubleSequenceIterator iterator,
                     @Cached("createCountingProfile()") ConditionProfile profile) {
-        PDoubleIterator profiledIterator = clazz.cast(iterator);
-        if (!profile.profile(profiledIterator.hasNext())) {
-            profiledIterator.setExhausted();
+        if (!profile.profile(iterator.hasNext())) {
+            iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, profiledIterator.next());
+        ((WriteNode) target).doWrite(frame, iterator.next());
         return true;
     }
 

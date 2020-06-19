@@ -38,50 +38,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.dict;
+package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.object.DynamicObject;
 
-public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
+public abstract class PPrimitiveIterator extends PBuiltinIterator{
+    protected int index;
 
-    private final HashingStorage hashingStorage;
-    private final int size;
-    private final HashingStorageIterator<T> iterator;
-    private int index;
-
-    public PHashingStorageIterator(Object clazz, DynamicObject storage, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int size) {
+    public PPrimitiveIterator(Object clazz, DynamicObject storage) {
         super(clazz, storage);
-        this.iterator = iterator;
-        this.hashingStorage = hashingStorage;
-        this.size = size;
     }
 
-    public HashingStorageIterator<T> getIterator() {
-        return iterator;
-    }
+    public abstract TypedSequenceStorage getSequenceStorage();
 
-    @TruffleBoundary
-    public final Object next() {
-        assert hasNext();
-        index++;
-        return iterator.next();
-    }
-
-    @TruffleBoundary
-    public final boolean hasNext() {
-        return iterator.hasNext();
-    }
+    public abstract boolean hasNext();
 
     public int getIndex() {
         return index;
-    }
-
-    public final boolean checkSizeChanged(HashingStorageLibrary lib) {
-        return lib.length(hashingStorage) != size;
     }
 }

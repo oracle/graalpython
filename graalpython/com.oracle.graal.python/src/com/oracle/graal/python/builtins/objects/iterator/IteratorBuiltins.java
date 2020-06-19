@@ -297,14 +297,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object reduce(PLongSequenceIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(factory().createList(self.getSequenceStorage()), self.index, context, pol);
-        }
-
-        @Specialization
-        public Object reduce(PDoubleSequenceIterator self,
+        public Object reduce(PPrimitiveIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             return reduceInternal(factory().createList(self.getSequenceStorage()), self.index, context, pol);
