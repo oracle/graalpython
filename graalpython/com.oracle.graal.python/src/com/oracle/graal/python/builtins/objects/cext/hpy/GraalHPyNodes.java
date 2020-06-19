@@ -55,20 +55,15 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethKeywordsRoot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethVarargsRoot;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -81,7 +76,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -93,9 +87,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public class GraalHPyNodes {
@@ -309,7 +301,9 @@ public class GraalHPyNodes {
                 return new MethNoargsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
             } else if (CExtContext.isMethO(flags)) {
                 return new MethORoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
-            } else if (CExtContext.isMethKeywords(flags)) {
+            } else if (hpyStyleMeth && CExtContext.isMethKeywords(flags)) {
+                return new HPyMethKeywordsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
+            } else if (!hpyStyleMeth && CExtContext.isMethKeywords(flags)) {
                 return new MethKeywordsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
             } else if (hpyStyleMeth && CExtContext.isMethVarargs(flags)) {
                 return new HPyMethVarargsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
@@ -317,75 +311,6 @@ public class GraalHPyNodes {
                 return new MethVarargsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
             }
             throw new IllegalStateException("illegal method flags");
-        }
-    }
-
-    public static class HPyMethVarargsRoot extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
-        @Child private ReadVarArgsNode readVarargsNode;
-        @Child private HPyAsHandleNode selfAsHandleNode;
-
-        @Child private CalleeContext calleeContext;
-        @Child private CallVarargsMethodNode invokeNode;
-        @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
-
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
-
-        private final String name;
-        private final Object callable;
-
-        @TruffleBoundary
-        public HPyMethVarargsRoot(PythonLanguage language, String name, Object callable) {
-            super(language);
-            this.name = name;
-            this.callable = callable;
-            this.calleeContext = CalleeContext.create();
-            this.invokeNode = CallVarargsMethodNode.create();
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
-            this.selfAsHandleNode = HPyAsHandleNodeGen.create();
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                return invokeNode.execute(frame, callable, new Object[]{selfAsHandleNode.execute(self), new HPyArrayWrapper(args), (long) args.length}, PKeyword.EMPTY_KEYWORDS);
-            } finally {
-                calleeContext.exit(frame, this);
-            }
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public NodeCost getCost() {
-            // this is just a thin argument shuffling wrapper
-            return NodeCost.NONE;
-        }
-
-        @Override
-        public String toString() {
-            return "<METH root " + name + ">";
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return true;
         }
     }
 
@@ -526,8 +451,36 @@ public class GraalHPyNodes {
 
     }
 
-    public abstract static class HPyAllAsHandleNode extends PNodeWithContext {
+    public abstract static class HPyConvertArgsToSulongNode extends PNodeWithContext {
+
         public abstract void executeInto(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset);
+    }
+
+    public abstract static class HPyVarargsToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode selfAsHandleNode) {
+            dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+    }
+
+    public abstract static class HPyKeywordsToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode selfAsHandleNode,
+                        @Cached HPyAsHandleNode kwAsHandleNode) {
+            dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+            dest[destOffset + 2] = args[argsOffset + 2];
+            dest[destOffset + 3] = kwAsHandleNode.execute(hpyContext, args[argsOffset + 3]);
+        }
+    }
+
+    public abstract static class HPyAllAsHandleNode extends HPyConvertArgsToSulongNode {
 
         static boolean isArgsOffsetPlus(int len, int off, int plus) {
             return len == off + plus;
