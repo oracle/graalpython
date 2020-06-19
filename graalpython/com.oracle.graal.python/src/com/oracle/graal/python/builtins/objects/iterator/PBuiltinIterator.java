@@ -25,12 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.object.DynamicObject;
 
 /**
@@ -55,12 +50,5 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
     @Override
     public String toString() {
         return "<iterator object at " + hashCode() + ">";
-    }
-
-    protected Object reduceInternal(Object content, int index, PythonContext context, PythonObjectFactory factory, PythonObjectLibrary pol) {
-        PythonModule builtins = context.getCore().getBuiltins();
-        Object iter = pol.lookupAttribute(builtins, "iter");
-        PTuple contents = factory.createTuple(new Object[]{content});
-        return factory.createTuple(new Object[]{iter, contents, index});
     }
 }
