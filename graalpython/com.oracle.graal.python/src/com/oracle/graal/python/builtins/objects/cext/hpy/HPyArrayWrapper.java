@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -101,18 +102,18 @@ final class HPyArrayWrapper implements TruffleObject {
     }
 
     @ExportMessage
-    final long getArraySize() {
+    long getArraySize() {
         return delegate.length;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    final boolean hasArrayElements() {
+    boolean hasArrayElements() {
         return true;
     }
 
     @ExportMessage
-    final Object readArrayElement(long index,
+    Object readArrayElement(long index,
                     @Cached HPyAsHandleNode asHandleNode) {
 
         assert 0 <= index && index < delegate.length;
@@ -120,12 +121,12 @@ final class HPyArrayWrapper implements TruffleObject {
     }
 
     @ExportMessage
-    final boolean isArrayElementReadable(long identifier) {
+    boolean isArrayElementReadable(long identifier) {
         return 0 <= identifier && identifier < getArraySize();
     }
 
     @ExportMessage
-    public void toNative(
+    void toNative(
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached PCallHPyFunction callToArrayNode,
                     @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
@@ -137,17 +138,17 @@ final class HPyArrayWrapper implements TruffleObject {
     }
 
     @ExportMessage
-    public boolean isPointer(
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+    boolean isPointer(
+                    @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         if (nativePointer instanceof Long) {
             return true;
         }
-        return interopLibrary.isPointer(nativePointer);
+        return nativePointer != null && interopLibrary.isPointer(nativePointer);
     }
 
     @ExportMessage
-    public long asPointer(
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+    long asPointer(
+                    @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
         if (nativePointer instanceof Long) {
             return (long) nativePointer;
         }
@@ -156,7 +157,7 @@ final class HPyArrayWrapper implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
+    boolean hasNativeType() {
         return true;
     }
 
