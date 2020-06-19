@@ -399,6 +399,7 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
     public static final String P_S_RETURNED_NON_INT = "%p.%s returned a non int (type %p)";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
+    public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
     public static final String RETURNED_NON_LONG = "%p.%s returned a non long (type %p)";
     public static final String RETURNED_NON_STRING = "%s returned non-string (type %p)";
     public static final String P_S_RETURNED_NON_STRING = "%p.%s returned non-string (type %p)";

@@ -1523,23 +1523,32 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (result == PNone.NO_VALUE) {
                 result = callIndex(frame, obj);
                 if (result == PNone.NO_VALUE) {
-                    result = callTrunc(frame, obj);
-                    if (result == PNone.NO_VALUE) {
+                    Object truncResult = callTrunc(frame, obj);
+                    if (truncResult == PNone.NO_VALUE) {
                         throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
-                    } else if (!isIntegerType(result)) {
-                        throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__trunc__", result);
                     }
-                } else if (!isIntegerType(result)) {
-                    throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+                    if (isIntegerType(truncResult)) {
+                        result = truncResult;
+                    } else {
+                        result = callIndex(frame, truncResult);
+                        if (result == PNone.NO_VALUE) {
+                            result = callInt(frame, obj);
+                            if (result == PNone.NO_VALUE) {
+                                throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, "__trunc__", truncResult);
+                            }
+                        }
+                    }
                 }
-            } else if (!isIntegerType(result)) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__int__", result);
             }
             return createInt(cls, result);
         }
 
         protected static boolean isIntegerType(Object obj) {
             return PGuards.isBoolean(obj) || PGuards.isInteger(obj) || PGuards.isPInt(obj);
+        }
+
+        protected static boolean isIntegerTypeOrNoValue(Object obj) {
+            return obj == PNone.NO_VALUE || isIntegerType(obj);
         }
 
         protected static boolean isHandledType(Object obj) {
@@ -1555,7 +1564,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIntNode = insert(LookupAndCallUnaryNode.create(__INT__));
             }
-            return callIntNode.executeObject(frame, obj);
+            Object result = callIntNode.executeObject(frame, obj);
+            if (!isIntegerTypeOrNoValue(result)) {
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__int__", result);
+            }
+            return result;
         }
 
         private Object callIndex(VirtualFrame frame, Object obj) {
@@ -1563,7 +1576,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
             }
-            return callIndexNode.executeObject(frame, obj);
+            Object result = callIndexNode.executeObject(frame, obj);
+            if (!isIntegerTypeOrNoValue(result)) {
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+            }
+            return result;
         }
 
         private Object callTrunc(VirtualFrame frame, Object obj) {
