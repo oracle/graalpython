@@ -234,7 +234,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     public Object getHPyNativeType() {
-        assert this.hpyNativeTypeID == null : "HPy native type ID not available";
+        assert this.hpyNativeTypeID != null : "HPy native type ID not available";
         return hpyNativeTypeID;
     }
 
