@@ -59,15 +59,22 @@ import java.nio.charset.CodingErrorAction;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -75,10 +82,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -89,6 +98,8 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class CExtCommonNodes {
@@ -354,6 +365,131 @@ public abstract class CExtCommonNodes {
             IllegalElementTypeException(Object elem) {
                 this.elem = elem;
             }
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class ConvertPIntToPrimitiveNode extends Node {
+
+        public abstract Object execute(Frame frame, Object o, int signed, long targetTypeSize);
+
+        public final long executeLong(Frame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(frame, o, signed, targetTypeSize));
+        }
+
+        public final int executeInt(Frame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(frame, o, signed, targetTypeSize));
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
+        static long doPrimitiveNativeWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return nativeWrapper.getInt();
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "fitsInInt64(nativeWrapper)"})
+        static long doPrimitiveNativeWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return nativeWrapper.getLong();
+        }
+
+        @Specialization(guards = "targetTypeSize == 4")
+        static long doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        static long doInt8(int obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            if (signed != 0) {
+                return obj;
+            } else {
+                return obj & 0xFFFFFFFFL;
+            }
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        static long doIntOther(Frame frame, @SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
+        }
+
+        @Specialization(guards = "targetTypeSize == 4")
+        static long doLong4(Frame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseTooLarge(frame, raiseNativeNode, targetTypeSize);
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        static long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        static PythonNativeVoidPtr doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return obj;
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        static long doPInt(Frame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
+        }
+
+        @Specialization(guards = "targetTypeSize == 4")
+        static long doPInt4(Frame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+            try {
+                if (signed != 0) {
+                    return obj.intValueExact();
+                } else if (obj.bitCount() <= 32) {
+                    return obj.intValue();
+                }
+            } catch (ArithmeticException e) {
+                // fall through
+            }
+            return raiseTooLarge(frame, raiseNativeNode, targetTypeSize);
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        static long doPInt8(Frame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+            try {
+                if (signed != 0) {
+                    return obj.longValueExact();
+                } else if (obj.bitCount() <= 64) {
+                    return obj.longValue();
+                }
+            } catch (ArithmeticException e) {
+                // fall through
+            }
+            return raiseTooLarge(frame, raiseNativeNode, targetTypeSize);
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        static long doPInt(Frame frame, @SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
+        }
+
+        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)", "!isInteger(obj)", "!isPInt(obj)"})
+        static Object doGeneric(Object obj, int signed, long targetTypeSize,
+                        @Cached CExtNodes.AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
+        }
+
+        private static int raiseTooLarge(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        private static Integer raiseUnsupportedSize(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+
+        static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
+            return nativeWrapper.isBool() || nativeWrapper.isByte() || nativeWrapper.isInt();
+        }
+
+        static boolean fitsInInt64(PrimitiveNativeWrapper nativeWrapper) {
+            return nativeWrapper.isIntLike() || nativeWrapper.isBool();
         }
     }
 }
