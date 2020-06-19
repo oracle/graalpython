@@ -1204,7 +1204,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private void checkBase(int base) {
-            if (invalidBase.profile((base < 2 || base > 32) && base != 0)) {
+            if (invalidBase.profile((base < 2 || base > 36) && base != 0)) {
                 throw raise(ValueError, ErrorMessages.BASE_OUT_OF_RANGE_FOR_INT);
             }
         }
