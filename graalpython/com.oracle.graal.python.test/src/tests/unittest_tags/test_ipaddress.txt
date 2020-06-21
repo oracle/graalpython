@@ -37,6 +37,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.ComparisonTests.test_foreign_type_equality
 *graalpython.lib-python.3.test.test_ipaddress.ComparisonTests.test_foreign_type_ordering
 *graalpython.lib-python.3.test.test_ipaddress.ComparisonTests.test_incompatible_versions
+*graalpython.lib-python.3.test.test_ipaddress.ComparisonTests.test_mixed_type_equality
 *graalpython.lib-python.3.test.test_ipaddress.ComparisonTests.test_mixed_type_key
 *graalpython.lib-python.3.test.test_ipaddress.ComparisonTests.test_mixed_type_ordering
 *graalpython.lib-python.3.test.test_ipaddress.ComparisonTests.test_same_type_equality

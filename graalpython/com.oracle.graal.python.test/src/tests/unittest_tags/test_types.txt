@@ -5,3 +5,5 @@
 *graalpython.lib-python.3.test.test_types.TypesTests.test_floats
 *graalpython.lib-python.3.test.test_types.TypesTests.test_normal_integers
 *graalpython.lib-python.3.test.test_types.TypesTests.test_numeric_types
+*graalpython.lib-python.3.test.test_types.TypesTests.test_strings
+*graalpython.lib-python.3.test.test_types.TypesTests.test_truth_values

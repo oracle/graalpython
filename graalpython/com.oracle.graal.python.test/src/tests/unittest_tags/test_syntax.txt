@@ -1,5 +1,7 @@
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_assign_call
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_assign_del
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_break_outside_loop
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_continue_outside_loop
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_kwargs_last
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_kwargs_last2
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_kwargs_last3

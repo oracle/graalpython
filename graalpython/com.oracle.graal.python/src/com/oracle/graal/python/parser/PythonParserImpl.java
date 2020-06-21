@@ -267,7 +267,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         // msimacek: The encoding check should happen only when the source encoding was
         // determined by PythonFileDetector. But we currently have no way to tell, so we
         // assume that it is the case when it is a file.
-        if (source.getURI().getScheme().equals("file")) {
+        if (source.getURI().getScheme() != null && source.getURI().getScheme().equals("file")) {
             try {
                 PythonFileDetector.findEncodingStrict(sourceText);
             } catch (PythonFileDetector.InvalidEncodingException e) {

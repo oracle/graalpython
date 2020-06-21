@@ -1,0 +1,2 @@
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_BoundedSemaphore_limit
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_dummy_thread_after_fork
