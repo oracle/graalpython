@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_get_map
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_modify_unregister
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_register
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_unregister
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_above_fd_setsize
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_close
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_context_manager
@@ -92,3 +93,4 @@
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_get_map
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_modify_unregister
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_register
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_unregister

@@ -36,3 +36,5 @@
 *graalpython.lib-python.3.test.test_timeit.TestTimeit.test_timeit_function_zero_iters
 *graalpython.lib-python.3.test.test_timeit.TestTimeit.test_timeit_globals_args
 *graalpython.lib-python.3.test.test_timeit.TestTimeit.test_timeit_zero_iters
+*graalpython.lib-python.3.test.test_timeit.TestTimeit.test_timer_invalid_setup
+*graalpython.lib-python.3.test.test_timeit.TestTimeit.test_timer_invalid_stmt

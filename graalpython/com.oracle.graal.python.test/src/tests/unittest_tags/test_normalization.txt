@@ -1,1 +1,2 @@
 *NormalizationTest.test_bug_834676
+*graalpython.lib-python.3.test.test_normalization.NormalizationTest.test_bug_834676

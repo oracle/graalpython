@@ -49,7 +49,9 @@
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_funky_parens
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_hyphenated
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_hyphenated_numbers
+*graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_narrow_non_breaking_space
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_no_split_at_umlaut
+*graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_non_breaking_space
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_punct_hyphens
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_simple
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_split

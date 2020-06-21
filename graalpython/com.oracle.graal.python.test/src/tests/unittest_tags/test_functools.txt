@@ -109,6 +109,7 @@
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_positional
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_protection_of_callers_dict_argument
+*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_setstate
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_setstate_errors
@@ -131,6 +132,7 @@
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_positional
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_protection_of_callers_dict_argument
+*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_setstate
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_setstate_errors

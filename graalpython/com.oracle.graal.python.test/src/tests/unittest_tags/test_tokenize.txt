@@ -14,6 +14,7 @@
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_mismatched_bom_and_cookie_first_line_raises_syntaxerror
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_mismatched_bom_and_cookie_second_line_raises_syntaxerror
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_no_bom_no_encoding_cookie
+*graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_open
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_short_files
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_syntaxerror_latin1
 *graalpython.lib-python.3.test.test_tokenize.TestDetectEncoding.test_utf8_normalization
