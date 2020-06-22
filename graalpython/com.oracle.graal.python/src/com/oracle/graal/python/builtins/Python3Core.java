@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
@@ -168,6 +170,7 @@ import com.oracle.graal.python.builtins.objects.thread.SemLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -725,7 +728,7 @@ public final class Python3Core implements PythonCore {
     }
 
     @Override
-    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
+    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
         CompilerDirectives.transferToInterpreter();
         Node location = new Node() {
             @Override
@@ -733,14 +736,26 @@ public final class Python3Core implements PythonCore {
                 return section;
             }
         };
-        throw raiseInvalidSyntax(location, message, arguments);
+        throw raiseInvalidSyntax(type, location, message, arguments);
     }
 
     @Override
     @TruffleBoundary
-    public RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
+    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
         PBaseException instance;
-        instance = factory().createBaseException(SyntaxError, message, arguments);
+        LazyPythonClass cls;
+        switch (type) {
+            case Indentation:
+                cls = IndentationError;
+                break;
+            case Tab:
+                cls = TabError;
+                break;
+            default:
+                cls = SyntaxError;
+                break;
+        }
+        instance = factory().createBaseException(cls, message, arguments);
         SourceSection section = location.getSourceSection();
         Source source = section.getSource();
         String path = source.getPath();
