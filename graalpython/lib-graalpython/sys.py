@@ -135,6 +135,16 @@ hash_info = make_hash_info_class()(
 del make_hash_info_class
 
 
+def make_unraisable_hook_args_class():
+    from _descriptor import make_named_tuple_class
+    return make_named_tuple_class(
+        "UnraisableHookArgs",
+        ["exc_type", "exc_value", "exc_traceback", "err_msg", "object"],
+    )
+__UnraisableHookArgs = make_unraisable_hook_args_class()
+del make_unraisable_hook_args_class
+
+
 meta_path = []
 path_hooks = []
 path_importer_cache = {}
@@ -205,8 +215,22 @@ del make_excepthook
 
 def make_unraisablehook():
     def __unraisablehook__(unraisable, /):
-        # We don't currently use it and there's no way to construct the parameter in python code (internal type)
-        pass
+        try:
+            if unraisable.object:
+                try:
+                    r = repr(unraisable.object)
+                except Exception:
+                    r = "<object repr() failed>"
+                if unraisable.err_msg:
+                    print(f"{unraisable.err_msg}: {r}", file=stderr)
+                else:
+                    print(f"Exception ignored in: {r}", file=stderr)
+            elif unraisable.err_msg:
+                print(f"{unraisable.err_msg}:", file=stderr)
+        except BaseException:
+            # let it fall through to the exception printer
+            pass
+        __excepthook__(unraisable.exc_type, unraisable.exc_value, unraisable.exc_traceback)
 
     return __unraisablehook__
 

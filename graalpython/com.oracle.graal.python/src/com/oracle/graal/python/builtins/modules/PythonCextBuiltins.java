@@ -201,6 +201,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
@@ -682,6 +683,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (val.getException() != null) {
                 ExceptionUtils.printPythonLikeStackTrace(val.getException());
             }
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_WriteUnraisable", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleWriteUnraisable extends PythonBuiltinNode {
+
+        @Specialization
+        Object run(PBaseException exception, Object object,
+                        @Cached WriteUnraisableNode writeUnraisableNode) {
+            writeUnraisableNode.execute(null, exception, null, (object instanceof PNone) ? PNone.NONE : object);
             return PNone.NO_VALUE;
         }
     }

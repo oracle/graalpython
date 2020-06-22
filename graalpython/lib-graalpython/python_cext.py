@@ -1243,38 +1243,13 @@ def _handle_system_exit():
 def PyErr_WriteUnraisable(obj):
     fetched = PyErr_Fetch()
     typ, val, tb = fetched if fetched is not native_null else (None, None, None)
-    try:
-        if sys.stderr is None:
-            return
-
-        if obj:
-            obj_str_arg = None
-            try:
-                obj_str_arg = repr(obj)
-            except:
-                obj_str_arg = "<object repr() failed>"
-            sys.stderr.write("Exception ignored in: %s\n" % obj_str_arg)
-
-        try:
-            import tb
-            tb.print_tb(tb, file=sys.stderr)
-        except:
-            pass
-
-        if not typ:
-            return
-
-        if typ.__module__ is None or typ.__name__ is None:
-            sys.stderr.write("<unknown>")
-
-        str_exc = None
-        try:
-            str_exc = str(obj)
-        except:
-            str_exc = "<exception str() failed>"
-        sys.stderr.write("%s.%s: %s" % (typ.__module__, typ.__name__, str_exc))
-    except:
-        pass
+    if val is None:
+        # This means an invalid call, but this function is not supposed to raise exceptions
+        return
+    if tb is native_null:
+        tb = None
+    val.__traceback__ = tb
+    PyTruffle_WriteUnraisable(val, obj)
 
 
 def _is_exception_class(exc):
