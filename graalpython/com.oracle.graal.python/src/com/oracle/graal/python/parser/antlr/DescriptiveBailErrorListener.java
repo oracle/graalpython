@@ -65,7 +65,10 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
                     int line, int charPositionInLine,
                     String msg, RecognitionException e) {
-
+        // If we already constructed the error, keep it, it should be the most specific one
+        if (e instanceof EmptyRecognitionException) {
+            throw e;
+        }
         String entireMessage = e == null || e.getMessage() == null ? "invalid syntax" : e.getMessage();
 
         IntervalSet expectedTokens = null;

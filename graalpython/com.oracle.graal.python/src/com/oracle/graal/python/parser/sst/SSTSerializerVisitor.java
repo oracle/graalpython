@@ -183,6 +183,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         for (SSTNode arg : kwArg) {
             writeNodeOrNull(arg);
         }
+        writeNodeOrNull(alb.getNakedForComp());
     }
 
     private void writeArguments(ArgDefListBuilder argBuilder) throws IOException {
