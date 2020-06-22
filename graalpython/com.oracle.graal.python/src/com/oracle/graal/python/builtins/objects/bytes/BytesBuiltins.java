@@ -569,7 +569,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Fallback
         boolean contains(@SuppressWarnings("unused") Object self, Object other) {
-            throw raise(TypeError, ErrorMessages.BYTES_OBJ_REQUIRED, other);
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, other);
         }
 
     }

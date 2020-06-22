@@ -87,7 +87,6 @@ public abstract class ErrorMessages {
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
-    public static final String BYTES_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String C_ARG_NOT_IN_RANGE = "%c arg not in range(0x%s)";
     public static final String CALL_STACK_NOT_DEEP_ENOUGH = "call stack is not deep enough";
