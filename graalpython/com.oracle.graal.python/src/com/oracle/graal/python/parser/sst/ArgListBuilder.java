@@ -198,7 +198,11 @@ public final class ArgListBuilder {
     }
 
     public void addNakedForComp(SSTNode node) {
-        this.nakedForComp = node;
+        setNakedForComp(node);
         addArg(node);
+    }
+
+    public void setNakedForComp(SSTNode nakedForComp) {
+        this.nakedForComp = nakedForComp;
     }
 }

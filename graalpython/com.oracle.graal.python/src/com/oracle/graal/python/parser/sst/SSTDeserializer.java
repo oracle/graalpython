@@ -40,16 +40,17 @@
  */
 package com.oracle.graal.python.parser.sst;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.sst.SerializationUtils.SSTId;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
 
 public final class SSTDeserializer {
 
@@ -773,6 +774,7 @@ public final class SSTDeserializer {
         for (int i = 0; i < kwArgCount; i++) {
             alb.addKwArg(readNode());
         }
+        alb.setNakedForComp(readNode());
         return alb;
     }
 
