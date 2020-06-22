@@ -1675,6 +1675,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callNativeGenericNewNode(self, varargs, kwargs);
         }
 
+        @SuppressWarnings("unused")
+        @Fallback
+        Object fallback(Object o, Object[] varargs, PKeyword[] kwargs) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "object.__new__(X): X", o);
+        }
+
         private static PythonNativeClass findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {
             for (PythonAbstractClass cls : methodResolutionOrder) {
                 if (PGuards.isNativeClass(cls)) {
