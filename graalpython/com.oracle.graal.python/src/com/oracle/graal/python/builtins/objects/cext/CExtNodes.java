@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -193,6 +192,7 @@ public abstract class CExtNodes {
      * will call that subtype C function with two arguments, the C type object and an object
      * argument to fill in from.
      */
+    @ImportStatic({PGuards.class})
     public abstract static class SubtypeNew extends Node {
         /**
          * typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
@@ -202,14 +202,14 @@ public abstract class CExtNodes {
             throw new IllegalStateException();
         }
 
-        protected abstract Object execute(PythonNativeClass object, Object arg);
+        protected abstract Object execute(Object object, Object arg);
 
         protected String getFunctionName() {
             return getTypenamePrefix() + "_subtype_new";
         }
 
-        @Specialization
-        protected Object callNativeConstructor(PythonNativeClass object, Object arg,
+        @Specialization(guards = "isNativeClass(object)")
+        protected Object callNativeConstructor(Object object, Object arg,
                         @Exclusive @Cached("getFunctionName()") String functionName,
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @Exclusive @Cached ToJavaNode toJavaNode,
@@ -231,7 +231,7 @@ public abstract class CExtNodes {
             return "float";
         }
 
-        public final Object call(PythonNativeClass object, double arg) {
+        public final Object call(Object object, double arg) {
             return execute(object, arg);
         }
 
@@ -249,7 +249,7 @@ public abstract class CExtNodes {
             return "tuple";
         }
 
-        public final Object call(PythonNativeClass object, Object arg) {
+        public final Object call(Object object, Object arg) {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toSulongNode = insert(ToSulongNode.create());
@@ -270,7 +270,7 @@ public abstract class CExtNodes {
             return "unicode";
         }
 
-        public final Object call(PythonNativeClass object, Object arg) {
+        public final Object call(Object object, Object arg) {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toSulongNode = insert(ToSulongNode.create());
@@ -2888,28 +2888,28 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PRaiseNativeNode extends Node {
 
-        public final int raiseInt(Frame frame, int errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final int raiseInt(Frame frame, int errorValue, Object errType, String format, Object... arguments) {
             return executeInt(frame, errorValue, errType, format, arguments);
         }
 
-        public final Object raise(Frame frame, Object errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final Object raise(Frame frame, Object errorValue, Object errType, String format, Object... arguments) {
             return execute(frame, errorValue, errType, format, arguments);
         }
 
-        public final int raiseIntWithoutFrame(int errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final int raiseIntWithoutFrame(int errorValue, Object errType, String format, Object... arguments) {
             return executeInt(null, errorValue, errType, format, arguments);
         }
 
-        public final Object raiseWithoutFrame(Object errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final Object raiseWithoutFrame(Object errorValue, Object errType, String format, Object... arguments) {
             return execute(null, errorValue, errType, format, arguments);
         }
 
-        public abstract Object execute(Frame frame, Object errorValue, LazyPythonClass errType, String format, Object[] arguments);
+        public abstract Object execute(Frame frame, Object errorValue, Object errType, String format, Object[] arguments);
 
-        public abstract int executeInt(Frame frame, int errorValue, LazyPythonClass errType, String format, Object[] arguments);
+        public abstract int executeInt(Frame frame, int errorValue, Object errType, String format, Object[] arguments);
 
         @Specialization
-        static int doInt(Frame frame, int errorValue, LazyPythonClass errType, String format, Object[] arguments,
+        static int doInt(Frame frame, int errorValue, Object errType, String format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
@@ -2917,14 +2917,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doObject(Frame frame, Object errorValue, LazyPythonClass errType, String format, Object[] arguments,
+        static Object doObject(Frame frame, Object errorValue, Object errType, String format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
 
-        public static void raiseNative(Frame frame, LazyPythonClass errType, String format, Object[] arguments, PRaiseNode raiseNode,
+        public static void raiseNative(Frame frame, Object errType, String format, Object[] arguments, PRaiseNode raiseNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);

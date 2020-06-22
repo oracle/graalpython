@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -99,25 +98,25 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         private final BranchProfile invalidLengthProfile = BranchProfile.create();
 
         @Specialization(guards = {"isAnonymous(fd)", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doAnonymous(LazyPythonClass clazz, @SuppressWarnings("unused") long fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") PNone access,
+        PMMap doAnonymous(Object clazz, @SuppressWarnings("unused") long fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") PNone access,
                         @SuppressWarnings("unused") PNone offset) {
             checkLength(length);
             return factory().createMMap(clazz, new AnonymousMap(length), length, 0);
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doFile(LazyPythonClass clazz, long fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
+        PMMap doFile(Object clazz, long fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
             return doFile(clazz, fd, length, tagname, ACCESS_DEFAULT, 0);
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(offset)"})
-        PMMap doFile(LazyPythonClass clazz, long fd, int length, Object tagname, int access, @SuppressWarnings("unused") PNone offset) {
+        PMMap doFile(Object clazz, long fd, int length, Object tagname, int access, @SuppressWarnings("unused") PNone offset) {
             return doFile(clazz, fd, length, tagname, access, 0);
         }
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
         @Specialization(guards = "fd >= 0")
-        PMMap doFile(LazyPythonClass clazz, long fd, long length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") int access, long offset) {
+        PMMap doFile(Object clazz, long fd, long length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") int access, long offset) {
             checkLength(length);
             int ifd;
             try {
@@ -166,7 +165,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isIllegal(fd)")
         @SuppressWarnings("unused")
-        PMMap doAnonymous(LazyPythonClass clazz, int fd, Object length, Object tagname, PNone access, PNone offset) {
+        PMMap doAnonymous(Object clazz, int fd, Object length, Object tagname, PNone access, PNone offset) {
             throw raise(PythonBuiltinClassType.OSError);
         }
 

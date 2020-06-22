@@ -40,7 +40,6 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -71,7 +70,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     abstract static class PythonArrayNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(initializer)")
-        PArray array(LazyPythonClass cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
+        PArray array(Object cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
             /**
              * TODO @param typeCode should be a char, not a string
              */
@@ -79,7 +78,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PArray arrayWithRangeInitializer(LazyPythonClass cls, String typeCode, PRange range) {
+        PArray arrayWithRangeInitializer(Object cls, String typeCode, PRange range) {
             if (!typeCode.equals("i")) {
                 typeError(typeCode, range);
             }
@@ -99,7 +98,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PArray arrayWithSequenceInitializer(LazyPythonClass cls, String typeCode, String str) {
+        PArray arrayWithSequenceInitializer(Object cls, String typeCode, String str) {
             if (!typeCode.equals("c")) {
                 typeError(typeCode, str);
             }
@@ -128,7 +127,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isByteArray(typeCode)")
-        PArray arrayByteInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+        PArray arrayByteInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("createCast()") CastToByteNode castToByteNode,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
@@ -153,7 +152,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isCharArray(typeCode)")
-        PArray arrayCharInitializer(LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+        PArray arrayCharInitializer(Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
             byte[] byteArray = toByteArrayNode.execute(getSequenceStorageNode.execute(initializer));
@@ -161,7 +160,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isIntArray(typeCode)")
-        PArray arrayIntInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+        PArray arrayIntInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
@@ -190,7 +189,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isLongArray(typeCode)")
-        PArray arrayLongInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+        PArray arrayLongInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
@@ -219,7 +218,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isDoubleArray(typeCode)")
-        PArray arrayDoubleInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+        PArray arrayDoubleInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
@@ -251,7 +250,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        PArray arrayWithObjectInitializer(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
+        PArray arrayWithObjectInitializer(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
             if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode) || isCharArray(typeCode))) {
                 // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
                 throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
@@ -260,7 +259,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isString(typeCode)")
-        PArray noArray(@SuppressWarnings("unused") LazyPythonClass cls, Object typeCode, @SuppressWarnings("unused") Object initializer) {
+        PArray noArray(@SuppressWarnings("unused") Object cls, Object typeCode, @SuppressWarnings("unused") Object initializer) {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_UNICODE, "array()", 1, typeCode);
         }
 

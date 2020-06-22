@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -74,14 +73,14 @@ public abstract class SetNodes {
         @Child private PRaiseNode raise;
         @Child private SetItemNode setItemNode;
 
-        public abstract PSet execute(VirtualFrame frame, LazyPythonClass cls, Object value);
+        public abstract PSet execute(VirtualFrame frame, Object cls, Object value);
 
         public final PSet executeWith(VirtualFrame frame, Object value) {
             return this.execute(frame, PythonBuiltinClassType.PSet, value);
         }
 
         @Specialization
-        PSet setString(VirtualFrame frame, LazyPythonClass cls, String arg,
+        PSet setString(VirtualFrame frame, Object cls, String arg,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PSet set = factory.createSet(cls);
             for (int i = 0; i < PString.length(arg); i++) {
@@ -92,13 +91,13 @@ public abstract class SetNodes {
 
         @Specialization(guards = "emptyArguments(none)")
         @SuppressWarnings("unused")
-        PSet set(LazyPythonClass cls, PNone none,
+        PSet set(Object cls, PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createSet(cls);
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
-        PSet setIterable(VirtualFrame frame, LazyPythonClass cls, Object iterable,
+        PSet setIterable(VirtualFrame frame, Object cls, Object iterable,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
@@ -117,7 +116,7 @@ public abstract class SetNodes {
         }
 
         @Fallback
-        PSet setObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
+        PSet setObject(@SuppressWarnings("unused") Object cls, Object value) {
             if (raise == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raise = insert(PRaiseNode.create());
