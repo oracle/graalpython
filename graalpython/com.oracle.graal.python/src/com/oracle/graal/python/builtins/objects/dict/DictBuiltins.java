@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
@@ -92,6 +93,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -134,11 +136,26 @@ public final class DictBuiltins extends PythonBuiltins {
             return initNode;
         }
 
-        @Specialization(guards = "args.length == 1")
+        @Specialization(guards = {"args.length == 1", "firstArgIterable(args, lib)", "!firstArgString(args)"})
         Object doVarargs(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
-                        @Cached SetDictStorageNode setStorage) {
+                        @Cached SetDictStorageNode setStorage,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             setStorage.execute(self, getInitNode().execute(frame, args[0], kwargs));
             return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"args.length == 1", "!firstArgIterable(args, lib)"})
+        Object doVarargsNotIterable(Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, args[0]);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"args.length == 1", "firstArgString(args)"})
+        Object doString(Object self, Object[] args, PKeyword[] kwargs,
+                        @Cached PRaiseNode raise) {
+            throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, 0, 1);
         }
 
         @Specialization(guards = "args.length == 0")
@@ -151,6 +168,14 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(guards = "args.length > 1")
         Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "dict", 1, args.length);
+        }
+
+        protected boolean firstArgIterable(Object[] args, PythonObjectLibrary lib) {
+            return lib.isIterable(args[0]);
+        }
+
+        protected boolean firstArgString(Object[] args) {
+            return PGuards.isString(args[0]);
         }
     }
 
