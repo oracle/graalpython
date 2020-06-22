@@ -180,6 +180,7 @@ public abstract class PRaiseNode extends Node {
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         assert format != null;
         PBaseException baseException = factory.createBaseException(type, format, arguments);
+        baseException.setContext(cause);
         baseException.setCause(cause);
         throw raise(baseException);
     }
