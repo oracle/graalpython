@@ -554,7 +554,7 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void nonlocal02() throws Exception {
-        checkTreeResult("nonlocal x");
+        checkSyntaxError("nonlocal x");
     }
 
     @Test

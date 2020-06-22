@@ -1,8 +1,0 @@
-ModuleRootNode Name: <module 'nonlocal02'> SourceSection: [0,10]`nonlocal x`
-  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-  FreeVars: None
-  NeedsCellFrame: False
-  FrameDescriptor:  Empty
-  Documentation: None
-  InnerRootNode SourceSection: [0,10]`nonlocal x`
-    EmptyNode SourceSection: [0,10]`nonlocal x`

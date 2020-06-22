@@ -769,11 +769,6 @@ public class SSTSerializationTests extends ParserTestBase {
     }
 
     @Test
-    public void nonlocalTest() throws Exception {
-        checkSerialization("nonlocal x");
-    }
-
-    @Test
     public void numberBinTest() throws Exception {
         checkSerialization("0b101");
         checkSerialization("-0b101");
@@ -1084,7 +1079,7 @@ public class SSTSerializationTests extends ParserTestBase {
     }
 
     @Test
-    public void yeildTest() throws Exception {
+    public void yieldTest() throws Exception {
         checkSerialization("def f(): yield 1");
         checkSerialization("def f(): yield");
         checkSerialization("def f(): x += yield");
