@@ -70,14 +70,17 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -105,6 +108,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -518,14 +522,48 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class BasesNode extends PythonBuiltinNode {
+    @ImportStatic(PGuards.class)
+    abstract static class BasesNode extends PythonBinaryBuiltinNode {
+
         @Specialization
-        Object bases(Object self,
+        Object getBases(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") TypeNodes.GetBaseClassesNode getBaseClassesNode) {
             return factory().createTuple(getBaseClassesNode.execute(self));
         }
+
+        @Specialization
+        Object setBases(PythonClass cls, PTuple value,
+                        @Cached GetNameNode getName,
+                        @Cached GetObjectArrayNode getArray) {
+
+            Object[] a = getArray.execute(value);
+            PythonAbstractClass[] baseClasses = new PythonAbstractClass[a.length];
+            for (int i = 0; i < a.length; i++) {
+                if (a[i] instanceof PythonAbstractClass) {
+                    baseClasses[i] = (PythonAbstractClass) a[i];
+                } else {
+                    throw raise(TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, getName.execute(cls), "__bases__", a[i]);
+                }
+            }
+
+            throw raise(NotImplementedError);
+            // return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPTuple(value)")
+        Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value,
+                        @Cached GetNameNode getName) {
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", getName.execute(cls), "__bases__", value);
+        }
+
+        @Specialization
+        Object setBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
+                        @Cached GetNameNode getName) {
+            throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, getName.execute(cls));
+        }
+
     }
 
     @Builtin(name = __BASE__, minNumOfPositionalArgs = 1, isGetter = true)

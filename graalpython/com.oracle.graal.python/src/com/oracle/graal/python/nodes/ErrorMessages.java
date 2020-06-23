@@ -95,6 +95,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_ARG_CONVERTER_FAIL_UNEXPECTED_RETURN = "calling argument converter failed; unexpected return value %s";
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
+    public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
     public static final String CANNOT_ASSIGN_TO = "cannot assign to %s";
@@ -331,6 +332,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_SET_TO_STR_OBJ = "%s must be set to a string object";
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
+    public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
