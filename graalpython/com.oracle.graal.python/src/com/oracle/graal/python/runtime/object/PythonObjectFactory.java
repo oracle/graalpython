@@ -80,7 +80,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PRangeReverseIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;

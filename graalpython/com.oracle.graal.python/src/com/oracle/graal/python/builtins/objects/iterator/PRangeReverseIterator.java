@@ -25,30 +25,38 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class PRangeIterator extends PIntegerIterator {
-
+public final class PRangeReverseIterator extends PIntegerIterator {
     final int stop;
     final int step;
     int index;
 
-    public PRangeIterator(Object clazz, DynamicObject storage, int start, int stop, int step) {
+    public PRangeReverseIterator(Object clazz, DynamicObject storage, int index, int stop, int step) {
         super(clazz, storage);
-        index = start;
+        this.index = index;
         this.stop = stop;
         this.step = step;
     }
 
-    public int getStart() {
-        return index;
+    @Override
+    public int next() {
+        int value = index;
+        index -= step;
+        return value;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return index > stop;
     }
 
     public int getStop() {
         return stop;
+    }
+
+    public int getStart() {
+        return index;
     }
 
     public int getStep() {
@@ -57,37 +65,5 @@ public final class PRangeIterator extends PIntegerIterator {
 
     public int getIndex() {
         return index;
-    }
-
-    public int getLength(ConditionProfile stepProfile, ConditionProfile positveRangeProfile) {
-        if (stepProfile.profile(step > 0)) {
-            if (positveRangeProfile.profile(index >= 0 && index < stop)) {
-                return (stop - index - 1) / step + 1;
-            }
-            return PRange.getLenOfRange(index, stop, step);
-        } else {
-            return PRange.getLenOfRange(stop, index, -step);
-        }
-    }
-
-    @Override
-    public int next() {
-        assert hasNext();
-        int value = index;
-        index += step;
-        return value;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return index < stop;
-    }
-
-    public static PRangeIterator require(Object value) {
-        if (value instanceof PRangeIterator) {
-            return (PRangeIterator) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PRangeIterator required.");
     }
 }

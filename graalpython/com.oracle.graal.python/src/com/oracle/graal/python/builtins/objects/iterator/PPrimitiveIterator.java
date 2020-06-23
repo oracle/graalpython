@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.object.DynamicObject;
 
-public abstract class PPrimitiveIterator extends PBuiltinIterator{
+public abstract class PPrimitiveIterator extends PBuiltinIterator {
     protected int index;
 
     public PPrimitiveIterator(Object clazz, DynamicObject storage) {
