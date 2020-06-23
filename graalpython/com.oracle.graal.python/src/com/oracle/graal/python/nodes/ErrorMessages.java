@@ -146,7 +146,7 @@ public abstract class ErrorMessages {
     public static final String CHARACTER_MAPPING_MUST_BE_IN_RANGE = "character mapping must be in range(0x%s)";
     public static final String CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR = "character mapping must return integer, None or str";
     public static final String CHR_DOES_NOT_SUPPORT = "chr does not support PInt ";
-    public static final String CLASS_ASIGMENT_D_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
+    public static final String CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
     public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES = "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'";
     public static final String CLASS_MUST_BE_SET_TO_CLASS = "__class__ must be set to a class, not '%p' object";
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
