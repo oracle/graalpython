@@ -347,13 +347,6 @@ def strformat(___self, *___args, **___kwargs):
 str.format = strformat
 
 
-def __iter__(self):
-    return list(self).__iter__()
-
-
-str.__iter__ = __iter__
-
-
 def strcount(self, sub, start=None, end=None):
     selfLeng = len(self)
     subLeng = len(sub)
