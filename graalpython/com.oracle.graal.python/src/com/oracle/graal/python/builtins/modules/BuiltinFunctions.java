@@ -1754,11 +1754,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
-    public abstract static class PowNode extends PythonBuiltinNode {
-        @Child private LookupAndCallTernaryNode powNode = TernaryArithmetic.Pow.create();
+    public abstract static class PowNode extends PythonTernaryBuiltinNode {
+        static LookupAndCallBinaryNode binaryPow() {
+            return BinaryArithmetic.Pow.create();
+        }
+
+        static LookupAndCallTernaryNode ternaryPow() {
+            return TernaryArithmetic.Pow.create();
+        }
 
         @Specialization
-        Object doIt(VirtualFrame frame, Object x, Object y, Object z) {
+        Object binary(VirtualFrame frame, Object x, Object y, @SuppressWarnings("unused") PNone z,
+                        @Cached("binaryPow()") LookupAndCallBinaryNode powNode) {
+            return powNode.executeObject(frame, x, y);
+        }
+
+        @Specialization(guards = "!isPNone(z)")
+        Object ternary(VirtualFrame frame, Object x, Object y, Object z,
+                        @Cached("ternaryPow()") LookupAndCallTernaryNode powNode) {
             return powNode.execute(frame, x, y, z);
         }
     }
