@@ -44,14 +44,20 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -62,15 +68,16 @@ import com.oracle.truffle.api.nodes.NodeCost;
 public final class WrapTpNew extends SlotWrapper {
     @Child IsTypeNode isType;
     @Child IsSubtypeNode isSubtype;
-    @Child GetMroNode getMro;
+    @Child GetBaseClassesNode getBases;
     @Child PRaiseNode raiseNode;
+    @Child LookupAttributeInMRONode lookupNewNode;
     @CompilationFinal byte state = 0;
     @CompilationFinal PythonBuiltinClassType owner;
 
     private static final short NOT_SUBTP_STATE = 0b10000000;
     private static final short NOT_CLASS_STATE = 0b01000000;
     private static final short IS_UNSAFE_STATE = 0b00100000;
-    private static final short NOTCONSTANT_MRO = 0b00010000;
+    private static final short NONCONSTANT_MRO = 0b00010000;
     private static final short MRO_LENGTH_MASK = 0b00001111;
 
     public WrapTpNew(BuiltinCallNode func) {
@@ -86,106 +93,128 @@ public final class WrapTpNew extends SlotWrapper {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException(getOwner().getName() + ".__new__ called without arguments");
         }
-        if (isType == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            reportPolymorphicSpecialize();
-            isType = insert(IsTypeNode.create());
-        }
-        if (!isType.execute(arg0)) {
-            if ((state & NOT_CLASS_STATE) == 0) {
+        if (arg0 != getOwner()) {
+            if (isType == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                state |= NOT_CLASS_STATE;
+                isType = insert(IsTypeNode.create());
             }
-            throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                            "%s.__new__(X): X is not a type object (%N)", getOwner().getName(), arg0);
-        }
-        if (isSubtype == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            reportPolymorphicSpecialize();
-            isSubtype = insert(IsSubtypeNode.create());
-        }
-        if (!isSubtype.execute(arg0, getOwner())) {
-            if ((state & NOT_SUBTP_STATE) == 0) {
+            if (!isType.execute(arg0)) {
+                if ((state & NOT_CLASS_STATE) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    state |= NOT_CLASS_STATE;
+                }
+                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                                "%s.__new__(X): X is not a type object (%N)", getOwner().getName(), arg0);
+            }
+            if (isSubtype == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                state |= NOT_SUBTP_STATE;
+                isSubtype = insert(IsSubtypeNode.create());
             }
-            throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                            "%s.__new__(%N): %N is not a subtype of %s",
-                            getOwner().getName(), arg0, arg0, getOwner().getName());
-        }
-        if (getMro == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            reportPolymorphicSpecialize();
-            getMro = insert(GetMroNode.create());
-        }
-        // TODO (tfel): not quite correct, since we should just be walking the bases, not the entire
-        // MRO
-        PythonAbstractClass[] mro = getMro.execute(arg0);
-        if ((state & MRO_LENGTH_MASK) == 0) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            int length = mro.length;
-            if (length < MRO_LENGTH_MASK) {
-                state |= length;
+            if (!isSubtype.execute(arg0, getOwner())) {
+                if ((state & NOT_SUBTP_STATE) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    state |= NOT_SUBTP_STATE;
+                }
+                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                                "%s.__new__(%N): %N is not a subtype of %s",
+                                getOwner().getName(), arg0, arg0, getOwner().getName());
+            }
+            if (getBases == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                getBases = insert(GetBaseClassesNodeGen.create());
+            }
+            PythonAbstractClass[] bases = getBases.execute(arg0);
+            if ((state & MRO_LENGTH_MASK) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                int length = bases.length;
+                if (length < MRO_LENGTH_MASK) {
+                    state |= length;
+                } else {
+                    state |= MRO_LENGTH_MASK;
+                }
+            }
+            boolean isSafeNew = true;
+            if ((state & MRO_LENGTH_MASK) == bases.length) {
+                // cached mro, explode loop
+                isSafeNew = checkSafeNew(bases, state & MRO_LENGTH_MASK);
             } else {
-                state |= MRO_LENGTH_MASK;
+                if ((state & NONCONSTANT_MRO) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    state |= NONCONSTANT_MRO;
+                }
+                // mro too long to cache or different from the cached one, no explode loop
+                isSafeNew = checkSafeNew(bases);
             }
-        }
-        boolean isSafeNew = true;
-        if ((state & MRO_LENGTH_MASK) == mro.length) {
-            // cached mro, explode loop
-            isSafeNew = checkSafeNew(mro, state & MRO_LENGTH_MASK);
-        } else {
-            if ((state & NOTCONSTANT_MRO) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                state |= NOTCONSTANT_MRO;
+            if (!isSafeNew) {
+                if ((state & IS_UNSAFE_STATE) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    state |= IS_UNSAFE_STATE;
+                }
+                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                                "%s.__new__(%N) is not safe, use %N.__new__()",
+                                getOwner().getName(), arg0, arg0);
             }
-            // mro too long to cache or different from the cached one, no explode loop
-            isSafeNew = checkSafeNew(mro);
-        }
-        if (!isSafeNew) {
-            if ((state & IS_UNSAFE_STATE) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                state |= IS_UNSAFE_STATE;
-            }
-            throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                            "%s.__new__(%N) is not safe, use %N.__new__()",
-                            getOwner().getName(), arg0, arg0);
         }
         return super.execute(frame);
     }
 
     @ExplodeLoop
-    private boolean checkSafeNew(PythonAbstractClass[] mro, int length) {
+    private boolean checkSafeNew(PythonAbstractClass[] bases, int length) {
         for (int i = 0; i < length; i++) {
-            PythonAbstractClass base = mro[i];
-            if (base instanceof PythonBuiltinClass) {
-                // TODO: tfel not correct, since the base may not be overriding __new__
-                return ((PythonBuiltinClass) base).getType() == getOwner();
-            } else if (PythonNativeClass.isInstance(base)) {
-                // should have called the native tp_new in any case
-                return false;
+            byte safe = isSafe(bases, i);
+            if (safe != -1) {
+                return safe == 0 ? false : true;
             }
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("there is no non-heap type in the mro, broken class");
     }
 
-    private boolean checkSafeNew(PythonAbstractClass[] mro) {
-        for (int i = 0; i < mro.length; i++) {
-            PythonAbstractClass base = mro[i];
-            if (base instanceof PythonBuiltinClass) {
-                return ((PythonBuiltinClass) base).getType() == getOwner();
-            } else if (PythonNativeClass.isInstance(base)) {
-                // should have called the native tp_new in any case
-                return false;
+    private boolean checkSafeNew(PythonAbstractClass[] bases) {
+        for (int i = 0; i < bases.length; i++) {
+            byte safe = isSafe(bases, i);
+            if (safe != -1) {
+                return safe == 0 ? false : true;
             }
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("there is no non-heap type in the mro, broken class");
+    }
+
+    private byte isSafe(PythonAbstractClass[] mro, int i) {
+        PythonAbstractClass base = mro[i];
+        if (base instanceof PythonBuiltinClass) {
+            if (((PythonBuiltinClass) base).getType() == getOwner()) {
+                return 1;
+            } else {
+                if (lookupNewNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    lookupNewNode = insert(LookupAttributeInMRONode.create(SpecialMethodNames.__NEW__));
+                }
+                Object newMethod = lookupNewNode.execute(base);
+                if (newMethod instanceof PBuiltinFunction) {
+                    NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) newMethod).getBuiltinNodeFactory();
+                    if (factory != null) {
+                        return factory.getNodeClass().isAssignableFrom(getNode().getClass()) ? (byte)1 : (byte)0;
+                    }
+                }
+                // we explicitly allow non-Java builtin functions to pass, since a
+                // PythonBuiltinClass with a non-java function is explicitly written in the core to
+                // allow this
+                return 1;
+            }
+        } else if (PythonNativeClass.isInstance(base)) {
+            // should have called the native tp_new in any case
+            return 0;
+        }
+        return -1;
     }
 
     private final PRaiseNode getRaiseNode() {
@@ -228,7 +257,7 @@ public final class WrapTpNew extends SlotWrapper {
         } else if ((state & ~MRO_LENGTH_MASK) == 0) {
             // no error states, single mro
             return NodeCost.MONOMORPHIC;
-        } else if (((state & ~MRO_LENGTH_MASK) & NOTCONSTANT_MRO) == NOTCONSTANT_MRO) {
+        } else if (((state & ~MRO_LENGTH_MASK) & NONCONSTANT_MRO) == NONCONSTANT_MRO) {
             // no error states, multiple mros
             return NodeCost.POLYMORPHIC;
         } else {

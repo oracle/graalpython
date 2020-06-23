@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 public abstract class SlotWrapper extends BuiltinCallNode {
     @Child BuiltinCallNode func;
@@ -56,7 +56,7 @@ public abstract class SlotWrapper extends BuiltinCallNode {
     }
 
     @Override
-    protected Node getNode() {
+    protected PythonBuiltinBaseNode getNode() {
         return func.getNode();
     }
 }

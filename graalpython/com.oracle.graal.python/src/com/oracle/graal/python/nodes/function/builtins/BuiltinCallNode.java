@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -49,7 +50,7 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class BuiltinCallNode extends Node {
     public abstract Object execute(VirtualFrame frame);
 
-    protected abstract Node getNode();
+    protected abstract PythonBuiltinBaseNode getNode();
 
     public static final class BuiltinAnyCallNode extends BuiltinCallNode {
         @Child PythonBuiltinNode node;
@@ -64,7 +65,7 @@ public abstract class BuiltinCallNode extends Node {
         }
 
         @Override
-        protected Node getNode() {
+        protected PythonBuiltinBaseNode getNode() {
             return node;
         }
     }
@@ -84,7 +85,7 @@ public abstract class BuiltinCallNode extends Node {
         }
 
         @Override
-        protected Node getNode() {
+        protected PythonBuiltinBaseNode getNode() {
             return node;
         }
     }
@@ -106,7 +107,7 @@ public abstract class BuiltinCallNode extends Node {
         }
 
         @Override
-        protected Node getNode() {
+        protected PythonBuiltinBaseNode getNode() {
             return node;
         }
     }
@@ -130,7 +131,7 @@ public abstract class BuiltinCallNode extends Node {
         }
 
         @Override
-        protected Node getNode() {
+        protected PythonBuiltinBaseNode getNode() {
             return node;
         }
     }
@@ -156,7 +157,7 @@ public abstract class BuiltinCallNode extends Node {
         }
 
         @Override
-        protected Node getNode() {
+        protected PythonBuiltinBaseNode getNode() {
             return node;
         }
     }
@@ -180,7 +181,7 @@ public abstract class BuiltinCallNode extends Node {
         }
 
         @Override
-        protected Node getNode() {
+        protected PythonBuiltinBaseNode getNode() {
             return node;
         }
     }
