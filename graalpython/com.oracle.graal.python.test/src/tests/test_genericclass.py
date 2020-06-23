@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -249,3 +249,23 @@ if sys.version_info.minor >= 7:
                 def __class_getitem__(cls, item):
                     return 'from __class_getitem__'
             self.assertEqual(C[int], 'from metaclass')
+
+    class TestClassSetBases(unittest.TestCase):
+        def test_class_set_bases(self):
+            
+            def assert_bases(cls, bases, err, msg):
+                raised = False
+                try:
+                    cls.__bases__ = bases
+                except err as e:
+                    raised = True
+                    assert msg == str(e), "invalid error message:\n  expected:" + msg + "\n       was:" + str(e)
+                assert raised
+    
+            class A(): pass
+            class B(): pass
+            
+            assert_bases(A, 'a', TypeError, "can only assign tuple to A.__bases__, not str")
+            assert_bases(A, (B, 'a'), TypeError, "A.__bases__ must be tuple of classes, not 'str'")
+            assert_bases(dict, (B,), TypeError, "can't set attributes of built-in/extension type 'dict'")
+        
