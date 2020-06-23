@@ -28,15 +28,16 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PRangeReverseIterator extends PIntegerIterator {
-    final int stop;
-    final int step;
-    int index;
+    public final int start;
+    public final int stop;
+    public final int step;
 
-    public PRangeReverseIterator(Object clazz, DynamicObject storage, int index, int stop, int step) {
+    public PRangeReverseIterator(Object clazz, DynamicObject storage, int start, int stop, int step) {
         super(clazz, storage);
-        this.index = index;
+        this.start = start;
         this.stop = stop;
         this.step = step;
+        this.index = start;
     }
 
     @Override
@@ -49,21 +50,5 @@ public final class PRangeReverseIterator extends PIntegerIterator {
     @Override
     public boolean hasNext() {
         return index > stop;
-    }
-
-    public int getStop() {
-        return stop;
-    }
-
-    public int getStart() {
-        return index;
-    }
-
-    public int getStep() {
-        return step;
-    }
-
-    public int getIndex() {
-        return index;
     }
 }

@@ -29,9 +29,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PSequenceReverseIterator extends PBuiltinIterator {
-
     private final Object sequence;
-    int index;
 
     public PSequenceReverseIterator(Object clazz, DynamicObject storage, Object sequence, int lengthHint) {
         super(clazz, storage);

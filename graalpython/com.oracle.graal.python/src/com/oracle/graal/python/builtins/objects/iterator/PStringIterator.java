@@ -28,9 +28,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PStringIterator extends PBuiltinIterator {
-
     final String value;
-    int index;
 
     public PStringIterator(Object clazz, DynamicObject storage, String value) {
         super(clazz, storage);

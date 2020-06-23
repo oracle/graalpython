@@ -31,7 +31,6 @@ import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PSequenceIterator extends PBuiltinIterator {
     protected final Object sequence;
-    protected int index = 0;
 
     public PSequenceIterator(Object clazz, DynamicObject storage, Object sequence) {
         super(clazz, storage);

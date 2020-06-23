@@ -367,11 +367,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PRange createRange(PRangeIterator rangeIterator) {
-        return createRange(rangeIterator.getStart(), rangeIterator.getStop(), rangeIterator.getStep());
+        return createRange(rangeIterator.start, rangeIterator.stop, rangeIterator.step);
     }
 
     public PRange createRange(PRangeReverseIterator rangeIterator) {
-        return createRange(rangeIterator.getStart(), rangeIterator.getStop(), rangeIterator.getStep());
+        return createRange(rangeIterator.start, rangeIterator.stop, rangeIterator.step);
     }
 
     public PSlice createSlice(int start, int stop, int step) {

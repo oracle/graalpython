@@ -34,6 +34,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 public abstract class PBuiltinIterator extends PythonBuiltinObject {
 
     private boolean exhausted = false;
+    public int index = 0;
 
     public PBuiltinIterator(Object clazz, DynamicObject storage) {
         super(clazz, storage);

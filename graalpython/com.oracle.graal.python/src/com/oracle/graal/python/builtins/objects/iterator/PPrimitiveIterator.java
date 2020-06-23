@@ -44,8 +44,6 @@ import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public abstract class PPrimitiveIterator extends PBuiltinIterator {
-    protected int index;
-
     public PPrimitiveIterator(Object clazz, DynamicObject storage) {
         super(clazz, storage);
     }
@@ -53,8 +51,4 @@ public abstract class PPrimitiveIterator extends PBuiltinIterator {
     public abstract TypedSequenceStorage getSequenceStorage();
 
     public abstract boolean hasNext();
-
-    public int getIndex() {
-        return index;
-    }
 }

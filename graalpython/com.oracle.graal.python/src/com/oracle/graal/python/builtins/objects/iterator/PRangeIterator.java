@@ -31,32 +31,16 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PRangeIterator extends PIntegerIterator {
-
-    final int stop;
-    final int step;
-    int index;
+    public final int start;
+    public final int stop;
+    public final int step;
 
     public PRangeIterator(Object clazz, DynamicObject storage, int start, int stop, int step) {
         super(clazz, storage);
-        index = start;
+        this.start = start;
         this.stop = stop;
         this.step = step;
-    }
-
-    public int getStart() {
-        return index;
-    }
-
-    public int getStop() {
-        return stop;
-    }
-
-    public int getStep() {
-        return step;
-    }
-
-    public int getIndex() {
-        return index;
+        this.index = start;
     }
 
     public int getLength(ConditionProfile stepProfile, ConditionProfile positveRangeProfile) {
