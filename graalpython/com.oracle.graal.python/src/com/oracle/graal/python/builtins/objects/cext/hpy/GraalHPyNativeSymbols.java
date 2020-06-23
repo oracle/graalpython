@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-
 public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_GET_M_NAME = "graal_hpy_get_m_name";
     public static final String GRAAL_HPY_GET_M_DOC = "graal_hpy_get_m_doc";
@@ -51,7 +50,7 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_FROM_STRING = "graal_hpy_from_string";
     public static final String GRAAL_HPY_ALLOCATE_OUTVAR = "graal_hpy_allocate_outvar";
     public static final String GRAAL_HPY_ARRAY_TO_NATIVE = "graal_hpy_array_to_native";
-    public static final String GRAAL_HPY_FROM_I8_ARRAY ="graal_hpy_from_i8_array";
-    public static final String GRAAL_HPY_FROM_WCHAR_ARRAY ="graal_hpy_from_wchar_array";
-    public static final String GRAAL_HPY_CONTEXT_TO_NATIVE ="graal_hpy_context_to_native";
+    public static final String GRAAL_HPY_FROM_I8_ARRAY = "graal_hpy_from_i8_array";
+    public static final String GRAAL_HPY_FROM_WCHAR_ARRAY = "graal_hpy_from_wchar_array";
+    public static final String GRAAL_HPY_CONTEXT_TO_NATIVE = "graal_hpy_context_to_native";
 }
