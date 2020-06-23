@@ -50,6 +50,7 @@ import java.util.zip.CRC32;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -360,6 +361,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         PBytes b2a(PArray data,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
             return b2a(toByteArray.execute(data.getSequenceStorage()));
+        }
+
+        @Fallback
+        PBytes b2a(Object data) {
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
         }
 
         @TruffleBoundary

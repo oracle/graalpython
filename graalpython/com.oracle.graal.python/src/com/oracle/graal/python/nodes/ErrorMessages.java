@@ -87,7 +87,6 @@ public abstract class ErrorMessages {
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
-    public static final String BYTES_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String C_ARG_NOT_IN_RANGE = "%c arg not in range(0x%s)";
     public static final String CALL_STACK_NOT_DEEP_ENOUGH = "call stack is not deep enough";
@@ -118,6 +117,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
     public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
+    public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution order (MRO) for bases %p, %p";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s'";
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
