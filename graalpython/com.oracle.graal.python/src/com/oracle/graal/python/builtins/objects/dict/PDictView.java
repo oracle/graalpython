@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -71,8 +72,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictKeyIterator extends PHashingStorageIterator<Object> {
-        public PDictKeyIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator) {
-            super(clazz, storage, iterator);
+        public PDictKeyIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, storage, iterator, hashingStorage, initialSize);
         }
     }
 
@@ -89,8 +90,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictValueIterator extends PHashingStorageIterator<Object> {
-        public PDictValueIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator) {
-            super(clazz, storage, iterator);
+        public PDictValueIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, storage, iterator, hashingStorage, initialSize);
         }
     }
 
@@ -107,8 +108,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictItemIterator extends PHashingStorageIterator<DictEntry> {
-        public PDictItemIterator(Object clazz, DynamicObject storage, HashingStorageIterator<DictEntry> iterator) {
-            super(clazz, storage, iterator);
+        public PDictItemIterator(Object clazz, DynamicObject storage, HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, storage, iterator, hashingStorage, initialSize);
         }
     }
 

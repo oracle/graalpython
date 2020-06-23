@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
@@ -123,14 +124,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
         Object getKeysViewIter(PDictKeysView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictKeyIterator(lib.keys(getStore.execute(self.getWrappedDict())).iterator());
+            PHashingCollection dict = self.getWrappedDict();
+            HashingStorage storage = getStore.execute(dict);
+            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getItemsViewIter(PDictItemsView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictItemIterator(lib.entries(getStore.execute(self.getWrappedDict())).iterator());
+            PHashingCollection dict = self.getWrappedDict();
+            HashingStorage storage = getStore.execute(dict);
+            return factory().createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
         }
     }
 
@@ -141,14 +146,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
         Object getReversedKeysViewIter(PDictKeysView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictReverseKeyIterator(lib.reverseKeys(getStore.execute(self.getWrappedDict())).iterator());
+            PHashingCollection dict = self.getWrappedDict();
+            HashingStorage storage = getStore.execute(dict);
+            return factory().createDictReverseKeyIterator(lib.reverseKeys(storage).iterator(), storage, lib.length(storage));
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getReversedItemsViewIter(PDictItemsView self,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createDictReverseItemIterator(lib.reverseEntries(getStore.execute(self.getWrappedDict())).iterator());
+            PHashingCollection dict = self.getWrappedDict();
+            HashingStorage storage = getStore.execute(dict);
+            return factory().createDictReverseItemIterator(lib.reverseEntries(storage).iterator(), storage, lib.length(storage));
         }
     }
 

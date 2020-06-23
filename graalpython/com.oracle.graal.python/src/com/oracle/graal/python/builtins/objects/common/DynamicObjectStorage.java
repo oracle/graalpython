@@ -341,7 +341,9 @@ public final class DynamicObjectStorage extends HashingStorage {
     @ExportMessage
     @TruffleBoundary
     public HashingStorage clear() {
-        return new DynamicObjectStorage();
+        store.setShapeAndResize(store.getShape(), EMPTY_SHAPE);
+        store.updateShape();
+        return this;
     }
 
     @Override
