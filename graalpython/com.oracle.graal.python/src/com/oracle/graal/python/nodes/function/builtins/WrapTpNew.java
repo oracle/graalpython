@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -56,6 +55,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
  * Implements cpython://Objects/typeobject.c#tp_new_wrapper.
@@ -63,9 +63,9 @@ import com.oracle.truffle.api.nodes.NodeCost;
 public final class WrapTpNew extends SlotWrapper {
     @Child IsTypeNode isType;
     @Child IsSubtypeNode isSubtype;
-    @Child GetBaseClassesNode getBases;
     @Child PRaiseNode raiseNode;
     @Child LookupAttributeInMRONode lookupNewNode;
+    @CompilationFinal ValueProfile builtinProfile;
     @CompilationFinal byte state = 0;
     @CompilationFinal PythonBuiltinClassType owner;
 
@@ -122,12 +122,17 @@ public final class WrapTpNew extends SlotWrapper {
             // we're in. We have our optimizations for this lookup that the compiler can then
             // (hopefully) merge with the initial lookup of the new method before entering it.
             if (lookupNewNode == null) {
+                reportPolymorphicSpecialize();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(SpecialMethodNames.__NEW__));
             }
             Object newMethod = lookupNewNode.execute(arg0);
             if (newMethod instanceof PBuiltinFunction) {
-                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) newMethod).getBuiltinNodeFactory();
+                if (builtinProfile == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    builtinProfile = ValueProfile.createIdentityProfile();
+                }
+                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) builtinProfile.profile(newMethod)).getBuiltinNodeFactory();
                 if (factory != null) {
                     if (!factory.getNodeClass().isAssignableFrom(getNode().getClass())) {
                         if ((state & IS_UNSAFE_STATE) == 0) {

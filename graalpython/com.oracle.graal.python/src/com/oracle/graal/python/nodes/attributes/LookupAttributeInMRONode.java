@@ -61,10 +61,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
 public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     public abstract static class Dynamic extends PNodeWithContext {
         private static final DynamicUncached UNCACHED = new DynamicUncached();
