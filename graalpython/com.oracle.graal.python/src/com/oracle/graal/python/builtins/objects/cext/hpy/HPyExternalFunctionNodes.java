@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,14 +42,13 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAllAsHandleNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -81,197 +81,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HPyExternalFunctionNodes {
 
-    abstract static class HPyExternalFunctionNode extends PRootNode implements IndirectCallNode {
-
-        private final Signature signature;
-        private final Object callable;
-        private final String name;
-
-        // TODO(fa): this flag is just a temporary solution; remove it and do proper argument
-        // conversion in the calling root node
-        private final boolean doConversion;
-
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-
-        HPyExternalFunctionNode(PythonLanguage lang, String name, Object callable, Signature signature, boolean doConversion) {
-            super(lang);
-            this.signature = signature;
-            this.callable = callable;
-            this.name = name;
-            this.doConversion = doConversion;
-        }
-
-        public Object getCallable() {
-            return callable;
-        }
-
-        @Specialization
-        Object doIt(VirtualFrame frame,
-                        @Cached HPyAllAsHandleNode allAsHandleNode,
-                        @CachedLibrary("getCallable()") InteropLibrary lib,
-                        @Cached CalleeContext calleeContext,
-                        @Cached("createCountingProfile()") ConditionProfile customLocalsProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached PRaiseNode raiseNode) {
-            CalleeContext.enter(frame, customLocalsProfile);
-
-            Object[] frameArgs = PArguments.getVariableArguments(frame);
-            Object[] arguments = new Object[frameArgs.length + 1];
-            GraalHPyContext hPyContext = ctx.getHPyContext();
-            if (doConversion) {
-                allAsHandleNode.executeInto(hPyContext, frameArgs, 0, arguments, 1);
-            } else {
-                System.arraycopy(frameArgs, 0, arguments, 1, frameArgs.length);
-            }
-
-            // first arg is always the HPyContext
-            arguments[0] = hPyContext;
-
-            // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
-            // it to the context since we cannot propagate it through the native frames.
-            Object state = ForeignCallContext.enter(frame, ctx, this);
-
-            try {
-                return asPythonObjectNode.execute(hPyContext, lib.execute(callable, arguments));
-            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
-            } catch (ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
-            } finally {
-                // special case after calling a C function: transfer caught exception back to frame
-                // to simulate the global state semantics
-                PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, state);
-                calleeContext.exit(frame, this);
-            }
-        }
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return nativeCodeDoesntNeedExceptionState;
-        }
-
-        @Override
-        public Node copy() {
-            HPyExternalFunctionNode node = (HPyExternalFunctionNode) super.copy();
-            node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            return node;
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public String toString() {
-            return "<external function root " + name + ">";
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return signature;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            // everything that is implemented in C is internal
-            return true;
-        }
-
-        public static HPyExternalFunctionNode create(PythonLanguage lang, String name, Object callable, Signature signature, boolean doConversion) {
-            return HPyExternalFunctionNodeGen.create(lang, name, callable, signature, doConversion);
-        }
-    }
-
-    public static final class HPyMethDirectRoot extends PRootNode {
-        private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
-
-        @Child private HPyExternalFunctionInvokeNode invokeNode;
-        @Child private CalleeContext calleeContext = CalleeContext.create();
-
-        private final String name;
-        private final Object callable;
-
-        @CompilationFinal private ConditionProfile customLocalsProfile;
-
-        private HPyMethDirectRoot(PythonLanguage lang, String name, Object callable) {
-            super(lang);
-            this.name = name;
-            this.callable = callable;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, ensureCustomLocalsProfile());
-            try {
-                return ensureInvokeNode().execute(frame, name, callable, PArguments.getVariableArguments(frame));
-            } finally {
-                calleeContext.exit(frame, this);
-            }
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public String toString() {
-            return "<external function root " + getName() + ">";
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            // everything that is implemented in C is internal
-            return true;
-        }
-
-        private ConditionProfile ensureCustomLocalsProfile() {
-            if (customLocalsProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                customLocalsProfile = ConditionProfile.createBinaryProfile();
-            }
-            return customLocalsProfile;
-        }
-
-        private HPyExternalFunctionInvokeNode ensureInvokeNode() {
-            if (invokeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-// invokeNode = insert(HPyExternalFunctionInvokeNode.create());
-            }
-            return invokeNode;
-        }
-
-        @TruffleBoundary
-        public static HPyMethDirectRoot create(PythonLanguage lang, String name, Object callable) {
-            return new HPyMethDirectRoot(lang, name, callable);
-        }
-    }
-
+    /**
+     * Invokes an HPy C function. It takes care of argument and result conversion and always passes
+     * the HPy context as a first parameter.
+     */
     abstract static class HPyExternalFunctionInvokeNode extends Node implements IndirectCallNode {
 
         @Child private HPyConvertArgsToSulongNode toSulongNode;
@@ -284,6 +97,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         HPyExternalFunctionInvokeNode(HPyConvertArgsToSulongNode convertArgsNode) {
+            CompilerAsserts.neverPartOfCompilation();
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : HPyAllAsHandleNodeGen.create();
         }
 
@@ -339,44 +153,59 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    public static class HPyMethVarargsRoot extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
-        @Child private ReadVarArgsNode readVarargsNode;
-
+    abstract static class HPyMethodDescriptorRootNode extends PRootNode {
         @Child private CalleeContext calleeContext;
         @Child private HPyExternalFunctionInvokeNode invokeNode;
-        @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
+        @Child private ReadIndexedArgumentNode readSelfNode;
 
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
+        @CompilationFinal private ConditionProfile customLocalsProfile;
 
         private final String name;
         private final Object callable;
 
         @TruffleBoundary
-        public HPyMethVarargsRoot(PythonLanguage language, String name, Object callable) {
+        public HPyMethodDescriptorRootNode(PythonLanguage language, String name, Object callable, HPyConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language);
+            assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
             this.name = name;
             this.callable = callable;
-            this.calleeContext = CalleeContext.create();
-            this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(HPyVarargsToSulongNodeGen.create());
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(convertArgsToSulongNode);
         }
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
+            CalleeContext.enter(frame, getCustomLocalsProfile());
             try {
-                Object self = readSelfNode.execute(frame);
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                return invokeNode.execute(frame, name, callable, new Object[]{self, new HPyArrayWrapper(args), (long) args.length});
+                return invokeNode.execute(frame, name, callable, prepareCArguments(frame));
             } finally {
-                calleeContext.exit(frame, this);
+                getCalleeContext().exit(frame, this);
             }
         }
 
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
+        protected abstract Object[] prepareCArguments(VirtualFrame frame);
+
+        protected final Object getSelf(VirtualFrame frame) {
+            if (readSelfNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readSelfNode = insert(ReadIndexedArgumentNode.create(0));
+            }
+            return readSelfNode.execute(frame);
+        }
+
+        private ConditionProfile getCustomLocalsProfile() {
+            if (customLocalsProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                customLocalsProfile = ConditionProfile.createCountingProfile();
+            }
+            return customLocalsProfile;
+        }
+
+        private CalleeContext getCalleeContext() {
+            if (calleeContext == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                calleeContext = insert(CalleeContext.create());
+            }
+            return calleeContext;
         }
 
         @Override
@@ -406,74 +235,118 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    public static class HPyMethKeywordsRoot extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
+    static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
 
-        @Child private ReadVarArgsNode readVarargsNode;
-        @Child private ReadVarKeywordsNode readKwargsNode;
-
-        @Child private CalleeContext calleeContext;
-        @Child private HPyExternalFunctionInvokeNode invokeNode;
-        @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
-
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
-
-        private final String name;
-        private final Object callable;
-
-        @TruffleBoundary
-        public HPyMethKeywordsRoot(PythonLanguage language, String name, Object callable) {
-            super(language);
-            this.name = name;
-            this.callable = callable;
-            this.calleeContext = CalleeContext.create();
-            this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(HPyKeywordsToSulongNodeGen.create());
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+        public HPyMethNoargsRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPyAllAsHandleNodeGen.create());
         }
 
         @Override
-        public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                Object kw = readKwargsNode.execute(frame);
-                return invokeNode.execute(frame, name, callable, new Object[]{self, new HPyArrayWrapper(args), (long) args.length, kw});
-            } finally {
-                calleeContext.exit(frame, this);
-            }
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), PNone.NONE};
         }
 
         @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
+    }
 
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
+    static final class HPyMethORoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
+
+        @Child private ReadIndexedArgumentNode readArgNode;
+
+        public HPyMethORoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPyAllAsHandleNodeGen.create());
         }
 
         @Override
-        public String getName() {
-            return name;
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg(frame)};
+        }
+
+        private Object getArg(VirtualFrame frame) {
+            if (readArgNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArgNode = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArgNode.execute(frame);
         }
 
         @Override
-        public NodeCost getCost() {
-            // this is just a thin argument shuffling wrapper
-            return NodeCost.NONE;
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethVarargsRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+
+        @Child private ReadVarArgsNode readVarargsNode;
+
+        @TruffleBoundary
+        public HPyMethVarargsRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPyVarargsToSulongNodeGen.create());
         }
 
         @Override
-        public String toString() {
-            return "<METH root " + name + ">";
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object[] args = getVarargs(frame);
+            return new Object[]{getSelf(frame), new HPyArrayWrapper(args), (long) args.length};
+        }
+
+        private Object[] getVarargs(VirtualFrame frame) {
+            if (readVarargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readVarargsNode = insert(ReadVarArgsNode.create(1, true));
+            }
+            return readVarargsNode.executeObjectArray(frame);
         }
 
         @Override
-        public boolean isPythonInternal() {
-            return true;
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethKeywordsRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
+
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private ReadVarKeywordsNode readKwargsNode;
+
+        @TruffleBoundary
+        public HPyMethKeywordsRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPyKeywordsToSulongNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object[] args = getVarargs(frame);
+            return new Object[]{getSelf(frame), new HPyArrayWrapper(args), (long) args.length, getKwargs(frame)};
+        }
+
+        private Object[] getVarargs(VirtualFrame frame) {
+            if (readVarargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readVarargsNode = insert(ReadVarArgsNode.create(1, true));
+            }
+            return readVarargsNode.executeObjectArray(frame);
+        }
+
+        private Object getKwargs(VirtualFrame frame) {
+            if (readKwargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(new String[0]));
+            }
+            return readKwargsNode.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 
