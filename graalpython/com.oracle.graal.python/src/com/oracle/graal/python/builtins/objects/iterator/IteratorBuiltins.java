@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
@@ -39,6 +40,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
@@ -53,6 +55,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -271,7 +274,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public long lengthHint(PBaseSetIterator self) {
-            return self.getSet().size() - self.getIndex();
+            return self.getSet().size() - self.index;
         }
 
         @Specialization(guards = "self.isPSequence()")
@@ -308,7 +311,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(factory().createList(storageNode.execute(frame, self)), self.getIndex(), context, pol);
+            return reduceInternal(factory().createList(storageNode.execute(frame, self)), self.index, context, pol);
         }
 
         @Specialization
@@ -401,6 +404,105 @@ public class IteratorBuiltins extends PythonBuiltins {
             } else {
                 return factory().createTuple(new Object[]{iter, args});
             }
+        }
+    }
+
+    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PBaseSetIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PDictView.PDictItemIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PDictView.PDictKeyIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PDictView.PDictValueIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PIntegerSequenceIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PPrimitiveIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PStringIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PRangeIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PRangeReverseIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "self.isPSequence()", limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PSequenceIterator self, Object index,
+                             @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
         }
     }
 }

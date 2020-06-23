@@ -52,7 +52,7 @@ public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
     private final HashingStorage hashingStorage;
     private final int size;
     private final HashingStorageIterator<T> iterator;
-    private int index;
+    public int index;
 
     public PHashingStorageIterator(Object clazz, DynamicObject storage, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int size) {
         super(clazz, storage);
@@ -75,10 +75,6 @@ public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
     @TruffleBoundary
     public final boolean hasNext() {
         return iterator.hasNext();
-    }
-
-    public int getIndex() {
-        return index;
     }
 
     public final boolean checkSizeChanged(HashingStorageLibrary lib) {
