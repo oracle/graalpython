@@ -133,7 +133,7 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(@SuppressWarnings("unused") Object[] arguments) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("should not reach");
         }
 
@@ -146,7 +146,7 @@ public abstract class GraalHPyContextFunctions {
                     return;
                 }
             }
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("invalid function mode used: " + actualMode);
         }
     }
@@ -384,7 +384,7 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object left = profile.profile(dictAsPythonObjectNode.execute(context, arguments[1]));
             if (!PGuards.isDict(left)) {
-                return raiseNode.raiseIntWithoutFrame(-1, SystemError, "bad internal call");
+                return raiseNode.raiseWithoutFrame(context.getNullHandle(), SystemError, "bad internal call");
             }
             PDict dict = (PDict) left;
             Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
@@ -557,6 +557,30 @@ public abstract class GraalHPyContextFunctions {
             try {
                 Object result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, object, "strict");
                 return resultAsHandleNode.execute(context, result);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(null, e);
+                return context.getNullHandle();
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeFromString extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            if (arguments.length != 2) {
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            try {
+                // TODO(fa) provide encoding (utf8)
+                Object str = fromCharPointerNode.execute(arguments[1]);
+                return asHandleNode.execute(context, str);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
                 return context.getNullHandle();
