@@ -92,7 +92,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                             Identifier: list
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [79,127]`for elem, count in s...`
-                                            Name: _keep_positive.<locals>.<genexp>:class02:3
+                                            Name: <genexpr>
                                             FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 5 slots [self, nonpositive, elem, __class__, <return_val>]
@@ -101,7 +101,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [79,127]`for elem, count in s...`
-                                              Name: _keep_positive.<locals>.<genexp>:class02:3
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: None

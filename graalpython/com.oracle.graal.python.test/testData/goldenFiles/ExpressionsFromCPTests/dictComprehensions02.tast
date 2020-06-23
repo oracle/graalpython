@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [11,39]`for x in seq if cond...`
-        Name: [].<locals>.<genexp>:dictComprehensions02:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [11,39]`for x in seq if cond...`
-          Name: [].<locals>.<genexp>:dictComprehensions02:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

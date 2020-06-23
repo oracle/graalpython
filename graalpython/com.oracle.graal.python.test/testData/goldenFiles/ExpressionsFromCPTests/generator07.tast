@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
   Documentation: None
   InnerRootNode SourceSection: [0,22]`(x for x in range(10...`
     GeneratorExpressionNode SourceSection: [0,22]`(x for x in range(10...`
-      Name: [].<locals>.<genexp>:generator07:1
+      Name: <genexpr>
       FrameDescriptor: 2 slots [x, <return_val>]
       Enclosing
         FrameDescriptor:  Empty
@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
       Block Nodes: 0
       Is Enclosing Frame Generator: false
       FunctionRootNode SourceSection: [3,21]`for x in range(10)`
-        Name: [].<locals>.<genexp>:generator07:1
+        Name: <genexpr>
         Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
         CelVars: None
         FreeVars: None

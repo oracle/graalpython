@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,20]`for i in range(3)`
-        Name: [].<locals>.<genexp>:setCompr:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [i, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [3,20]`for i in range(3)`
-          Name: [].<locals>.<genexp>:setCompr:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

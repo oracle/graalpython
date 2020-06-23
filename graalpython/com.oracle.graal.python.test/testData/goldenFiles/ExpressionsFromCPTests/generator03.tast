@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,42]`for x in range(20) i...`
-        Name: [].<locals>.<genexp>:generator03:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [6,42]`for x in range(20) i...`
-          Name: [].<locals>.<genexp>:generator03:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

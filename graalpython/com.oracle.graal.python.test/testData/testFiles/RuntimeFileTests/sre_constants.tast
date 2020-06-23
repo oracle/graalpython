@@ -659,7 +659,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [2020,2051]`for i, name in enume...`
-                          Name: _makecodes.<locals>.<genexp>:sre_constants:71
+                          Name: <genexpr>
                           FrameDescriptor: 5 slots [i, name, <>temp2, <>temp3, <return_val>]
                           Enclosing
                             FrameDescriptor: 3 slots [names, items, <return_val>]
@@ -668,7 +668,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [2020,2051]`for i, name in enume...`
-                            Name: _makecodes.<locals>.<genexp>:sre_constants:71
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: None
@@ -760,7 +760,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             Identifier: dict
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [2091,2108]`for item in items`
-                            Name: _makecodes.<locals>.<genexp>:sre_constants:72
+                            Name: <genexpr>
                             FrameDescriptor: 2 slots [item, <return_val>]
                             Enclosing
                               FrameDescriptor: 3 slots [names, items, <return_val>]
@@ -769,7 +769,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
                             FunctionRootNode SourceSection: [2091,2108]`for item in items`
-                              Name: _makecodes.<locals>.<genexp>:sre_constants:72
+                              Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: None

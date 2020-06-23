@@ -441,7 +441,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           Identifier: list
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GeneratorExpressionNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
-                                          Name: __init__.<locals>.<genexp>:_sitebuiltins:41
+                                          Name: <genexpr>
                                           FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
                                           Enclosing
                                             FrameDescriptor: 8 slots [self, name, data, files, dirs, os, __class__, <return_val>]
@@ -450,7 +450,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
                                           FunctionRootNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
-                                            Name: __init__.<locals>.<genexp>:_sitebuiltins:41
+                                            Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
                                             FreeVars: files, os

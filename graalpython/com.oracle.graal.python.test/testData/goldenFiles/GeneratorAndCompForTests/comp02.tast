@@ -70,7 +70,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     Identifier: any
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   GeneratorExpressionNode SourceSection: [86,108]`for b in cls.__bases...`
-                                    Name: mro.<locals>.<genexp>:comp02:3
+                                    Name: <genexpr>
                                     FrameDescriptor: 3 slots [b, base, <return_val>]
                                     Enclosing
                                       FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
@@ -79,7 +79,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     Block Nodes: 0
                                     Is Enclosing Frame Generator: false
                                     FunctionRootNode SourceSection: [86,108]`for b in cls.__bases...`
-                                      Name: mro.<locals>.<genexp>:comp02:3
+                                      Name: <genexpr>
                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                       CelVars: None
                                       FreeVars: base
@@ -172,7 +172,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [185,202]`for base in other`
-                            Name: mro.<locals>.<genexp>:comp02:5
+                            Name: <genexpr>
                             FrameDescriptor: 3 slots [base, abcs, <return_val>]
                             Enclosing
                               FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
@@ -181,7 +181,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
                             FunctionRootNode SourceSection: [185,202]`for base in other`
-                              Name: mro.<locals>.<genexp>:comp02:5
+                              Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: abcs

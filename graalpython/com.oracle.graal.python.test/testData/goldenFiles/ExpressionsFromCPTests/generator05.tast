@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       GeneratorExpressionNode SourceSection: [10,37]`for x in range(20) i...`
-        Name: [].<locals>.<genexp>:generator05:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -21,7 +21,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [10,37]`for x in range(20) i...`
-          Name: [].<locals>.<genexp>:generator05:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

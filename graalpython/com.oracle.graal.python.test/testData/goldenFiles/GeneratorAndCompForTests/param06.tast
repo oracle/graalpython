@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [44,77]`for dir in dirs for ...`
-                            Name: fn.<locals>.<genexp>:param06:2
+                            Name: <genexpr>
                             FrameDescriptor: 4 slots [file, dir, files, <return_val>]
                             Enclosing
                               FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
                             FunctionRootNode SourceSection: [44,77]`for dir in dirs for ...`
-                              Name: fn.<locals>.<genexp>:param06:2
+                              Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: files
