@@ -101,7 +101,7 @@ public final class WrapTpNew extends SlotWrapper {
                     state |= NOT_CLASS_STATE;
                 }
                 throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                                "%s.__new__(X): X is not a type object (%N)", getOwner().getName(), arg0);
+                                "%s.__new__(X): X is not a type object (%p)", getOwner().getName(), arg0);
             }
             if (isSubtype == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
