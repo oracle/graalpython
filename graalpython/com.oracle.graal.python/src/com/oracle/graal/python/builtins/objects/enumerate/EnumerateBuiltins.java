@@ -62,7 +62,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         @Specialization
         Object doNext(VirtualFrame frame, PEnumerate self,
                         @Cached("create()") GetNextNode next) {
-            return factory().createTuple((new Object[]{self.getAndIncrementIndex(), next.execute(frame, self.getIterator())}));
+            return factory().createTuple((new Object[]{self.getAndIncrementIndex(factory()), next.execute(frame, self.getIterator())}));
         }
     }
 

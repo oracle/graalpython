@@ -804,6 +804,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PEnumerate(cls, makeStorage(cls), iterator, start));
     }
 
+    public PEnumerate createEnumerate(Object cls, Object iterator, PInt start) {
+        return trace(new PEnumerate(cls, makeStorage(cls), iterator, start));
+    }
+
     public PMap createMap(Object cls) {
         return trace(new PMap(cls, makeStorage(cls)));
     }

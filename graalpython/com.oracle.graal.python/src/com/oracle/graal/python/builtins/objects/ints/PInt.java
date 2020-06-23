@@ -368,6 +368,11 @@ public final class PInt extends PythonBuiltinObject {
         return (compareTo(val) < 0 ? this : val);
     }
 
+    @TruffleBoundary
+    public BigInteger inc() {
+        return value.add(BigInteger.ONE);
+    }
+
     public int bitLength() {
         return bitLength(value);
     }

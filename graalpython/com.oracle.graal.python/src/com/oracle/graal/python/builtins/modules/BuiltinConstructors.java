@@ -58,6 +58,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
+import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
@@ -807,7 +808,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createEnumerate(cls, getIterator.executeWith(frame, iterable), start);
         }
 
-        @Specialization(guards = "!isInteger(start)")
+        @Specialization
+        public PEnumerate enumerate(VirtualFrame frame, Object cls, Object iterable, PInt start,
+                        @Cached("create()") GetIteratorNode getIterator) {
+            return factory().createEnumerate(cls, getIterator.executeWith(frame, iterable), start);
+        }
+
+        static boolean isIntegerIndex(Object idx) {
+            return isInteger(idx) || idx instanceof PInt;
+        }
+
+        @Specialization(guards = "!isIntegerIndex(start)")
         public void enumerate(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object iterable, Object start) {
             raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
         }
@@ -1565,11 +1576,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         protected static boolean isIntegerType(Object obj) {
-            return PGuards.isBoolean(obj) || PGuards.isInteger(obj) || PGuards.isPInt(obj);
+            return PGuards.isBoolean(obj) || isInteger(obj) || PGuards.isPInt(obj);
         }
 
         protected static boolean isHandledType(Object obj) {
-            return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
+            return isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
         }
 
         protected static FloatBuiltins.IntNode createFloatInt() {

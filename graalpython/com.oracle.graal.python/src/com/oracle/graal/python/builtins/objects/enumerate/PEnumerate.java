@@ -25,13 +25,21 @@
  */
 package com.oracle.graal.python.builtins.objects.enumerate;
 
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PEnumerate extends PythonBuiltinObject {
 
     private final Object iterator;
     private long index;
+    private PInt bigIndex = null;
+
+    public PEnumerate(Object clazz, DynamicObject storage, Object iterator, PInt start) {
+        this(clazz, storage, iterator, -1);
+        this.bigIndex = start;
+    }
 
     public PEnumerate(Object clazz, DynamicObject storage, Object iterator, long start) {
         super(clazz, storage);
@@ -43,11 +51,19 @@ public final class PEnumerate extends PythonBuiltinObject {
         return iterator;
     }
 
-    public long getAndIncrementIndex() {
+    public Object getAndIncrementIndex(PythonObjectFactory factory) {
+        if (bigIndex != null) {
+            PInt idx = bigIndex;
+            bigIndex = factory.createInt(bigIndex.inc());
+            return idx;
+        }
         return index++;
     }
 
-    public long getIndex() {
+    public Object getIndex() {
+        if (bigIndex != null) {
+            return bigIndex;
+        }
         return index;
     }
 }
