@@ -42,14 +42,10 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -59,7 +55,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeCost;
 
 /**
@@ -123,98 +118,33 @@ public final class WrapTpNew extends SlotWrapper {
                                 "%s.__new__(%N): %N is not a subtype of %s",
                                 getOwner().getName(), arg0, arg0, getOwner().getName());
             }
-            if (getBases == null) {
+            // CPython walks the bases and checks that the first non-heaptype base has the new that
+            // we're in. We have our optimizations for this lookup that the compiler can then
+            // (hopefully) merge with the initial lookup of the new method before entering it.
+            if (lookupNewNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                getBases = insert(GetBaseClassesNodeGen.create());
+                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(SpecialMethodNames.__NEW__));
             }
-            PythonAbstractClass[] bases = getBases.execute(arg0);
-            if ((state & MRO_LENGTH_MASK) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                int length = bases.length;
-                if (length < MRO_LENGTH_MASK) {
-                    state |= length;
-                } else {
-                    state |= MRO_LENGTH_MASK;
+            Object newMethod = lookupNewNode.execute(arg0);
+            if (newMethod instanceof PBuiltinFunction) {
+                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) newMethod).getBuiltinNodeFactory();
+                if (factory != null) {
+                    if (!factory.getNodeClass().isAssignableFrom(getNode().getClass())) {
+                        if ((state & IS_UNSAFE_STATE) == 0) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            reportPolymorphicSpecialize();
+                            state |= IS_UNSAFE_STATE;
+                        }
+                        throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                                        "%s.__new__(%N) is not safe, use %N.__new__()",
+                                        getOwner().getName(), arg0, arg0);
+                    }
                 }
-            }
-            boolean isSafeNew = true;
-            if ((state & MRO_LENGTH_MASK) == bases.length) {
-                // cached mro, explode loop
-                isSafeNew = checkSafeNew(bases, state & MRO_LENGTH_MASK);
-            } else {
-                if ((state & NONCONSTANT_MRO) == 0) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    reportPolymorphicSpecialize();
-                    state |= NONCONSTANT_MRO;
-                }
-                // mro too long to cache or different from the cached one, no explode loop
-                isSafeNew = checkSafeNew(bases);
-            }
-            if (!isSafeNew) {
-                if ((state & IS_UNSAFE_STATE) == 0) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    reportPolymorphicSpecialize();
-                    state |= IS_UNSAFE_STATE;
-                }
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                                "%s.__new__(%N) is not safe, use %N.__new__()",
-                                getOwner().getName(), arg0, arg0);
+                // we explicitly allow non-Java functions to pass here, since a PythonBuiltinClass
+                // with a non-java function is explicitly written in the core to allow this
             }
         }
         return super.execute(frame);
-    }
-
-    @ExplodeLoop
-    private boolean checkSafeNew(PythonAbstractClass[] bases, int length) {
-        for (int i = 0; i < length; i++) {
-            byte safe = isSafe(bases, i);
-            if (safe != -1) {
-                return safe == 0 ? false : true;
-            }
-        }
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("there is no non-heap type in the mro, broken class");
-    }
-
-    private boolean checkSafeNew(PythonAbstractClass[] bases) {
-        for (int i = 0; i < bases.length; i++) {
-            byte safe = isSafe(bases, i);
-            if (safe != -1) {
-                return safe == 0 ? false : true;
-            }
-        }
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("there is no non-heap type in the mro, broken class");
-    }
-
-    private byte isSafe(PythonAbstractClass[] mro, int i) {
-        PythonAbstractClass base = mro[i];
-        if (base instanceof PythonBuiltinClass) {
-            if (((PythonBuiltinClass) base).getType() == getOwner()) {
-                return 1;
-            } else {
-                if (lookupNewNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lookupNewNode = insert(LookupAttributeInMRONode.create(SpecialMethodNames.__NEW__));
-                }
-                Object newMethod = lookupNewNode.execute(base);
-                if (newMethod instanceof PBuiltinFunction) {
-                    NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) newMethod).getBuiltinNodeFactory();
-                    if (factory != null) {
-                        return factory.getNodeClass().isAssignableFrom(getNode().getClass()) ? (byte)1 : (byte)0;
-                    }
-                }
-                // we explicitly allow non-Java builtin functions to pass, since a
-                // PythonBuiltinClass with a non-java function is explicitly written in the core to
-                // allow this
-                return 1;
-            }
-        } else if (PythonNativeClass.isInstance(base)) {
-            // should have called the native tp_new in any case
-            return 0;
-        }
-        return -1;
     }
 
     private final PRaiseNode getRaiseNode() {
