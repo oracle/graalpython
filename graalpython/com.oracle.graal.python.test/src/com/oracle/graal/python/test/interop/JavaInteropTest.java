@@ -52,15 +52,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
 
-import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
@@ -75,6 +66,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 @RunWith(Enclosed.class)
 public class JavaInteropTest {
@@ -301,13 +301,14 @@ public class JavaInteropTest {
                             "suite.py").build();
             Value suite = context.eval(suitePy);
 
+            Value listConverter = context.eval("python", "list");
             Value libraries = suite.getMember("libraries");
             assertNotNull("libraries found", libraries);
-            final List<Object> suiteKeys = Arrays.asList(suite.invokeMember("keys").as(Object[].class));
+            final List<Object> suiteKeys = Arrays.asList(listConverter.execute(suite.invokeMember("keys")).as(Object[].class));
             assertTrue("Libraries found among keys: " + suiteKeys, suiteKeys.contains("libraries"));
 
             Value dacapo = null;
-            for (Object k : libraries.invokeMember("keys").as(List.class)) {
+            for (Object k : listConverter.execute(libraries.invokeMember("keys")).as(List.class)) {
                 System.err.println("k " + k);
                 if ("DACAPO".equals(k)) {
                     dacapo = libraries.getMember((String) k);
