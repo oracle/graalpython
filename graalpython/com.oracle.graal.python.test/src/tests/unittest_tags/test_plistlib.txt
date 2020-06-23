@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_invalid_uid
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_keys_no_string
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_load_invalid_file
+*graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_lone_surrogates
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_modified_uid_huge
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_modified_uid_negative
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_uid

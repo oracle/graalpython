@@ -461,3 +461,20 @@ def test_isdisjoint_customobjs():
     assert {10, 11, 12, 13, 14}.isdisjoint(NonSetWithIter())
     assert not {1, 2}.isdisjoint(NonSetWithIter())
     assert not {1, 2, 3, 4, 5}.isdisjoint(NonSetWithIter())
+
+def test_iter_changed_size():
+    def just_iterate(it):
+        for i in it:
+            pass
+
+    def iterate_and_update(it):
+        for i in it:
+            s.add(3)
+
+    s = {1, 2}
+    it = iter(s)
+    s.pop()
+    assert_raises(RuntimeError, just_iterate, it)
+
+    s = {1, 2}
+    assert_raises(RuntimeError, iterate_and_update, s)

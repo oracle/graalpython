@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,8 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.Interval;
 
+import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
+import com.oracle.graal.python.runtime.PythonParser.ErrorType;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -74,6 +76,13 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         }
         Token token = r.getOffendingToken();
         return source.createSection(token.getStartIndex(), Math.max(0, token.getStopIndex() - token.getStartIndex()));
+    }
+
+    static ErrorType getErrorType(Exception e) {
+        if (e instanceof DescriptiveBailErrorListener.EmptyRecognitionException) {
+            return ((DescriptiveBailErrorListener.EmptyRecognitionException) e).getErrorType();
+        }
+        return ErrorType.Generic;
     }
 
     private static String getTokeLineText(Parser recognizer, Token token) {

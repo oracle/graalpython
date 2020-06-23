@@ -71,6 +71,7 @@ import com.oracle.graal.python.parser.sst.ImportSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.StarSSTNode;
+import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
@@ -129,6 +130,14 @@ public final class PythonSSTNodeFactory {
         ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
         ScopeInfo globalScope = scopeEnvironment.getGlobalScope();
         for (String name : names) {
+            if (scopeInfo.isExplicitNonlocalVariable(name)) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NONLOCAL_AND_GLOBAL, name);
+            }
+            if (scopeInfo.findFrameSlot(name) != null) {
+                // The expectation is that in the local context the variable can not have slot yet.
+                // The slot is created by assignment or declaration
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NAME_IS_ASSIGNED_BEFORE_GLOBAL, name);
+            }
             scopeInfo.addExplicitGlobalVariable(name);
             globalScope.createSlotIfNotPresent(name);
         }
@@ -137,7 +146,13 @@ public final class PythonSSTNodeFactory {
 
     public SSTNode registerNonLocal(String[] names, int startOffset, int endOffset) {
         ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
+        if (scopeInfo.getScopeKind() == ScopeKind.Module) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NONLOCAL_AT_MODULE_LEVEL);
+        }
         for (String name : names) {
+            if (scopeInfo.isExplicitGlobalVariable(name)) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NONLOCAL_AND_GLOBAL, name);
+            }
             if (scopeInfo.findFrameSlot(name) != null) {
                 // the expectation is that in the local context the variable can not have slot yet.
                 // The slot is created by assignment or declaration
@@ -173,6 +188,9 @@ public final class PythonSSTNodeFactory {
     }
 
     public SSTNode createAnnAssignment(SSTNode lhs, SSTNode type, SSTNode rhs, int start, int end) {
+        if (lhs instanceof CollectionSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), "only single target (not tuple) can be annotated");
+        }
         declareVar(lhs);
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
@@ -245,6 +263,10 @@ public final class PythonSSTNodeFactory {
         }
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
+    }
+
+    public StringLiteralSSTNode createStringLiteral(String[] values, int startOffset, int endOffset) {
+        return StringLiteralSSTNode.create(values, startOffset, endOffset, source, errors);
     }
 
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame) {

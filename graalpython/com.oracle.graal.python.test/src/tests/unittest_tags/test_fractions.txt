@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testComparisons
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testComparisonsDummyFloat
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testComparisonsDummyRational
+*graalpython.lib-python.3.test.test_fractions.FractionTest.testConversions
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testFromDecimal
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testFromFloat
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testFromString
@@ -18,6 +19,7 @@
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testMixedLess
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testMixedLessEqual
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testMixingWithDecimal
+*graalpython.lib-python.3.test.test_fractions.FractionTest.testRound
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testStringification
 *graalpython.lib-python.3.test.test_fractions.FractionTest.test_as_integer_ratio
 *graalpython.lib-python.3.test.test_fractions.FractionTest.test_copy_deepcopy_pickle

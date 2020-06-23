@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,21 @@
 package com.oracle.graal.python.parser.sst;
 
 public class FloatLiteralSSTNode extends SSTNode {
-    protected final String value;
+    protected final double value;
     protected final boolean imaginary;
 
-    public FloatLiteralSSTNode(String value, boolean imaginary, int startOffset, int endOffset) {
+    public FloatLiteralSSTNode(double value, boolean imaginary, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.value = value;
         this.imaginary = imaginary;
+    }
+
+    public static FloatLiteralSSTNode create(String rawValue, boolean imaginary, int startOffset, int endOffset) {
+        String value = rawValue.replace("_", "");
+        if (imaginary) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return new FloatLiteralSSTNode(Double.parseDouble(value), imaginary, startOffset, endOffset);
     }
 
     @Override

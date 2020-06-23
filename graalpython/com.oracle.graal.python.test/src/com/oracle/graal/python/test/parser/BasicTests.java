@@ -85,6 +85,16 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void leadingIndent1() throws Exception {
+        checkSyntaxErrorMessage(" 1", "IndentationError: unexpected indent");
+    }
+
+    @Test
+    public void leadingIndent2() throws Exception {
+        checkTreeResult(" # foo\npass");
+    }
+
+    @Test
     public void annAssign01() throws Exception {
         checkTreeResult("a: int = 1");
     }
@@ -544,7 +554,7 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void nonlocal02() throws Exception {
-        checkTreeResult("nonlocal x");
+        checkSyntaxError("nonlocal x");
     }
 
     @Test

@@ -30,6 +30,11 @@
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_normcase
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_normpath_issue5827
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_relpath_errors
+*graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_samefile
+*graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_samefile_on_symlink
+*graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_sameopenfile
+*graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_samestat
+*graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_samestat_on_symlink
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_splitdrive
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_basename
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_dirname

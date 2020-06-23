@@ -57,6 +57,7 @@
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content_empty
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content_escape
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_encoding
+*graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_encoding_bytes
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_fragment
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ignorable
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ignorable_empty
@@ -78,6 +79,7 @@
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content_empty
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content_escape
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_encoding
+*graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_encoding_bytes
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_fragment
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ignorable
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ignorable_empty
@@ -99,6 +101,7 @@
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_xmlgen_content_empty
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_xmlgen_content_escape
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_xmlgen_encoding
+*graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_xmlgen_encoding_bytes
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_xmlgen_fragment
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_xmlgen_ignorable
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_xmlgen_ignorable_empty

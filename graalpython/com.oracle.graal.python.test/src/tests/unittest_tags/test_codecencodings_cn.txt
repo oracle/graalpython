@@ -1,14 +1,17 @@
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB18030.test_chunkcoding
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB18030.test_customreplace_encode
+*graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB18030.test_incrementaldecoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB18030.test_incrementalencoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB18030.test_streamwriter
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB18030.test_streamwriter_reset_no_pending
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB18030.test_xmlcharrefreplace
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_chunkcoding
+*graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_incrementaldecoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_incrementalencoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_streamwriter
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_streamwriter_reset_no_pending
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_chunkcoding
+*graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_incrementaldecoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_incrementalencoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_streamwriter
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_streamwriter_reset_no_pending

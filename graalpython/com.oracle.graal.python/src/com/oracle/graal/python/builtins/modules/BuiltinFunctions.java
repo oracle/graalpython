@@ -533,7 +533,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class EvalNode extends PythonBuiltinNode {
         protected final String funcname = "eval";
         private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
-        @Child protected CompileNode compileNode = CompileNode.create(false);
+        @Child protected CompileNode compileNode;
         @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
 
@@ -571,7 +571,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected PCode createAndCheckCode(VirtualFrame frame, Object source) {
-            PCode code = compileNode.execute(frame, source, "<string>", getMode(), 0, false, -1);
+            PCode code = getCompileNode().execute(frame, source, "<string>", getMode(), 0, false, -1);
             assertNoFreeVars(code);
             return code;
         }
@@ -680,6 +680,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         PNone badLocals(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") PDict globals, Object locals) {
             throw raise(TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, funcname, locals);
         }
+
+        private CompileNode getCompileNode() {
+            if (compileNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                compileNode = insert(CompileNode.create(false, shouldStripLeadingWhitespace()));
+            }
+            return compileNode;
+        }
+
+        protected boolean shouldStripLeadingWhitespace() {
+            return true;
+        }
     }
 
     @Builtin(name = EXEC, minNumOfPositionalArgs = 1, parameterNames = {"source", "globals", "locals"})
@@ -697,6 +709,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             executeInternal(frame);
             return PNone.NONE;
         }
+
+        @Override
+        protected boolean shouldStripLeadingWhitespace() {
+            return false;
+        }
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
@@ -709,13 +726,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * Truffle tooling
          */
         private final boolean mayBeFromFile;
+        private final boolean lstrip;
 
-        public CompileNode(boolean mayBeFromFile) {
+        public CompileNode(boolean mayBeFromFile, boolean lstrip) {
             this.mayBeFromFile = mayBeFromFile;
+            this.lstrip = lstrip;
         }
 
         public CompileNode() {
             this.mayBeFromFile = true;
+            this.lstrip = false;
         }
 
         public abstract PCode execute(VirtualFrame frame, Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
@@ -761,6 +781,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 throw raise(ValueError, ErrorMessages.COMPILE_MUST_BE);
             }
+            if (lstrip) {
+                code = code.replaceFirst("^[ \t]", "");
+            }
             final String codeToCompile = code;
             Supplier<CallTarget> createCode = () -> {
                 Source source = PythonLanguage.newSource(context, codeToCompile, filename, mayBeFromFile);
@@ -788,7 +811,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         public static CompileNode create(boolean mapFilenameToUri) {
-            return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, new ReadArgumentNode[]{});
+            return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, false, new ReadArgumentNode[]{});
+        }
+
+        public static CompileNode create(boolean mapFilenameToUri, boolean lstrip) {
+            return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, lstrip, new ReadArgumentNode[]{});
         }
     }
 

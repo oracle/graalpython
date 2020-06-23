@@ -43,3 +43,4 @@
 *graalpython.lib-python.3.test.test_regrtest.ProgramsTestCase.test_pcbuild_rt
 *graalpython.lib-python.3.test.test_regrtest.ProgramsTestCase.test_tools_buildbot_test
 *graalpython.lib-python.3.test.test_regrtest.ProgramsTestCase.test_tools_script_run_tests
+*graalpython.lib-python.3.test.test_regrtest.TestUtils.test_format_duration

@@ -57,6 +57,7 @@
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_gc
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_objmethods
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_range_optimization
+*graalpython.lib-python.3.test.test_enumerate.TestReversed.test_simple
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_basicfunction
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_exception_propagation

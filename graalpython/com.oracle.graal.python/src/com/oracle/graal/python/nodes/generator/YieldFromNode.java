@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -76,6 +77,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     @Child private CallNode callSendNode;
 
     @Child private GetTracebackNode getTracebackNode;
+    @Child private WriteUnraisableNode writeUnraisableNode;
 
     @Child private IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
     @Child private IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
@@ -143,8 +145,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                             close = getGetCloseNode().executeObject(frame, _i);
                         } catch (PException pe) {
                             if (!hasNoCloseProfile.profileException(pe, PythonBuiltinClassType.AttributeError)) {
-                                // TODO msimacek: CPython writes the exception (!=AttributeError) as
-                                // unraisable and discards it
+                                ensureWriteUnraisable().execute(frame, pe.setCatchingFrameAndGetEscapedException(frame), null, _i);
                             }
                         }
                         if (close != null) {
@@ -284,6 +285,14 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             getTracebackNode = insert(GetTracebackNode.create());
         }
         return getTracebackNode;
+    }
+
+    private WriteUnraisableNode ensureWriteUnraisable() {
+        if (writeUnraisableNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            writeUnraisableNode = insert(WriteUnraisableNode.create());
+        }
+        return writeUnraisableNode;
     }
 
     public void setIteratorSlot(int slot) {

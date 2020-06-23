@@ -33,10 +33,13 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -45,6 +48,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictReverseItemIterator})
@@ -60,8 +64,13 @@ public final class DictItemsIteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(PDictItemIterator self,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeChanged,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary storageLibrary) {
             if (profile.profile(hasNext(self))) {
+                if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
+                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
+                }
                 DictEntry value = next(self);
                 return factory().createTuple(new Object[]{value.getKey(), value.getValue()});
             }

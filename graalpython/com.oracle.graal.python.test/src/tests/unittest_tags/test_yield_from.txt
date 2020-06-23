@@ -1,11 +1,15 @@
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_attempted_yield_from_loop
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_attempting_to_send_to_non_generator
+*graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_broken_getattr_handling
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_catching_exception_from_subgen_and_returning
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_close_with_cleared_frame
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_conversion_of_sendNone_to_next
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_custom_iterator_return
+*graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegating_close
+*graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegating_generators_claim_to_be_running
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegating_throw
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegating_throw_to_non_generator
+*graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegation_of_close_to_non_generator
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegation_of_initial_next_to_subgenerator
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegation_of_next_call_to_subgenerator
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_delegation_of_next_to_non_generator
@@ -14,6 +18,7 @@
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_exception_in_initial_next_call
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_exception_value_crash
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_generator_return_value
+*graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_handing_exception_while_delegating_close
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_handling_exception_while_delegating_send
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_next_and_return_with_value
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_raising_exception_in_delegated_next_call
@@ -21,6 +26,8 @@
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_returning_value_from_delegated_throw
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_send_and_return_with_value
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_send_tuple_with_custom_generator
+*graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_throwing_GeneratorExit_into_subgen_that_raises
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_throwing_GeneratorExit_into_subgen_that_returns
+*graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_throwing_GeneratorExit_into_subgenerator_that_yields
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_value_attribute_of_StopIteration_exception
 *graalpython.lib-python.3.test.test_yield_from.TestPEP380Operation.test_yield_from_empty

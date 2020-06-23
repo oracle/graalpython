@@ -26,6 +26,7 @@
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_enum_in_enum_out
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_enum_value
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_enum_with_value_name
+*graalpython.lib-python.3.test.test_enum.TestEnum.test_equality
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_exclude_methods
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_exploding_pickle
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_extending

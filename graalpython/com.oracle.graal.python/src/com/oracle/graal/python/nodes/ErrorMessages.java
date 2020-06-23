@@ -166,9 +166,12 @@ public abstract class ErrorMessages {
     public static final String COUNT_FUNC_MATH = "count function in Math";
     public static final String COVERAGE_TRACKER_NOT_RUNNING = "coverage tracker not running";
     public static final String CREATING_SOCKETS_NOT_ALLOWED = "creating sockets not allowed";
+    public static final String DEFAULT_EXCEPT_MUST_BE_LAST = "default 'except:' must be last";
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";
+    public static final String DICT_KEYS_CHANGED_DURING_ITERATION = "dictionary keys changed during iteration";
+    public static final String CHANGED_SIZE_DURING_ITERATION = "%s changed size during iteration";
     public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must have been set to a dictionary, not a '%p'";
     public static final String DICT_OF_P_OBJECTS_HAS_NO_ATTR = "'%p' dict of '%p' object has no attribute '__setitem__'";
     public static final String DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED = "dictionary update sequence element #%d has length %d; 2 is required";
@@ -215,6 +218,7 @@ public abstract class ErrorMessages {
     public static final String FUNC_CONSTRUCTION_NOT_SUPPORTED = "function construction not supported for (%p, %p, %p, %p, %p, %p)";
     public static final String FUNC_TAKES_AT_LEAST_D_ARGS = "function takes at least %d arguments (%d given)";
     public static final String FUNC_TAKES_EXACTLY_D_ARGS = "function takes exaclty %d arguments (%d given)";
+    public static final String GENERATOR_EXPR_MUST_BE_PARENTHESIZED = "Generator expression must be parenthesized";
     public static final String GENERATOR_IGNORED_EXIT = "generator ignored GeneratorExit";
     public static final String GENERATOR_RAISED_STOPITER = "generator raised StopIteration";
     public static final String GENERATOR_ALREADY_EXECUTING = "generator already executing";
@@ -329,6 +333,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
+    public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
@@ -343,6 +348,8 @@ public abstract class ErrorMessages {
     public static final String NO_CURRENT_FRAME = "%s: no current frame";
     public static final String NO_FUNCTION_FOUND = "no function %s%s found in %s";
     public static final String NO_SUCH_FILE_OR_DIR = "No such file or directory: '%s:/%s'";
+    public static final String NONLOCAL_AND_GLOBAL = "name '%s' is nonlocal and global";
+    public static final String NONLOCAL_AT_MODULE_LEVEL = "nonlocal declaration not allowed at module level";
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";
     public static final String NON_STRING_IN_CODE_SLOT = "non-string found in code slot";
     public static final String NOT_A_ZIP_FILE = "not a Zip file: '%s'";

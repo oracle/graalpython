@@ -51,6 +51,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -82,6 +84,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -96,8 +99,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -413,7 +414,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         protected String getFileSystemEncoding() {
-            return System.getProperty("file.encoding");
+            String javaEncoding = System.getProperty("file.encoding");
+            String pythonEncoding = CharsetMapping.getPythonEncodingNameFromJavaName(javaEncoding);
+            // Fallback on returning the property value if no mapping found
+            return pythonEncoding != null ? pythonEncoding : javaEncoding;
         }
     }
 

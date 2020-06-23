@@ -61,6 +61,19 @@ public final class ArgListBuilder {
     private List<String> nameArgNames;
     private List<SSTNode> starArg;
     private List<SSTNode> kwArg;
+    private SSTNode nakedForComp;
+
+    public ArgListBuilder() {
+        // default
+    }
+
+    public ArgListBuilder(int argCount, int namedArgCount, int starArgCount, int kwArgCount) {
+        this.args = new ArrayList<>(argCount);
+        this.nameArgNodes = new ArrayList<>(namedArgCount);
+        this.nameArgNames = new ArrayList<>(namedArgCount);
+        this.starArg = new ArrayList<>(starArgCount);
+        this.kwArg = new ArrayList<>(kwArgCount);
+    }
 
     public void addArg(SSTNode value) {
         if (args == null) {
@@ -176,4 +189,20 @@ public final class ArgListBuilder {
         return result;
     }
 
+    public boolean hasNakedForComp() {
+        return nakedForComp != null;
+    }
+
+    public SSTNode getNakedForComp() {
+        return nakedForComp;
+    }
+
+    public void addNakedForComp(SSTNode node) {
+        setNakedForComp(node);
+        addArg(node);
+    }
+
+    public void setNakedForComp(SSTNode nakedForComp) {
+        this.nakedForComp = nakedForComp;
+    }
 }

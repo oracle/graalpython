@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -180,7 +181,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public boolean isSyntaxError() {
-        return pythonException != null && IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), PythonBuiltinClassType.SyntaxError);
+        if (pythonException == null) {
+            return false;
+        }
+        Object clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
+        return IsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.SyntaxError) ||
+                        IsSubtypeNode.getUncached().execute(clazz, PythonBuiltinClassType.SyntaxError);
     }
 
     public void setIncompleteSource(boolean val) {

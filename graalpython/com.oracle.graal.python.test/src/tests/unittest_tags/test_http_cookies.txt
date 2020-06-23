@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_http_cookies.CookieTests.test_basic
+*graalpython.lib-python.3.test.test_http_cookies.CookieTests.test_comment_quoting
 *graalpython.lib-python.3.test.test_http_cookies.CookieTests.test_extended_encode
 *graalpython.lib-python.3.test.test_http_cookies.CookieTests.test_extra_spaces
 *graalpython.lib-python.3.test.test_http_cookies.CookieTests.test_illegal_chars
@@ -14,6 +15,7 @@
 *graalpython.lib-python.3.test.test_http_cookies.CookieTests.test_special_attrs
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_copy
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_defaults
+*graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_eq
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_pickle
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_repr
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_reserved_keys

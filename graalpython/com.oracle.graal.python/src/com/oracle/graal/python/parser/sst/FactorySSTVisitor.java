@@ -119,6 +119,8 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.IntegerLiteralSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -221,7 +223,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             // the type is wrong
             // create simple SST tree for : __annotations__['var_name'] = type
             VarLookupSSTNode varLookupNode = (VarLookupSSTNode) node.lhs[0];
-            SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new VarLookupSSTNode(__ANNOTATIONS__, -1, -1), new StringLiteralSSTNode(new String[]{"'" + varLookupNode.name + "'"}, -1, -1), -1,
+            SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new VarLookupSSTNode(__ANNOTATIONS__, -1, -1), new StringLiteralSSTNode.RawStringLiteralSSTNode(varLookupNode.name, -1, -1), -1,
                             -1);
             AssignmentSSTNode assignAnnotationSST = new AssignmentSSTNode(new SSTNode[]{getAnnotationSST}, node.type, -1, -1);
             PNode assignAnnotationNode = visit(assignAnnotationSST);
@@ -335,7 +337,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(BooleanLiteralSSTNode node) {
-        ExpressionNode result = new com.oracle.graal.python.nodes.literal.BooleanLiteralNode(node.value);
+        ExpressionNode result = new BooleanLiteralNode(node.value);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -345,6 +347,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode target = (ExpressionNode) node.target.accept(this);
 
         ArgListBuilder argBuilder = node.parameters;
+        if (argBuilder.hasNakedForComp() && argBuilder.getArgs().length != 1) {
+            SSTNode forComp = argBuilder.getNakedForComp();
+            throw errors.raiseInvalidSyntax(source, createSourceSection(forComp.getStartOffset(), forComp.getEndOffset()), ErrorMessages.GENERATOR_EXPR_MUST_BE_PARENTHESIZED);
+        }
         ExpressionNode callNode = PythonCallNode.create(target, argBuilder.getArgs(this), argBuilder.getNameArgs(this), argBuilder.getStarArgs(this), argBuilder.getKwArgs(this));
         callNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return callNode;
@@ -455,6 +461,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode starArg = null;
         ExpressionNode kwArg = null;
         if (node.baseClasses != null) {
+            if (node.baseClasses.hasNakedForComp()) {
+                SSTNode forComp = node.baseClasses.getNakedForComp();
+                throw errors.raiseInvalidSyntax(source, createSourceSection(forComp.getStartOffset(), forComp.getEndOffset()));
+            }
             ExpressionNode[] sstArgs = node.baseClasses.getArgs(this);
             args = new ExpressionNode[sstArgs.length + 2];
             for (int i = 0; i < sstArgs.length; i++) {
@@ -679,12 +689,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(FloatLiteralSSTNode node) {
         ExpressionNode result;
-        String value = node.value.indexOf('_') == -1 ? node.value : node.value.replace("_", "");
         if (node.imaginary) {
-            double imag = Double.parseDouble(value.substring(0, value.length() - 1));
-            result = new ComplexLiteralNode(new PComplex(0, imag));
+            result = new ComplexLiteralNode(new PComplex(0, node.value));
         } else {
-            result = new DoubleLiteralNode(Double.parseDouble(value));
+            result = new DoubleLiteralNode(node.value);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -1020,51 +1028,24 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     @Override
-    public PNode visit(NumberLiteralSSTNode node) {
-        final long max = node.negative ? Long.MIN_VALUE : -Long.MAX_VALUE;
-        final long moltmax = max / node.base;
-        int i = node.start;
-        long result = 0;
-        int lastD;
-        boolean overunder = false;
-        while (i < node.value.length()) {
-            lastD = digitValue(node.value.charAt(i));
-
-            long next = result;
-            if (next < moltmax) {
-                overunder = true;
-            } else {
-                next *= node.base;
-                if (next < (max + lastD)) {
-                    overunder = true;
-                } else {
-                    next -= lastD;
-                }
-            }
-            if (overunder) {
-                // overflow
-                BigInteger bigResult = BigInteger.valueOf(result);
-                BigInteger bigBase = BigInteger.valueOf(node.base);
-                while (i < node.value.length()) {
-                    bigResult = bigResult.multiply(bigBase).subtract(BigInteger.valueOf(digitValue(node.value.charAt(i))));
-                    i++;
-                }
-                if (!node.negative) {
-                    bigResult = bigResult.negate();
-                }
-                PIntLiteralNode intLiteral = new PIntLiteralNode(bigResult);
-                intLiteral.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-                return intLiteral;
-            }
-            result = next;
-            i++;
-        }
-
-        if (!node.negative) {
-            result = -1 * result;
-        }
-
+    public PNode visit(IntegerLiteralSSTNode node) {
+        long result = node.value;
         ExpressionNode intLiteral = Integer.MIN_VALUE <= result && result <= Integer.MAX_VALUE ? new IntegerLiteralNode((int) result) : new LongLiteralNode(result);
+        intLiteral.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return intLiteral;
+    }
+
+    private static final BigInteger MIN_LONG = BigInteger.valueOf(Long.MIN_VALUE);
+
+    @Override
+    public PNode visit(BigIntegerLiteralSSTNode node) {
+        SimpleLiteralNode intLiteral;
+        if (node.value.equals(MIN_LONG)) {
+            // this can happen because the numeric literals have to support negation
+            intLiteral = new LongLiteralNode(Long.MIN_VALUE);
+        } else {
+            intLiteral = new PIntLiteralNode(node.value);
+        }
         intLiteral.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return intLiteral;
     }
@@ -1157,8 +1138,22 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     @Override
-    public PNode visit(StringLiteralSSTNode node) {
-        PNode result = StringUtils.parseString(source, node, nodeFactory, errors);
+    public PNode visit(StringLiteralSSTNode.RawStringLiteralSSTNode node) {
+        PNode result = nodeFactory.createStringLiteral(node.value);
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
+    }
+
+    @Override
+    public PNode visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+        PNode result = nodeFactory.createBytesLiteral(node.value);
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
+    }
+
+    @Override
+    public PNode visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
+        PNode result = nodeFactory.createFormatStringLiteral(node.value);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -1193,6 +1188,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExceptNode[] exceptNodes = new ExceptNode[node.exceptNodes.length];
         for (int i = 0; i < exceptNodes.length; i++) {
             ExceptSSTNode exceptNode = node.exceptNodes[i];
+            if (exceptNode.test == null && i < exceptNodes.length - 1) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(exceptNode.startOffset, exceptNode.endOffset), ErrorMessages.DEFAULT_EXCEPT_MUST_BE_LAST);
+            }
             ExpressionNode exceptTest = exceptNode.test != null ? (ExpressionNode) exceptNode.test.accept(this) : null;
             StatementNode exceptBody = (StatementNode) exceptNode.body.accept(this);
             WriteNode exceptName = exceptNode.asName != null ? (WriteNode) scopeEnvironment.findVariable(exceptNode.asName).makeWriteNode(null) : null;
@@ -1267,17 +1265,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode result = nodeFactory.createYield(value);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
-    }
-
-    private static int digitValue(char ch) {
-        if (ch >= '0' && ch <= '9') {
-            return ch - '0';
-        } else if (ch >= 'a' && ch <= 'f') {
-            return ch - 'a' + 10;
-        } else {
-            assert ch >= 'A' && ch <= 'f';
-            return ch - 'A' + 10;
-        }
     }
 
     protected SourceSection createSourceSection(int start, int stop) {

@@ -39,6 +39,8 @@
 
 import sys
 import os
+from io import StringIO
+
 from importlib import invalidate_caches
 from string import Formatter
 __dir__ = __file__.rpartition("/")[0]
@@ -289,7 +291,7 @@ PyInit_{capifunction}(void)
 
 class CPyExtFunction():
 
-    def __init__(self, pfunc, parameters, template=c_template, cmpfunc=None, **kwargs):
+    def __init__(self, pfunc, parameters, template=c_template, cmpfunc=None, stderr_validator=None, **kwargs):
         self.template = template
         self.pfunc = pfunc
         self.parameters = parameters
@@ -306,6 +308,7 @@ class CPyExtFunction():
         kwargs["resultspec"] = kwargs["resultspec"] if "resultspec" in kwargs else "O"
         self.formatargs = kwargs
         self.cmpfunc = cmpfunc or self.do_compare
+        self.stderr_validator = stderr_validator
 
     def do_compare(self, x, y):
         if isinstance(x, BaseException):
@@ -359,11 +362,18 @@ class CPyExtFunction():
         cargs = self.parameters()
         pargs = self.parameters()
         for i in range(len(cargs)):
-            cresult = presult = None
+            real_stderr = sys.stderr
+            sys.stderr = StringIO()
             try:
                 cresult = ctest(cargs[i])
             except BaseException as e:
                 cresult = e
+            else:
+                if self.stderr_validator:
+                    s = sys.stderr.getvalue()
+                    assert self.stderr_validator(cargs[i], s), f"captured stderr didn't match expectations. Stderr: {s}"
+            finally:
+                sys.stderr = real_stderr
             try:
                 presult = self.pfunc(pargs[i])
             except BaseException as e:

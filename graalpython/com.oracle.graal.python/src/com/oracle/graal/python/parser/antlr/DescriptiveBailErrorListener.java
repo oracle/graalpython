@@ -50,6 +50,7 @@ import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.IntervalSet;
 
 import com.oracle.graal.python.parser.antlr.Python3Parser.Single_inputContext;
+import com.oracle.graal.python.runtime.PythonParser.ErrorType;
 import com.oracle.graal.python.runtime.PythonParser.PIncompleteSourceException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -64,28 +65,59 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
                     int line, int charPositionInLine,
                     String msg, RecognitionException e) {
-
+        // If we already constructed the error, keep it, it should be the most specific one
+        if (e instanceof EmptyRecognitionException) {
+            throw e;
+        }
         String entireMessage = e == null || e.getMessage() == null ? "invalid syntax" : e.getMessage();
 
+        IntervalSet expectedTokens = null;
         if (e != null) {
-            PIncompleteSourceException handleRecognitionException = handleRecognitionException(e.getExpectedTokens(), entireMessage, e, line);
-            if (handleRecognitionException != null) {
-                throw handleRecognitionException;
-            }
+            expectedTokens = e.getExpectedTokens();
         } else if (recognizer instanceof Python3Parser) {
-            PIncompleteSourceException handleRecognitionException = handleRecognitionException(((Python3Parser) recognizer).getExpectedTokens(), entireMessage, null, line);
-            if (handleRecognitionException != null) {
-                throw handleRecognitionException;
-            }
+            expectedTokens = ((Python3Parser) recognizer).getExpectedTokens();
         }
+
         if (isInteractive(recognizer)) {
-            PIncompleteSourceException handleRecognitionException = handleInteractiveException(recognizer, offendingSymbol);
-            if (handleRecognitionException != null) {
-                throw handleRecognitionException;
+            PIncompleteSourceException incompleteSourceException = null;
+            if (expectedTokens != null) {
+                incompleteSourceException = handleRecognitionException(expectedTokens, entireMessage, e, line);
+            }
+            if (incompleteSourceException == null) {
+                incompleteSourceException = handleInteractiveException(recognizer, offendingSymbol);
+            }
+            if (incompleteSourceException != null) {
+                throw incompleteSourceException;
             }
         }
+
         if (offendingSymbol instanceof Token) {
-            throw new RuntimeException(entireMessage, new EmptyRecognitionException(entireMessage, recognizer, (Token) offendingSymbol));
+            Token token = (Token) offendingSymbol;
+            ErrorType errorType = ErrorType.Generic;
+            switch (token.getType()) {
+                case Python3Parser.INDENT_ERROR:
+                    entireMessage = "unindent does not match any outer indentation level";
+                    errorType = ErrorType.Indentation;
+                    break;
+                case Python3Parser.TAB_ERROR:
+                    entireMessage = "inconsistent use of tabs and spaces in indentation";
+                    errorType = ErrorType.Tab;
+                    break;
+                case Python3Parser.INDENT:
+                    entireMessage = "unexpected indent";
+                    errorType = ErrorType.Indentation;
+                    break;
+                case Python3Parser.DEDENT:
+                    entireMessage = "unexpected unindent";
+                    errorType = ErrorType.Indentation;
+                    break;
+                default:
+                    if (expectedTokens != null && expectedTokens.contains(Python3Parser.INDENT)) {
+                        entireMessage = "expected an indented block";
+                        errorType = ErrorType.Indentation;
+                    }
+            }
+            throw new EmptyRecognitionException(errorType, entireMessage, recognizer, token);
         }
         throw new RuntimeException(entireMessage, e);
     }
@@ -143,18 +175,24 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
         return false;
     }
 
-    private static class EmptyRecognitionException extends RecognitionException {
+    public static class EmptyRecognitionException extends RecognitionException {
         private static final long serialVersionUID = 1L;
         private Token offendingToken;
+        private ErrorType errorType;
 
-        public EmptyRecognitionException(String message, Recognizer<?, ?> recognizer, Token offendingToken) {
+        public EmptyRecognitionException(ErrorType errorType, String message, Recognizer<?, ?> recognizer, Token offendingToken) {
             super(message, recognizer, offendingToken.getInputStream(), null);
+            this.errorType = errorType;
             this.offendingToken = offendingToken;
         }
 
         @Override
         public Token getOffendingToken() {
             return offendingToken;
+        }
+
+        public ErrorType getErrorType() {
+            return errorType;
         }
     }
 }

@@ -1,6 +1,13 @@
 *graalpython.lib-python.3.test.test_sys.DisplayHookTest.test_custom_displayhook
 *graalpython.lib-python.3.test.test_sys.ExceptHookTest.test_excepthook_bytes_filename
 *graalpython.lib-python.3.test.test_sys.ExceptHookTest.test_original_excepthook
+*graalpython.lib-python.3.test.test_sys.SizeofTest.test_asyncgen_hooks
+*graalpython.lib-python.3.test.test_sys.SizeofTest.test_default
+*graalpython.lib-python.3.test.test_sys.SizeofTest.test_errors
+*graalpython.lib-python.3.test.test_sys.SizeofTest.test_gc_head_size
+*graalpython.lib-python.3.test.test_sys.SizeofTest.test_objecttypes
+*graalpython.lib-python.3.test.test_sys.SizeofTest.test_pythontypes
+*graalpython.lib-python.3.test.test_sys.SizeofTest.test_slots
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_43581
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test__enablelegacywindowsfsencoding
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_clear_type_cache
@@ -15,3 +22,8 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_refcount
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_setrecursionlimit_recursion_depth
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_getwindowsversion_no_instantiation
+*graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook
+*graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook_fail
+*graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook
+*graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook_err
+*graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook_wrong_type

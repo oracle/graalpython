@@ -82,17 +82,17 @@ public class SSTNodeWithScopeFinderTest extends ParserTestBase {
 
     @Test
     public void ifTest() throws Exception {
-        String code = "        if True:\n" +
-                        "            a = 1\n" +
-                        "            def fn1():\n" +
-                        "                return 10\n" +
-                        "        elif False:\n" +
-                        "            b = 2\n" +
-                        "            def fn2():\n" +
-                        "                return 20\n" +
-                        "        else:\n" +
-                        "            def fn3():\n" +
-                        "                return 30\n";
+        String code = "if True:\n" +
+                        "    a = 1\n" +
+                        "    def fn1():\n" +
+                        "        return 10\n" +
+                        "elif False:\n" +
+                        "    b = 2\n" +
+                        "    def fn2():\n" +
+                        "        return 20\n" +
+                        "else:\n" +
+                        "    def fn3():\n" +
+                        "        return 30\n";
         checkFinder(code, code.indexOf("def fn1"), code.indexOf("elif"), false);
         checkFinder(code, code.indexOf("def fn2"), code.indexOf("else"), false);
         checkFinder(code, code.indexOf("def fn3"), code.indexOf("30") + 3, false);

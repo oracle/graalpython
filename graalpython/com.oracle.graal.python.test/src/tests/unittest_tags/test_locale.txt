@@ -14,6 +14,10 @@
 *graalpython.lib-python.3.test.test_locale.TestCDelocalizeTest.test_delocalize
 *graalpython.lib-python.3.test.test_locale.TestCNumberFormatting.test_grouping
 *graalpython.lib-python.3.test.test_locale.TestCNumberFormatting.test_grouping_and_padding
+*graalpython.lib-python.3.test.test_locale.TestEnUSCollation.test_strcoll
+*graalpython.lib-python.3.test.test_locale.TestEnUSCollation.test_strcoll_with_diacritic
+*graalpython.lib-python.3.test.test_locale.TestEnUSCollation.test_strxfrm
+*graalpython.lib-python.3.test.test_locale.TestEnUSCollation.test_strxfrm_with_diacritic
 *graalpython.lib-python.3.test.test_locale.TestEnUSDelocalize.test_atof
 *graalpython.lib-python.3.test.test_locale.TestEnUSDelocalize.test_atoi
 *graalpython.lib-python.3.test.test_locale.TestEnUSDelocalize.test_delocalize

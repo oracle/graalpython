@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_bad_getattr
 *graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_buffers_numpy
 *graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_dict_chunking
 *graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_float

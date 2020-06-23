@@ -96,7 +96,9 @@ public interface SSTreeVisitor<T> {
 
     T visit(NotSSTNode node);
 
-    T visit(NumberLiteralSSTNode node);
+    T visit(NumberLiteralSSTNode.IntegerLiteralSSTNode node);
+
+    T visit(NumberLiteralSSTNode.BigIntegerLiteralSSTNode node);
 
     T visit(OrSSTNode node);
 
@@ -110,7 +112,11 @@ public interface SSTreeVisitor<T> {
 
     T visit(StarSSTNode node);
 
-    T visit(StringLiteralSSTNode node);
+    T visit(StringLiteralSSTNode.RawStringLiteralSSTNode node);
+
+    T visit(StringLiteralSSTNode.BytesLiteralSSTNode node);
+
+    T visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node);
 
     T visit(SubscriptSSTNode node);
 
