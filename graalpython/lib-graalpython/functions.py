@@ -59,16 +59,6 @@ def all(iterable):
     return True
 
 
-@__graalpython__.builtin
-def filter(func, iterable):
-    result = []
-    predicate = func if func is not None else lambda a: a
-    for i in iterable:
-        if predicate(i):
-            result.append(i)
-    return tuple(result)
-
-
 # This is re-defined later during bootstrap in classes.py
 def __build_class__(func, name, *bases, metaclass=None, **kwargs):
     """
@@ -137,3 +127,22 @@ def input(prompt=None):
         else:
             break
     return "".join(result)
+
+
+class filter(object):
+    def __init__(self, predicateOrNone, iterable):
+        self.predicateOrNone = predicateOrNone
+        self.iterable = iter(iterable)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            item = next(self.iterable)
+            if self.predicateOrNone is None:
+                if item:
+                    return item
+            else:
+                if self.predicateOrNone(item):
+                    return item
