@@ -135,7 +135,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return methodResolutionOrder;
     }
 
-    @Override
     public String getName() {
         return className;
     }
