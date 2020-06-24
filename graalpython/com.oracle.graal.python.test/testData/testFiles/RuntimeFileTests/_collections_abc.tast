@@ -5455,7 +5455,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [12386,12421]`for value in other i...`
-                                            Name: __and__.<locals>.<genexp>:_collections_abc:478
+                                            Name: <genexpr>
                                             FrameDescriptor: 3 slots [value, self, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 4 slots [self, other, __class__, <return_val>]
@@ -5464,7 +5464,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [12386,12421]`for value in other i...`
-                                              Name: __and__.<locals>.<genexp>:_collections_abc:478
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: self
@@ -5707,7 +5707,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,chain,Illegal]
                                       GeneratorExpressionNode SourceSection: [12775,12808]`for s in (self, othe...`
-                                        Name: __or__.<locals>.<genexp>:_collections_abc:492
+                                        Name: <genexpr>
                                         FrameDescriptor: 3 slots [e, s, <return_val>]
                                         Enclosing
                                           FrameDescriptor: 5 slots [self, other, chain, __class__, <return_val>]
@@ -5716,7 +5716,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Block Nodes: 0
                                         Is Enclosing Frame Generator: false
                                         FunctionRootNode SourceSection: [12775,12808]`for s in (self, othe...`
-                                          Name: __or__.<locals>.<genexp>:_collections_abc:492
+                                          Name: <genexpr>
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                           CelVars: None
                                           FreeVars: None
@@ -5930,7 +5930,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [13118,13192]`for value in self↵  ...`
-                                            Name: __sub__.<locals>.<genexp>:_collections_abc:502
+                                            Name: <genexpr>
                                             FrameDescriptor: 3 slots [value, other, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 4 slots [self, other, __class__, <return_val>]
@@ -5939,7 +5939,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [13118,13192]`for value in self↵  ...`
-                                              Name: __sub__.<locals>.<genexp>:_collections_abc:502
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: other
@@ -6124,7 +6124,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [13439,13513]`for value in other↵ ...`
-                                            Name: __rsub__.<locals>.<genexp>:_collections_abc:510
+                                            Name: <genexpr>
                                             FrameDescriptor: 3 slots [value, self, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 4 slots [self, other, __class__, <return_val>]
@@ -6133,7 +6133,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [13439,13513]`for value in other↵ ...`
-                                              Name: __rsub__.<locals>.<genexp>:_collections_abc:510
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: self
@@ -10813,7 +10813,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: sum
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [24227,24268]`for v in self if v i...`
-                                            Name: count.<locals>.<genexp>:_collections_abc:925
+                                            Name: <genexpr>
                                             FrameDescriptor: 3 slots [v, value, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 4 slots [self, value, __class__, <return_val>]
@@ -10822,7 +10822,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [24227,24268]`for v in self if v i...`
-                                              Name: count.<locals>.<genexp>:_collections_abc:925
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: value

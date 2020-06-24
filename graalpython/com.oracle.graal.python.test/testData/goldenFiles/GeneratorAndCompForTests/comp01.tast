@@ -17,7 +17,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
               Identifier: dict
               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [64,93]`for t in something f...`
-              Name: [].<locals>.<genexp>:comp01:2
+              Name: <genexpr>
               FrameDescriptor: 3 slots [i, t, <return_val>]
               Enclosing
                 FrameDescriptor:  Empty
@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
               Block Nodes: 0
               Is Enclosing Frame Generator: false
               FunctionRootNode SourceSection: [64,93]`for t in something f...`
-                Name: [].<locals>.<genexp>:comp01:2
+                Name: <genexpr>
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: i
                 FreeVars: None
@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                   Identifier: tuple
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 GeneratorExpressionNode SourceSection: [21,41]`for j in t if i != j...`
-                                  Name: generator.<locals>.<genexp>:comp01:1
+                                  Name: <genexpr>
                                   FrameDescriptor: 3 slots [j, i, <return_val>]
                                   Enclosing
                                     FrameDescriptor: 3 slots [i, t, <return_val>]
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                   Block Nodes: 0
                                   Is Enclosing Frame Generator: true
                                   FunctionRootNode SourceSection: [21,41]`for j in t if i != j...`
-                                    Name: generator.<locals>.<genexp>:comp01:1
+                                    Name: <genexpr>
                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                     CelVars: None
                                     FreeVars: i

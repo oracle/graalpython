@@ -915,7 +915,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GeneratorExpressionNode SourceSection: [2180,2210]`for elem in islice(x...`
-                                              Name: _repr_iterable.<locals>.<genexp>:reprlib:71
+                                              Name: <genexpr>
                                               FrameDescriptor: 4 slots [elem, newlevel, repr1, <return_val>]
                                               Enclosing
                                                 FrameDescriptor: 14 slots [self, x, level, left, right, maxiter, trail, n, s, newlevel, repr1, pieces, __class__, <return_val>]
@@ -924,7 +924,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Block Nodes: 0
                                               Is Enclosing Frame Generator: false
                                               FunctionRootNode SourceSection: [2180,2210]`for elem in islice(x...`
-                                                Name: _repr_iterable.<locals>.<genexp>:reprlib:71
+                                                Name: <genexpr>
                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                 CelVars: None
                                                 FreeVars: newlevel, repr1

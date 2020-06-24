@@ -13087,7 +13087,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [38905,38922]`for s in literals`
-                            Name: parse_template.<locals>.<genexp>:sre_parse:1033
+                            Name: <genexpr>
                             FrameDescriptor: 2 slots [s, <return_val>]
                             Enclosing
                               FrameDescriptor: 16 slots [source, pattern, s, sget, groups, literals, literal, lappend, addgroup, groupindex, this, c, name, index, isoctal, <return_val>]
@@ -13096,7 +13096,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
                             FunctionRootNode SourceSection: [38905,38922]`for s in literals`
-                              Name: parse_template.<locals>.<genexp>:sre_parse:1033
+                              Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: None

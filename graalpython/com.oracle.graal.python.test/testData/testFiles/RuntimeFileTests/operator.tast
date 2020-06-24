@@ -2761,7 +2761,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               Identifier: tuple
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             GeneratorExpressionNode SourceSection: [5930,5951]`for getter in getter...`
-                                                              Name: func.<locals>.<genexp>:operator:251
+                                                              Name: <genexpr>
                                                               FrameDescriptor: 3 slots [getter, obj, <return_val>]
                                                               Enclosing
                                                                 FrameDescriptor: 3 slots [obj, getters, <return_val>]
@@ -2770,7 +2770,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               Block Nodes: 0
                                                               Is Enclosing Frame Generator: false
                                                               FunctionRootNode SourceSection: [5930,5951]`for getter in getter...`
-                                                                Name: func.<locals>.<genexp>:operator:251
+                                                                Name: <genexpr>
                                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                 CelVars: None
                                                                 FreeVars: obj
@@ -3347,7 +3347,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               Identifier: tuple
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             GeneratorExpressionNode SourceSection: [6914,6928]`for i in items`
-                                                              Name: func.<locals>.<genexp>:operator:282
+                                                              Name: <genexpr>
                                                               FrameDescriptor: 3 slots [i, obj, <return_val>]
                                                               Enclosing
                                                                 FrameDescriptor: 3 slots [obj, items, <return_val>]
@@ -3356,7 +3356,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               Block Nodes: 0
                                                               Is Enclosing Frame Generator: false
                                                               FunctionRootNode SourceSection: [6914,6928]`for i in items`
-                                                                Name: func.<locals>.<genexp>:operator:282
+                                                                Name: <genexpr>
                                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                 CelVars: None
                                                                 FreeVars: obj
@@ -4057,7 +4057,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Frame: [1,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         GeneratorExpressionNode SourceSection: [8244,8276]`for k, v in self._kw...`
-                                          Name: __repr__.<locals>.<genexp>:operator:322
+                                          Name: <genexpr>
                                           FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                           Enclosing
                                             FrameDescriptor: 4 slots [self, args, __class__, <return_val>]
@@ -4066,7 +4066,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
                                           FunctionRootNode SourceSection: [8244,8276]`for k, v in self._kw...`
-                                            Name: __repr__.<locals>.<genexp>:operator:322
+                                            Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
                                             FreeVars: None

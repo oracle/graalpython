@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
@@ -54,6 +51,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
 
     private final String name;
+    private final String qualname;
     private final Object enclosingType;
     private final RootCallTarget callTarget;
     private final boolean isStatic;
@@ -64,6 +62,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     public PBuiltinFunction(String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
         super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.newInstance());
         this.name = name;
+        if (enclosingType != null) {
+            this.qualname = PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name);
+        } else {
+            this.qualname = name;
+        }
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
@@ -74,12 +77,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.kwDefaults = new PKeyword[keywordNames.length];
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
-        }
-        this.getStorage().define(__NAME__, name);
-        if (enclosingType != null) {
-            this.getStorage().define(__QUALNAME__, PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name));
-        } else {
-            this.getStorage().define(__QUALNAME__, name);
         }
     }
 
@@ -128,6 +125,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     public String getName() {
         return name;
+    }
+
+    public String getQualname() {
+        return qualname;
     }
 
     public Object getEnclosingType() {

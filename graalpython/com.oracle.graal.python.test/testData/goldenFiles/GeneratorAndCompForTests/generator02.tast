@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                     FunctionBodyNode SourceSection: [17,35]`for x in range(10)`
                       ExpressionStatementNode SourceSection: [17,35]`for x in range(10)`
                         GeneratorExpressionNode SourceSection: [17,35]`for x in range(10)`
-                          Name: fn.<locals>.<genexp>:generator02:2
+                          Name: <genexpr>
                           FrameDescriptor: 2 slots [x, <return_val>]
                           Enclosing
                             FrameDescriptor: 1 slots [<return_val>]
@@ -45,7 +45,7 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [17,35]`for x in range(10)`
-                            Name: fn.<locals>.<genexp>:generator02:2
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: None

@@ -2652,7 +2652,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: list
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GeneratorExpressionNode SourceSection: [19872,19904]`for i, elem in zip(r...`
-                              Name: nsmallest.<locals>.<genexp>:heapq:491
+                              Name: <genexpr>
                               FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
                               Enclosing
                                 FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -2661,7 +2661,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
                               FunctionRootNode SourceSection: [19872,19904]`for i, elem in zip(r...`
-                                Name: nsmallest.<locals>.<genexp>:heapq:491
+                                Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
                                 FreeVars: None
@@ -2898,7 +2898,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [20282,20309]`for (elem, order) in...`
-                                Name: nsmallest.<locals>.<genexp>:heapq:504
+                                Name: <genexpr>
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
                                 Enclosing
                                   FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -2907,7 +2907,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: false
                                 FunctionRootNode SourceSection: [20282,20309]`for (elem, order) in...`
-                                  Name: nsmallest.<locals>.<genexp>:heapq:504
+                                  Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
                                   FreeVars: None
@@ -2994,7 +2994,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [20406,20438]`for i, elem in zip(r...`
-                          Name: nsmallest.<locals>.<genexp>:heapq:508
+                          Name: <genexpr>
                           FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
                           Enclosing
                             FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -3003,7 +3003,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [20406,20438]`for i, elem in zip(r...`
-                            Name: nsmallest.<locals>.<genexp>:heapq:508
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: key
@@ -3279,7 +3279,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [20793,20823]`for (k, order, elem)...`
-                            Name: nsmallest.<locals>.<genexp>:heapq:522
+                            Name: <genexpr>
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
                             Enclosing
                               FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -3288,7 +3288,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
                             FunctionRootNode SourceSection: [20793,20823]`for (k, order, elem)...`
-                              Name: nsmallest.<locals>.<genexp>:heapq:522
+                              Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: None
@@ -3636,7 +3636,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: list
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GeneratorExpressionNode SourceSection: [21652,21692]`for i, elem in zip(r...`
-                              Name: nlargest.<locals>.<genexp>:heapq:552
+                              Name: <genexpr>
                               FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
                               Enclosing
                                 FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -3645,7 +3645,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
                               FunctionRootNode SourceSection: [21652,21692]`for i, elem in zip(r...`
-                                Name: nlargest.<locals>.<genexp>:heapq:552
+                                Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
                                 FreeVars: None
@@ -3898,7 +3898,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [22073,22100]`for (elem, order) in...`
-                                Name: nlargest.<locals>.<genexp>:heapq:565
+                                Name: <genexpr>
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
                                 Enclosing
                                   FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -3907,7 +3907,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: false
                                 FunctionRootNode SourceSection: [22073,22100]`for (elem, order) in...`
-                                  Name: nlargest.<locals>.<genexp>:heapq:565
+                                  Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
                                   FreeVars: None
@@ -3994,7 +3994,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [22197,22237]`for i, elem in zip(r...`
-                          Name: nlargest.<locals>.<genexp>:heapq:569
+                          Name: <genexpr>
                           FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
                           Enclosing
                             FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -4003,7 +4003,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [22197,22237]`for i, elem in zip(r...`
-                            Name: nlargest.<locals>.<genexp>:heapq:569
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: key
@@ -4295,7 +4295,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [22595,22625]`for (k, order, elem)...`
-                            Name: nlargest.<locals>.<genexp>:heapq:583
+                            Name: <genexpr>
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
                             Enclosing
                               FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
@@ -4304,7 +4304,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
                             FunctionRootNode SourceSection: [22595,22625]`for (k, order, elem)...`
-                              Name: nlargest.<locals>.<genexp>:heapq:583
+                              Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: None

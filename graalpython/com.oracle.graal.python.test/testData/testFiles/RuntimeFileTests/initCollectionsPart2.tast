@@ -576,7 +576,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: any
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [1769,1787]`for m in self.maps`
-                                            Name: __contains__.<locals>.<genexp>:initCollectionsPart2:50
+                                            Name: <genexpr>
                                             FrameDescriptor: 3 slots [m, key, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 4 slots [self, key, __class__, <return_val>]
@@ -585,7 +585,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [1769,1787]`for m in self.maps`
-                                              Name: __contains__.<locals>.<genexp>:initCollectionsPart2:50
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: key

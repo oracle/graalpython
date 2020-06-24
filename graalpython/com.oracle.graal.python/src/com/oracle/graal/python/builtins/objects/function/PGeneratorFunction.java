@@ -31,14 +31,14 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 
 public final class PGeneratorFunction extends PFunction {
 
-    public static PGeneratorFunction create(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure,
+    public static PGeneratorFunction create(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure,
                     Object[] defaultValues, PKeyword[] kwDefaultValues) {
-        return new PGeneratorFunction(name, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues);
+        return new PGeneratorFunction(name, qualname, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues);
     }
 
-    private PGeneratorFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
+    private PGeneratorFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
                     PKeyword[] kwDefaultValues) {
-        super(name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure);
+        super(name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure);
     }
 
     @Override

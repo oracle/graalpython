@@ -1874,7 +1874,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             Identifier: dict
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [9419,9445]`for k, v in locals.i...`
-                                            Name: __init__.<locals>.<genexp>:traceback:256
+                                            Name: <genexpr>
                                             FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 10 slots [self, filename, lineno, name, *, lookup_line, locals, line, __class__, <return_val>]
@@ -1883,7 +1883,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [9419,9445]`for k, v in locals.i...`
-                                              Name: __init__.<locals>.<genexp>:traceback:256
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: None
@@ -5430,7 +5430,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                     Frame: [7,caretspace,Illegal]
                                                   GeneratorExpressionNode SourceSection: [21873,21892]`for c in caretspace`
-                                                    Name: format_exception_only.<locals>.<genexp>:traceback:571
+                                                    Name: <genexpr>
                                                     FrameDescriptor: 2 slots [c, <return_val>]
                                                     Enclosing
                                                       FrameDescriptor: 11 slots [self, stype, smod, filename, lineno, badline, offset, caretspace, msg, __class__, <return_val>]
@@ -5439,7 +5439,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Block Nodes: 0
                                                     Is Enclosing Frame Generator: true
                                                     FunctionRootNode SourceSection: [21873,21892]`for c in caretspace`
-                                                      Name: format_exception_only.<locals>.<genexp>:traceback:571
+                                                      Name: <genexpr>
                                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                       CelVars: None
                                                       FreeVars: None

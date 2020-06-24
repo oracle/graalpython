@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                 WriteGeneraterFrameSlotNodeGen SourceSection: None
                                   Frame: [1,caretspace,Illegal]
                                 GeneratorExpressionNode SourceSection: [225,244]`for c in caretspace`
-                                  Name: format_exception_only.<locals>.<genexp>:generator06:8
+                                  Name: <genexpr>
                                   FrameDescriptor: 2 slots [c, <return_val>]
                                   Enclosing
                                     FrameDescriptor: 3 slots [self, caretspace, <return_val>]
@@ -99,7 +99,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                   Block Nodes: 0
                                   Is Enclosing Frame Generator: true
                                   FunctionRootNode SourceSection: [225,244]`for c in caretspace`
-                                    Name: format_exception_only.<locals>.<genexp>:generator06:8
+                                    Name: <genexpr>
                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                     CelVars: None
                                     FreeVars: None
