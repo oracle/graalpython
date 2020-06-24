@@ -93,6 +93,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -192,6 +193,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
+        @Child private LookupAndCallTernaryNode callNewGet = LookupAndCallTernaryNode.create(__GET__);
         @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
         @Child private CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
         @Child private LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
@@ -330,7 +332,7 @@ public class TypeBuiltins extends PythonBuiltins {
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
-                Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
+                Object newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
                 Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
                 if (isSameType(newInstanceKlass, self)) {
                     if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
