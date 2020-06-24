@@ -587,16 +587,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
+        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
             PythonContext context = getContext();
-            context.setCurrentException(PException.fromExceptionInfo(val, (LazyTraceback) null, context.getOption(PythonOptions.WithJavaStacktrace)));
+            context.setCurrentException(PException.fromExceptionInfo(val, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return PNone.NONE;
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
+        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
             PythonContext context = getContext();
-            context.setCurrentException(PException.fromExceptionInfo(val, tb, context.getOption(PythonOptions.WithJavaStacktrace)));
+            context.setCurrentException(PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return PNone.NONE;
         }
     }
@@ -656,15 +658,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
+        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
             PythonContext context = getContext();
-            context.setCaughtException(PException.fromExceptionInfo(val, tb, context.getOption(PythonOptions.WithJavaStacktrace)));
+            context.setCaughtException(PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return PNone.NONE;
         }
 
         @Specialization
-        Object doWithoutTraceback(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            return doFull(typ, val, null);
+        Object doWithoutTraceback(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            return doFull(typ, val, null, language);
         }
 
         @Fallback
@@ -867,59 +871,65 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
         Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, false, context, raise, factory);
+            checkFunctionResult(name, false, false, language, context, raise, factory);
             return result;
         }
 
         @Specialization(guards = "isNoValue(result)")
         Object doNoValue(String name, @SuppressWarnings("unused") PNone result,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, false, context, raise, factory);
+            checkFunctionResult(name, true, false, language, context, raise, factory);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNoValue(result)")
         Object doPythonObject(String name, @SuppressWarnings("unused") PythonAbstractObject result,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, false, context, raise, factory);
+            checkFunctionResult(name, false, false, language, context, raise, factory);
             return result;
         }
 
         @Specialization
         Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, false, context, raise, factory);
+            checkFunctionResult(name, true, false, language, context, raise, factory);
             return result;
         }
 
         @Specialization
         int doInteger(String name, int result,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, context, raise, factory);
+            checkFunctionResult(name, result == -1, true, language, context, raise, factory);
             return result;
         }
 
         @Specialization
         long doLong(String name, long result,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, context, raise, factory);
+            checkFunctionResult(name, result == -1, true, language, context, raise, factory);
             return result;
         }
 
@@ -933,14 +943,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doForeign(String name, Object result,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, context, raise, factory);
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, language, context, raise, factory);
             return result;
         }
 
-        private void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
+        private void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
+                        PythonObjectFactory factory) {
             PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
             if (indicatesError) {
@@ -956,7 +968,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 context.setCurrentException(null);
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
-                throw PException.fromObject(sysExc, this, context.getOption(PythonOptions.WithJavaStacktrace));
+                throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
         }
 
@@ -1573,7 +1585,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTraceBackHereNode extends PythonUnaryBuiltinNode {
         @Specialization
         int tbHere(PFrame frame,
-                        @Cached GetTracebackNode getTracebackNode) {
+                        @Cached GetTracebackNode getTracebackNode,
+                        @CachedLanguage PythonLanguage language) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             if (currentException != null) {
@@ -1582,7 +1595,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     traceback = getTracebackNode.execute(currentException.getTraceback());
                 }
                 PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
-                context.setCurrentException(PException.fromExceptionInfo(currentException.getExceptionObject(), newTraceback, context.getOption(PythonOptions.WithJavaStacktrace)));
+                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+                context.setCurrentException(PException.fromExceptionInfo(currentException.getExceptionObject(), newTraceback, withJavaStacktrace));
             }
 
             return 0;

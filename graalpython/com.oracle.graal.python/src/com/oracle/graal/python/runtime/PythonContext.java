@@ -665,7 +665,7 @@ public final class PythonContext {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
                     ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (getOption(PythonOptions.WithJavaStacktrace)) {
+                    if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
                         e.printStackTrace(new PrintWriter(getStandardErr()));
                     }
                 }

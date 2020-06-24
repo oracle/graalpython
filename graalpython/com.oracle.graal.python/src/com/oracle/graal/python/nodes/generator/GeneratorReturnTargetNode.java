@@ -35,14 +35,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -54,13 +53,13 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     @Child private PythonObjectFactory factory;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
     @Child private PRaiseNode raise = PRaiseNode.create();
+    @Child private IsBuiltinClassProfile errorProfile;
 
     private final BranchProfile returnProfile = BranchProfile.create();
     private final BranchProfile fallthroughProfile = BranchProfile.create();
     private final BranchProfile yieldProfile = BranchProfile.create();
-    @Child private IsBuiltinClassProfile errorProfile;
 
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
     private final int flagSlot;
 
@@ -117,14 +116,18 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());
                 }
-                if (contextRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    contextRef = lookupContextReference(PythonLanguage.class);
-                }
-                throw raise.raiseExceptionObject(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})), contextRef.get());
+                throw raise.raiseExceptionObject(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})), getPythonLanguage());
             } else {
                 throw raise.raise(StopIteration);
             }
         }
+    }
+
+    private PythonLanguage getPythonLanguage() {
+        if (languageRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            languageRef = lookupLanguageReference(PythonLanguage.class);
+        }
+        return languageRef.get();
     }
 }

@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -54,7 +53,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -105,8 +104,8 @@ public abstract class PRaiseNode extends Node {
         throw execute(type, cause, format, arguments);
     }
 
-    public final PException raiseExceptionObject(PBaseException exc, PythonContext context) {
-        throw raise(this, exc, context.getOption(PythonOptions.WithJavaStacktrace));
+    public final PException raiseExceptionObject(PBaseException exc, PythonLanguage language) {
+        throw raise(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
 
     public static PException raise(Node raisingNode, PBaseException exc, boolean withJavaStacktrace) {
@@ -123,16 +122,16 @@ public abstract class PRaiseNode extends Node {
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClassType cachedType,
                     @Cached PythonObjectFactory factory,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        throw raiseExceptionObject(factory.createBaseException(cachedType), context);
+                    @CachedLanguage PythonLanguage language) {
+        throw raiseExceptionObject(factory.createBaseException(cachedType), language);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = "doPythonBuiltinTypeCached")
     PException doPythonBuiltinType(PythonBuiltinClassType exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        throw raiseExceptionObject(factory.createBaseException(exceptionType), context);
+                    @Shared("language") @CachedLanguage PythonLanguage language) {
+        throw raiseExceptionObject(factory.createBaseException(exceptionType), language);
     }
 
     protected static Assumption singleContextAssumption() {
@@ -144,8 +143,8 @@ public abstract class PRaiseNode extends Node {
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClass cachedType,
                     @Cached PythonObjectFactory factory,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        throw raiseExceptionObject(factory.createBaseException(cachedType), context);
+                    @CachedLanguage PythonLanguage language) {
+        throw raiseExceptionObject(factory.createBaseException(cachedType), language);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType.getType() == cachedType"}, limit = "3")
@@ -153,48 +152,48 @@ public abstract class PRaiseNode extends Node {
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType.getType()") PythonBuiltinClassType cachedType,
                     @Cached PythonObjectFactory factory,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        throw raiseExceptionObject(factory.createBaseException(cachedType), context);
+                    @CachedLanguage PythonLanguage language) {
+        throw raiseExceptionObject(factory.createBaseException(cachedType), language);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = {"doPythonBuiltinClassCached", "doPythonBuiltinClassCachedMulti"})
     PException doPythonBuiltinClass(PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        throw raiseExceptionObject(factory.createBaseException(exceptionType), context);
+                    @Shared("language") @CachedLanguage PythonLanguage language) {
+        throw raiseExceptionObject(factory.createBaseException(exceptionType), language);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"})
     PException doPythonManagedClass(PythonManagedClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        throw raiseExceptionObject(factory.createBaseException(exceptionType), context);
+                    @Shared("language") @CachedLanguage PythonLanguage language) {
+        throw raiseExceptionObject(factory.createBaseException(exceptionType), language);
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length > 0"})
     PException doBuiltinType(PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        throw raiseExceptionObject(factory.createBaseException(type, factory.createTuple(arguments)), context);
+                    @Shared("language") @CachedLanguage PythonLanguage language) {
+        throw raiseExceptionObject(factory.createBaseException(type, factory.createTuple(arguments)), language);
     }
 
     @Specialization(guards = {"isNoValue(cause)"})
     PException doBuiltinType(PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @Shared("language") @CachedLanguage PythonLanguage language) {
         assert format != null;
-        throw raiseExceptionObject(factory.createBaseException(type, format, arguments), context);
+        throw raiseExceptionObject(factory.createBaseException(type, format, arguments), language);
     }
 
     @Specialization(guards = {"!isNoValue(cause)"})
     PException doBuiltinTypeWithCause(PythonBuiltinClassType type, PBaseException cause, String format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @Shared("language") @CachedLanguage PythonLanguage language) {
         assert format != null;
         PBaseException baseException = factory.createBaseException(type, format, arguments);
         baseException.setContext(cause);
         baseException.setCause(cause);
-        throw raiseExceptionObject(baseException, context);
+        throw raiseExceptionObject(baseException, language);
     }
 
     @TruffleBoundary

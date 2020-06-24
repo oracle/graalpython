@@ -79,6 +79,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -87,6 +88,7 @@ public class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
     private final PException exception;
     private final SourceSection sourceSection;
+    @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
 
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
@@ -106,6 +108,14 @@ public class TopLevelExceptionHandler extends RootNode {
         this.sourceSection = exception.getSourceLocation();
         this.innerCallTarget = null;
         this.exception = exception;
+    }
+
+    private PythonLanguage getPythonLanguage() {
+        if (language == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            language = lookupLanguageReference(PythonLanguage.class);
+        }
+        return language.get();
     }
 
     private PythonContext getContext() {
@@ -147,7 +157,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
                     ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
+                    if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
                         printStackTrace(e);
                     }
                 }
@@ -196,7 +206,7 @@ public class TopLevelExceptionHandler extends RootNode {
                     // Python code, if we get here, we just fall back to the launcher
                     throw pythonException.getExceptionForReraise(pythonException.getTraceback());
                 }
-                if (theContext.getOption(PythonOptions.WithJavaStacktrace)) {
+                if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
                     printJavaStackTrace(pythonException.getException());
                 }
                 if (!getSourceSection().getSource().isInteractive()) {

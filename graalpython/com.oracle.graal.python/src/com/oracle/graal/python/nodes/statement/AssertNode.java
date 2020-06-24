@@ -42,6 +42,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -52,6 +53,7 @@ public class AssertNode extends StatementNode {
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
     @CompilationFinal private boolean javaExceptionsFailAssertions;
+    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
@@ -103,9 +105,8 @@ public class AssertNode extends StatementNode {
                 throw e;
             } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
-                PythonContext context = getContext();
-                if (context.getOption(PythonOptions.WithJavaStacktrace)) {
-                    printStackTrace(context, e);
+                if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                    printStackTrace(getContext(), e);
                 }
             }
         }
@@ -130,6 +131,14 @@ public class AssertNode extends StatementNode {
     @TruffleBoundary
     private static void printStackTrace(PythonContext context, Exception e) {
         e.printStackTrace(new PrintStream(context.getStandardErr()));
+    }
+
+    private PythonLanguage getPythonLanguage() {
+        if (languageRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            languageRef = lookupLanguageReference(PythonLanguage.class);
+        }
+        return languageRef.get();
     }
 
     private PythonContext getContext() {

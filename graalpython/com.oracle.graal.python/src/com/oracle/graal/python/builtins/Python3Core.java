@@ -43,7 +43,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.runtime.PythonOptions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -182,6 +181,7 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -560,7 +560,7 @@ public final class Python3Core implements PythonCore {
         } else {
             instance = objectFactory.createBaseException(type);
         }
-        throw PException.fromObject(instance, null, getContext().getOption(PythonOptions.WithJavaStacktrace));
+        throw PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
     private void publishBuiltinModules() {
@@ -795,6 +795,6 @@ public final class Python3Core implements PythonCore {
             }
         }
         instance.setAttribute("msg", msg);
-        throw PException.fromObject(instance, location, getContext().getOption(PythonOptions.WithJavaStacktrace));
+        throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 }

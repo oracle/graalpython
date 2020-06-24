@@ -204,11 +204,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         private PException oddLengthError(PythonModule self) {
-            return raise(getAttrNode().execute(self, ERROR), ErrorMessages.ODD_LENGTH_STRING);
+            throw getRaiseNode().execute(getAttrNode().execute(self, ERROR), PNone.NO_VALUE, ErrorMessages.ODD_LENGTH_STRING, new Object[0]);
         }
 
         private PException nonHexError(PythonModule self) {
-            return raise(getAttrNode().execute(self, ERROR), ErrorMessages.NON_HEX_DIGIT_FOUND);
+            throw getRaiseNode().execute(getAttrNode().execute(self, ERROR), PNone.NO_VALUE, ErrorMessages.NON_HEX_DIGIT_FOUND, new Object[0]);
         }
 
         private ReadAttributeFromObjectNode getAttrNode() {

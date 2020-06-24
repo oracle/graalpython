@@ -120,8 +120,11 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
-    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace if enabled") //
-    public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace. Possible modes:" +
+                    "    1   Print Java stacktrace for Java exceptions only." +
+                    "    2   Print Java stacktrace for Python exceptions only (ATTENTION: this will have a notable performance impact)." +
+                    "    3   Combines 1 and 2.") //
+    public static final OptionKey<Integer> WithJavaStacktrace = new OptionKey<>(0);
 
     @Option(category = OptionCategory.INTERNAL, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
@@ -132,7 +135,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Prints path to parsed files") //
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, help = "Prints parser time statistis after number of parsed files, set by this option. 0 or <0 means no statistics are printed.") //
+    @Option(category = OptionCategory.EXPERT, help = "Prints parser time statistics after number of parsed files, set by this option. 0 or <0 means no statistics are printed.") //
     public static final OptionKey<Integer> ParserStatistics = new OptionKey<>(0);
 
     @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
@@ -314,6 +317,14 @@ public final class PythonOptions {
     public static int getVariableArgumentInlineCacheLimit() {
         CompilerAsserts.neverPartOfCompilation();
         return PythonLanguage.getContext().getOption(VariableArgumentInlineCacheLimit);
+    }
+
+    public static boolean isWithJavaStacktrace(PythonLanguage language) {
+        return language.getEngineOption(WithJavaStacktrace) > 0;
+    }
+
+    public static boolean isPExceptionWithJavaStacktrace(PythonLanguage language) {
+        return language.getEngineOption(WithJavaStacktrace) > 1;
     }
 
     @TruffleBoundary
