@@ -121,8 +121,8 @@ public final class WrapTpNew extends SlotWrapper {
             // we're in. We have our optimizations for this lookup that the compiler can then
             // (hopefully) merge with the initial lookup of the new method before entering it.
             if (lookupNewNode == null) {
-                reportPolymorphicSpecialize();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
                 lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(SpecialMethodNames.__NEW__));
             }
             Object newMethod = lookupNewNode.execute(arg0);
