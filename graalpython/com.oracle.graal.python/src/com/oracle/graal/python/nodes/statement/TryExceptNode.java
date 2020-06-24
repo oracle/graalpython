@@ -69,8 +69,6 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
 
-    @CompilationFinal private Boolean shouldCatchJavaExceptions = null;
-
     @CompilationFinal private CatchesFunction catchesFunction;
 
     public TryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse) {
@@ -96,11 +94,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         } catch (ControlFlowException e) {
             throw e;
         } catch (Exception | StackOverflowError | AssertionError e) {
-            if (shouldCatchJavaExceptions == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
-            }
-            if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
+            if (shouldCatchJavaExceptions() && getContext().getEnv().isHostException(e)) {
                 boolean handled = catchException(frame, (TruffleException) e);
                 if (handled) {
                     return;
@@ -270,4 +264,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         this.catchesFunction = catchesFunction;
     }
 
+    private boolean shouldCatchJavaExceptions() {
+        return getPythonLanguage().getEngineOption(PythonOptions.EmulateJython);
+    }
 }

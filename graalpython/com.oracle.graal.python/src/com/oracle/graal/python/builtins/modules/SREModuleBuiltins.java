@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -72,7 +72,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -97,20 +99,20 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_build_regex_engine", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BuildRegexEngine extends PythonUnaryBuiltinNode {
-        protected static boolean withTRegex(PythonContext context) {
-            return context.getOption(PythonOptions.WithTRegex);
+        protected static boolean withTRegex(PythonLanguage language) {
+            return language.getEngineOption(PythonOptions.WithTRegex);
         }
 
-        @Specialization(guards = "!withTRegex(context)")
-        Object useSRE(@SuppressWarnings("unused") String code,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
+        @Specialization(guards = "!withTRegex(language)")
+        static Object useSRE(@SuppressWarnings("unused") String code,
+                        @Shared("language") @CachedLanguage @SuppressWarnings("unused") PythonLanguage language) {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "withTRegex(context)")
+        @Specialization(guards = "withTRegex(language)")
         @TruffleBoundary
         Object run(String code,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("language") @CachedLanguage @SuppressWarnings("unused") PythonLanguage language) {
             return getContext().getEnv().parseInternal(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
         }
     }
@@ -144,29 +146,19 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run(PIBytesLike str) {
             byte[] bytes = doBytes(getToByteArrayNode().execute(str.getSequenceStorage()));
-            if (bytes != null) {
-                return factory().createByteArray(bytes);
-            }
-            return str;
+            return factory().createByteArray(bytes);
         }
 
         @Specialization
         Object run(VirtualFrame frame, PMemoryView memoryView) {
             byte[] bytes = doBytes(getToBytesNode().execute(frame, memoryView));
-            if (bytes != null) {
-                return factory().createByteArray(bytes);
-            }
-            return memoryView;
+            return factory().createByteArray(bytes);
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
         private byte[] doBytes(byte[] str) {
-            try {
-                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"), true);
-                return sb.toString().getBytes("ascii");
-            } catch (UnsupportedEncodingException e) {
-            }
-            return null;
+            StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, StandardCharsets.US_ASCII), true);
+            return sb.toString().getBytes(StandardCharsets.US_ASCII);
         }
 
         private static boolean containsBackslash(String str) {

@@ -318,17 +318,17 @@ public final class PythonOptions {
 
     public static int getAttributeAccessInlineCacheMaxDepth() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getContext().getOption(AttributeAccessInlineCacheMaxDepth);
+        return PythonLanguage.getCurrent().getEngineOption(AttributeAccessInlineCacheMaxDepth);
     }
 
     public static int getCallSiteInlineCacheMaxDepth() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getContext().getOption(CallSiteInlineCacheMaxDepth);
+        return PythonLanguage.getCurrent().getEngineOption(CallSiteInlineCacheMaxDepth);
     }
 
     public static int getVariableArgumentInlineCacheLimit() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getContext().getOption(VariableArgumentInlineCacheLimit);
+        return PythonLanguage.getCurrent().getEngineOption(VariableArgumentInlineCacheLimit);
     }
 
     public static boolean isWithJavaStacktrace(PythonLanguage language) {
