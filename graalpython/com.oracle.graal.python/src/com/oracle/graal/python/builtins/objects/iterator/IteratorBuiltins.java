@@ -189,7 +189,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object next(PDictView.PBaseDictIterator<?> self,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             if (profile.profile(self.hasNext())) {
                 return self.next(factory());
             }
@@ -199,7 +199,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isPSequence()")
         public Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
-                        @Cached("create()") IsBuiltinClassProfile profile) {
+                        @Cached IsBuiltinClassProfile profile) {
             try {
                 return callGetItem.executeObject(frame, self.getObject(), self.index++);
             } catch (PException e) {
@@ -213,7 +213,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object __iter__(PBuiltinIterator self) {
+        public Object __iter__(Object self) {
             return self;
         }
     }
@@ -258,7 +258,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPSequence()")
         public Object lengthHint(PSequenceIterator self,
-                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+                        @Cached SequenceNodes.LenNode lenNode) {
             return lenNode.execute(self.getPSequence()) - self.index;
         }
 

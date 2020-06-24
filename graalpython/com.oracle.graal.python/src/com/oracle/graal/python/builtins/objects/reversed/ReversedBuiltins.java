@@ -26,12 +26,14 @@
 package com.oracle.graal.python.builtins.objects.reversed;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -41,12 +43,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -116,13 +121,28 @@ public class ReversedBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object next(PSequenceReverseIterator self) {
+        public int lengthHint(PStringReverseIterator self) {
             return self.index + 1;
         }
 
-        @Specialization
-        public int next(PStringReverseIterator self) {
+        @Specialization(guards = "self.isPSequence()")
+        public Object lengthHint(PSequenceReverseIterator self,
+                                 @Cached SequenceNodes.LenNode lenNode) {
+            if (lenNode.execute(self.getPSequence()) == -1) {
+                throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+            }
             return self.index + 1;
+        }
+
+        @Specialization(guards = "!self.isPSequence()")
+        public Object lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
+                                 @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
+                                 @Cached("create(__ADD__, __RADD__)") LookupAndCallBinaryNode callAdd) {
+            Object len = callLen.executeObject(frame, self.getObject());
+            if (len == PNone.NO_VALUE || len == PNone.NONE) {
+                throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+            }
+            return callAdd.executeObject(frame, self.index, 1);
         }
     }
 
