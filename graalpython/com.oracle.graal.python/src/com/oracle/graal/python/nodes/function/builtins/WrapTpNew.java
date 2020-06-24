@@ -72,8 +72,6 @@ public final class WrapTpNew extends SlotWrapper {
     private static final short NOT_SUBTP_STATE = 0b10000000;
     private static final short NOT_CLASS_STATE = 0b01000000;
     private static final short IS_UNSAFE_STATE = 0b00100000;
-    private static final short NONCONSTANT_MRO = 0b00010000;
-    private static final short MRO_LENGTH_MASK = 0b00001111;
 
     public WrapTpNew(BuiltinCallNode func) {
         super(func);
@@ -188,13 +186,11 @@ public final class WrapTpNew extends SlotWrapper {
 
     @Override
     public NodeCost getCost() {
-        if (state == 0) {
-            return NodeCost.UNINITIALIZED;
-        } else if ((state & ~MRO_LENGTH_MASK) == 0) {
-            // no error states, single mro
+        if (isType == null) {
+            // only run with owner
             return NodeCost.MONOMORPHIC;
-        } else if (((state & ~MRO_LENGTH_MASK) & NONCONSTANT_MRO) == NONCONSTANT_MRO) {
-            // no error states, multiple mros
+        } else if (state == 0) {
+            // no error states, but we did see a subtype
             return NodeCost.POLYMORPHIC;
         } else {
             // error states

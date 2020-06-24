@@ -80,7 +80,7 @@ public abstract class PythonBuiltins {
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
-                // we explicitly do not make these "classmethods" here, since CPython also doesn't
+                // we explicitly do not make these "staticmethods" here, since CPython also doesn't
                 // for builtin types
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), callTarget);
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
@@ -129,7 +129,7 @@ public abstract class PythonBuiltins {
                 if (!constructsClass) {
                     constructsClass = builtin.constructsClass() != PythonBuiltinClassType.nil;
                 } else {
-                    // we rely on this in PythonTpNewBuiltinNode#getOwner
+                    // we rely on this in WrapTpNew#getOwner
                     throw new IllegalStateException(String.format("Implementation error in %s: only one @Builtin annotation can declare a class constructor.", factory.getNodeClass().getName()));
                 }
                 func.accept(factory, builtin);
