@@ -69,6 +69,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
+import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -538,6 +540,21 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PArguments.setGeneratorFrame(arguments, generatorFrame);
                 frame.setArguments(arguments);
                 return frame;
+            }
+        }
+    }
+
+    @Builtin(name = "gi_yieldfrom", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetYieldFromNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object getYieldFrom(PGenerator self) {
+            AbstractYieldNode currentYield = self.getCurrentYieldNode();
+            if (currentYield instanceof YieldFromNode) {
+                int iteratorSlot = ((YieldFromNode) currentYield).getIteratorSlot();
+                return PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getIteratorAt(iteratorSlot);
+            } else {
+                return PNone.NONE;
             }
         }
     }

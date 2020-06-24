@@ -217,6 +217,10 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         }
     }
 
+    public int getIteratorSlot() {
+        return iteratorSlot;
+    }
+
     private GetAttributeNode getGetValue() {
         if (getValue == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
