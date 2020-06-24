@@ -528,8 +528,10 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PDict locals = PArguments.getGeneratorFrameLocals(generatorFrame);
                 Object[] arguments = PArguments.create();
-                // TODO msimacek - this way, the generator will always have lineno == 1
-                Node location = self.getCurrentCallTarget().getRootNode();
+                Node location = self.getCurrentYieldNode();
+                if (location == null) {
+                    location = self.getCurrentCallTarget().getRootNode();
+                }
                 PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals, false);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(self.getArguments()));
                 PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));

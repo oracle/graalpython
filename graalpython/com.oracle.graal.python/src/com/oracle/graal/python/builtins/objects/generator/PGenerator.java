@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -66,6 +67,7 @@ public final class PGenerator extends PythonBuiltinObject {
     private int currentCallTarget;
     private final Object iterator;
     private final boolean isPRangeIterator;
+    private final GeneratorInfo generatorInfo;
     // running means it is currently on the stack, not just started
     private boolean running;
 
@@ -97,7 +99,7 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, iterator);
+        return new PGenerator(name, qualname, callTargets, generatorInfo, frameDescriptor, arguments, closure, iterator);
     }
 
     @ExplodeLoop
@@ -116,11 +118,12 @@ public final class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    private PGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
+    private PGenerator(String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.newInstance());
         this.name = name;
         this.qualname = qualname;
         this.callTargets = callTargets;
+        this.generatorInfo = generatorInfo;
         this.currentCallTarget = 0;
         this.frameDescriptor = frameDescriptor;
         this.arguments = arguments;
@@ -145,6 +148,15 @@ public final class PGenerator extends PythonBuiltinObject {
      */
     public RootCallTarget getCurrentCallTarget() {
         return callTargets[currentCallTarget];
+    }
+
+    public AbstractYieldNode getCurrentYieldNode() {
+        if (currentCallTarget == 0 || running || finished) {
+            // Not stopped on a yield
+            return null;
+        }
+        // Call target indices are yield indices + 1, see AbstractYieldNode
+        return generatorInfo.getYieldNodes()[currentCallTarget - 1];
     }
 
     public boolean isStarted() {
