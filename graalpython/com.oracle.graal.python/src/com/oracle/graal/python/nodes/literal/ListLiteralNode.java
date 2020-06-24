@@ -137,14 +137,14 @@ public final class ListLiteralNode extends SequenceLiteralNode {
             if (lookupContextReference(PythonLanguage.class).get().getOption(PythonOptions.OverallocateLiteralLists)) {
                 if (newStore.capacity() > initialCapacity.estimate()) {
                     initialCapacity.updateFrom(newStore.capacity());
-                    LOGGER.fine(() -> {
+                    LOGGER.finest(() -> {
                         return String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.capacity(),
                                         initialCapacity.estimate());
                     });
                 }
                 if (newStore.getElementType().generalizesFrom(type)) {
                     type = newStore.getElementType();
-                    LOGGER.fine(() -> {
+                    LOGGER.finest(() -> {
                         return String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name());
                     });
                 }
