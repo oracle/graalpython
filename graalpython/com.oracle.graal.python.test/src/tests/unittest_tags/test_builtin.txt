@@ -9,6 +9,7 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_delattr
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec_redirected
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_hex
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_id
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_isinstance
