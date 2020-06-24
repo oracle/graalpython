@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,9 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import java.util.List;
-
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -48,16 +47,20 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
         this.indexSlot = indexSlot;
     }
 
+    public GeneratorBlockNode(StatementNode[] statements, GeneratorInfo.Mutable generatorInfo) {
+        this(statements, generatorInfo.nextBlockNodeIndex());
+    }
+
     public static GeneratorBlockNode create(StatementNode[] statements, int indexSlot) {
         return new GeneratorBlockNode(statements, indexSlot);
     }
 
-    public int getIndexSlot() {
-        return indexSlot;
+    public static GeneratorBlockNode create(StatementNode[] statements, GeneratorInfo.Mutable generatorInfo) {
+        return new GeneratorBlockNode(statements, generatorInfo);
     }
 
-    public GeneratorBlockNode insertNodesBefore(StatementNode insertBefore, List<StatementNode> insertees) {
-        return new GeneratorBlockNode(insertStatementsBefore(insertBefore, insertees), getIndexSlot());
+    public int getIndexSlot() {
+        return indexSlot;
     }
 
     @ExplodeLoop

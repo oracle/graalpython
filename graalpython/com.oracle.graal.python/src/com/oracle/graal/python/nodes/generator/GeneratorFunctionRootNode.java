@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -62,10 +63,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
     @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
-    private final int numOfActiveFlags;
-    private final int numOfGeneratorBlockNode;
-    private final int numOfGeneratorForNode;
-    private final int numOfGeneratorTryNode;
+    private final GeneratorInfo generatorInfo;
     private final ExecutionCellSlots cellSlots;
     private final String name;
     private final String qualname;
@@ -73,18 +71,14 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, String qualname, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
-                    Signature signature,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode) {
+                    Signature signature, GeneratorInfo generatorInfo) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
         this.name = name;
         this.qualname = qualname;
         this.frameDescriptor = frameDescriptor;
         this.cellSlots = executionCellSlots;
-        this.numOfActiveFlags = numOfActiveFlags;
-        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
-        this.numOfGeneratorForNode = numOfGeneratorForNode;
-        this.numOfGeneratorTryNode = numOfGeneratorTryNode;
+        this.generatorInfo = generatorInfo;
     }
 
     @Override
@@ -94,8 +88,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
             callTargets = createYieldTargets(callTarget);
         }
         CompilerAsserts.partialEvaluationConstant(cellSlots);
-        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode, numOfGeneratorTryNode, null);
+        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, generatorInfo, null);
     }
 
     public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {

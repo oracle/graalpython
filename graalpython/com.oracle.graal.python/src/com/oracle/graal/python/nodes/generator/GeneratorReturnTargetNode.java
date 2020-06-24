@@ -34,6 +34,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
@@ -58,11 +59,11 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
 
     private final int flagSlot;
 
-    public GeneratorReturnTargetNode(StatementNode parameters, StatementNode body, ExpressionNode returnValue, int activeFlagIndex) {
+    public GeneratorReturnTargetNode(StatementNode parameters, StatementNode body, ExpressionNode returnValue, GeneratorInfo.Mutable generatorInfo) {
         this.body = body;
         this.returnValue = returnValue;
         this.parameters = parameters;
-        this.flagSlot = activeFlagIndex;
+        this.flagSlot = generatorInfo.nextActiveFlagIndex();
     }
 
     public StatementNode getParameters() {

@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -38,7 +39,8 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
     @Child private ExpressionNode right;
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
 
-    public YieldNode(ExpressionNode right) {
+    public YieldNode(ExpressionNode right, GeneratorInfo.Mutable generatorInfo) {
+        super(generatorInfo);
         this.right = right;
     }
 

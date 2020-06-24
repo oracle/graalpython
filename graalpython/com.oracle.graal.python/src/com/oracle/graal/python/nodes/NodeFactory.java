@@ -104,6 +104,7 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
@@ -209,12 +210,12 @@ public class NodeFactory {
         return new BreakTargetNode(forNode, orelse);
     }
 
-    public YieldNode createYield(ExpressionNode right) {
-        return new YieldNode(right);
+    public YieldNode createYield(ExpressionNode right, GeneratorInfo.Mutable generatorInfo) {
+        return new YieldNode(right, generatorInfo);
     }
 
-    public YieldFromNode createYieldFrom(ExpressionNode right) {
-        return new YieldFromNode(right);
+    public YieldFromNode createYieldFrom(ExpressionNode right, GeneratorInfo.Mutable generatorInfo) {
+        return new YieldFromNode(right, generatorInfo);
     }
 
     public ExpressionNode createIntegerLiteral(int value) {

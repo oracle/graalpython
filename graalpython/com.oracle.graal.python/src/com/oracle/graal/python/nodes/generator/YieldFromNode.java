@@ -53,10 +53,10 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class YieldFromNode extends AbstractYieldNode implements GeneratorControlNode {
@@ -86,11 +86,13 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     @Child private IsBuiltinClassProfile hasNoCloseProfile = IsBuiltinClassProfile.create();
     @Child private IsBuiltinClassProfile hasNoThrowProfile = IsBuiltinClassProfile.create();
 
-    @CompilationFinal private int iteratorSlot;
+    private final int iteratorSlot;
 
     @Child private ExpressionNode right;
 
-    public YieldFromNode(ExpressionNode right) {
+    public YieldFromNode(ExpressionNode right, GeneratorInfo.Mutable generatorInfo) {
+        super(generatorInfo);
+        iteratorSlot = generatorInfo.nextIteratorSlotIndex();
         this.right = right;
     }
 
@@ -293,9 +295,5 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             writeUnraisableNode = insert(WriteUnraisableNode.create());
         }
         return writeUnraisableNode;
-    }
-
-    public void setIteratorSlot(int slot) {
-        this.iteratorSlot = slot;
     }
 }

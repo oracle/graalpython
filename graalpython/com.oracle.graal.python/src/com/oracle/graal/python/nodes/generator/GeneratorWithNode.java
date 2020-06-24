@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.WithNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -54,11 +55,11 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     private final int enterSlot;
     private final int yieldSlot;
 
-    public GeneratorWithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext, int enterSlot, int withObjectSlot, int yieldSlot) {
+    public GeneratorWithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext, GeneratorInfo.Mutable generatorInfo) {
         super(targetNode, body, withContext);
-        this.enterSlot = enterSlot;
-        this.withObjectSlot = withObjectSlot;
-        this.yieldSlot = yieldSlot;
+        this.enterSlot = generatorInfo.nextActiveFlagIndex();
+        this.withObjectSlot = generatorInfo.nextIteratorSlotIndex();
+        this.yieldSlot = generatorInfo.nextActiveFlagIndex();
     }
 
     @Override

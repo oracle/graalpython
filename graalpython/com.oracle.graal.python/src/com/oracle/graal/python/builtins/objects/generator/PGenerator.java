@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -69,12 +70,12 @@ public final class PGenerator extends PythonBuiltinObject {
     private boolean running;
 
     public static PGenerator create(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
-                    ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, PythonObjectFactory factory,
+                    ExecutionCellSlots cellSlots, GeneratorInfo generatorInfo, PythonObjectFactory factory,
                     Object iterator) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
          */
-        GeneratorControlData generatorArgs = new GeneratorControlData(numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
+        GeneratorControlData generatorArgs = new GeneratorControlData(generatorInfo);
         Object[] generatorFrameArguments = PArguments.create();
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, frameDescriptor);
         PArguments.setGeneratorFrame(arguments, generatorFrame);

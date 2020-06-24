@@ -125,6 +125,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -569,9 +570,8 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PGenerator createGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, Object iterator) {
-        return trace(PGenerator.create(name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode, numOfGeneratorTryNode, this, iterator));
+                    GeneratorInfo generatorInfo, Object iterator) {
+        return trace(PGenerator.create(name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,

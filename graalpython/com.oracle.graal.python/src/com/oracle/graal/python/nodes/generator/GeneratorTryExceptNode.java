@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -61,12 +62,12 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     private final int exceptIndex;
     private final int activeExceptionIndex;
 
-    public GeneratorTryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse, int exceptFlag, int elseFlag, int exceptIndex, int activeExceptionIndex) {
+    public GeneratorTryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse, GeneratorInfo.Mutable generatorInfo) {
         super(body, exceptNodes, orelse);
-        this.exceptFlag = exceptFlag;
-        this.elseFlag = elseFlag;
-        this.exceptIndex = exceptIndex;
-        this.activeExceptionIndex = activeExceptionIndex;
+        this.exceptFlag = generatorInfo.nextActiveFlagIndex();
+        this.elseFlag = generatorInfo.nextActiveFlagIndex();
+        this.exceptIndex = generatorInfo.nextBlockNodeIndex();
+        this.activeExceptionIndex = generatorInfo.nextExceptionSlotIndex();
     }
 
     @Override

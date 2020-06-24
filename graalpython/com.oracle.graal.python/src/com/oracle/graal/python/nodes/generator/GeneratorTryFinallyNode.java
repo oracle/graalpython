@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -55,10 +56,10 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
     private final int finallyFlag;
     private final int activeExceptionIndex;
 
-    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag, int activeExceptionIndex) {
+    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, GeneratorInfo.Mutable generatorInfo) {
         super(body, finalbody);
-        this.finallyFlag = finallyFlag;
-        this.activeExceptionIndex = activeExceptionIndex;
+        this.finallyFlag = generatorInfo.nextActiveFlagIndex();
+        this.activeExceptionIndex = generatorInfo.nextExceptionSlotIndex();
     }
 
     @Override

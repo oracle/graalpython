@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,34 +40,31 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import java.util.List;
+
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class AbstractYieldNode extends ExpressionNode {
-    @CompilationFinal protected int flagSlot;
-    @CompilationFinal protected int yieldIndex;
+    protected final int flagSlot;
+    protected final int yieldIndex;
 
     protected final BranchProfile gotException = BranchProfile.create();
     protected final BranchProfile gotValue = BranchProfile.create();
     protected final BranchProfile gotNothing = BranchProfile.create();
 
-    public void setFlagSlot(int slot) {
-        this.flagSlot = slot;
-    }
-
     public int getFlagSlot() {
         return flagSlot;
     }
 
-    public void setIndex(int idx) {
-        assert yieldIndex == 0;
-        assert idx != 0;
-        yieldIndex = idx;
-    }
-
-    public AbstractYieldNode() {
-        super();
+    public AbstractYieldNode(GeneratorInfo.Mutable generatorInfo) {
+        this.flagSlot = generatorInfo.nextActiveFlagIndex();
+        List<AbstractYieldNode> yieldNodes = generatorInfo.getYieldNodes();
+        yieldNodes.add(this);
+        // It is intentionally offset by 1 because the index is used to address call target array
+        // where the first element is the function start and yields start from 1 on
+        this.yieldIndex = yieldNodes.size();
     }
 
 }
