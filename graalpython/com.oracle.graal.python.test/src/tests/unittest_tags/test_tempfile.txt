@@ -61,3 +61,16 @@
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_sparse
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_text_mode
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_text_newline_and_encoding
+*graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_write_sequential
+*graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_writelines
+*graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_writelines_sequential
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_cleanup_with_symlink_to_a_directory
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_context_manager
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_del_on_collection
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_explicit_cleanup
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_flags
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_mkdtemp_failure
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_multiple_close
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_basic
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_mode_and_encoding
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_multiple_close

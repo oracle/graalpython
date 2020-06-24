@@ -1,0 +1,2 @@
+*graalpython.lib-python.3.test.test_slice.SliceTest.test_constructor
+*graalpython.lib-python.3.test.test_slice.SliceTest.test_repr

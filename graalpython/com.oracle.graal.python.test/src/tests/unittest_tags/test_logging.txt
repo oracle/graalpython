@@ -11,3 +11,6 @@
 *graalpython.lib-python.3.test.test_logging.CustomLevelsAndFiltersTest.test_handler_filter
 *graalpython.lib-python.3.test.test_logging.CustomLevelsAndFiltersTest.test_logger_filter
 *graalpython.lib-python.3.test.test_logging.CustomLevelsAndFiltersTest.test_specific_filters
+*graalpython.lib-python.3.test.test_logging.HandlerTest.test_name
+*graalpython.lib-python.3.test.test_logging.HandlerTest.test_path_objects
+*graalpython.lib-python.3.test.test_logging.HandlerTest.test_post_fork_child_no_deadlock

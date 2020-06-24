@@ -44,6 +44,7 @@
 *graalpython.lib-python.3.test.test_traceback.TestTracebackException.test_smoke
 *graalpython.lib-python.3.test.test_traceback.TestTracebackException.test_traceback_header
 *graalpython.lib-python.3.test.test_traceback.TestTracebackException.test_unhashable
+*graalpython.lib-python.3.test.test_traceback.TracebackCases.test_bad_indentation
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_base_exception
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_caret
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_format_exception_only_bad__str__

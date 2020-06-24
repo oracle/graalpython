@@ -1,2 +1,5 @@
 *graalpython.lib-python.3.test.test_shlex.ShlexTest.testCompat
 *graalpython.lib-python.3.test.test_shlex.ShlexTest.testJoin
+*graalpython.lib-python.3.test.test_shlex.ShlexTest.testJoinRoundtrip
+*graalpython.lib-python.3.test.test_shlex.ShlexTest.testQuote
+*graalpython.lib-python.3.test.test_shlex.ShlexTest.testSplitPosix

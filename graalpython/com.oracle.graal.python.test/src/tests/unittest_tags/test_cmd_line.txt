@@ -1,2 +1,3 @@
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_argv0_normalization
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_directories
+*graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_run_module_bug1764407
