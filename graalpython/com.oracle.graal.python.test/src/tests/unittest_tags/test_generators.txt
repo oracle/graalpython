@@ -10,3 +10,4 @@
 *graalpython.lib-python.3.test.test_generators.GeneratorTest.test_copy
 *graalpython.lib-python.3.test.test_generators.GeneratorTest.test_pickle
 *graalpython.lib-python.3.test.test_generators.SignalAndYieldFromTest.test_raise_and_yield_from
+*graalpython.lib-python.3.test.test_generators.YieldFromTests.test_generator_gi_yieldfrom
