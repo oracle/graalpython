@@ -150,6 +150,7 @@ public abstract class ErrorMessages {
     public static final String CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
     public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES = "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'";
     public static final String CLASS_MUST_BE_SET_TO_CLASS = "__class__ must be set to a class, not '%p' object";
+    public static final String MUST_BE_SET_TO_S_NOT_P = "%s must be set to a %s, not a '%p'";
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
     public static final String CODE_OBJ_NO_FREE_VARIABLES = "code object passed to %s may not contain free variables";
     public static final String COMPILE_MUST_BE = "compile() mode must be 'exec', 'eval' or 'single'";
