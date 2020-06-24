@@ -83,7 +83,8 @@ public final class WrapTpNew extends SlotWrapper {
     public Object execute(VirtualFrame frame) {
         Object arg0;
         try {
-            arg0 = PArguments.getArgument(frame, 0); // should always succeed, since the signature check was already done
+            arg0 = PArguments.getArgument(frame, 0); // should always succeed, since the signature
+                                                     // check was already done
         } catch (ArrayIndexOutOfBoundsException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException(getOwner().getName() + ".__new__ called without arguments");
@@ -165,7 +166,7 @@ public final class WrapTpNew extends SlotWrapper {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             Builtin[] builtins = null;
             Class<?> cls = getNode().getClass();
-            while (cls != null ) {
+            while (cls != null) {
                 builtins = cls.getAnnotationsByType(Builtin.class);
                 if (builtins.length == 0) {
                     cls = cls.getSuperclass();
