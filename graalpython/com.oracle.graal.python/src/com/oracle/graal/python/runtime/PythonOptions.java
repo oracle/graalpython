@@ -291,6 +291,18 @@ public final class PythonOptions {
         throw new IllegalStateException("Using Python options with a non-Python option key");
     }
 
+    @ExplodeLoop
+    public static boolean isEngineOption(OptionKey<?> key) {
+        CompilerAsserts.partialEvaluationConstant(ENGINE_OPTION_KEYS);
+        for (int i = 0; i < ENGINE_OPTION_KEYS.length; i++) {
+            CompilerAsserts.partialEvaluationConstant(ENGINE_OPTION_KEYS[i]);
+            if (ENGINE_OPTION_KEYS[i] == key) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Check if the options set in the {@code first} and {@code second} set are compatible, i.e,
      * there are no Python per-engine options in these sets that differ.
