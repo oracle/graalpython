@@ -2461,26 +2461,29 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     public static class MayRaiseNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
         private final T node;
-        private Class<T> nodeClass;
+        private final Class<T> nodeClass;
 
         public MayRaiseNodeFactory(T node) {
             this.node = node;
+            this.nodeClass = determineNodeClass(node);
         }
 
         public T createNode(Object... arguments) {
             return NodeUtil.cloneNode(node);
         }
 
-        @SuppressWarnings("unchecked")
         public Class<T> getNodeClass() {
+            return nodeClass;
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> Class<T> determineNodeClass(T node) {
             CompilerAsserts.neverPartOfCompilation();
-            if (nodeClass == null) {
-                nodeClass = (Class<T>) node.getClass();
-                GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
-                if (genBy != null) {
-                    nodeClass = (Class<T>) genBy.value();
-                    assert nodeClass.isAssignableFrom(node.getClass());
-                }
+            Class<T> nodeClass = (Class<T>) node.getClass();
+            GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
+            if (genBy != null) {
+                nodeClass = (Class<T>) genBy.value();
+                assert nodeClass.isAssignableFrom(node.getClass());
             }
             return nodeClass;
         }
