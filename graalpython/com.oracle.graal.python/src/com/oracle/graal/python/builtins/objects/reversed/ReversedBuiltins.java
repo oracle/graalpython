@@ -152,20 +152,33 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(PStringReverseIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(self.value, self.index, context, pol);
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self, self.value, self.index, pol);
         }
 
-        private PTuple reduceInternal(Object arg, Object state, PythonContext context, PythonObjectLibrary pol) {
-            PythonModule builtins = context.getCore().getBuiltins();
-            Object iter = pol.lookupAttribute(builtins, REVERSED);
+        @Specialization(guards = "self.isPSequence()")
+        public Object reduce(PSequenceReverseIterator self,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self, self.getPSequence(), self.index, pol);
+        }
+
+        @Specialization(guards = "!self.isPSequence()")
+        public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
+            Object content = callUnaryNode.executeObject(frame, reduce);
+            return reduceInternal(self, content, self.index, pol);
+        }
+
+        private PTuple reduceInternal(Object self, Object arg, Object state, PythonObjectLibrary pol) {
+            Object revIter = pol.getLazyPythonClass(self);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {
-                return factory().createTuple(new Object[]{iter, args, state});
+                return factory().createTuple(new Object[]{revIter, args, state});
             } else {
-                return factory().createTuple(new Object[]{iter, args});
+                return factory().createTuple(new Object[]{revIter, args});
             }
         }
     }

@@ -83,7 +83,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         public Object reduce(PEnumerate self,
                         @CachedLibrary("self") PythonObjectLibrary pol) {
             PTuple contents = factory().createTuple(new Object[]{self.getIterator(), self.getIndex()});
-            return factory().createTuple(new Object[]{PythonBuiltinClassType.PEnumerate, contents});
+            return factory().createTuple(new Object[]{pol.getLazyPythonClass(self), contents});
         }
     }
 }
