@@ -112,8 +112,8 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetLastiNode extends PythonBuiltinNode {
         @Specialization
-        int get(@SuppressWarnings("unused") PFrame self) {
-            return -1;
+        int get(PFrame self) {
+            return self.getLasti();
         }
     }
 

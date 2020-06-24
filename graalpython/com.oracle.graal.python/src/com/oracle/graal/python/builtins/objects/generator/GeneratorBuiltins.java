@@ -539,6 +539,11 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
                 PArguments.setGeneratorFrame(arguments, generatorFrame);
                 frame.setArguments(arguments);
+                if (self.isStarted()) {
+                    // Hack: Fake bytecode to make inspect.getgeneratorstate distinguish suspended
+                    // and unstarted generators
+                    frame.setLasti(10000);
+                }
                 return frame;
             }
         }
