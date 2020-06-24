@@ -29,7 +29,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PStringReverseIterator extends PBuiltinIterator {
-    final String value;
+    public final String value;
 
     public PStringReverseIterator(Object clazz, DynamicObject storage, String value) {
         super(clazz, storage);

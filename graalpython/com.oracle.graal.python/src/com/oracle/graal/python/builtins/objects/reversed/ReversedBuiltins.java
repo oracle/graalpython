@@ -25,28 +25,41 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
 public class ReversedBuiltins extends PythonBuiltins {
@@ -110,6 +123,45 @@ public class ReversedBuiltins extends PythonBuiltins {
         @Specialization
         public int next(PStringReverseIterator self) {
             return self.index + 1;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        public Object reduce(PStringReverseIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self.value, self.index, context, pol);
+        }
+
+        private PTuple reduceInternal(Object arg, Object state, PythonContext context, PythonObjectLibrary pol) {
+            PythonModule builtins = context.getCore().getBuiltins();
+            Object iter = pol.lookupAttribute(builtins, REVERSED);
+            PTuple args = factory().createTuple(new Object[]{arg});
+            // callable, args, state (optional)
+            if (state != null) {
+                return factory().createTuple(new Object[]{iter, args, state});
+            } else {
+                return factory().createTuple(new Object[]{iter, args});
+            }
+        }
+    }
+
+    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PBuiltinIterator self, Object index,
+                        @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
         }
     }
 }
