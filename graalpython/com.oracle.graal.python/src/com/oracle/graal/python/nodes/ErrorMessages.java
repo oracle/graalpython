@@ -87,7 +87,6 @@ public abstract class ErrorMessages {
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
-    public static final String BYTES_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
     public static final String C_ARG_NOT_IN_RANGE = "%c arg not in range(0x%s)";
     public static final String CALL_STACK_NOT_DEEP_ENOUGH = "call stack is not deep enough";
@@ -118,6 +117,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
     public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
+    public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution order (MRO) for bases %p, %p";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s'";
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
@@ -248,7 +248,7 @@ public abstract class ErrorMessages {
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
     public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
-    public static final String INT_CANT_CONVERT_STRING_EITH_EXPL_BASE = "int() can't convert non-string with explicit base";
+    public static final String INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = "int() can't convert non-string with explicit base";
     public static final String INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = "int too large to convert to float";
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
@@ -406,6 +406,7 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
     public static final String P_S_RETURNED_NON_INT = "%p.%s returned a non int (type %p)";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
+    public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
     public static final String RETURNED_NON_LONG = "%p.%s returned a non long (type %p)";
     public static final String RETURNED_NON_STRING = "%s returned non-string (type %p)";
     public static final String P_S_RETURNED_NON_STRING = "%p.%s returned non-string (type %p)";

@@ -1281,32 +1281,38 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
+        Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone key, Object defaultVal,
+                        @Cached GetIteratorNode getIterator,
+                        @Cached GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile1,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile2) {
-            return minmaxSequenceWithKey(frame, arg1, args, null, getIterator, next, compare, castToBooleanNode, null, errorProfile1, errorProfile2);
+                        @Cached IsBuiltinClassProfile errorProfile1,
+                        @Cached IsBuiltinClassProfile errorProfile2,
+                        @Shared("hasDefaultProfile") @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
+            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, getIterator, next, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
         }
 
         @Specialization(guards = "args.length == 0")
-        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
+        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg, Object defaultVal,
+                        @Cached GetIteratorNode getIterator,
+                        @Cached GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached("create()") CallNode keyCall,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile1,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile2) {
+                        @Cached CallNode keyCall,
+                        @Cached IsBuiltinClassProfile errorProfile1,
+                        @Cached IsBuiltinClassProfile errorProfile2,
+                        @Shared("hasDefaultProfile") @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
             Object iterator = getIterator.executeWith(frame, arg1);
             Object currentValue;
             try {
                 currentValue = next.execute(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile1);
-                throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, this instanceof MaxNode ? "max" : "min");
+                if (hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
+                    throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, getName());
+                } else {
+                    currentValue = defaultVal;
+                }
             }
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             while (true) {
@@ -1338,20 +1344,30 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        @Specialization(guards = "args.length != 0")
-        Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode) {
-            return minmaxBinaryWithKey(frame, arg1, args, null, compare, null, moreThanTwo, castToBooleanNode);
+        private String getName() {
+            return this instanceof MaxNode ? "max" : "min";
         }
 
         @Specialization(guards = "args.length != 0")
-        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArg,
+        Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg, Object defaultVal,
+                        @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Shared("hasDefaultProfile") @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
+            return minmaxBinaryWithKey(frame, arg1, args, null, defaultVal, compare, null, moreThanTwo, castToBooleanNode, hasDefaultProfile);
+        }
+
+        @Specialization(guards = "args.length != 0")
+        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArg, @SuppressWarnings("unused") Object defaultVal,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached CallNode keyCall,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode) {
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Shared("hasDefaultProfile") @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
+
+            if (!hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
+                throw raise(PythonBuiltinClassType.TypeError, "Cannot specify a default for %s with multiple positional arguments", getName());
+            }
             Object currentValue = arg1;
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
@@ -1399,7 +1415,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // max(iterable, *[, key])
     // max(arg1, arg2, *args[, key])
-    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key"})
+    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"})
     @GenerateNodeFactory
     public abstract static class MaxNode extends MinMaxNode {
 
@@ -1407,7 +1423,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // min(iterable, *[, key])
     // min(arg1, arg2, *args[, key])
-    @Builtin(name = MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key"})
+    @Builtin(name = MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"})
     @GenerateNodeFactory
     public abstract static class MinNode extends MinMaxNode {
 
@@ -1738,11 +1754,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
-    public abstract static class PowNode extends PythonBuiltinNode {
-        @Child private LookupAndCallTernaryNode powNode = TernaryArithmetic.Pow.create();
+    public abstract static class PowNode extends PythonTernaryBuiltinNode {
+        static LookupAndCallBinaryNode binaryPow() {
+            return BinaryArithmetic.Pow.create();
+        }
+
+        static LookupAndCallTernaryNode ternaryPow() {
+            return TernaryArithmetic.Pow.create();
+        }
 
         @Specialization
-        Object doIt(VirtualFrame frame, Object x, Object y, Object z) {
+        Object binary(VirtualFrame frame, Object x, Object y, @SuppressWarnings("unused") PNone z,
+                        @Cached("binaryPow()") LookupAndCallBinaryNode powNode) {
+            return powNode.executeObject(frame, x, y);
+        }
+
+        @Specialization(guards = "!isPNone(z)")
+        Object ternary(VirtualFrame frame, Object x, Object y, Object z,
+                        @Cached("ternaryPow()") LookupAndCallTernaryNode powNode) {
             return powNode.execute(frame, x, y, z);
         }
     }

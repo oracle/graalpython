@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
       GetCallAttributeNodeGen SourceSection: None
         StringLiteralNode SourceSection: [0,2]`''`
       GeneratorExpressionNode SourceSection: [18,47]`for name in ['Pepa',...`
-        Name: [].<locals>.<genexp>:topLevelParser02:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [name, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [18,47]`for name in ['Pepa',...`
-          Name: [].<locals>.<genexp>:topLevelParser02:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

@@ -577,7 +577,11 @@ public class IntBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         static BigInteger opNeg(BigInteger a, BigInteger b) {
-            if (a.equals(BigInteger.ZERO)) {
+            if (a.signum() == 0) {
+                return BigInteger.ZERO;
+            }
+            BigInteger mod = a.mod(b.negate());
+            if (mod.signum() == 0) {
                 return BigInteger.ZERO;
             }
             return a.mod(b.negate()).subtract(b.negate());
@@ -705,17 +709,22 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right < 0")
-        static double doLLNeg(long left, long right, @SuppressWarnings("unused") PNone none) {
+        double doLLNeg(long left, long right, @SuppressWarnings("unused") PNone none,
+                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) {
+            if (leftIsZero.profile(left == 0)) {
+                throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
+            }
             return Math.pow(left, right);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none) {
+        Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none,
+                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) {
             long lright = right.longValueExact();
             if (lright >= 0) {
                 return doLLFast(left, lright, none);
             }
-            return doLLNeg(left, lright, none);
+            return doLLNeg(left, lright, none, leftIsZero);
         }
 
         @Specialization(replaces = "doLPNarrow")
@@ -739,7 +748,11 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right < 0")
-        double doPLNeg(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+        double doPLNeg(PInt left, long right, @SuppressWarnings("unused") PNone none,
+                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) {
+            if (leftIsZero.profile(left.isZero())) {
+                throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
+            }
             return TrueDivNode.op(BigInteger.ONE, op(left.getValue(), -right), getRaiseNode());
         }
 
@@ -886,6 +899,8 @@ public class IntBuiltins extends PythonBuiltins {
                     // we'll raise unless left is one of the shortcut values
                     return op(left, Long.MAX_VALUE);
                 }
+            } else if (left.signum() == 0) {
+                throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             } else {
                 try {
                     return Math.pow(left.longValueExact(), right.longValueExact());

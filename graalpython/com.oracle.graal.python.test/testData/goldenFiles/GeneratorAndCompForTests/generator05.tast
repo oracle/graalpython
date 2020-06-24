@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [1,caretspace,Illegal]
                         GeneratorExpressionNode SourceSection: [44,63]`for c in caretspace`
-                          Name: fn.<locals>.<genexp>:generator05:2
+                          Name: <genexpr>
                           FrameDescriptor: 2 slots [c, <return_val>]
                           Enclosing
                             FrameDescriptor: 3 slots [self, caretspace, <return_val>]
@@ -53,7 +53,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                           Block Nodes: 0
                           Is Enclosing Frame Generator: true
                           FunctionRootNode SourceSection: [44,63]`for c in caretspace`
-                            Name: fn.<locals>.<genexp>:generator05:2
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: None

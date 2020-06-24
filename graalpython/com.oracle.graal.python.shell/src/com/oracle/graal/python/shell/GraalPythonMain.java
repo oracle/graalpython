@@ -153,6 +153,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-S":
                     noSite = true;
                     break;
+                case "-X":
+                    i++;
+                    if (i < arguments.size()) {
+                        // CPython ignores unknown/unsupported -X options, so we can do that too
+                    } else {
+                        print("Argument expected for the -X option");
+                        printShortHelp();
+                    }
+                    break;
                 case "-v":
                     verboseFlag = true;
                     break;
@@ -585,6 +594,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "         can be supplied multiple times to increase verbosity\n" +
                         "-V     : print the Python version number and exit (also --version)\n" +
                         "         when given twice, print more information about the build\n" +
+                        "-X opt : CPython implementation-specific options. Ignored on GraalPython\n" +
                         // "-W arg : warning control; arg is
                         // action:message:category:module:lineno\n" +
                         // " also PYTHONWARNINGS=arg\n" +

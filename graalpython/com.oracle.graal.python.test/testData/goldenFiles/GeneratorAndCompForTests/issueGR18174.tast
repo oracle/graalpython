@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,30]`for b in [a for a in...`
-        Name: [].<locals>.<genexp>:issueGR18174:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [b, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [3,30]`for b in [a for a in...`
-          Name: [].<locals>.<genexp>:issueGR18174:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None
@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
               Identifier: list
               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [15,29]`for a in (1,2)`
-              Name: [].<locals>.<genexp>:issueGR18174:1
+              Name: <genexpr>
               FrameDescriptor: 2 slots [a, <return_val>]
               Enclosing
                 FrameDescriptor:  Empty
@@ -76,7 +76,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
               Block Nodes: 0
               Is Enclosing Frame Generator: true
               FunctionRootNode SourceSection: [15,29]`for a in (1,2)`
-                Name: [].<locals>.<genexp>:issueGR18174:1
+                Name: <genexpr>
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None

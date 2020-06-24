@@ -165,6 +165,18 @@ def test_init3():
         assert False, "expected ValueError"
     except ValueError as e:
         assert "dictionary update sequence element #4 has length 1; 2 is required" == str(e), "invalid error message"
+        
+    try:
+        dict("5")
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "dictionary update sequence element #0 has length 1; 2 is required" == str(e), "invalid error message"
+        
+    try:
+        dict([("a", 1), ("b", 2), ("c", 3), ("d", 4), "5"])
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "dictionary update sequence element #4 has length 1; 2 is required" == str(e), "invalid error message"
 
 
 def test_init4():
@@ -198,7 +210,13 @@ def test_init5():
     assert set(d.keys()) == key_set, "unexpected keys: %s" % str(d.keys())
     assert set(d.values()) == {97, 98, 99, 100}, "unexpected values: %s" % str(d.values())
 
-
+def test_init6():
+    try:
+        dict(1)
+        assert False, "expected TypeError"
+    except TypeError as e:
+        assert "'int' object is not iterable" == str(e), "invalid error message"
+        
 def test_init_kwargs():
     kwargs = {'ONE': 'one', 'TWO': 'two'}
     d = dict([(1, 11), (2, 22)], **kwargs)

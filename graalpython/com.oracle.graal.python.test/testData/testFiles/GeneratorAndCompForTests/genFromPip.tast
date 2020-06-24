@@ -127,7 +127,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [4,filtered,Illegal]
                         GeneratorExpressionNode SourceSection: [356,424]`for entry in entries...`
-                          Name: find_on_path.<locals>.<genexp>:genFromPip:14
+                          Name: <genexpr>
                           FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
                           Enclosing
                             FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
@@ -136,7 +136,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           Block Nodes: 0
                           Is Enclosing Frame Generator: true
                           FunctionRootNode SourceSection: [356,424]`for entry in entries...`
-                            Name: find_on_path.<locals>.<genexp>:genFromPip:14
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: only, path_item

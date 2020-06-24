@@ -101,7 +101,7 @@ int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pval
     	*pvalue = PyTuple_GetItem(tresult, 1);
     }
     if (phash != NULL) {
-    	*phash = PyTuple_GetItem(tresult, 2);
+    	*phash = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 2));
     }
     return 1;
 

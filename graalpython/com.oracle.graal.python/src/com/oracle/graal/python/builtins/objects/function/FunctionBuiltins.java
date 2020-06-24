@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.TRUFFLE_SOURCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -48,11 +49,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionKeywordDefaultsNode;
@@ -60,7 +59,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -82,16 +80,10 @@ public class FunctionBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getEnclosingClassName() == null")
+        @Specialization
         @TruffleBoundary
-        Object reprModuleFunction(PFunction self) {
-            return String.format("<function %s at 0x%x>", self.getName(), self.hashCode());
-        }
-
-        @Specialization(guards = "self.getEnclosingClassName() != null")
-        @TruffleBoundary
-        Object reprClassFunction(PFunction self) {
-            return String.format("<function %s.%s at 0x%x>", self.getEnclosingClassName(), self.getName(), self.hashCode());
+        Object reprFunction(PFunction self) {
+            return String.format("<function %s at 0x%x>", self.getQualname(), self.hashCode());
         }
     }
 
@@ -99,43 +91,41 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getName(PFunction self, @SuppressWarnings("unused") PNone noValue,
-                        @Cached("create()") ReadAttributeFromObjectNode readName) {
-            Object name = readName.execute(self, __NAME__);
-            if (name == PNone.NO_VALUE) {
-                return self.getName();
-            } else {
-                return name;
-            }
-        }
-
-        @Specialization(guards = "isNoValue(noValue)")
-        Object getName(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
+        Object getName(PFunction self, @SuppressWarnings("unused") PNone noValue) {
             return self.getName();
         }
 
         @Specialization
-        Object setName(PFunction self, String value,
-                        @Cached("create()") WriteAttributeToObjectNode writeName) {
-            writeName.execute(self, __NAME__, value);
+        Object setName(PFunction self, String value) {
+            self.setName(value);
             return PNone.NONE;
         }
 
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(PFunction self, Object value,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
+            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__name__"));
+        }
+    }
+
+    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class QualnameNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(noValue)")
+        Object getQualname(PFunction self, @SuppressWarnings("unused") PNone noValue) {
+            return self.getQualname();
+        }
+
         @Specialization
-        Object setName(PFunction self, PString value,
-                        @Cached("create()") WriteAttributeToObjectNode writeName) {
-            writeName.execute(self, __NAME__, value.getValue());
+        Object setQualname(PFunction self, String value) {
+            self.setQualname(value);
             return PNone.NONE;
         }
 
-        @Specialization
-        Object setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
-        }
-
-        @Fallback
-        Object setName(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__name__");
+        @Specialization(guards = "!isNoValue(value)")
+        Object setQualname(PFunction self, Object value,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
+            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__qualname__"));
         }
     }
 

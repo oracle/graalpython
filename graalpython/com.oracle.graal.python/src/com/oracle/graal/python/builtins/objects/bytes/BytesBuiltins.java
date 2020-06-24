@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -569,7 +570,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Fallback
         boolean contains(@SuppressWarnings("unused") Object self, Object other) {
-            throw raise(TypeError, ErrorMessages.BYTES_OBJ_REQUIRED, other);
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, other);
         }
 
     }
@@ -1642,6 +1643,61 @@ public class BytesBuiltins extends PythonBuiltins {
         @Override
         protected AbstractSplitNode createRecursiveNode() {
             return BytesBuiltinsFactory.RSplitNodeFactory.create(new ReadArgumentNode[]{});
+        }
+    }
+
+    // bytes.splitlines([keepends])
+    @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, parameterNames = {"self", "keepends"})
+    @GenerateNodeFactory
+    public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
+        @Child private BytesNodes.ToBytesNode toBytesNode = BytesNodes.ToBytesNode.create();
+        @Child private AppendNode appendNode = AppendNode.create();
+
+        @Specialization
+        PList doSplitlinesDefault(VirtualFrame frame, PIBytesLike self, @SuppressWarnings("unused") PNone keepends) {
+            return doSplitlines(frame, self, false);
+        }
+
+        @Specialization(guards = "!isPNone(keepends)")
+        PList doSplitlinesDefault(VirtualFrame frame, PIBytesLike self, Object keepends,
+                        @Cached CastToJavaIntExactNode cast) {
+            return doSplitlines(frame, self, cast.execute(keepends) != 0);
+        }
+
+        @Specialization
+        PList doSplitlines(VirtualFrame frame, PIBytesLike self, boolean keepends) {
+            byte[] bytes = toBytesNode.execute(frame, self);
+            PList list = factory().createList();
+            int sliceStart = 0;
+            for (int i = 0; i < bytes.length; i++) {
+                if (bytes[i] == '\n' || bytes[i] == '\r') {
+                    int sliceEnd = i;
+                    if (bytes[i] == '\r' && i + 1 != bytes.length && bytes[i + 1] == '\n') {
+                        i++;
+                    }
+                    if (keepends) {
+                        sliceEnd = i + 1;
+                    }
+                    appendSlice(bytes, list, sliceStart, sliceEnd);
+                    sliceStart = i + 1;
+                }
+            }
+            // Process the remaining part if any
+            if (sliceStart != bytes.length) {
+                appendSlice(bytes, list, sliceStart, bytes.length);
+            }
+            return list;
+        }
+
+        private void appendSlice(byte[] bytes, PList list, int sliceStart, int sliceEnd) {
+            byte[] slice = new byte[sliceEnd - sliceStart];
+            PythonUtils.arraycopy(bytes, sliceStart, slice, 0, slice.length);
+            appendNode.execute(list, createElement(slice));
+        }
+
+        // Overriden in bytearray
+        protected PIBytesLike createElement(byte[] bytes) {
+            return factory().createBytes(bytes);
         }
     }
 

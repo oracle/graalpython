@@ -207,6 +207,16 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    // bytearray.splitlines([keepends])
+    @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, parameterNames = {"self", "keepends"})
+    @GenerateNodeFactory
+    public abstract static class SplitLinesNode extends BytesBuiltins.SplitLinesNode {
+        @Override
+        protected PIBytesLike createElement(byte[] bytes) {
+            return factory().createByteArray(bytes);
+        }
+    }
+
     @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)

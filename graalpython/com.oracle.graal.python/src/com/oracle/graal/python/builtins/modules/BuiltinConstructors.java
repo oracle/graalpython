@@ -71,6 +71,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -1153,6 +1154,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callIntNode;
         @Child private LookupAndCallUnaryNode callIndexNode;
         @Child private LookupAndCallUnaryNode callTruncNode;
+        @Child private LookupAndCallUnaryNode callReprNode;
 
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object base);
 
@@ -1171,11 +1173,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private Object stringToInt(LazyPythonClass cls, String number, int base) {
+        private Object stringToInt(VirtualFrame frame, LazyPythonClass cls, String number, int base, Object origObj) {
             Object value = stringToIntInternal(number, base);
             if (value == null) {
                 invalidValueProfile.enter();
-                throw raise(ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, number);
+                if (callReprNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                }
+                Object str = callReprNode.executeObject(frame, origObj);
+                if (PGuards.isString(str)) {
+                    throw raise(ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, str);
+                } else {
+                    // During the formatting of "ValueError: invalid literal ..." exception,
+                    // CPython attempts to raise "TypeError: __repr__ returned non-string",
+                    // which gets later overwitten with the original "ValueError",
+                    // but without any message (since the message formatting failed)
+                    throw raise(ValueError);
+                }
             }
             return createInt(cls, value);
         }
@@ -1204,7 +1219,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private void checkBase(int base) {
-            if (invalidBase.profile((base < 2 || base > 32) && base != 0)) {
+            if (invalidBase.profile((base < 2 || base > 36) && base != 0)) {
                 throw raise(ValueError, ErrorMessages.BASE_OUT_OF_RANGE_FOR_INT);
             }
         }
@@ -1403,8 +1418,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object createInt(LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone base) {
-            return stringToInt(cls, arg, 10);
+        Object createInt(VirtualFrame frame, LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone base) {
+            return stringToInt(frame, cls, arg, 10, arg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1420,9 +1435,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object parsePIntError(LazyPythonClass cls, String number, int base) {
+        Object parsePIntError(VirtualFrame frame, LazyPythonClass cls, String number, int base) {
             checkBase(base);
-            return stringToInt(cls, number, base);
+            return stringToInt(frame, cls, number, base, number);
         }
 
         @Specialization(guards = "!isNoValue(base)", limit = "getCallSiteInlineCacheMaxDepth()")
@@ -1430,7 +1445,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @CachedLibrary("base") PythonObjectLibrary lib) {
             int intBase = lib.asSizeWithState(base, PArguments.getThreadState(frame));
             checkBase(intBase);
-            return stringToInt(cls, number, intBase);
+            return stringToInt(frame, cls, number, intBase, number);
         }
 
         // PIBytesLike
@@ -1448,7 +1463,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object parseBytesError(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, int base) {
             checkBase(base);
-            return stringToInt(cls, toString(frame, arg), base);
+            return stringToInt(frame, cls, toString(frame, arg), base, arg);
         }
 
         @Specialization(guards = "isNoValue(base)")
@@ -1469,8 +1484,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object parsePInt(LazyPythonClass cls, PString arg, @SuppressWarnings("unused") PNone base) {
-            return stringToInt(cls, arg.getValue(), 10);
+        Object parsePInt(VirtualFrame frame, LazyPythonClass cls, PString arg, @SuppressWarnings("unused") PNone base) {
+            return stringToInt(frame, cls, arg.getValue(), 10, arg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1486,9 +1501,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object parsePInt(LazyPythonClass cls, PString arg, int base) {
+        Object parsePInt(VirtualFrame frame, LazyPythonClass cls, PString arg, int base) {
             checkBase(base);
-            return stringToInt(cls, arg.getValue(), base);
+            return stringToInt(frame, cls, arg.getValue(), base, arg);
         }
 
         // other
@@ -1512,28 +1527,42 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!isString(arg)", "!isNoValue(base)"})
+        @Specialization(guards = {"!isString(arg)", "!isBytes(arg)", "!isNoValue(base)"})
         Object fail(LazyPythonClass cls, Object arg, Object base) {
-            throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_EITH_EXPL_BASE);
+            throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
         }
 
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
         Object createIntGeneric(VirtualFrame frame, LazyPythonClass cls, Object obj, @SuppressWarnings("unused") PNone base) {
+            // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
+            // in CPython. We don't use PythonObjectLibrary here since the original CPython function
+            // does not use any of the conversion functions (such as _PyLong_AsInt or
+            // PyNumber_Index) either, but it reimplements the logic in a slightly different way
+            // (e.g. trying __int__ before __index__ whereas _PyLong_AsInt does it the other way)
+            // and also with specific exception messages which are expected by Python unittests.
+            // This unfortunately means that this method relies on the internal logic of NO_VALUE
+            // return values representing missing magic methods which should be ideally hidden
+            // by PythonObjectLibrary.
             Object result = callInt(frame, obj);
             if (result == PNone.NO_VALUE) {
                 result = callIndex(frame, obj);
                 if (result == PNone.NO_VALUE) {
-                    result = callTrunc(frame, obj);
-                    if (result == PNone.NO_VALUE) {
+                    Object truncResult = callTrunc(frame, obj);
+                    if (truncResult == PNone.NO_VALUE) {
                         throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
-                    } else if (!isIntegerType(result)) {
-                        throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__trunc__", result);
                     }
-                } else if (!isIntegerType(result)) {
-                    throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+                    if (isIntegerType(truncResult)) {
+                        result = truncResult;
+                    } else {
+                        result = callIndex(frame, truncResult);
+                        if (result == PNone.NO_VALUE) {
+                            result = callInt(frame, obj);
+                            if (result == PNone.NO_VALUE) {
+                                throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, "__trunc__", truncResult);
+                            }
+                        }
+                    }
                 }
-            } else if (!isIntegerType(result)) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__int__", result);
             }
             return createInt(cls, result);
         }
@@ -1551,11 +1580,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private Object callInt(VirtualFrame frame, Object obj) {
+            // The case when the result is NO_VALUE (i.e. the object does not provide __int__)
+            // is handled in createIntGeneric
             if (callIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIntNode = insert(LookupAndCallUnaryNode.create(__INT__));
             }
-            return callIntNode.executeObject(frame, obj);
+            Object result = callIntNode.executeObject(frame, obj);
+            if (result != PNone.NO_VALUE && !isIntegerType(result)) {
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__int__", result);
+            }
+            return result;
         }
 
         private Object callIndex(VirtualFrame frame, Object obj) {
@@ -1563,7 +1598,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
             }
-            return callIndexNode.executeObject(frame, obj);
+            Object result = callIndexNode.executeObject(frame, obj);
+            // the case when the result is NO_VALUE (i.e. the object does not provide __index__)
+            // is handled in createIntGeneric
+            if (result != PNone.NO_VALUE && !isIntegerType(result)) {
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+            }
+            return result;
         }
 
         private Object callTrunc(VirtualFrame frame, Object obj) {
@@ -1673,6 +1714,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
             return callNativeGenericNewNode(self, varargs, kwargs);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object fallback(Object o, Object[] varargs, PKeyword[] kwargs) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "object.__new__(X): X", o);
         }
 
         private static PythonNativeClass findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {

@@ -223,7 +223,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Identifier: dict
             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           GeneratorExpressionNode SourceSection: [2238,2271]`for t in _equivalenc...`
-            Name: [].<locals>.<genexp>:sre_compile:63
+            Name: <genexpr>
             FrameDescriptor: 3 slots [i, t, <return_val>]
             Enclosing
               FrameDescriptor:  Empty
@@ -232,7 +232,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Block Nodes: 0
             Is Enclosing Frame Generator: false
             FunctionRootNode SourceSection: [2238,2271]`for t in _equivalenc...`
-              Name: [].<locals>.<genexp>:sre_compile:63
+              Name: <genexpr>
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: i
               FreeVars: None
@@ -261,7 +261,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Identifier: tuple
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [2195,2215]`for j in t if i != j...`
-                                Name: generator.<locals>.<genexp>:sre_compile:62
+                                Name: <genexpr>
                                 FrameDescriptor: 3 slots [j, i, <return_val>]
                                 Enclosing
                                   FrameDescriptor: 3 slots [i, t, <return_val>]
@@ -270,7 +270,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: true
                                 FunctionRootNode SourceSection: [2195,2215]`for j in t if i != j...`
-                                  Name: generator.<locals>.<genexp>:sre_compile:62
+                                  Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
                                   FreeVars: i
@@ -4535,7 +4535,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [14905,14942]`for i in range(len(s...`
-                            Name: _mk_bitmap.<locals>.<genexp>:sre_compile:414
+                            Name: <genexpr>
                             FrameDescriptor: 5 slots [i, _CODEBITS, _int, s, <return_val>]
                             Enclosing
                               FrameDescriptor: 5 slots [bits, _CODEBITS, _int, s, <return_val>]
@@ -4544,7 +4544,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
                             FunctionRootNode SourceSection: [14905,14942]`for i in range(len(s...`
-                              Name: _mk_bitmap.<locals>.<genexp>:sre_compile:414
+                              Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: _CODEBITS, _int, s
@@ -7088,7 +7088,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             GetCallAttributeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [20930,20934]`', '`
                             GeneratorExpressionNode SourceSection: [20973,20986]`for x in code`
-                              Name: _hex_code.<locals>.<genexp>:sre_compile:614
+                              Name: <genexpr>
                               FrameDescriptor: 2 slots [x, <return_val>]
                               Enclosing
                                 FrameDescriptor: 2 slots [code, <return_val>]
@@ -7097,7 +7097,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
                               FunctionRootNode SourceSection: [20973,20986]`for x in code`
-                                Name: _hex_code.<locals>.<genexp>:sre_compile:614
+                                Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
                                 FreeVars: None
@@ -8297,7 +8297,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     BytesLiteralNode SourceSection: [23287,23290]`b''`
                                                                       PythonObjectFactoryNodeGen SourceSection: None
                                                                   GeneratorExpressionNode SourceSection: [23377,23417]`for x in code[i: i +...`
-                                                                    Name: dis_.<locals>.<genexp>:sre_compile:684
+                                                                    Name: <genexpr>
                                                                     FrameDescriptor: 3 slots [x, sys, <return_val>]
                                                                     Enclosing
                                                                       FrameDescriptor: 40 slots [start, end, print_, print_2, i, op, arg, skip, lo, hi, mapping, j, min, max, flags, prefix_len, prefix_skip, prefix, code, sys, labels, level, offset_width, dis_, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>]
@@ -8306,7 +8306,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     Block Nodes: 0
                                                                     Is Enclosing Frame Generator: false
                                                                     FunctionRootNode SourceSection: [23377,23417]`for x in code[i: i +...`
-                                                                      Name: dis_.<locals>.<genexp>:sre_compile:684
+                                                                      Name: <genexpr>
                                                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                       CelVars: None
                                                                       FreeVars: sys
@@ -9508,7 +9508,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                       GetCallAttributeNodeGen SourceSection: None
                                                                                         StringLiteralNode SourceSection: [25707,25711]`', '`
                                                                                       GeneratorExpressionNode SourceSection: [25729,25744]`for x in prefix`
-                                                                                        Name: dis_.<locals>.<genexp>:sre_compile:742
+                                                                                        Name: <genexpr>
                                                                                         FrameDescriptor: 2 slots [x, <return_val>]
                                                                                         Enclosing
                                                                                           FrameDescriptor: 40 slots [start, end, print_, print_2, i, op, arg, skip, lo, hi, mapping, j, min, max, flags, prefix_len, prefix_skip, prefix, code, sys, labels, level, offset_width, dis_, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>]
@@ -9517,7 +9517,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                         Block Nodes: 0
                                                                                         Is Enclosing Frame Generator: false
                                                                                         FunctionRootNode SourceSection: [25729,25744]`for x in prefix`
-                                                                                          Name: dis_.<locals>.<genexp>:sre_compile:742
+                                                                                          Name: <genexpr>
                                                                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                                           CelVars: None
                                                                                           FreeVars: None

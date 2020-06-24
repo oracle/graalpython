@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [5,51]`for x in seq1 for y ...`
-        Name: [].<locals>.<genexp>:dictComprehensions03:1
+        Name: <genexpr>
         FrameDescriptor: 3 slots [y, x, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [5,51]`for x in seq1 for y ...`
-          Name: [].<locals>.<genexp>:dictComprehensions03:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

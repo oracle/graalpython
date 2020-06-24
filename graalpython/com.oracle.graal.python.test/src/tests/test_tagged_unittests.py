@@ -50,6 +50,9 @@ else:
     TAGS_DIR = "null"
 
 
+RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
+
+
 def working_selectors(tagfile):
     if os.path.exists(tagfile):
         with open(tagfile) as f:
@@ -84,7 +87,7 @@ for idx, working_test in enumerate(WORKING_TESTS):
                 cmd.append("--inspect")
             if "-debug-java" in sys.argv:
                 cmd.append("-debug-java")
-            cmd += ["-S", "-m", "unittest"]
+            cmd += ["-S", RUNNER]
             for testpattern in working_test[1]:
                 cmd.extend(["-k", testpattern])
             testmod = working_test[0].rpartition(".")[2]
@@ -163,7 +166,13 @@ if __name__ == "__main__":
             # entirely
             testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = [timeout, "-s", "9", "120"] + executable + ["-S", "-m"]
+            cmd = [timeout, "-s", "9", "120"] + executable
+            if repeat == 0:
+                # Allow catching Java exceptions in the first iteration only, so that subsequent iterations
+                # (there will be one even if everything succeeds) filter out possible false-passes caused by
+                # the tests catching all exceptions somewhere
+                cmd += ['--experimental-options', '--python.CatchAllExceptions']
+            cmd += ["-S", RUNNER, "-v"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
             if retag and repeat == 0:
                 test_selectors = []
@@ -176,7 +185,6 @@ if __name__ == "__main__":
                 continue
 
             print("[%d/%d, Try %d] Testing %s" %(idx + 1, len(testfiles), repeat + 1, testmod))
-            cmd += ["unittest", "-v"]
             for selector in test_selectors:
                 cmd += ["-k", selector]
             cmd.append(testfile)

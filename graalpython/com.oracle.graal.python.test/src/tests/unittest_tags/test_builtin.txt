@@ -14,10 +14,13 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_isinstance
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_issubclass
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_map
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_max
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_min
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_neg
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_next
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_oct
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_open_default_encoding
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_pow
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_repr
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_round_large
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_type

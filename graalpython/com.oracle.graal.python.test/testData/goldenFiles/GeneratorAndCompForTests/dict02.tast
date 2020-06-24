@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                   Identifier: dict
                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 GeneratorExpressionNode SourceSection: [71,97]`for (k,v) in dict1.i...`
-                  Name: [].<locals>.<genexp>:dict02:2
+                  Name: <genexpr>
                   FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                   Enclosing
                     FrameDescriptor:  Empty
@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                   Block Nodes: 0
                   Is Enclosing Frame Generator: false
                   FunctionRootNode SourceSection: [71,97]`for (k,v) in dict1.i...`
-                    Name: [].<locals>.<genexp>:dict02:2
+                    Name: <genexpr>
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                     CelVars: None
                     FreeVars: None

@@ -275,17 +275,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public boolean hasArrayElements(
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
-        return (dataModelLibrary.isSequence(this) || dataModelLibrary.isIterable(this)) && !dataModelLibrary.isMapping(this);
+        return dataModelLibrary.isSequence(this) && !dataModelLibrary.isMapping(this);
     }
 
     @ExportMessage
     public Object readArrayElement(long key,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
-                    @Exclusive @Cached CallNode callIterNode,
-                    @Exclusive @Cached CallNode callNextNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
@@ -298,21 +294,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     // it's a sequence, so we assume the index is wrong
                     throw InvalidArrayIndexException.create(key);
                 }
-            }
-        }
-
-        if (dataModelLibrary.isIterable(this)) {
-            Object attrIter = lookupIterNode.execute(this, SpecialMethodNames.__ITER__);
-            Object iter = callIterNode.execute(null, attrIter, this);
-            if (iter != this) {
-                // there is a separate iterator for this object, should be safe to consume
-                Object result = iterateToKey(lookupNextNode, callNextNode, iter, key);
-                if (result != PNone.NO_VALUE) {
-                    return result;
-                }
-                // TODO(fa) refine exception handling
-                // it's an iterable, so we assume the index is wrong
-                throw InvalidArrayIndexException.create(key);
             }
         }
 
@@ -351,15 +332,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } else {
             throw UnsupportedMessageException.create();
         }
-    }
-
-    private static Object iterateToKey(LookupInheritedAttributeNode.Dynamic lookupNextNode, CallNode callNextNode, Object iter, long key) {
-        Object value = PNone.NO_VALUE;
-        for (long i = 0; i <= key; i++) {
-            Object attrNext = lookupNextNode.execute(iter, SpecialMethodNames.__NEXT__);
-            value = callNextNode.execute(null, attrNext, iter);
-        }
-        return value;
     }
 
     @ExportMessage

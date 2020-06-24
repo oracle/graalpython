@@ -1330,7 +1330,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [7409,7451]`for name in names if...`
-                          Name: addsitedir.<locals>.<genexp>:site:205
+                          Name: <genexpr>
                           FrameDescriptor: 2 slots [name, <return_val>]
                           Enclosing
                             FrameDescriptor: 9 slots [sitedir, known_paths, reset, sitedircase, names, name, <>temp6, <>temp7, <return_val>]
@@ -1339,7 +1339,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [7409,7451]`for name in names if...`
-                            Name: addsitedir.<locals>.<genexp>:site:205
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: None
@@ -3497,7 +3497,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [16123,16293]`for conffile in (↵  ...`
-                          Name: venv.<locals>.<genexp>:site:463
+                          Name: <genexpr>
                           FrameDescriptor: 2 slots [conffile, <return_val>]
                           Enclosing
                             FrameDescriptor: 21 slots [known_paths, env, executable, exe_dir, _, site_prefix, conf_basename, candidate_confs, virtual_conf, system_site, key, value, line, f, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>]
@@ -3506,7 +3506,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [16123,16293]`for conffile in (↵  ...`
-                            Name: venv.<locals>.<genexp>:site:463
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: None

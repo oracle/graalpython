@@ -4231,7 +4231,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             GetCallAttributeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [14096,14100]`', '`
                             GeneratorExpressionNode SourceSection: [14119,14142]`for name in field_na...`
-                              Name: namedtuple.<locals>.<genexp>:collections__init__:388
+                              Name: <genexpr>
                               FrameDescriptor: 2 slots [name, <return_val>]
                               Enclosing
                                 FrameDescriptor: 36 slots [typename, field_names, *, rename, defaults, module, seen, index, name, field_defaults, num_fields, arg_list, repr_fmt, tuple_new, _len, s, namespace, __new__, _make, _replace, __repr__, _asdict, __getnewargs__, method, class_namespace, cache, itemgetter_object, doc, result, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>]
@@ -4240,7 +4240,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
                               FunctionRootNode SourceSection: [14119,14142]`for name in field_na...`
-                                Name: namedtuple.<locals>.<genexp>:collections__init__:388
+                                Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
                                 FreeVars: None
@@ -7933,7 +7933,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           Identifier: list
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GeneratorExpressionNode SourceSection: [30351,30399]`for elem, count in s...`
-                                          Name: _keep_positive.<locals>.<genexp>:collections__init__:818
+                                          Name: <genexpr>
                                           FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
                                           Enclosing
                                             FrameDescriptor: 5 slots [self, nonpositive, elem, __class__, <return_val>]
@@ -7942,7 +7942,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
                                           FunctionRootNode SourceSection: [30351,30399]`for elem, count in s...`
-                                            Name: _keep_positive.<locals>.<genexp>:collections__init__:818
+                                            Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
                                             FreeVars: None
@@ -9122,7 +9122,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: any
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [33799,33817]`for m in self.maps`
-                                            Name: __contains__.<locals>.<genexp>:collections__init__:929
+                                            Name: <genexpr>
                                             FrameDescriptor: 3 slots [m, key, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 4 slots [self, key, __class__, <return_val>]
@@ -9131,7 +9131,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [33799,33817]`for m in self.maps`
-                                              Name: __contains__.<locals>.<genexp>:collections__init__:929
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: key

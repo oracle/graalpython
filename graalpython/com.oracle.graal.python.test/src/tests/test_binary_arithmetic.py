@@ -299,6 +299,19 @@ def test_pow():
     # (0xffffffffffffffff >> 63) is used to produce a non-narrowed int
     assert 2**(0xffffffffffffffff >> 63) == 2
 
+    # test that two-argument pow functions work
+    class M:
+        def __pow__(self, power):
+            return (type(self), power)
+    assert pow(M(), 2) == (M, 2)
+    assert pow(M(), 2, None) == (M, 2)
+    try:
+        pow(M(), 2, 3)
+    except TypeError:
+        assert True
+    else:
+        assert False
+
     if sys.version_info.minor >= 8:
         # for some reason this hangs CPython on the CI even if it's just parsed
         from pow_tests import test_pow

@@ -1750,7 +1750,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [7460,7537]`for op in _convert i...`
-                          Name: total_ordering.<locals>.<genexp>:functools:189
+                          Name: <genexpr>
                           FrameDescriptor: 3 slots [op, cls, <return_val>]
                           Enclosing
                             FrameDescriptor: 8 slots [cls, roots, root, opname, opfunc, <>temp5, <>temp6, <return_val>]
@@ -1759,7 +1759,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [7460,7537]`for op in _convert i...`
-                            Name: total_ordering.<locals>.<genexp>:functools:189
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: cls
@@ -3171,7 +3171,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [2,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [10456,10474]`for x in self.args`
-                                            Name: __repr__.<locals>.<genexp>:functools:278
+                                            Name: <genexpr>
                                             FrameDescriptor: 2 slots [x, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 5 slots [self, qualname, args, __class__, <return_val>]
@@ -3180,7 +3180,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [10456,10474]`for x in self.args`
-                                              Name: __repr__.<locals>.<genexp>:functools:278
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: None
@@ -3245,7 +3245,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [2,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [10509,10544]`for (k, v) in self.k...`
-                                            Name: __repr__.<locals>.<genexp>:functools:279
+                                            Name: <genexpr>
                                             FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                             Enclosing
                                               FrameDescriptor: 5 slots [self, qualname, args, __class__, <return_val>]
@@ -3254,7 +3254,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
                                             FunctionRootNode SourceSection: [10509,10544]`for (k, v) in self.k...`
-                                              Name: __repr__.<locals>.<genexp>:functools:279
+                                              Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
                                               FreeVars: None
@@ -4199,7 +4199,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         GetCallAttributeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [13095,13099]`", "`
                                         GeneratorExpressionNode SourceSection: [13161,13194]`for k, v in self.key...`
-                                          Name: __repr__.<locals>.<genexp>:functools:349
+                                          Name: <genexpr>
                                           FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                           Enclosing
                                             FrameDescriptor: 6 slots [self, args, keywords, format_string, __class__, <return_val>]
@@ -4208,7 +4208,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
                                           FunctionRootNode SourceSection: [13161,13194]`for k, v in self.key...`
-                                            Name: __repr__.<locals>.<genexp>:functools:349
+                                            Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
                                             FreeVars: None
@@ -5328,7 +5328,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Frame: [5,tuple,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [16642,16655]`for v in args`
-                                Name: _make_key.<locals>.<genexp>:functools:438
+                                Name: <genexpr>
                                 FrameDescriptor: 3 slots [v, type, <return_val>]
                                 Enclosing
                                   FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
@@ -5337,7 +5337,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: false
                                 FunctionRootNode SourceSection: [16642,16655]`for v in args`
-                                  Name: _make_key.<locals>.<genexp>:functools:438
+                                  Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
                                   FreeVars: type
@@ -5410,7 +5410,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Frame: [5,tuple,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 GeneratorExpressionNode SourceSection: [16707,16729]`for v in kwds.values...`
-                                  Name: _make_key.<locals>.<genexp>:functools:440
+                                  Name: <genexpr>
                                   FrameDescriptor: 3 slots [v, type, <return_val>]
                                   Enclosing
                                     FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
@@ -5419,7 +5419,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Block Nodes: 0
                                   Is Enclosing Frame Generator: false
                                   FunctionRootNode SourceSection: [16707,16729]`for v in kwds.values...`
-                                    Name: _make_key.<locals>.<genexp>:functools:440
+                                    Name: <genexpr>
                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                     CelVars: None
                                     FreeVars: type
@@ -7182,7 +7182,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 GeneratorExpressionNode SourceSection: [23747,23770]`for s in sequences i...`
-                                  Name: _c3_merge.<locals>.<genexp>:functools:616
+                                  Name: <genexpr>
                                   FrameDescriptor: 2 slots [s, <return_val>]
                                   Enclosing
                                     FrameDescriptor: 7 slots [sequences, result, candidate, s2, s1, seq, <return_val>]
@@ -7191,7 +7191,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Block Nodes: 0
                                   Is Enclosing Frame Generator: false
                                   FunctionRootNode SourceSection: [23747,23770]`for s in sequences i...`
-                                    Name: _c3_merge.<locals>.<genexp>:functools:616
+                                    Name: <genexpr>
                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                     CelVars: None
                                     FreeVars: None
@@ -7663,7 +7663,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       Identifier: any
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     GeneratorExpressionNode SourceSection: [25893,25915]`for b in cls.__bases...`
-                                      Name: _c3_mro.<locals>.<genexp>:functools:664
+                                      Name: <genexpr>
                                       FrameDescriptor: 3 slots [b, base, <return_val>]
                                       Enclosing
                                         FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
@@ -7672,7 +7672,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       Block Nodes: 0
                                       Is Enclosing Frame Generator: false
                                       FunctionRootNode SourceSection: [25893,25915]`for b in cls.__bases...`
-                                        Name: _c3_mro.<locals>.<genexp>:functools:664
+                                        Name: <genexpr>
                                         Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                         CelVars: None
                                         FreeVars: base
@@ -7797,7 +7797,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [26210,26236]`for base in explicit...`
-                          Name: _c3_mro.<locals>.<genexp>:functools:671
+                          Name: <genexpr>
                           FrameDescriptor: 3 slots [base, abcs, <return_val>]
                           Enclosing
                             FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
@@ -7806,7 +7806,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [26210,26236]`for base in explicit...`
-                            Name: _c3_mro.<locals>.<genexp>:functools:671
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: abcs
@@ -7876,7 +7876,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [26287,26313]`for base in abstract...`
-                          Name: _c3_mro.<locals>.<genexp>:functools:672
+                          Name: <genexpr>
                           FrameDescriptor: 3 slots [base, abcs, <return_val>]
                           Enclosing
                             FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
@@ -7885,7 +7885,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [26287,26313]`for base in abstract...`
-                            Name: _c3_mro.<locals>.<genexp>:functools:672
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: abcs
@@ -7955,7 +7955,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [26361,26384]`for base in other_ba...`
-                          Name: _c3_mro.<locals>.<genexp>:functools:673
+                          Name: <genexpr>
                           FrameDescriptor: 3 slots [base, abcs, <return_val>]
                           Enclosing
                             FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
@@ -7964,7 +7964,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [26361,26384]`for base in other_ba...`
-                            Name: _c3_mro.<locals>.<genexp>:functools:673
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: abcs
@@ -8251,7 +8251,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [27080,27111]`for n in types if is...`
-                          Name: _compose_mro.<locals>.<genexp>:functools:692
+                          Name: <genexpr>
                           FrameDescriptor: 3 slots [n, is_related, <return_val>]
                           Enclosing
                             FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
@@ -8260,7 +8260,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [27080,27111]`for n in types if is...`
-                            Name: _compose_mro.<locals>.<genexp>:functools:692
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: is_related
@@ -8437,7 +8437,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [27392,27431]`for n in types if no...`
-                          Name: _compose_mro.<locals>.<genexp>:functools:700
+                          Name: <genexpr>
                           FrameDescriptor: 3 slots [n, is_strict_base, <return_val>]
                           Enclosing
                             FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
@@ -8446,7 +8446,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
                           FunctionRootNode SourceSection: [27392,27431]`for n in types if no...`
-                            Name: _compose_mro.<locals>.<genexp>:functools:700
+                            Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: is_strict_base
@@ -8608,7 +8608,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GeneratorExpressionNode SourceSection: [27765,27802]`for s in sub.__mro__...`
-                                              Name: _compose_mro.<locals>.<genexp>:functools:709
+                                              Name: <genexpr>
                                               FrameDescriptor: 3 slots [s, type_set, <return_val>]
                                               Enclosing
                                                 FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
@@ -8617,7 +8617,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Block Nodes: 0
                                               Is Enclosing Frame Generator: false
                                               FunctionRootNode SourceSection: [27765,27802]`for s in sub.__mro__...`
-                                                Name: _compose_mro.<locals>.<genexp>:functools:709
+                                                Name: <genexpr>
                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                 CelVars: None
                                                 FreeVars: type_set

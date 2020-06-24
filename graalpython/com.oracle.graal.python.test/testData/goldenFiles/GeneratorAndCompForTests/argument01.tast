@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       GeneratorExpressionNode SourceSection: [8,26]`for x in range(10)`
-        Name: [].<locals>.<genexp>:argument01:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -21,7 +21,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [8,26]`for x in range(10)`
-          Name: [].<locals>.<genexp>:argument01:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

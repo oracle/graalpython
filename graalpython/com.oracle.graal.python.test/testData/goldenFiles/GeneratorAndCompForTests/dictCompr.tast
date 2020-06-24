@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [10,27]`for i in range(3)`
-        Name: [].<locals>.<genexp>:dictCompr:1
+        Name: <genexpr>
         FrameDescriptor: 2 slots [i, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
         Block Nodes: 0
         Is Enclosing Frame Generator: false
         FunctionRootNode SourceSection: [10,27]`for i in range(3)`
-          Name: [].<locals>.<genexp>:dictCompr:1
+          Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
           FreeVars: None

@@ -52,6 +52,7 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
@@ -773,10 +774,22 @@ public abstract class TypeNodes {
                 idx = -1;
             }
 
+            List<PythonAbstractClass> notMerged = new ArrayList<>();
             for (MROMergeState mergee : toMerge) {
                 if (!mergee.isMerged()) {
-                    throw new IllegalStateException();
+                    PythonAbstractClass candidate = mergee.getCandidate();
+                    if (!notMerged.contains(candidate)) {
+                        notMerged.add(candidate);
+                    }
                 }
+            }
+            if (!notMerged.isEmpty()) {
+                Iterator<PythonAbstractClass> it = notMerged.iterator();
+                StringBuilder bases = new StringBuilder(GetNameNode.doSlowPath(it.next()));
+                while (it.hasNext()) {
+                    bases.append(", ").append(GetNameNode.doSlowPath(it.next()));
+                }
+                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION, bases);
             }
 
             return mro.toArray(new PythonAbstractClass[mro.size()]);

@@ -88,6 +88,8 @@ import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
+    public static final String GENEXPR_NAME = "<genexpr>";
+
     private int numOfActiveFlags;
     private int numOfYields;
     private int numOfGeneratorBlockNode;
@@ -215,16 +217,16 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         // ExpressionNode returnTarget = new ReturnTargetNode(body,
         // nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         returnTarget.assignSourceSection(body.getSourceSection());
-        // int lineNum = ctx.getStart().getLine();
 
         // creating generator expression
         FrameDescriptor fd = node.scope.getFrameDescriptor();
-        String name = node.scope.getParent().getScopeId() + ".<locals>.<genexp>:" + source.getName() + ":" + node.line;
+        String name = GENEXPR_NAME;
+        String qualname = getQualifiedName(node.scope, name);
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(funcRoot);
         ExpressionNode loopIterator = getIterator;
-        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, callTarget, loopIterator, fd, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
+        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, loopIterator, fd, scopeEnvironment.getDefinitionCellSlots(),
+                        scopeEnvironment.getExecutionCellSlots(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode);
         genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameDescriptor());
         genExprDef.assignSourceSection(funcRoot.getSourceSection());
         genExprDef.setEnclosingFrameGenerator(node.level != 0 || parentVisitor.comprLevel != 0 || node.scope.getParent().getScopeKind() == ScopeInfo.ScopeKind.Generator);

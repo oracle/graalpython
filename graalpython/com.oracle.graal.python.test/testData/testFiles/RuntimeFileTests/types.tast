@@ -3826,7 +3826,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Identifier: list
                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               GeneratorExpressionNode SourceSection: [9882,9916]`for n in globals() i...`
-                Name: [].<locals>.<genexp>:types:295
+                Name: <genexpr>
                 FrameDescriptor: 2 slots [n, <return_val>]
                 Enclosing
                   FrameDescriptor:  Empty
@@ -3835,7 +3835,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Block Nodes: 0
                 Is Enclosing Frame Generator: false
                 FunctionRootNode SourceSection: [9882,9916]`for n in globals() i...`
-                  Name: [].<locals>.<genexp>:types:295
+                  Name: <genexpr>
                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: None
                   FreeVars: None

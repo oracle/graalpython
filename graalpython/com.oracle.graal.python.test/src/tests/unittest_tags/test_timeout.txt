@@ -1,0 +1,2 @@
+*graalpython.lib-python.3.test.test_timeout.CreationTestCase.testObjectCreation
+*graalpython.lib-python.3.test.test_timeout.TCPTimeoutTestCase.testConnectTimeout

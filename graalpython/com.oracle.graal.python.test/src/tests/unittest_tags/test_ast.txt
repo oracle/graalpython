@@ -2,3 +2,4 @@
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_field_attr_writable
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_issue31592
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_realtype
+*graalpython.lib-python.3.test.test_ast.ConstantTests.test_load_const

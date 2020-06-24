@@ -47,7 +47,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class PGenerator extends PythonBuiltinObject {
 
-    protected final String name;
+    private String name;
+    private String qualname;
     /**
      * Call targets with copies of the generator's AST. Each call target corresponds to one possible
      * entry point into the generator: the first call, and continuation for each yield. Each AST can
@@ -67,7 +68,7 @@ public final class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
-    public static PGenerator create(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
+    public static PGenerator create(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
                     ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, PythonObjectFactory factory,
                     Object iterator) {
         /*
@@ -95,7 +96,7 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(name, callTargets, frameDescriptor, arguments, closure, iterator);
+        return new PGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, iterator);
     }
 
     @ExplodeLoop
@@ -114,9 +115,10 @@ public final class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    private PGenerator(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
+    private PGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.newInstance());
         this.name = name;
+        this.qualname = qualname;
         this.callTargets = callTargets;
         this.currentCallTarget = 0;
         this.frameDescriptor = frameDescriptor;
@@ -124,7 +126,7 @@ public final class PGenerator extends PythonBuiltinObject {
         this.closure = closure;
         this.finished = false;
         this.iterator = iterator;
-        this.isPRangeIterator = iterator != null && iterator instanceof PRangeIterator;
+        this.isPRangeIterator = iterator instanceof PRangeIterator;
     }
 
     public FrameDescriptor getFrameDescriptor() {
@@ -200,5 +202,21 @@ public final class PGenerator extends PythonBuiltinObject {
     public void setRunning(boolean running) {
         assert !running || !this.running : "Attempted to set an already running generator as running";
         this.running = running;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getQualname() {
+        return qualname;
+    }
+
+    public void setQualname(String qualname) {
+        this.qualname = qualname;
     }
 }

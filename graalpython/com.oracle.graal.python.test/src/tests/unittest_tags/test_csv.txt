@@ -1,3 +1,5 @@
+*graalpython.lib-python.3.test.test_csv.KeyOrderingTest.test_ordered_dict_reader
+*graalpython.lib-python.3.test.test_csv.MiscTestCase.test__all__
 *graalpython.lib-python.3.test.test_csv.TestDialectExcel.test_blankline
 *graalpython.lib-python.3.test.test_csv.TestDialectExcel.test_dubious_quote
 *graalpython.lib-python.3.test.test_csv.TestDialectExcel.test_empty_fields
@@ -34,6 +36,7 @@
 *graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_space_dialect
 *graalpython.lib-python.3.test.test_csv.TestDialectUnix.test_simple_reader
 *graalpython.lib-python.3.test.test_csv.TestDialectUnix.test_simple_writer
+*graalpython.lib-python.3.test.test_csv.TestDialectValidity.test_invalid_chars
 *graalpython.lib-python.3.test.test_csv.TestDictFields.test_read_dict_fieldnames_chain
 *graalpython.lib-python.3.test.test_csv.TestDictFields.test_read_dict_fieldnames_from_file
 *graalpython.lib-python.3.test.test_csv.TestDictFields.test_read_dict_fields
@@ -51,8 +54,20 @@
 *graalpython.lib-python.3.test.test_csv.TestDictFields.test_write_no_fields
 *graalpython.lib-python.3.test.test_csv.TestEscapedExcel.test_escape_fieldsep
 *graalpython.lib-python.3.test.test_csv.TestEscapedExcel.test_read_escape_fieldsep
+*graalpython.lib-python.3.test.test_csv.TestLeaks.test_create_read
+*graalpython.lib-python.3.test.test_csv.TestLeaks.test_create_write
+*graalpython.lib-python.3.test.test_csv.TestLeaks.test_read
+*graalpython.lib-python.3.test.test_csv.TestLeaks.test_write
 *graalpython.lib-python.3.test.test_csv.TestQuotedEscapedExcel.test_read_escape_fieldsep
 *graalpython.lib-python.3.test.test_csv.TestQuotedEscapedExcel.test_write_escape_fieldsep
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_delimiters
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_doublequote
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_guess_quote_and_delimiter
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_has_header
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_has_header_regex_special_delimiter
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_sniff
+*graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_read
+*graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_write
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_eol
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_escape
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_linenum

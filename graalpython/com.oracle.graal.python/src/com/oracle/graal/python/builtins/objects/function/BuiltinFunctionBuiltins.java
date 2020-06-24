@@ -26,6 +26,8 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
@@ -34,10 +36,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -72,6 +76,34 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object reprClassFunction(PBuiltinFunction self) {
             return String.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
+        }
+    }
+
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class NameNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(noValue)")
+        Object getName(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
+            return self.getName();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
+        }
+    }
+
+    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class QualnameNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(noValue)")
+        Object getQualname(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
+            return self.getQualname();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
         }
     }
 

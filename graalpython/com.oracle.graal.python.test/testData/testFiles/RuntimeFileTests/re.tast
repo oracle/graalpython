@@ -1300,7 +1300,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             Identifier: dict
             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           GeneratorExpressionNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
-            Name: [].<locals>.<genexp>:re:250
+            Name: <genexpr>
             FrameDescriptor: 2 slots [i, <return_val>]
             Enclosing
               FrameDescriptor:  Empty
@@ -1309,7 +1309,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             Block Nodes: 0
             Is Enclosing Frame Generator: false
             FunctionRootNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
-              Name: [].<locals>.<genexp>:re:250
+              Name: <genexpr>
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
