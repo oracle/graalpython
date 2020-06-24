@@ -175,6 +175,10 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 pb.redirectError(Redirect.INHERIT);
             }
 
+            if (errwrite == c2pwrite) {
+                pb.redirectErrorStream(true);
+            }
+
             try {
                 if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
                     pb.directory(new File(cwd));
