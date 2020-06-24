@@ -248,7 +248,7 @@ public abstract class ErrorMessages {
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
     public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
-    public static final String INT_CANT_CONVERT_STRING_EITH_EXPL_BASE = "int() can't convert non-string with explicit base";
+    public static final String INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = "int() can't convert non-string with explicit base";
     public static final String INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = "int too large to convert to float";
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
@@ -406,6 +406,7 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
     public static final String P_S_RETURNED_NON_INT = "%p.%s returned a non int (type %p)";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
+    public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
     public static final String RETURNED_NON_LONG = "%p.%s returned a non long (type %p)";
     public static final String RETURNED_NON_STRING = "%s returned non-string (type %p)";
     public static final String P_S_RETURNED_NON_STRING = "%p.%s returned non-string (type %p)";
