@@ -1534,6 +1534,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
         Object createIntGeneric(VirtualFrame frame, LazyPythonClass cls, Object obj, @SuppressWarnings("unused") PNone base) {
+            // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
+            // in CPython. We don't use PythonObjectLibrary here since the original CPython function
+            // does not use any of the conversion functions (such as _PyLong_AsInt or
+            // PyNumber_Index) either, but it reimplements the logic in a slightly different way
+            // (e.g. trying __int__ before __index__ whereas _PyLong_AsInt does it the other way)
+            // and also with specific exception messages which are expected by Python unittests.
+            // This unfortunately means that this method relies on the internal logic of NO_VALUE
+            // return values representing missing magic methods which should be ideally hidden
+            // by PythonObjectLibrary.
             Object result = callInt(frame, obj);
             if (result == PNone.NO_VALUE) {
                 result = callIndex(frame, obj);
@@ -1562,10 +1571,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return PGuards.isBoolean(obj) || PGuards.isInteger(obj) || PGuards.isPInt(obj);
         }
 
-        protected static boolean isIntegerTypeOrNoValue(Object obj) {
-            return obj == PNone.NO_VALUE || isIntegerType(obj);
-        }
-
         protected static boolean isHandledType(Object obj) {
             return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
         }
@@ -1575,12 +1580,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private Object callInt(VirtualFrame frame, Object obj) {
+            // The case when the result is NO_VALUE (i.e. the object does not provide __int__)
+            // is handled in createIntGeneric
             if (callIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIntNode = insert(LookupAndCallUnaryNode.create(__INT__));
             }
             Object result = callIntNode.executeObject(frame, obj);
-            if (!isIntegerTypeOrNoValue(result)) {
+            if (result != PNone.NO_VALUE && !isIntegerType(result)) {
                 throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__int__", result);
             }
             return result;
@@ -1592,7 +1599,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
             }
             Object result = callIndexNode.executeObject(frame, obj);
-            if (!isIntegerTypeOrNoValue(result)) {
+            // the case when the result is NO_VALUE (i.e. the object does not provide __index__)
+            // is handled in createIntGeneric
+            if (result != PNone.NO_VALUE && !isIntegerType(result)) {
                 throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
             }
             return result;
