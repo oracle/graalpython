@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_collections.TestChainMap.test_bool
 *graalpython.lib-python.3.test.test_collections.TestChainMap.test_constructor
 *graalpython.lib-python.3.test.test_collections.TestChainMap.test_dict_coercion
+*graalpython.lib-python.3.test.test_collections.TestChainMap.test_missing
 *graalpython.lib-python.3.test.test_collections.TestChainMap.test_new_child
 *graalpython.lib-python.3.test.test_collections.TestChainMap.test_order_preservation
 *graalpython.lib-python.3.test.test_collections.TestChainMap.test_ordering

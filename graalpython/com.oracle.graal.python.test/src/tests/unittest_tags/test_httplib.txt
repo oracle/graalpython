@@ -37,6 +37,7 @@
 *graalpython.lib-python.3.test.test_httplib.HeaderTests.test_auto_headers
 *graalpython.lib-python.3.test.test_httplib.HeaderTests.test_content_length_0
 *graalpython.lib-python.3.test.test_httplib.HeaderTests.test_headers_debuglevel
+*graalpython.lib-python.3.test.test_httplib.HeaderTests.test_invalid_headers
 *graalpython.lib-python.3.test.test_httplib.HeaderTests.test_ipv6host_header
 *graalpython.lib-python.3.test.test_httplib.HeaderTests.test_malformed_headers_coped_with
 *graalpython.lib-python.3.test.test_httplib.HeaderTests.test_parse_all_octets

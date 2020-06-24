@@ -4,4 +4,3 @@
 *graalpython.lib-python.3.test.test_pow.PowTest.test_other
 *graalpython.lib-python.3.test.test_pow.PowTest.test_powfloat
 *graalpython.lib-python.3.test.test_pow.PowTest.test_powint
-

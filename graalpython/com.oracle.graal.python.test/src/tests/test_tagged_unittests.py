@@ -163,7 +163,13 @@ if __name__ == "__main__":
             # entirely
             testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = [timeout, "-s", "9", "120"] + executable + ["-S", "-m"]
+            cmd = [timeout, "-s", "9", "120"] + executable
+            if repeat == 0:
+                # Allow catching Java exceptions in the first iteration only, so that subsequent iterations
+                # (there will be one even if everything succeeds) filter out possible false-passes caused by
+                # the tests catching all exceptions somewhere
+                cmd += ['--experimental-options', '--python.CatchAllExceptions']
+            cmd += ["-S", "-m", "unittest", "-v"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
             if retag and repeat == 0:
                 test_selectors = []
@@ -176,7 +182,6 @@ if __name__ == "__main__":
                 continue
 
             print("[%d/%d, Try %d] Testing %s" %(idx + 1, len(testfiles), repeat + 1, testmod))
-            cmd += ["unittest", "-v"]
             for selector in test_selectors:
                 cmd += ["-k", selector]
             cmd.append(testfile)

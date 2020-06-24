@@ -11,3 +11,10 @@
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_load_dynamic_ImportError_path
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_load_module_extension_file_is_None
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_multiple_calls_to_get_data
+*graalpython.lib-python.3.test.test_imp.NullImporterTests.test_unencodeable
+*graalpython.lib-python.3.test.test_imp.PEP3147Tests.test_cache_from_source
+*graalpython.lib-python.3.test.test_imp.PEP3147Tests.test_source_from_cache
+*graalpython.lib-python.3.test.test_imp.ReloadTests.test_builtin
+*graalpython.lib-python.3.test.test_imp.ReloadTests.test_extension
+*graalpython.lib-python.3.test.test_imp.ReloadTests.test_source
+*graalpython.lib-python.3.test.test_imp.ReloadTests.test_with_deleted_parent
