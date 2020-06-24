@@ -51,6 +51,7 @@ import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.sst.BlockSSTNode;
 import com.oracle.graal.python.parser.sst.SSTDeserializer;
 import com.oracle.graal.python.parser.sst.SSTNode;
+import com.oracle.graal.python.parser.sst.SSTNodeUtils;
 import com.oracle.graal.python.parser.sst.SSTNodeWithScope;
 import com.oracle.graal.python.parser.sst.SSTNodeWithScopeFinder;
 import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
@@ -111,7 +112,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         if (!source.equals(lastParserResult.source)) {
             // we need to parse the source again
             PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source);
-            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null);
+            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null, null);
         }
         try {
             dos.writeByte(SerializationUtils.VERSION);
@@ -225,7 +226,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @Override
-    public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
+    public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
         if (logFiles) {
             if (source.getPath() == null) {
                 System.out.println("Parsing source without path " + source.getCharacters().length());
@@ -240,10 +241,10 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
         Node result;
         if (timeStatistics <= 0) {
-            result = parseN(mode, errors, source, currentFrame);
+            result = parseN(mode, errors, source, currentFrame, argumentNames);
         } else {
             long start = System.currentTimeMillis();
-            result = parseN(mode, errors, source, currentFrame);
+            result = parseN(mode, errors, source, currentFrame, argumentNames);
             long end = System.currentTimeMillis();
             if (timeStatistics > 0) {
                 timeInParser = timeInParser + (end - start);
@@ -259,7 +260,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         return result;
     }
 
-    private CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame) {
+    private CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame, String[] argumentNames) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         String sourceText = source.getCharacters().toString();
         // Preprocessing
@@ -302,6 +303,15 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 case Statement:
                     parserSSTResult = parser.single_input(source.isInteractive(), inlineLocals).result;
                     break;
+                case WithArguments:
+                    // at the first, create global scope
+                    ScopeInfo globalScope = sstFactory.getScopeEnvironment().pushScope("module", ScopeInfo.ScopeKind.Module, currentFrame == null ? null : currentFrame.getFrameDescriptor());
+                    // we expect that the source is the body of the result function
+                    parserSSTResult = parser.withArguments_input(false, new FrameDescriptor()).result;
+                    // wrap the result with function definition
+                    ScopeInfo functionScope = globalScope.getFirstChildScope();
+                    parserSSTResult = SSTNodeUtils.createFunctionDefWithArguments(source.getName(), functionScope, parserSSTResult, argumentNames);
+                    break;
                 default:
                     throw new RuntimeException("unexpected mode: " + mode);
             }
@@ -333,9 +343,9 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @TruffleBoundary
-    public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
+    public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
         PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source);
-        CacheItem parserSSTResult = parseWithANTLR(mode, errors, sstFactory, source, currentFrame);
+        CacheItem parserSSTResult = parseWithANTLR(mode, errors, sstFactory, source, currentFrame, argumentNames);
         try {
             return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame);
         } catch (Exception e) {

@@ -787,7 +787,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             final String codeToCompile = code;
             Supplier<CallTarget> createCode = () -> {
                 Source source = PythonLanguage.newSource(context, codeToCompile, filename, mayBeFromFile);
-                return Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
+                return Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null, null));
             };
             RootCallTarget ct;
             if (getCore().isInitialized()) {

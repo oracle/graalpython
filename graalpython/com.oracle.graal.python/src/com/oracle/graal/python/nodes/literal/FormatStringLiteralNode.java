@@ -513,7 +513,7 @@ public class FormatStringLiteralNode extends LiteralNode {
     private static ExpressionNode createExpression(String src, VirtualFrame frame) {
         PythonParser parser = PythonLanguage.getCore().getParser();
         Source source = Source.newBuilder(PythonLanguage.ID, src, "<fstring>").build();
-        Node expression = parser.parse(PythonParser.ParserMode.InlineEvaluation, PythonLanguage.getCore(), source, frame);
+        Node expression = parser.parse(PythonParser.ParserMode.InlineEvaluation, PythonLanguage.getCore(), source, frame, null);
         return (ExpressionNode) expression;
     }
 }
