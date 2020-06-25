@@ -111,6 +111,21 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
                     entireMessage = "unexpected unindent";
                     errorType = ErrorType.Indentation;
                     break;
+                case Python3Parser.LONG_QUOTES1:
+                case Python3Parser.LONG_QUOTES2:
+                    entireMessage = "EOF while scanning triple-quoted string literal";
+                    break;
+                case Python3Parser.LINE_JOINING_EOF_ERROR:
+                    entireMessage = "unexpected EOF while parsing";
+                    break;
+                case Python3Parser.UNKNOWN_CHAR:
+                    String text = token.getText();
+                    if (text.startsWith("\'") || text.startsWith("\"")) {
+                        entireMessage = "EOL while scanning string literal";
+                    } else if (text.equals("\\")) {
+                        entireMessage = "unexpected character after line continuation character";
+                    }
+                    break;
                 default:
                     if (expectedTokens != null && expectedTokens.contains(Python3Parser.INDENT)) {
                         entireMessage = "expected an indented block";

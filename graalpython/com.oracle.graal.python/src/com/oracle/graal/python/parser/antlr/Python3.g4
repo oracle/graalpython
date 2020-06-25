@@ -35,7 +35,10 @@ grammar Python3;
 // All comments that start with "///" are copy-pasted from
 // The Python Language Reference
 
-tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR }
+tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR, 
+        LINE_JOINING_EOF_ERROR // This is error token emitted, there is line continuation just before EOF.
+                                // Line continuation is in the hidden channel, so normally is not emitted.
+    }
 
 @lexer::members {
   // new version with semantic actions in parser
@@ -178,6 +181,15 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR }
     return dedent;
   }
 
+  private Token createLineContinuationEOFError() {
+    // this has to be called only at the end of the file
+    CommonToken errorToken = commonToken(Python3Parser.LINE_JOINING_EOF_ERROR, "");
+    // set the position at the previous char, which has to be line continuation
+    errorToken.setStartIndex(_input.index() - 1);
+    errorToken.setStopIndex(_input.index() - 1);
+    return errorToken;
+  }
+  
   private Token createIndentError(int type) {
     // For some reason, CPython sets the error position to the end of line
     int cur = getCharIndex();
@@ -1960,13 +1972,29 @@ LONG_QUOTES1 : '"""' {usedQuote1();};
 LONG_QUOTES2 : '\'\'\'' {usedQuote2();};
 
 SKIP_
- : ( SPACES | COMMENT | LINE_JOINING ) -> skip
+ : ( SPACES 
+| COMMENT 
+| LINE_JOINING 
+    {   
+        // We need to hanle line continuation here, because normally is hidden for the parser
+        // but we need to handle the case, where is just before EOF.
+        if (_input.size() == _input.index()) {
+            this.emit(createLineContinuationEOFError());
+        }
+    }
+)  -> skip
  ;
 
 BOM : '\uFEFF';
 
 UNKNOWN_CHAR
- : .
+ : . 
+    {
+        // check the case when the char is line continuation just before EOF
+        if (_input.size() == _input.index() && "\\".equals(_input.getText(Interval.of(_input.size()- 1, _input.size())))) {
+            this.emit(createLineContinuationEOFError());
+        }
+    }
  ;
 
 /* 
