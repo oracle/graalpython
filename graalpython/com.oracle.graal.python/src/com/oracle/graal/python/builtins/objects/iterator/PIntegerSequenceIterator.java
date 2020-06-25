@@ -31,7 +31,6 @@ import com.oracle.truffle.api.object.DynamicObject;
 public final class PIntegerSequenceIterator extends PIntegerIterator {
 
     final IntSequenceStorage sequence;
-    int index;
 
     public PIntegerSequenceIterator(Object clazz, DynamicObject storage, IntSequenceStorage sequence) {
         super(clazz, storage);
