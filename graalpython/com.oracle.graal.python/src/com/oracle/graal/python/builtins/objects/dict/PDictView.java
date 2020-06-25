@@ -78,7 +78,7 @@ public abstract class PDictView extends PythonBuiltinObject {
             super(clazz, storage, iterator, hashingStorage, initialSize);
         }
 
-        public Object next(PythonObjectFactory factory) {
+        public Object next(@SuppressWarnings("unused") PythonObjectFactory factory) {
             return this.next();
         }
     }
