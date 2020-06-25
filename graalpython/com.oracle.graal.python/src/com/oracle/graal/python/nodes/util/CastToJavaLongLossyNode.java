@@ -61,6 +61,14 @@ public abstract class CastToJavaLongLossyNode extends CastToJavaLongNode {
 
     @Specialization
     protected long toLong(PInt x) {
-        return x.longValue();
+        try {
+            return x.longValueExact();
+        } catch (ArithmeticException e) {
+            if (x.isNegative()) {
+                return Long.MIN_VALUE;
+            } else {
+                return Long.MAX_VALUE;
+            }
+        }
     }
 }

@@ -54,6 +54,7 @@ def test_find():
     assert s.find('cau', MyIndexable(5), None) == 5
     assert s.find('cau', MyIndexable(5), MyIndexable(8)) == 5
     assert s.find('cau', None, MyIndexable(8)) == 5
+    assert s.find('cau', 2**100) == -1
 
 
 def test_rfind():
