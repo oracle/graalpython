@@ -240,8 +240,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             }
         }
 
-        return new Signature(builtin.takesVarKeywordArgs(), (builtin.takesVarArgs() || builtin.varArgsMarker()) ? parameterNames.length : -1, builtin.varArgsMarker(), parameterNames,
-                        builtin.keywordOnlyNames());
+        return new Signature(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), (builtin.takesVarArgs() || builtin.varArgsMarker()) ? parameterNames.length : -1,
+                        builtin.varArgsMarker(), parameterNames, builtin.keywordOnlyNames());
     }
 
     /**
