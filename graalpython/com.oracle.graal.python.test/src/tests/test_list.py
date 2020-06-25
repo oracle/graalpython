@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -90,6 +90,10 @@ class ListTest(list_tests.CommonTest):
 
         self.assertRaises((MemoryError, OverflowError), mul, lst, n)
         self.assertRaises((MemoryError, OverflowError), imul, lst, n)
+
+    def test_large_index(self):
+        lst = [0]
+        self.assertRaises(IndexError, lambda: lst[2**100])
 
     def test_repr_large(self):
 
