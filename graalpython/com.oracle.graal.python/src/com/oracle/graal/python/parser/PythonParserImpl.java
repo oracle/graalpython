@@ -79,7 +79,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     private long numberOfFiles = 0;
     private static final boolean IN_IMAGE_BUILD_TIME = ImageInfo.inImageBuildtimeCode();
 
-    private static final Pattern START_INDENT_REGEX = Pattern.compile("^([ \t]+)[^#\r\n\f]");
+    private static final Pattern START_INDENT_REGEX = Pattern.compile("^([ \t]+)[^#\r\n\f\t ]");
 
     public static final DescriptiveBailErrorListener ERROR_LISTENER = new DescriptiveBailErrorListener();
 
