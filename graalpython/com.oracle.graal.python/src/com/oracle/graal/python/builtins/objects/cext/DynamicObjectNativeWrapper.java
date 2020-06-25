@@ -466,7 +466,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached ConditionProfile profileNewType,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
                         @Cached PCallCapiFunction callGetNewfuncTypeidNode) {
-            // __new__ is magically a staticmethod for Python types. The tp_new slot lookup expects to get the function
+            // __new__ is magically a staticmethod for Python types. The tp_new slot lookup expects
+            // to get the function
             Object newFunction = getAttrNode.execute(object, __NEW__);
             if (profileNewType.profile(newFunction instanceof PDecoratedMethod)) {
                 newFunction = ((PDecoratedMethod) newFunction).getCallable();
