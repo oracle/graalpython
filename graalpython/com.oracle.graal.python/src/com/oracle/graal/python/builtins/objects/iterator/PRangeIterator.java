@@ -25,53 +25,45 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.truffle.api.CompilerDirectives;
+import static com.oracle.graal.python.builtins.objects.range.PRange.getLenOfRange;
+
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PRangeIterator extends PIntegerIterator {
     public final int start;
-    public final int stop;
     public final int step;
+    public final int len;
 
     public PRangeIterator(Object clazz, DynamicObject storage, int start, int stop, int step) {
         super(clazz, storage);
         this.start = start;
-        this.stop = stop;
         this.step = step;
-        this.index = start;
+        this.len = getLenOfRange(start, stop, step);
     }
 
-    public int getLength(ConditionProfile stepProfile, ConditionProfile positveRangeProfile) {
-        if (stepProfile.profile(step > 0)) {
-            if (positveRangeProfile.profile(index >= 0 && index < stop)) {
-                return (stop - index - 1) / step + 1;
-            }
-            return PRange.getLenOfRange(index, stop, step);
-        } else {
-            return PRange.getLenOfRange(stop, index, -step);
-        }
+    public int getLength() {
+        return this.len - this.index;
     }
 
     @Override
     public int next() {
-        assert hasNext();
-        int value = index;
-        index += step;
-        return value;
+        return start + (index++) * step;
     }
 
     @Override
     public boolean hasNext() {
-        return index < stop;
+        return index < len;
     }
 
-    public static PRangeIterator require(Object value) {
-        if (value instanceof PRangeIterator) {
-            return (PRangeIterator) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PRangeIterator required.");
+    public int getReduceStart() {
+        return start;
+    }
+
+    public int getReduceStop() {
+        return start + len * step;
+    }
+
+    public int getReduceStep() {
+        return step;
     }
 }

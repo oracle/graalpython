@@ -116,20 +116,8 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         int next(PRangeIterator self) {
-            if (self.index < self.stop) {
-                int value = self.index;
-                self.index += self.step;
-                return value;
-            }
-            throw raise(StopIteration);
-        }
-
-        @Specialization
-        int next(PRangeReverseIterator self) {
-            if (self.index > self.stop) {
-                int value = self.index;
-                self.index -= self.step;
-                return value;
+            if (self.hasNext()) {
+                return self.next();
             }
             throw raise(StopIteration);
         }
@@ -233,12 +221,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public int lengthHint(PRangeIterator self) {
-            return self.stop - self.index;
-        }
-
-        @Specialization
-        public int lengthHint(PRangeReverseIterator self) {
-            return self.index - self.stop;
+            return self.getLength();
         }
 
         @Specialization
@@ -324,13 +307,6 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(PRangeIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(factory().createRange(self), self.index, context, pol);
-        }
-
-        @Specialization
-        public Object reduce(PRangeReverseIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             return reduceInternal(factory().createRange(self), self.index, context, pol);

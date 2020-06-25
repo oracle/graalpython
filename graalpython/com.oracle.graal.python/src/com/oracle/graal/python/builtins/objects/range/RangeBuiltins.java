@@ -188,9 +188,8 @@ public class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PIntegerIterator iter(PRange self,
-                        @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile) {
-            return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep(), stepPositiveProfile);
+        PIntegerIterator iter(PRange self) {
+            return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep());
         }
     }
 
@@ -372,7 +371,7 @@ public class RangeBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PRange self,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             PTuple args = factory().createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
             return factory().createTuple(new Object[]{pol.getLazyPythonClass(self), args});
         }

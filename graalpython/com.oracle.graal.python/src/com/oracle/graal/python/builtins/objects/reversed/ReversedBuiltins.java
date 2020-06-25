@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
@@ -37,7 +36,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -45,8 +43,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -56,10 +52,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -127,7 +121,7 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPSequence()")
         public Object lengthHint(PSequenceReverseIterator self,
-                                 @Cached SequenceNodes.LenNode lenNode) {
+                        @Cached SequenceNodes.LenNode lenNode) {
             if (lenNode.execute(self.getPSequence()) == -1) {
                 throw raise(TypeError, OBJ_HAS_NO_LEN, self);
             }
@@ -136,8 +130,8 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isPSequence()")
         public Object lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
-                                 @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
-                                 @Cached("create(__ADD__, __RADD__)") LookupAndCallBinaryNode callAdd) {
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
+                        @Cached("create(__ADD__, __RADD__)") LookupAndCallBinaryNode callAdd) {
             Object len = callLen.executeObject(frame, self.getObject());
             if (len == PNone.NO_VALUE || len == PNone.NONE) {
                 throw raise(TypeError, OBJ_HAS_NO_LEN, self);
