@@ -177,8 +177,13 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object next(PDictView.PBaseDictIterator<?> self,
+                        @Cached ConditionProfile sizeChanged,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary storageLibrary,
                         @Cached ConditionProfile profile) {
             if (profile.profile(self.hasNext())) {
+                if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
+                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
+                }
                 return self.next(factory());
             }
             throw raise(PythonErrorType.StopIteration);
