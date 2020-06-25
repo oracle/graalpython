@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
@@ -50,7 +51,6 @@ import java.util.zip.CRC32;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -66,10 +66,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.statement.RaiseNode;
+import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -140,7 +143,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class A2bHexNode extends PythonBinaryBuiltinNode {
-        private ReadAttributeFromObjectNode readAttrNode;
+        @Child private ReadAttributeFromObjectNode readAttrNode;
+        @Child private RaiseNode raiseNode;
+        @Child private CallNode callExceptionConstructor;
 
         @Specialization
         @TruffleBoundary
@@ -204,11 +209,15 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         private PException oddLengthError(PythonModule self) {
-            throw getRaiseNode().execute(getAttrNode().execute(self, ERROR), PNone.NO_VALUE, ErrorMessages.ODD_LENGTH_STRING, new Object[0]);
+            raiseObject(getAttrNode().execute(self, ERROR), ErrorMessages.ODD_LENGTH_STRING);
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("should not be reached");
         }
 
         private PException nonHexError(PythonModule self) {
-            throw getRaiseNode().execute(getAttrNode().execute(self, ERROR), PNone.NO_VALUE, ErrorMessages.NON_HEX_DIGIT_FOUND, new Object[0]);
+            raiseObject(getAttrNode().execute(self, ERROR), ErrorMessages.NON_HEX_DIGIT_FOUND);
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("should not be reached");
         }
 
         private ReadAttributeFromObjectNode getAttrNode() {
@@ -217,6 +226,18 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
                 readAttrNode = insert(ReadAttributeFromObjectNode.create());
             }
             return readAttrNode;
+        }
+
+        private void raiseObject(Object exceptionObject, String message) {
+            if (callExceptionConstructor == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callExceptionConstructor = insert(CallNode.create());
+            }
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(RaiseNodeGen.create(null, null));
+            }
+            raiseNode.execute(callExceptionConstructor.execute(exceptionObject, message), PNone.NO_VALUE);
         }
     }
 

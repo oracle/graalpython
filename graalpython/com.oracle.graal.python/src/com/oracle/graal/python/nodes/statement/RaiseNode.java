@@ -59,6 +59,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class RaiseNode extends StatementNode {
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
+    public abstract void execute(VirtualFrame frame, Object typeOrExceptionObject, Object cause);
+
+    public final void execute(Object typeOrExceptionObject, Object cause) {
+        execute(null, typeOrExceptionObject, cause);
+    }
+
     @ImportStatic(PGuards.class)
     public abstract static class SetExceptionCauseNode extends Node {
         public abstract void execute(VirtualFrame frame, PBaseException exception, Object cause);
