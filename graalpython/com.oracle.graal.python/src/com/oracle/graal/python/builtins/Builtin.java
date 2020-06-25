@@ -45,6 +45,8 @@ public @interface Builtin {
 
     int maxNumOfPositionalArgs() default -1;
 
+    int numOfPositionalOnlyArgs() default -1;
+
     boolean isGetter() default false;
 
     boolean isSetter() default false;
