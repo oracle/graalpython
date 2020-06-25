@@ -441,7 +441,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             if (!noSite) {
                 evalInternal(context, "import site\n");
             }
-            if (!quietFlag) {
+            if (!quietFlag && stdinIsInteractive) {
                 System.err.println("Please note: This Python implementation is in the very early stages, " +
                                 "and can run little more than basic benchmarks at this point.");
             }
