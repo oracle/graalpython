@@ -1442,7 +1442,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(base)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object createIntError(VirtualFrame frame, Object cls, String number, Object base,
                         @CachedLibrary("base") PythonObjectLibrary lib) {
-            int intBase = lib.asSizeWithState(base, PArguments.getThreadState(frame));
+            int intBase = lib.asSizeWithState(base, null, PArguments.getThreadState(frame));
             checkBase(intBase);
             return stringToInt(frame, cls, number, intBase, number);
         }
