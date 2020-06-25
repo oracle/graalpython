@@ -2026,15 +2026,23 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public int identityHashCode(@CachedLibrary("this") PythonObjectLibrary objectLib) {
-        return Long.hashCode(objectLib.hash(this));
+    public int identityHashCode(
+                    @CachedLibrary("this") PythonObjectLibrary objectLib) {
+        if (objectLib.isHashable(this)) {
+            return Long.hashCode(objectLib.hash(this));
+        } else {
+            // everything in Python has an identity, but not everything provides a __hash__ method
+            return System.identityHashCode(this);
+        }
     }
 
     @ExportMessage
     public TriState isIdenticalOrUndefined(Object other,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib,
                     @CachedLibrary("this") PythonObjectLibrary objectLib) {
-        if (otherLib.hasIdentity(other)) {
+        if (this == other) {
+            return TriState.TRUE;
+        } else if (otherLib.hasIdentity(other)) {
             return objectLib.isSame(this, other) ? TriState.TRUE : TriState.FALSE;
         } else {
             return TriState.UNDEFINED;
