@@ -173,16 +173,17 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = "mro", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
-        @Specialization
-        Object doit(LazyPythonClass klass,
-                        @Cached("create()") GetMroNode getMroNode) {
+        @Specialization(guards = "lib.isLazyPythonClass(klass)")
+        Object doit(Object klass,
+                        @Cached("create()") GetMroNode getMroNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             PythonAbstractClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
-        @Specialization(guards = "!isClass(object, iLib)", limit = "3")
+        @Specialization(guards = "!lib.isLazyPythonClass(object)")
         Object doit(Object object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") InteropLibrary iLib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "mro", "type", object);
         }
     }
@@ -235,7 +236,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached("first(arguments)") Object cachedSelf,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary plib) {
-            return op(frame, (PythonAbstractClass) cachedSelf, arguments, keywords, false, plib);
+            return op(frame, cachedSelf, arguments, keywords, false, plib);
 
         }
 
@@ -244,7 +245,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached("first(arguments)") Object cachedSelf,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary plib) {
-            return op(frame, (PythonBuiltinClassType) cachedSelf, arguments, keywords, false, plib);
+            return op(frame, cachedSelf, arguments, keywords, false, plib);
         }
 
         @Specialization(replaces = {"doItUnboxedUser", "doItUnboxedBuiltin", "doItUnboxedBuiltinType"})
@@ -324,7 +325,7 @@ public class TypeBuiltins extends PythonBuiltins {
             return op(frame, PythonNativeClass.cast(self), arguments, keywords, true, plib);
         }
 
-        private Object op(VirtualFrame frame, LazyPythonClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs, PythonObjectLibrary lib) {
+        private Object op(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs, PythonObjectLibrary lib) {
             Object newMethod = lookupNew.execute(self);
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
@@ -597,8 +598,8 @@ public class TypeBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization
-        boolean isInstance(VirtualFrame frame, LazyPythonClass cls, Object instance,
+        @Specialization(guards = "plib.isLazyPythonClass(cls)")
+        boolean isInstance(VirtualFrame frame, Object cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary plib) {
             if (instance instanceof PythonObject && isSubtypeNode.execute(frame, plib.getLazyPythonClass(instance), cls)) {

@@ -36,12 +36,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -70,13 +71,11 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -716,7 +715,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class FromKeysNode extends PythonBuiltinNode {
 
         @Specialization(guards = {"lib.isIterable(iterable)", "isBuiltinType(cls)", "hasBuiltinSetItem(cls, lib)"})
-        public Object doKeys(VirtualFrame frame, LazyPythonClass cls, Object iterable, Object value,
+        public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary libStorage,
                         @Cached GetIteratorNode getIteratorNode,
@@ -742,7 +741,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"lib.isIterable(iterable)", "!isBuiltinType(cls) || !hasBuiltinSetItem(cls, lib)"})
-        public Object doKeys(VirtualFrame frame, LazyPythonClass cls, Object iterable, Object value,
+        public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode constructNode,
                         @Cached CallNode callSetItemNode,
@@ -772,7 +771,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!lib.isIterable(iterable)")
-        public Object notIterable(LazyPythonClass cls, Object iterable, Object value,
+        public Object notIterable(Object cls, Object iterable, Object value,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterable);
         }

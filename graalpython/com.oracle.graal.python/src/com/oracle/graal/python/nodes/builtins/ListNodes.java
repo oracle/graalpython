@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -93,17 +92,17 @@ public abstract class ListNodes {
             return execute(PythonBuiltinClassType.PList, value);
         }
 
-        protected abstract PList execute(LazyPythonClass cls, Object value);
+        protected abstract PList execute(Object cls, Object value);
 
         @Specialization
-        PList listString(LazyPythonClass cls, PString arg,
+        PList listString(Object cls, PString arg,
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return listString(cls, arg.getValue(), appendNode, factory);
         }
 
         @Specialization
-        PList listString(LazyPythonClass cls, String arg,
+        PList listString(Object cls, String arg,
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             char[] chars = arg.toCharArray();
@@ -117,13 +116,13 @@ public abstract class ListNodes {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        PList listIterable(LazyPythonClass cls, @SuppressWarnings("unused") PNone none,
+        PList listIterable(Object cls, @SuppressWarnings("unused") PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createList(cls);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
-        PList listIterable(LazyPythonClass cls, Object iterable,
+        PList listIterable(Object cls, Object iterable,
                         @Cached GetIteratorWithoutFrameNode getIteratorNode,
                         @Cached CreateStorageFromIteratorInteropNode createStorageFromIteratorNode,
                         @Cached PythonObjectFactory factory) {
@@ -134,7 +133,7 @@ public abstract class ListNodes {
         }
 
         @Fallback
-        PList listObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
+        PList listObject(@SuppressWarnings("unused") Object cls, Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("list does not support iterable object " + value);
         }

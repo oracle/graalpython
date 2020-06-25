@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -735,12 +734,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPythonBuiltinClass(cl)")
-        public double fromhexFloat(@SuppressWarnings("unused") LazyPythonClass cl, String arg) {
+        public double fromhexFloat(@SuppressWarnings("unused") Object cl, String arg) {
             return fromHex(arg);
         }
 
         @Specialization(guards = "!isPythonBuiltinClass(cl)")
-        public Object fromhexO(LazyPythonClass cl, String arg,
+        public Object fromhexO(Object cl, String arg,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode constr) {
             double value = fromHex(arg);
             return constr.execute(null, cl, new Object[]{cl, value});
@@ -1407,7 +1406,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                 e--;
             }
 
-            BigInteger numerator = BigInteger.valueOf((new Double(m)).longValue());
+            BigInteger numerator = BigInteger.valueOf(((Double) m).longValue());
             BigInteger denominator = BigInteger.ONE;
             BigInteger py_exponent = denominator.shiftLeft(Math.abs(e));
             if (e > 0) {

@@ -172,7 +172,6 @@ import com.oracle.graal.python.builtins.objects.thread.SemLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -747,7 +746,7 @@ public final class Python3Core implements PythonCore {
     @TruffleBoundary
     public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
         PBaseException instance;
-        LazyPythonClass cls;
+        Object cls;
         switch (type) {
             case Indentation:
                 cls = IndentationError;

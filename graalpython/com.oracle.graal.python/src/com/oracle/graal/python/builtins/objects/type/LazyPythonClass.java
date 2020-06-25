@@ -45,16 +45,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 
 public interface LazyPythonClass extends TruffleObject {
 
-    /**
-     * Returns the name of the class for debugging purposes. This method must assume that no context
-     * is available.
-     */
-    String getName();
-
-    static boolean isInstance(Object object) {
-        return object instanceof PythonBuiltinClassType || PythonAbstractClass.isInstance(object);
-    }
-
     static LazyPythonClass cast(Object object) {
         if (object instanceof PythonBuiltinClassType) {
             return (PythonBuiltinClassType) object;

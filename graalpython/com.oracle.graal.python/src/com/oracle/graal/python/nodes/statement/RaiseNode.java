@@ -31,7 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -45,6 +45,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -65,12 +66,13 @@ public abstract class RaiseNode extends StatementNode {
         }
 
         // raise * from <class>
-        @Specialization
-        void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, LazyPythonClass causeClass,
+        @Specialization(guards = "lib.isLazyPythonClass(causeClass)")
+        void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object causeClass,
                         @Cached BranchProfile baseCheckFailedProfile,
                         @Cached ValidExceptionNode validException,
                         @Cached CallNode callConstructor,
-                        @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             if (!validException.execute(frame, causeClass)) {
                 baseCheckFailedProfile.enter();
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);

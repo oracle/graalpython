@@ -240,7 +240,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         return basetype;
     }
 
-    @Override
     public String getName() {
         return name;
     }

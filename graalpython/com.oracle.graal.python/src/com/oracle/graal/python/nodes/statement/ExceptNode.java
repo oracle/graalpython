@@ -31,7 +31,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -175,9 +174,10 @@ abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
         return isExceptionType;
     }
 
-    @Specialization(replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
-    boolean isPythonException(VirtualFrame frame, LazyPythonClass type,
-                    @Cached IsSubtypeNode isSubtype) {
+    @Specialization(guards = "lib.isLazyPythonClass(type)", replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
+    boolean isPythonException(VirtualFrame frame, Object type,
+                    @Cached IsSubtypeNode isSubtype,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
     }
 
@@ -253,12 +253,13 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         return false;
     }
 
-    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostException(e)"})
+    @Specialization(guards = {"lib.isLazyPythonClass(clause)", "emulateJython(language)", "context.getEnv().isHostException(e)"})
     @SuppressWarnings("unused")
-    boolean doNotMatchJava(VirtualFrame frame, @SuppressWarnings("unused") Throwable e, LazyPythonClass clause,
+    boolean doNotMatchJava(VirtualFrame frame, @SuppressWarnings("unused") Throwable e, Object clause,
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached ValidExceptionNode isValidException) {
+                    @Cached ValidExceptionNode isValidException,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
         raiseIfNoException(frame, clause, isValidException);
         return false;
     }

@@ -48,6 +48,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public final class IsBuiltinClassProfile extends Node {
     @CompilationFinal private boolean isBuiltinType;
@@ -227,6 +228,11 @@ public final class IsBuiltinClassProfile extends Node {
             }
             return false;
         }
+    }
+
+    @Override
+    public NodeCost getCost() {
+        return NodeCost.NONE;
     }
 
     @Override

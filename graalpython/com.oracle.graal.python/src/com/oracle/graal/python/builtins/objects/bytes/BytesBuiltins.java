@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.BytesLikeNoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
@@ -349,15 +350,17 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object add(PBytes left, PIBytesLike right,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
-            ByteSequenceStorage res = (ByteSequenceStorage) concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached GetSequenceStorageNode getStorage) {
+            ByteSequenceStorage res = (ByteSequenceStorage) concatNode.execute(left.getSequenceStorage(), getStorage.execute(right));
             return factory().createBytes(res);
         }
 
         @Specialization
         public Object add(PByteArray self, PIBytesLike other,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
-            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
+                        @Cached SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached GetSequenceStorageNode getStorage) {
+            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), getStorage.execute(other));
             return factory().createByteArray(res);
         }
 

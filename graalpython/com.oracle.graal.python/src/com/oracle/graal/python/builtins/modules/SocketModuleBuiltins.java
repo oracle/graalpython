@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -227,13 +226,13 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
+        Object socket(Object cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
                         @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, PSocket.AF_INET, PSocket.SOCK_STREAM, 0);
         }
 
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "!isNoValue(fileno)"})
-        Object socket(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
+        Object socket(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
                         @Cached CastToJavaIntExactNode cast) {
             try {
                 return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
@@ -243,7 +242,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
+        Object socket(Object cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToJavaIntExactNode cast) {
             try {
                 return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
@@ -253,7 +252,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
+        Object socket(Object cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToJavaIntExactNode cast) {
             try {
                 return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
@@ -263,7 +262,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
+        Object socket(Object cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToJavaIntExactNode cast) {
             try {
                 return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
@@ -273,7 +272,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "!isNoValue(fileno)"})
-        Object socket(VirtualFrame frame, LazyPythonClass cls, Object family, Object type, Object proto, Object fileno,
+        Object socket(VirtualFrame frame, Object cls, Object family, Object type, Object proto, Object fileno,
                         @Cached CastToJavaIntExactNode cast) {
             try {
                 return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
@@ -282,7 +281,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object createSocketInternal(LazyPythonClass cls, int family, int type, int proto) {
+        private Object createSocketInternal(Object cls, int family, int type, int proto) {
             if (getContext().getEnv().isNativeAccessAllowed()) {
                 PSocket newSocket = factory().createSocket(cls, family, type, proto);
                 int fd = getContext().getResources().openSocket(newSocket);
@@ -293,7 +292,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object createSocketInternal(VirtualFrame frame, LazyPythonClass cls, int family, int type, int proto, int fileno) {
+        private Object createSocketInternal(VirtualFrame frame, Object cls, int family, int type, int proto, int fileno) {
             if (getContext().getEnv().isNativeAccessAllowed()) {
                 PSocket oldSocket = getContext().getResources().getSocket(fileno);
                 if (oldSocket == null) {
