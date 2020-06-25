@@ -158,6 +158,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.utilities.TriState;
 
 @ImportStatic(SpecialMethodNames.class)
 @ExportLibrary(InteropLibrary.class)
@@ -2022,5 +2023,21 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass) {
         return getClass.execute(this);
+    }
+
+    @ExportMessage
+    public int identityHashCode(@CachedLibrary("this") PythonObjectLibrary objectLib) {
+        return Long.hashCode(objectLib.hash(this));
+    }
+
+    @ExportMessage
+    public TriState isIdenticalOrUndefined(Object other,
+                    @CachedLibrary(limit = "3") InteropLibrary otherLib,
+                    @CachedLibrary("this") PythonObjectLibrary objectLib) {
+        if (otherLib.hasIdentity(other)) {
+            return objectLib.isSame(this, other) ? TriState.TRUE : TriState.FALSE;
+        } else {
+            return TriState.UNDEFINED;
+        }
     }
 }
