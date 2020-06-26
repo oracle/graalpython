@@ -58,6 +58,7 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
 
     private static final String UTF_8_BOM_IN_LATIN_1 = new String(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}, StandardCharsets.ISO_8859_1);
     private static final Pattern ENCODING_COMMENT = Pattern.compile("^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+).*");
+    private static final Pattern BLANK_LINE = Pattern.compile("^[ \t\f]*(?:#.*)?");
 
     @Override
     public String findMimeType(TruffleFile file) throws IOException {
@@ -106,19 +107,23 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
 
     @TruffleBoundary
     public static Charset findEncodingStrict(BufferedReader reader) throws IOException {
-        Charset charset;
         // Read first two lines like CPython
         String firstLine = reader.readLine();
-        boolean hasBOM = false;
-        if (firstLine != null && firstLine.startsWith(UTF_8_BOM_IN_LATIN_1)) {
-            hasBOM = true;
-            firstLine = firstLine.substring(UTF_8_BOM_IN_LATIN_1.length());
-        }
-        if ((charset = tryGetCharsetFromLine(firstLine, hasBOM)) != null) {
-            return charset;
-        }
-        if ((charset = tryGetCharsetFromLine(reader.readLine(), hasBOM)) != null) {
-            return charset;
+        if (firstLine != null) {
+            boolean hasBOM = false;
+            if (firstLine.startsWith(UTF_8_BOM_IN_LATIN_1)) {
+                hasBOM = true;
+                firstLine = firstLine.substring(UTF_8_BOM_IN_LATIN_1.length());
+            }
+            Charset charset;
+            if ((charset = tryGetCharsetFromLine(firstLine, hasBOM)) != null) {
+                return charset;
+            }
+            if (BLANK_LINE.matcher(firstLine).matches()) {
+                if ((charset = tryGetCharsetFromLine(reader.readLine(), hasBOM)) != null) {
+                    return charset;
+                }
+            }
         }
         return StandardCharsets.UTF_8;
     }
