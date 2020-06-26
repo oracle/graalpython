@@ -130,18 +130,64 @@ public class GeneratorBuiltins extends PythonBuiltins {
         return arguments;
     }
 
-    private static Object resumeGenerator(PGenerator self, Object sendValue) {
-        try {
+    public static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
+        if (self.isFinished()) {
+            throw node.raise(StopIteration);
+        }
+        if (self.isRunning()) {
+            throw node.raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+        }
+    }
+
+    @ImportStatic({PGuards.class, PythonOptions.class})
+    @ReportPolymorphism
+    abstract static class ResumeGeneratorNode extends Node {
+        public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
+
+        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
             self.setRunning(true);
-            PArguments.setSpecialArgument(self.getArguments(), sendValue);
-            return self.getCurrentCallTarget().call(prepareArguments(self));
-        } catch (PException e) {
-            self.markAsFinished();
-            throw e;
-        } finally {
-            self.setRunning(false);
-            self.setNextCallTarget();
-            PArguments.setSpecialArgument(self.getArguments(), null);
+            Object[] arguments = prepareArguments(self);
+            if (sendValue != null) {
+                PArguments.setSpecialArgument(arguments, sendValue);
+            }
+            try {
+                return call.execute(frame, null, null, arguments);
+            } catch (PException e) {
+                self.markAsFinished();
+                throw e;
+            } finally {
+                self.setRunning(false);
+                self.setNextCallTarget();
+            }
+        }
+
+        @Specialization(replaces = "cached")
+        public Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached GenericInvokeNode call) {
+            self.setRunning(true);
+            Object[] arguments = prepareArguments(self);
+            if (sendValue != null) {
+                PArguments.setSpecialArgument(arguments, sendValue);
+            }
+            try {
+                return call.execute(frame, self.getCurrentCallTarget(), arguments);
+            } catch (PException e) {
+                self.markAsFinished();
+                throw e;
+            } finally {
+                self.setRunning(false);
+                self.setNextCallTarget();
+            }
+        }
+
+        protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
+            return CallTargetInvokeNode.create(target, false, true);
+        }
+
+        protected static boolean sameCallTarget(RootCallTarget target1, CallTarget target2) {
+            return target1 == target2;
         }
     }
 
@@ -204,65 +250,12 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ReportPolymorphism
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-
-        protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
-            return CallTargetInvokeNode.create(target, false, true);
-        }
-
-        protected static GenericInvokeNode createIndirectCall() {
-            return GenericInvokeNode.create();
-        }
-
-        protected static boolean sameCallTarget(RootCallTarget target1, CallTarget target2) {
-            return target1 == target2;
-        }
-
-        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
-        public Object nextCached(VirtualFrame frame, PGenerator self,
-                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
-                        @Cached BranchProfile alreadyRunning) {
-            if (self.isFinished()) {
-                throw raise(StopIteration);
-            }
-            if (self.isRunning()) {
-                alreadyRunning.enter();
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
-            }
-            try {
-                self.setRunning(true);
-                return call.execute(frame, null, null, prepareArguments(self));
-            } catch (PException e) {
-                self.markAsFinished();
-                throw e;
-            } finally {
-                self.setRunning(false);
-                self.setNextCallTarget();
-            }
-        }
-
-        @Specialization(replaces = "nextCached")
+        @Specialization
         public Object next(VirtualFrame frame, PGenerator self,
-                        @Cached("createIndirectCall()") GenericInvokeNode call,
-                        @Cached BranchProfile alreadyRunning) {
-            if (self.isFinished()) {
-                throw raise(StopIteration);
-            }
-            if (self.isRunning()) {
-                alreadyRunning.enter();
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
-            }
-            try {
-                self.setRunning(true);
-                return call.execute(frame, self.getCurrentCallTarget(), prepareArguments(self));
-            } catch (PException e) {
-                self.markAsFinished();
-                throw e;
-            } finally {
-                self.setRunning(false);
-                self.setNextCallTarget();
-            }
+                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
+            checkResumable(this, self);
+            return resumeGeneratorNode.execute(frame, self, null);
         }
     }
 
@@ -271,13 +264,10 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class SendNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object send(PGenerator self, Object value,
-                        @Cached BranchProfile alreadyRunning) {
-            if (self.isRunning()) {
-                alreadyRunning.enter();
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
-            }
-            return resumeGenerator(self, value);
+        public Object send(VirtualFrame frame, PGenerator self, Object value,
+                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
+            checkResumable(this, self);
+            return resumeGeneratorNode.execute(frame, self, value);
         }
     }
 
@@ -393,38 +383,32 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, @SuppressWarnings("unused") PNone tb,
                         @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached BranchProfile alreadyRunning,
+                        @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Shared("language") @CachedLanguage PythonLanguage language) {
-            if (self.isRunning()) {
-                alreadyRunning.enter();
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
-            }
+            checkResumable(this, self);
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
-            return doThrow(self, instance, language);
+            return doThrow(frame, resumeGeneratorNode, self, instance, language);
         }
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, PTraceback tb,
                         @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached BranchProfile alreadyRunning,
+                        @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Shared("language") @CachedLanguage PythonLanguage language) {
-            if (self.isRunning()) {
-                alreadyRunning.enter();
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
-            }
+            checkResumable(this, self);
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             instance.setTraceback(tb);
-            return doThrow(self, instance, language);
+            return doThrow(frame, resumeGeneratorNode, self, instance, language);
         }
 
-        private Object doThrow(PGenerator self, PBaseException instance, PythonLanguage language) {
+        private Object doThrow(VirtualFrame frame, ResumeGeneratorNode resumeGeneratorNode, PGenerator self, PBaseException instance, PythonLanguage language) {
             instance.setContext(null); // Will be filled when caught
             if (self.isStarted()) {
                 instance.ensureReified();
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 PException pException = PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(language));
-                return resumeGenerator(self, pException);
+                return resumeGeneratorNode.execute(frame, self, pException);
             } else {
                 // Unstarted generator, we cannot pass the exception into the generator as there is
                 // nothing that would handle it.
@@ -470,24 +454,24 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object close(PGenerator self,
+        Object close(VirtualFrame frame, PGenerator self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile isGeneratorExit,
                         @Cached IsBuiltinClassProfile isStopIteration,
-                        @Cached BranchProfile alreadyRunning,
+                        @Cached ResumeGeneratorNode resumeGeneratorNode,
+                        @Cached ConditionProfile isStartedPorfile,
                         @CachedLanguage PythonLanguage language) {
             if (self.isRunning()) {
-                alreadyRunning.enter();
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
-            if (self.isStarted()) {
+            if (isStartedPorfile.profile(self.isStarted())) {
                 PBaseException pythonException = factory().createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
                 PException pException = PException.fromObject(pythonException, null, withJavaStacktrace);
                 try {
-                    resumeGenerator(self, pException);
+                    resumeGeneratorNode.execute(frame, self, pException);
                 } catch (PException pe) {
                     if (isGeneratorExit.profileException(pe, GeneratorExit, lib) || isStopIteration.profileException(pe, StopIteration, lib)) {
                         // This is the "success" path
