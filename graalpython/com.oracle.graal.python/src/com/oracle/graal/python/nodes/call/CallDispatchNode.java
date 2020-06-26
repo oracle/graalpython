@@ -30,10 +30,11 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -92,12 +93,13 @@ public abstract class CallDispatchNode extends Node {
 
     // We only have a single context and this function never changed its code
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()", "cachedCallee.getCodeStableAssumption()"})
-    protected Object callFunctionCached(VirtualFrame frame, PFunction callee, Object[] arguments,
+    protected Object callFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke,
-                    @Cached ConditionProfile isGeneratorProfile) {
-        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
-            PArguments.setGeneratorFunction(arguments, callee);
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+        boolean isGenerator = cachedCallee.getFunctionRootNode() instanceof GeneratorFunctionRootNode;
+        CompilerAsserts.partialEvaluationConstant(isGenerator);
+        if (isGenerator) {
+            PArguments.setGeneratorFunction(arguments, cachedCallee);
         }
         return invoke.execute(frame, arguments);
     }
@@ -113,10 +115,11 @@ public abstract class CallDispatchNode extends Node {
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @SuppressWarnings("unused") @Cached("create()") GetFunctionCodeNode getFunctionCodeNode,
                     @SuppressWarnings("unused") @Cached("getCode(getFunctionCodeNode, callee)") PCode cachedCode,
-                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke,
-                    @Cached ConditionProfile isGeneratorProfile) {
-        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
-            PArguments.setGeneratorFunction(arguments, callee);
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+        boolean isGenerator = cachedCode.getRootNode() instanceof GeneratorFunctionRootNode;
+        CompilerAsserts.partialEvaluationConstant(isGenerator);
+        if (isGenerator) {
+            PArguments.setGeneratorFunction(arguments, cachedCallee);
         }
         return invoke.execute(frame, arguments);
     }
@@ -125,9 +128,10 @@ public abstract class CallDispatchNode extends Node {
     @Specialization(guards = {"callee.getCallTarget() == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
-                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke,
-                    @Cached ConditionProfile isGeneratorProfile) {
-        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
+                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
+        boolean isGenerator = ct.getRootNode() instanceof GeneratorFunctionRootNode;
+        CompilerAsserts.partialEvaluationConstant(isGenerator);
+        if (isGenerator) {
             PArguments.setGeneratorFunction(arguments, callee);
         }
         return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments);
@@ -151,7 +155,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callFunctionUncached(Frame frame, PFunction callee, Object[] arguments,
                     @Cached GenericInvokeNode invoke,
                     @Cached ConditionProfile isGeneratorProfile) {
-        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
+        if (isGeneratorProfile.profile(callee.isGeneratorFunction())) {
             PArguments.setGeneratorFunction(arguments, callee);
         }
         return invoke.executeInternal(frame, callee, arguments);

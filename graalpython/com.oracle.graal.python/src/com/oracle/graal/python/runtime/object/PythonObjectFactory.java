@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
@@ -418,6 +417,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFunction(name, name, enclosingClassName, code, globals, closure));
     }
 
+    public PFunction createFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+                    PCell[] closure) {
+        return trace(new PFunction(name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
+    }
+
     public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
         return trace(new PFunction(name, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
@@ -572,11 +576,6 @@ public abstract class PythonObjectFactory extends Node {
     public PGenerator createGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
                     GeneratorInfo generatorInfo, Object iterator) {
         return trace(PGenerator.create(name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
-    }
-
-    public PGeneratorFunction createGeneratorFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
-                    PKeyword[] kwDefaultValues) {
-        return trace(PGeneratorFunction.create(name, qualname, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

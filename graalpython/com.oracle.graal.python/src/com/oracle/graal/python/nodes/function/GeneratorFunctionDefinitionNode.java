@@ -31,7 +31,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -74,7 +74,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     @Override
     @ExplodeLoop // this should always be safe, how many syntactic defaults can one function have...
                  // and these are constant
-    public PGeneratorFunction execute(VirtualFrame frame) {
+    public PFunction execute(VirtualFrame frame) {
         Object[] defaultValues = null;
         if (defaults != null) {
             defaultValues = new Object[defaults.length];
@@ -90,8 +90,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
             }
         }
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createGeneratorFunction(functionName, qualname, enclosingClassName, getGeneratorCode(), PArguments.getGlobals(frame), closure, defaultValues,
-                        kwDefaultValues));
+        return withDocString(frame, factory().createFunction(functionName, qualname, enclosingClassName, getGeneratorCode(), PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
     }
 
     public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonContext ctx) {
