@@ -41,6 +41,8 @@
 
 package com.oracle.graal.python.test.parser;
 
+import java.util.Set;
+
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
@@ -74,6 +76,7 @@ import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -81,7 +84,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
-import java.util.Set;
 
 public class ParserTreePrinter implements NodeVisitor {
     private final int MAX_TEXT_LENGTH = 20;
@@ -195,13 +197,14 @@ public class ParserTreePrinter implements NodeVisitor {
         level++;
         addFrameDescriptor(node.getFrameDescriptor());
         indent(level);
-        sb.append("Active Flags: ").append(node.getNumOfActiveFlags());
+        GeneratorInfo generatorInfo = node.getGeneratorInfo();
+        sb.append("Active Flags: ").append(generatorInfo.getNumOfActiveFlags());
         newLine();
         indent(level);
-        sb.append("For Nodes: ").append(node.getNumOfGeneratorForNode());
+        sb.append("For Nodes: ").append(generatorInfo.getNumOfIteratorSlots());
         newLine();
         indent(level);
-        sb.append("Block Nodes: ").append(node.getNumOfGeneratorBlockNode());
+        sb.append("Block Nodes: ").append(generatorInfo.getNumOfBlockNodes());
         newLine();
         addFunctionDefinitionNode(node);
         level--;
@@ -350,13 +353,14 @@ public class ParserTreePrinter implements NodeVisitor {
         addFrameDescriptor(node.getEnclosingFrameDescriptor());
         level--;
         indent(level);
-        sb.append("Active Flags: ").append(node.getNumOfActiveFlags());
+        GeneratorInfo generatorInfo = node.getGeneratorInfo();
+        sb.append("Active Flags: ").append(generatorInfo.getNumOfActiveFlags());
         newLine();
         indent(level);
-        sb.append("For Nodes: ").append(node.getNumOfGeneratorForNode());
+        sb.append("For Nodes: ").append(generatorInfo.getNumOfIteratorSlots());
         newLine();
         indent(level);
-        sb.append("Block Nodes: ").append(node.getNumOfGeneratorBlockNode());
+        sb.append("Block Nodes: ").append(generatorInfo.getNumOfBlockNodes());
         newLine();
         indent(level);
         sb.append("Is Enclosing Frame Generator: ").append(node.isEnclosingFrameGenerator());

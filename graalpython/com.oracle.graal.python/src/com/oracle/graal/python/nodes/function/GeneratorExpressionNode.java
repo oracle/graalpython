@@ -31,6 +31,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -38,7 +39,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     private final String name;
@@ -46,30 +46,22 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     private final RootCallTarget callTarget;
     @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
-    private final int numOfActiveFlags;
-    private final int numOfGeneratorBlockNode;
-    private final int numOfGeneratorForNode;
-    private final int numOfGeneratorTryNode;
+    private final GeneratorInfo generatorInfo;
 
     @CompilationFinal private FrameDescriptor enclosingFrameDescriptor;
     @CompilationFinal private boolean isEnclosingFrameGenerator;
-    @CompilationFinal private boolean isOptimized;
     @Child private ExpressionNode getIterator;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public GeneratorExpressionNode(String name, String qualname, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
-                    ExecutionCellSlots executionCellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode) {
+                    ExecutionCellSlots executionCellSlots, GeneratorInfo generatorInfo) {
         super(definitionCellSlots, executionCellSlots);
         this.name = name;
         this.qualname = qualname;
         this.callTarget = callTarget;
         this.getIterator = getIterator;
         this.frameDescriptor = descriptor;
-        this.numOfActiveFlags = numOfActiveFlags;
-        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
-        this.numOfGeneratorForNode = numOfGeneratorForNode;
-        this.numOfGeneratorTryNode = numOfGeneratorTryNode;
+        this.generatorInfo = generatorInfo;
     }
 
     public String getName() {
@@ -101,32 +93,8 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         isEnclosingFrameGenerator = value;
     }
 
-    public boolean isOptimized() {
-        return isOptimized;
-    }
-
-    public void setAsOptimized() {
-        isOptimized = true;
-    }
-
-    public int getNumOfActiveFlags() {
-        return numOfActiveFlags;
-    }
-
-    public int getNumOfGeneratorBlockNode() {
-        return numOfGeneratorBlockNode;
-    }
-
-    public int getNumOfGeneratorForNode() {
-        return numOfGeneratorForNode;
-    }
-
-    public int getNumOfGeneratorTryNode() {
-        return numOfGeneratorTryNode;
-    }
-
-    public RootNode getFunctionRootNode() {
-        return callTarget.getRootNode();
+    public GeneratorInfo getGeneratorInfo() {
+        return generatorInfo;
     }
 
     @Override
@@ -151,7 +119,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         return factory.createGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, executionCellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, numOfGeneratorTryNode, iterator);
+                        generatorInfo, iterator);
     }
 
     @Override

@@ -68,6 +68,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
+import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -531,14 +533,36 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PDict locals = PArguments.getGeneratorFrameLocals(generatorFrame);
                 Object[] arguments = PArguments.create();
-                // TODO msimacek - this way, the generator will always have lineno == 1
-                Node location = self.getCurrentCallTarget().getRootNode();
+                Node location = self.getCurrentYieldNode();
+                if (location == null) {
+                    location = self.getCurrentCallTarget().getRootNode();
+                }
                 PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals, false);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(self.getArguments()));
                 PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
                 PArguments.setGeneratorFrame(arguments, generatorFrame);
                 frame.setArguments(arguments);
+                if (self.isStarted()) {
+                    // Hack: Fake bytecode to make inspect.getgeneratorstate distinguish suspended
+                    // and unstarted generators
+                    frame.setLasti(10000);
+                }
                 return frame;
+            }
+        }
+    }
+
+    @Builtin(name = "gi_yieldfrom", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetYieldFromNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object getYieldFrom(PGenerator self) {
+            AbstractYieldNode currentYield = self.getCurrentYieldNode();
+            if (currentYield instanceof YieldFromNode) {
+                int iteratorSlot = ((YieldFromNode) currentYield).getIteratorSlot();
+                return PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getIteratorAt(iteratorSlot);
+            } else {
+                return PNone.NONE;
             }
         }
     }

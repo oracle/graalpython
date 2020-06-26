@@ -65,6 +65,7 @@ public final class PFrame extends PythonBuiltinObject {
     private Node location;
     private RootCallTarget callTarget;
     private int line = -2;
+    private int lasti = -1;
 
     private PFrame.Reference backref = null;
 
@@ -308,5 +309,17 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setLocation(Node location) {
         this.location = location;
+    }
+
+    /**
+     * Last bytecode instruction. Since we don't have bytecode this is -1 by default, but can be set
+     * to a different value to distinguish started generators from unstarted
+     */
+    public int getLasti() {
+        return lasti;
+    }
+
+    public void setLasti(int lasti) {
+        this.lasti = lasti;
     }
 }

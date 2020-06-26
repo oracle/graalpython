@@ -29,6 +29,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.BreakException;
 import com.oracle.graal.python.runtime.exception.YieldException;
@@ -52,10 +53,10 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
     private final BranchProfile seenBreak = BranchProfile.create();
     private final int flagSlot;
 
-    public GeneratorWhileNode(CoerceToBooleanNode condition, StatementNode body, int flagSlot) {
+    public GeneratorWhileNode(CoerceToBooleanNode condition, StatementNode body, GeneratorInfo.Mutable generatorInfo) {
         this.body = body;
         this.condition = condition;
-        this.flagSlot = flagSlot;
+        this.flagSlot = generatorInfo.nextActiveFlagIndex();
     }
 
     @Override

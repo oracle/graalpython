@@ -32,6 +32,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
@@ -59,15 +60,15 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
 
     private final int iteratorSlot;
 
-    public GeneratorForNode(WriteNode target, ExpressionNode getIterator, StatementNode body, int iteratorSlot) {
+    public GeneratorForNode(WriteNode target, ExpressionNode getIterator, StatementNode body, GeneratorInfo.Mutable generatorInfo) {
         this.body = body;
         this.target = target;
         this.getIterator = getIterator;
-        this.iteratorSlot = iteratorSlot;
+        this.iteratorSlot = generatorInfo.nextIteratorSlotIndex();
     }
 
-    public static GeneratorForNode create(WriteNode target, ExpressionNode getIterator, StatementNode body, int iteratorSlot) {
-        return new GeneratorForNode(target, getIterator, body, iteratorSlot);
+    public static GeneratorForNode create(WriteNode target, ExpressionNode getIterator, StatementNode body, GeneratorInfo.Mutable generatorInfo) {
+        return new GeneratorForNode(target, getIterator, body, generatorInfo);
     }
 
     @Override
