@@ -71,6 +71,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -108,12 +110,14 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -191,6 +195,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
         @Child private LookupAndCallTernaryNode callNewGet = LookupAndCallTernaryNode.create(__GET__);
@@ -199,8 +204,9 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
         @Child private TypeNodes.IsSameTypeNode isSameTypeNode;
         @Child private TypeNodes.GetNameNode getNameNode;
-
         @Child private IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
+
+        @CompilationFinal private boolean newWasDescriptor = false;
 
         public static CallNode create() {
             return CallNodeFactory.create();
@@ -332,7 +338,17 @@ public class TypeBuiltins extends PythonBuiltins {
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
-                Object newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
+                Object newInstance;
+                if (!newWasDescriptor && (newMethod instanceof PFunction || newMethod instanceof PBuiltinFunction)) {
+                    newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
+                } else {
+                    if (!newWasDescriptor) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        reportPolymorphicSpecialize();
+                        newWasDescriptor = true;
+                    }
+                    newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
+                }
                 Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
                 if (isSameType(newInstanceKlass, self)) {
                     if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
