@@ -1436,26 +1436,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class NextNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaultObject)")
         public Object next(VirtualFrame frame, Object iterator, PNone defaultObject,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
-            try {
-                return next.execute(frame, iterator);
-            } catch (PException e) {
-                e.expectAttributeError(errorProfile);
-                throw raise(TypeError, e.setCatchingFrameAndGetEscapedException(frame), ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
-            }
+                        @Cached("createNextCall()") LookupAndCallUnaryNode callNode) {
+            return callNode.executeObject(frame, iterator);
         }
 
         @Specialization(guards = "!isNoValue(defaultObject)")
         public Object next(VirtualFrame frame, Object iterator, Object defaultObject,
-                        @Cached("create()") NextNode next,
+                        @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             try {
-                return next.execute(frame, iterator, PNone.NO_VALUE);
+                return callNode.executeObject(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 return defaultObject;
             }
+        }
+
+        protected LookupAndCallUnaryNode createNextCall() {
+            return LookupAndCallUnaryNode.create(__NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
+                @Override
+                public Object execute(Object iterator) {
+                    throw raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
+                }
+            });
         }
 
         protected static NextNode create() {
