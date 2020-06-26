@@ -61,13 +61,13 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  * Implements cpython://Objects/typeobject.c#tp_new_wrapper.
  */
 public final class WrapTpNew extends SlotWrapper {
-    @Child IsTypeNode isType;
-    @Child IsSubtypeNode isSubtype;
-    @Child PRaiseNode raiseNode;
-    @Child LookupAttributeInMRONode lookupNewNode;
-    @CompilationFinal ValueProfile builtinProfile;
-    @CompilationFinal byte state = 0;
-    @CompilationFinal PythonBuiltinClassType owner;
+    @Child private IsTypeNode isType;
+    @Child private IsSubtypeNode isSubtype;
+    @Child private PRaiseNode raiseNode;
+    @Child private LookupAttributeInMRONode lookupNewNode;
+    @CompilationFinal private ValueProfile builtinProfile;
+    @CompilationFinal private byte state = 0;
+    @CompilationFinal private PythonBuiltinClassType owner;
 
     private static final short NOT_SUBTP_STATE = 0b10000000;
     private static final short NOT_CLASS_STATE = 0b01000000;
