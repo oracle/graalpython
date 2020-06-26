@@ -96,9 +96,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
 
     public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonContext ctx) {
         if (generatorCallTarget == null) {
-            // TODO msimacek: the name/qualname passing is not entirely correct, it can change later
-            // and the change should be reflected on the created generators
-            return new GeneratorFunctionRootNode(ctx.getLanguage(), callTarget, functionName, qualname, frameDescriptor,
+            return new GeneratorFunctionRootNode(ctx.getLanguage(), callTarget, functionName, frameDescriptor,
                             executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), generatorInfo);
         }
         return (GeneratorFunctionRootNode) generatorCallTarget.getRootNode();

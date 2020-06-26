@@ -315,6 +315,18 @@ public final class PArguments {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
     }
 
+    /**
+     * This should be used only in GeneratorFunctionRootNode, later the slot is overwritten with
+     * generator frame
+     */
+    public static PFunction getGeneratorFunction(Object[] arguments) {
+        return (PFunction) arguments[INDEX_GENERATOR_FRAME];
+    }
+
+    public static void setGeneratorFunction(Object[] arguments, PFunction generatorFunction) {
+        arguments[INDEX_GENERATOR_FRAME] = generatorFunction;
+    }
+
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {
         MaterializedFrame generatorFrame = (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
         generatorFrame.getArguments()[INDEX_GENERATOR_FRAME] = generatorArguments;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,8 +27,10 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -41,6 +43,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
@@ -89,9 +92,13 @@ public abstract class CallDispatchNode extends Node {
 
     // We only have a single context and this function never changed its code
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()", "cachedCallee.getCodeStableAssumption()"})
-    protected Object callFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
+    protected Object callFunctionCached(VirtualFrame frame, PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke,
+                    @Cached ConditionProfile isGeneratorProfile) {
+        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
+            PArguments.setGeneratorFunction(arguments, callee);
+        }
         return invoke.execute(frame, arguments);
     }
 
@@ -106,7 +113,11 @@ public abstract class CallDispatchNode extends Node {
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @SuppressWarnings("unused") @Cached("create()") GetFunctionCodeNode getFunctionCodeNode,
                     @SuppressWarnings("unused") @Cached("getCode(getFunctionCodeNode, callee)") PCode cachedCode,
-                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke,
+                    @Cached ConditionProfile isGeneratorProfile) {
+        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
+            PArguments.setGeneratorFunction(arguments, callee);
+        }
         return invoke.execute(frame, arguments);
     }
 
@@ -114,7 +125,11 @@ public abstract class CallDispatchNode extends Node {
     @Specialization(guards = {"callee.getCallTarget() == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
-                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
+                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke,
+                    @Cached ConditionProfile isGeneratorProfile) {
+        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
+            PArguments.setGeneratorFunction(arguments, callee);
+        }
         return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments);
     }
 
@@ -134,7 +149,11 @@ public abstract class CallDispatchNode extends Node {
 
     @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCode", "callFunctionCachedCt"})
     protected Object callFunctionUncached(Frame frame, PFunction callee, Object[] arguments,
-                    @Cached GenericInvokeNode invoke) {
+                    @Cached GenericInvokeNode invoke,
+                    @Cached ConditionProfile isGeneratorProfile) {
+        if (isGeneratorProfile.profile(callee instanceof PGeneratorFunction)) {
+            PArguments.setGeneratorFunction(arguments, callee);
+        }
         return invoke.executeInternal(frame, callee, arguments);
     }
 
