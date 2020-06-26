@@ -106,9 +106,24 @@ def SyntaxError__init__(self, *args, **kwargs):
         self.offset = info[2]
         self.text = info[3]
 
+def SyntaxError__str__(self):
+
+    def isNumber(x):
+        return hasattr(x, "__index__")
+
+    hasLineno = self.lineno and isNumber(self.lineno)
+    if not self.filename and not hasLineno:
+        return "%s" % (self.msg)
+    if self.filename and hasLineno:
+        return "%s (%s, line %d)" % (self.msg, self.filename, self.lineno)
+    if self.filename:
+        return "%s (%s)" % (self.msg, self.filename)
+    return "%s (line %d)" % (self.msg, self.lineno)
 
 SyntaxError.__init__ = SyntaxError__init__
+SyntaxError.__str__ = SyntaxError__str__
 del SyntaxError__init__
+del SyntaxError__str__
 
 
 def UnicodeEncodeError__init__(self, encoding, object, start, end, reason):

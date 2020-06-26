@@ -1,0 +1,4 @@
+*graalpython.lib-python.3.test.test_eof.EOFTestCase.test_EOFC
+*graalpython.lib-python.3.test.test_eof.EOFTestCase.test_EOFS
+*graalpython.lib-python.3.test.test_eof.EOFTestCase.test_line_continuation_EOF
+*graalpython.lib-python.3.test.test_eof.EOFTestCase.test_line_continuation_EOF_from_file_bpo2180
