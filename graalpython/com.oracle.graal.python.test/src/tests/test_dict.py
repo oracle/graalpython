@@ -735,7 +735,7 @@ def test_reverse_locals():
     a = 'atest'
     b = 'btest'
     dict = locals()
-    assert list(reversed(dict)) == ['b', 'a']
+    assert list(reversed(dict)) == ['b', 'a'], "expected ['b', 'a'] got " + str(list(reversed(dict))) + " instead "
 
 def test_concat():
     r = {**{}}
