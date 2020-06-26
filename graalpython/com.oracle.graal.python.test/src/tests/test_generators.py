@@ -256,6 +256,36 @@ class ExceptionTest(unittest.TestCase):
     #     self.assertTrue(isinstance(cm.exception.value, StopIteration))
     #     self.assertEqual(cm.exception.value.value, 2)
 
+    def test_generator_caller_frame(self):
+        def gen():
+            yield sys._getframe(1)
+            yield sys._getframe(1)
+
+        def callnext(g):
+            next(g)
+            return next(g)
+
+        def callsend(g):
+            next(g)
+            return g.send(1)
+
+        self.assertEqual(callnext(gen()).f_code.co_name, 'callnext')
+        self.assertEqual(callsend(gen()).f_code.co_name, 'callsend')
+
+        # Force a megamorphic call to the genrator function
+        def genfn(i):
+            l = {}
+            exec(f"def f{i}(): yield {i}", l)
+            return l[f'f{i}']
+
+        fns = [genfn(i) for i in range(100)]
+        fns.append(gen)
+        for fn in fns:
+            g = fn()
+        self.assertEqual(callnext(g).f_code.co_name, 'callnext')
+        for fn in fns:
+            g = fn()
+        self.assertEqual(callsend(g).f_code.co_name, 'callsend')
 
 if sys.version_info.minor == 4 and sys.version_info.micro < 3:
     del ExceptionTest
