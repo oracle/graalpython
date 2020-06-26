@@ -158,4 +158,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     public boolean isCallable() {
         return true;
     }
+
+    @Override
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getLazyPythonClass() {
+        return PythonBuiltinClassType.PBuiltinFunction;
+    }
 }

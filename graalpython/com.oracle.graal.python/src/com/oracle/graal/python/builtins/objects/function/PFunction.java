@@ -220,4 +220,11 @@ public class PFunction extends PythonObject {
     public boolean hasSourceLocation() {
         return getSourceLocationDirect() != null;
     }
+
+    @Override
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getLazyPythonClass() {
+        return PythonBuiltinClassType.PFunction;
+    }
 }
