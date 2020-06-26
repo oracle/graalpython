@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -78,6 +79,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -86,6 +88,7 @@ public class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
     private final PException exception;
     private final SourceSection sourceSection;
+    @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
 
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
@@ -105,6 +108,14 @@ public class TopLevelExceptionHandler extends RootNode {
         this.sourceSection = exception.getSourceLocation();
         this.innerCallTarget = null;
         this.exception = exception;
+    }
+
+    private PythonLanguage getPythonLanguage() {
+        if (language == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            language = lookupLanguageReference(PythonLanguage.class);
+        }
+        return language.get();
     }
 
     private PythonContext getContext() {
@@ -136,23 +147,17 @@ public class TopLevelExceptionHandler extends RootNode {
                 assert !PArguments.isPythonFrame(frame);
                 PBaseException pythonException = e.getEscapedException();
                 printExc(frame, pythonException);
-                if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
-                    printStackTrace(e);
-                }
                 return null;
             } catch (StackOverflowError e) {
                 PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
                 PBaseException pythonException = pe.getExceptionObject();
                 printExc(frame, pythonException);
-                if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
-                    printStackTrace(e);
-                }
                 return null;
             } catch (Exception e) {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
                     ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
+                    if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
                         printStackTrace(e);
                     }
                 }
@@ -201,6 +206,9 @@ public class TopLevelExceptionHandler extends RootNode {
                     // Python code, if we get here, we just fall back to the launcher
                     throw pythonException.getExceptionForReraise(pythonException.getTraceback());
                 }
+                if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
+                    printJavaStackTrace(pythonException.getException());
+                }
                 if (!getSourceSection().getSource().isInteractive()) {
                     throw new PythonExitException(this, 1);
                 }
@@ -247,6 +255,17 @@ public class TopLevelExceptionHandler extends RootNode {
         PException e = pythonException.getExceptionForReraise(pythonException.getTraceback());
         e.setExit(true);
         throw e;
+    }
+
+    @TruffleBoundary
+    private static void printJavaStackTrace(PException e) {
+        LazyTraceback traceback = e.getTraceback();
+        while (traceback != null && traceback.getNextChain() != null) {
+            traceback = traceback.getNextChain();
+        }
+        if (traceback != null) {
+            traceback.getException().printStackTrace();
+        }
     }
 
     @TruffleBoundary

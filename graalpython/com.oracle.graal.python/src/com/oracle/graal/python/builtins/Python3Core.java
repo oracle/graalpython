@@ -181,6 +181,7 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -559,7 +560,7 @@ public final class Python3Core implements PythonCore {
         } else {
             instance = objectFactory.createBaseException(type);
         }
-        throw PException.fromObject(instance, null);
+        throw PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
     private void publishBuiltinModules() {
@@ -794,6 +795,6 @@ public final class Python3Core implements PythonCore {
             }
         }
         instance.setAttribute("msg", msg);
-        throw PException.fromObject(instance, location);
+        throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 }

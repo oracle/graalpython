@@ -55,15 +55,17 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -312,90 +314,99 @@ public class PThreadState extends PythonNativeWrapper {
         public abstract Object execute(Object key, Object value) throws UnknownIdentifierException;
 
         @Specialization(guards = "isCurrentExceptionMember(key)")
-        PNone doResetCurException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
+        static PNone doResetCurException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             context.setCurrentException(null);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "isCaughtExceptionMember(key)")
-        PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
+        static PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             context.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value,
+        static PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value,
                         @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCurrentException(context, factory.createBaseException(value));
+            setCurrentException(language, context, factory.createBaseException(value));
             return value;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
-        PBaseException doCurExcValue(@SuppressWarnings("unused") String key, PBaseException value,
+        static PBaseException doCurExcValue(@SuppressWarnings("unused") String key, PBaseException value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCurrentException(context, value);
+            setCurrentException(language, context, value);
             return value;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
-        PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
+        static PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCurrentException();
-            context.setCurrentException(PException.fromExceptionInfo(e.getExceptionObject(), value));
+            context.setCurrentException(PException.fromExceptionInfo(e.getExceptionObject(), value, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value,
+        static PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value,
                         @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCaughtException(context, factory.createBaseException(value));
+            setCaughtException(language, context, factory.createBaseException(value));
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_VALUE)")
-        PBaseException doExcValue(@SuppressWarnings("unused") String key, PBaseException value,
+        static PBaseException doExcValue(@SuppressWarnings("unused") String key, PBaseException value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCaughtException(context, value);
+            setCaughtException(language, context, value);
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
-        PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
+        static PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCaughtException();
-            context.setCaughtException(PException.fromExceptionInfo(e.getExceptionObject(), value));
+            boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+            context.setCaughtException(PException.fromExceptionInfo(e.getExceptionObject(), value, withJavaStacktrace));
             return value;
         }
 
         @Specialization(guards = "eq(key, RECURSION_DEPTH)")
         @SuppressWarnings("unused")
-        Object doRecursionDepth(String key, int value) {
+        static Object doRecursionDepth(String key, int value) {
             // TODO: (tfel) Can we not ignore this?
             return null;
         }
 
         @Specialization(guards = "eq(key, OVERFLOWED)")
         @SuppressWarnings("unused")
-        Object doOverflowed(String key, int value) {
+        static Object doOverflowed(String key, int value) {
             // TODO: (tfel) Can we not ignore this?
             return null;
         }
 
-        private static void setCurrentException(PythonContext context, PBaseException exceptionObject) {
-            context.setCurrentException(PException.fromExceptionInfo(exceptionObject, context.getCurrentException().getTraceback()));
+        private static void setCurrentException(PythonLanguage language, PythonContext context, PBaseException exceptionObject) {
+            boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+            context.setCurrentException(PException.fromExceptionInfo(exceptionObject, context.getCurrentException().getTraceback(), withJavaStacktrace));
         }
 
-        private static void setCaughtException(PythonContext context, PBaseException exceptionObject) {
-            context.setCaughtException(PException.fromExceptionInfo(exceptionObject, context.getCaughtException().getTraceback()));
+        private static void setCaughtException(PythonLanguage language, PythonContext context, PBaseException exceptionObject) {
+            boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+            context.setCaughtException(PException.fromExceptionInfo(exceptionObject, context.getCaughtException().getTraceback(), withJavaStacktrace));
         }
 
         @Specialization(guards = {"!isCurrentExceptionMember(key)", "!isCaughtExceptionMember(key)"})
-        @TruffleBoundary
-        Object doGeneric(Object key, @SuppressWarnings("unused") Object value) throws UnknownIdentifierException {
+        static Object doGeneric(Object key, @SuppressWarnings("unused") Object value) throws UnknownIdentifierException {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnknownIdentifierException.create(key.toString());
         }
 

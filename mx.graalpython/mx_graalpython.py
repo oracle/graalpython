@@ -117,8 +117,8 @@ def get_jdk():
 
 def python(args, **kwargs):
     """run a Python program or shell"""
-    if '--python.WithJavaStacktrace' not in args:
-        args.insert(0, '--python.WithJavaStacktrace')
+    if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
+        args.insert(0, '--python.WithJavaStacktrace=1')
 
     do_run_python(args, **kwargs)
 

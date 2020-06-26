@@ -93,24 +93,30 @@ public final class PException extends RuntimeException implements TruffleExcepti
         reified = true;
     }
 
-    public static PException fromObject(PBaseException actual, Node node) {
+    public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace) {
         PException pException = new PException(actual, node);
         actual.setException(pException);
+        if (withJavaStacktrace) {
+            pException = (PException) pException.forceFillInStackTrace();
+        }
         return pException;
     }
 
-    public static PException fromExceptionInfo(PBaseException pythonException, PTraceback traceback) {
+    public static PException fromExceptionInfo(PBaseException pythonException, PTraceback traceback, boolean withJavaStacktrace) {
         LazyTraceback lazyTraceback = null;
         if (traceback != null) {
             lazyTraceback = new LazyTraceback(traceback);
         }
-        return fromExceptionInfo(pythonException, lazyTraceback);
+        return fromExceptionInfo(pythonException, lazyTraceback, withJavaStacktrace);
     }
 
-    public static PException fromExceptionInfo(PBaseException pythonException, LazyTraceback traceback) {
+    public static PException fromExceptionInfo(PBaseException pythonException, LazyTraceback traceback, boolean withJavaStacktrace) {
         pythonException.ensureReified();
         PException pException = new PException(pythonException, traceback);
         pythonException.setException(pException);
+        if (withJavaStacktrace) {
+            pException = (PException) pException.forceFillInStackTrace();
+        }
         return pException;
     }
 
@@ -139,6 +145,10 @@ public final class PException extends RuntimeException implements TruffleExcepti
     @Override
     public Throwable fillInStackTrace() {
         return null;
+    }
+
+    public Throwable forceFillInStackTrace() {
+        return super.fillInStackTrace();
     }
 
     @Override
@@ -331,9 +341,9 @@ public final class PException extends RuntimeException implements TruffleExcepti
     /**
      * Prepare a new exception to be thrown to provide the semantics of a reraise. The difference
      * between this method and creating a new exception using
-     * {@link #fromObject(PBaseException, Node) fromObject} is that this method makes the traceback
-     * look like the last catch didn't happen, which is desired in `raise` without arguments, at the
-     * end of `finally`, `__exit__`...
+     * {@link #fromObject(PBaseException, Node, boolean) fromObject} is that this method makes the
+     * traceback look like the last catch didn't happen, which is desired in `raise` without
+     * arguments, at the end of `finally`, `__exit__`...
      */
     public PException getExceptionForReraise() {
         return pythonException.getExceptionForReraise(getTraceback());
