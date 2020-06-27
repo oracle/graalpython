@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -113,10 +114,11 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         boolean doBP(boolean left, PInt right,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            PythonCore core = ctxt.getCore();
             if (left) {
-                return right == ctxt.getCore().getTrue();
+                return right == core.getTrue();
             } else {
-                return right == ctxt.getCore().getFalse();
+                return right == core.getFalse();
             }
         }
 
