@@ -95,6 +95,12 @@ public class ErrorMessageFormatter {
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
+            } else if ("%N".equals(group)) {
+                String name = getClassNameOfClass(args[matchIdx]);
+                sb.replace(m.start() + offset, m.end() + offset, name);
+                offset += name.length() - (m.end() - m.start());
+                args[matchIdx] = REMOVED_MARKER;
+                removedCnt++;
             } else if ("%m".equals(group) && args[matchIdx] instanceof Throwable) {
                 // If the format arg is not a Throwable, 'String.format' will do the error handling
                 // and throw an IllegalFormatException for us.
@@ -121,9 +127,13 @@ public class ErrorMessageFormatter {
 
     private static String getClassName(PythonObjectLibrary lib, Object obj) {
         if (lib != null) {
-            return GetNameNode.doSlowPath(lib.getLazyPythonClass(obj));
+            return getClassNameOfClass(lib.getLazyPythonClass(obj));
         }
-        return GetNameNode.doSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(obj));
+        return getClassNameOfClass(PythonObjectLibrary.getUncached().getLazyPythonClass(obj));
+    }
+
+    private static String getClassNameOfClass(Object obj) {
+        return GetNameNode.doSlowPath(obj);
     }
 
     /**
@@ -134,7 +144,7 @@ public class ErrorMessageFormatter {
         int pidx = -1;
         while ((pidx = format.indexOf('%', pidx + 1)) != -1 && pidx + 1 < format.length()) {
             char c = format.charAt(pidx + 1);
-            if (c == 'p' || c == 'P' || c == 'm') {
+            if (c == 'p' || c == 'P' || c == 'm' || c == 'N') {
                 return true;
             }
         }

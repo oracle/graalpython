@@ -97,4 +97,12 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     String getMetaQualifiedName() {
         return type.getQualifiedName();
     }
+
+    @Override
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getLazyPythonClass() {
+        // all built-in types have "type" as metaclass
+        return PythonBuiltinClassType.PythonClass;
+    }
 }

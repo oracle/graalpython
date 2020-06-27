@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
@@ -60,10 +61,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
 public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     public abstract static class Dynamic extends PNodeWithContext {
         private static final DynamicUncached UNCACHED = new DynamicUncached();
@@ -106,7 +109,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         protected Object lookup(Object klass, Object key,
                         @Cached("create()") GetMroStorageNode getMroNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-            return lookupSlow(klass, key, getMroNode, readAttrNode);
+            return lookupSlow(klass, key, getMroNode, readAttrNode, false);
         }
     }
 
@@ -119,7 +122,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             if (klass instanceof PythonBuiltinClassType) {
                 return findAttr(PythonLanguage.getCore(), (PythonBuiltinClassType) klass, key);
             } else if (klass instanceof PythonAbstractClass) {
-                return lookupSlow(klass, key, getMroNode, readAttrNode);
+                return lookupSlow(klass, key, getMroNode, readAttrNode, false);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException("not implemented: lookup inherited attribute from non-PythonClass");
@@ -127,6 +130,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
+    private final boolean skipPythonClasses;
     protected final String key;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child private TypeNodes.IsSameTypeNode isSameTypeNode = IsSameTypeNodeGen.create();
@@ -140,12 +144,21 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return contextRef.get().getCore();
     }
 
-    public LookupAttributeInMRONode(String key) {
+    public LookupAttributeInMRONode(String key, boolean skipPythonClasses) {
         this.key = key;
+        this.skipPythonClasses = skipPythonClasses;
     }
 
     public static LookupAttributeInMRONode create(String key) {
-        return LookupAttributeInMRONodeGen.create(key);
+        return LookupAttributeInMRONodeGen.create(key, false);
+    }
+
+    /**
+     * Specific case to facilitate lookup on native and built-in classes only. This is useful for
+     * certain slot wrappers.
+     */
+    public static LookupAttributeInMRONode createForLookupOfUnmanagedClasses(String key) {
+        return LookupAttributeInMRONodeGen.create(key, true);
     }
 
     /**
@@ -201,7 +214,9 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
                 getMro(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
             }
-
+            if (skipPythonClasses && clsObj instanceof PythonClass) {
+                continue;
+            }
             Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
             if (value != PNone.NO_VALUE) {
                 return new PythonClassAssumptionPair(attrAssumption, value);
@@ -239,6 +254,9 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < mroLength; i++) {
             Object kls = mro.getItemNormalized(i);
+            if (skipPythonClasses && kls instanceof PythonClass) {
+                continue;
+            }
             Object value = readAttrNodes[i].execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;
@@ -250,7 +268,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO"})
     protected Object lookup(Object klass,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-        return lookupSlow(klass, key, getMroNode, readAttrNode);
+        return lookupSlow(klass, key, getMroNode, readAttrNode, skipPythonClasses);
     }
 
     protected GetMroStorageNode ensureGetMroNode() {
@@ -265,10 +283,13 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return ensureGetMroNode().execute(clazz);
     }
 
-    private static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode) {
+    private static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
         MroSequenceStorage mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
+            if (skipPythonClasses && kls instanceof PythonClass) {
+                continue;
+            }
             Object value = readAttrNode.execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;

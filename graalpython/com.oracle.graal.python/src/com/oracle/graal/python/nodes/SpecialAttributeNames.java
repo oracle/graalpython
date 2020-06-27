@@ -71,7 +71,6 @@ public abstract class SpecialAttributeNames {
     public static final String __CONTEXT__ = "__context__";
     public static final String __SUPPRESS_CONTEXT__ = "__suppress_context__";
     public static final String __BASICSIZE__ = "__basicsize__";
-    public static final String __NEW__ = "__new__";
     public static final String __SLOTS__ = "__slots__";
     public static final String __DICTOFFSET__ = "__dictoffset__";
     public static final String __ITEMSIZE__ = "__itemsize__";

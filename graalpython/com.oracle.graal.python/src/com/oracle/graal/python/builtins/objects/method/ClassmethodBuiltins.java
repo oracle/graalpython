@@ -57,7 +57,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -84,7 +84,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
     @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @ReportPolymorphism
-    abstract static class GetNode extends PythonBuiltinNode {
+    abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Child MakeMethodNode makeMethod = MakeMethodNode.create();
 
         /**

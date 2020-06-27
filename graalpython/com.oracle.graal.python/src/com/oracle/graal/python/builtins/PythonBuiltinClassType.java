@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins;
 
+import java.util.Arrays;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -205,7 +206,10 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     RuntimeWarning("RuntimeWarning", BuiltinNames.BUILTINS),
     SyntaxWarning("SyntaxWarning", BuiltinNames.BUILTINS),
     UnicodeWarning("UnicodeWarning", BuiltinNames.BUILTINS),
-    UserWarning("UserWarning", BuiltinNames.BUILTINS);
+    UserWarning("UserWarning", BuiltinNames.BUILTINS),
+
+    // A marker for @Builtin that is not a class. Must always come last.
+    nil(null);
 
     private final String name;
     private final Shape instanceShape;
@@ -224,7 +228,11 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         } else {
             qualifiedName = name;
         }
-        this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
+        if (name != null) {
+            this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
+        } else {
+            this.instanceShape = null;
+        }
         this.basetype = basetype;
     }
 
@@ -271,7 +279,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         return instanceShape.newInstance();
     }
 
-    public static final PythonBuiltinClassType[] VALUES = values();
+    public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
     public static final PythonBuiltinClassType[] EXCEPTIONS;
 
     static {

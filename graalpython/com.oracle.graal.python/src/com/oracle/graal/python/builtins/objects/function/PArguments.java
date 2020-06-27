@@ -162,6 +162,12 @@ public final class PArguments {
         return (PKeyword[]) frame[INDEX_KEYWORD_ARGUMENTS];
     }
 
+    /**
+     * Special arguments used to communicate various things to the callee. It is important than any
+     * usage be documented and ensured that they cannot overlap.
+     *
+     * @see #getSpecialArgument(Frame)
+     */
     public static void setSpecialArgument(Object[] arguments, Object value) {
         arguments[INDEX_SPECIAL_ARGUMENT] = value;
     }
@@ -172,12 +178,16 @@ public final class PArguments {
      * <li>The value sent to a generator via <code>send</code></li>
      * <li>An exception thrown through a generator via <code>throw</code></li>
      * <li>The {@link ClassBodyRootNode} when we are executing a class body</li>
+     * <li>The custom locals in a module scope when called through <code>exec</code></li>
      * </ul>
      */
     public static Object getSpecialArgument(Frame frame) {
         return getSpecialArgument(frame.getArguments());
     }
 
+    /**
+     * @see #getSpecialArgument(Frame)
+     */
     public static Object getSpecialArgument(Object[] arguments) {
         return arguments[INDEX_SPECIAL_ARGUMENT];
     }

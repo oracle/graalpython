@@ -31,7 +31,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -55,7 +54,6 @@ public class PFunction extends PythonObject {
     private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
     @CompilationFinal(dimensions = 1) private final PCell[] closure;
-    private final boolean isStatic;
     @CompilationFinal private PCode code;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
@@ -75,7 +73,6 @@ public class PFunction extends PythonObject {
         this.name = name;
         this.qualname = qualname;
         this.code = code;
-        this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;
         this.globals = globals;
         this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
@@ -83,10 +80,6 @@ public class PFunction extends PythonObject {
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
         this.defaultsStableAssumption = defaultsStableAssumption;
-    }
-
-    public boolean isStatic() {
-        return isStatic;
     }
 
     public RootCallTarget getCallTarget() {
@@ -226,5 +219,12 @@ public class PFunction extends PythonObject {
     @ExportMessage
     public boolean hasSourceLocation() {
         return getSourceLocationDirect() != null;
+    }
+
+    @Override
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getLazyPythonClass() {
+        return PythonBuiltinClassType.PFunction;
     }
 }

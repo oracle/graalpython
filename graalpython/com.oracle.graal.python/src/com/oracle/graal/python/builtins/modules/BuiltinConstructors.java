@@ -1141,7 +1141,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // int(x, base=10)
     @Builtin(name = INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
-    public abstract static class IntNode extends PythonBuiltinNode {
+    public abstract static class IntNode extends PythonTernaryBuiltinNode {
 
         private final ConditionProfile invalidBase = ConditionProfile.createBinaryProfile();
         private final BranchProfile invalidValueProfile = BranchProfile.create();
@@ -1154,8 +1154,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callIndexNode;
         @Child private LookupAndCallUnaryNode callTruncNode;
         @Child private LookupAndCallUnaryNode callReprNode;
-
-        public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object base);
 
         @TruffleBoundary
         private static Object stringToIntInternal(String num, int base) {
@@ -2304,12 +2302,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (__SLOTS__.equals(key)) {
                     slots = value;
                 } else if (SpecialMethodNames.__NEW__.equals(key)) {
-                    // TODO: see CPython: if it's a plain function, make it a
-                    // static function
-
-                    // tfel: this requires a little bit of refactoring on our
-                    // side that I don't want to do now
-                    pythonClass.setAttribute(key, value);
+                    // see CPython: if it's a plain function, make it a static function
+                    if (value instanceof PFunction) {
+                        pythonClass.setAttribute(key, factory().createStaticmethodFromCallableObj(value));
+                    } else {
+                        pythonClass.setAttribute(key, value);
+                    }
                 } else if (SpecialMethodNames.__INIT_SUBCLASS__.equals(key) ||
                                 SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
                     // see CPython: Special-case __init_subclass__ and
@@ -2785,13 +2783,26 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator}, isPublic = false)
+    @Builtin(name = "iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class IteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object iterator(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'iterator'");
+        Object iterator(Object args, Object kwargs) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, className());
+        }
+
+        protected String className() {
+            return "'iterator'";
+        }
+    }
+
+    @Builtin(name = "arrayiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PArrayIterator, isPublic = false)
+    @GenerateNodeFactory
+    public abstract static class ArrayIteratorTypeNode extends IteratorTypeNode {
+        @Override
+        protected String className() {
+            return "'arrayiterator'";
         }
     }
 

@@ -65,7 +65,8 @@ public abstract class PythonBuiltins {
         initializeEachFactoryWith((factory, builtin) -> {
             CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
             final boolean declaresExplicitSelf;
-            if (annotation.defineModule().length() > 0 && builtin.constructsClass().length == 0) {
+            PythonBuiltinClassType constructsClass = builtin.constructsClass();
+            if (annotation.defineModule().length() > 0 && constructsClass == PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter();
                 assert !builtin.isSetter();
                 assert annotation.extendClasses().length == 0;
@@ -75,16 +76,16 @@ public abstract class PythonBuiltins {
                 declaresExplicitSelf = true;
             }
             RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(builtin, factory.getNodeClass(),
-                            (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf, builtin.reverseOperation())));
+                            (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
-            if (builtin.constructsClass().length > 0) {
+            if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
-                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, numDefaults(builtin), callTarget);
-                for (PythonBuiltinClassType type : builtin.constructsClass()) {
-                    PythonBuiltinClass builtinClass = core.lookupType(type);
-                    builtinClass.setAttributeUnsafe(__NEW__, newFunc);
-                    builtinClass.setAttribute(__DOC__, builtinDoc);
-                }
+                // we explicitly do not make these "staticmethods" here, since CPython also doesn't
+                // for builtin types
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), callTarget);
+                PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
+                builtinClass.setAttributeUnsafe(__NEW__, newFunc);
+                builtinClass.setAttribute(__DOC__, builtinDoc);
             } else {
                 PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, numDefaults(builtin), callTarget);
                 function.setAttribute(__DOC__, builtinDoc);
@@ -118,11 +119,18 @@ public abstract class PythonBuiltins {
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Boolean needsFrame = null;
+            boolean constructsClass = false;
             for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
                 if (needsFrame == null) {
                     needsFrame = builtin.needsFrame();
                 } else if (needsFrame != builtin.needsFrame()) {
                     throw new IllegalStateException(String.format("Implementation error in %s: all @Builtin annotations must agree if the node needs a frame.", factory.getNodeClass().getName()));
+                }
+                if (!constructsClass) {
+                    constructsClass = builtin.constructsClass() != PythonBuiltinClassType.nil;
+                } else {
+                    // we rely on this in WrapTpNew#getOwner
+                    throw new IllegalStateException(String.format("Implementation error in %s: only one @Builtin annotation can declare a class constructor.", factory.getNodeClass().getName()));
                 }
                 func.accept(factory, builtin);
             }

@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.IntNodeFactory;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
@@ -1119,7 +1118,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
                         @Cached CastToNativeLongNode castToNativeLongNode,
                         @Cached("createClassProfile()") ValueProfile pointerClassProfile,
-                        @Cached("createIntNode()") IntNode constructIntNode,
+                        @Cached IntNode constructIntNode,
                         @Shared("converPIntToPrimitiveNode") @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             Object resolvedPointer = pointerClassProfile.profile(resolveHandleNode.execute(object));
@@ -1127,16 +1126,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
                     return convertPIntToPrimitiveNode.execute(frame, resolvedPointer, signed, targetTypeSize);
                 }
-                Object coerced = constructIntNode.executeWith(frame, PythonBuiltinClassType.PInt, toJavaNode.execute(resolvedPointer), PNone.NO_VALUE);
+                Object coerced = constructIntNode.execute(frame, PythonBuiltinClassType.PInt, toJavaNode.execute(resolvedPointer), PNone.NO_VALUE);
                 return castToNativeLongNode.execute(convertPIntToPrimitiveNode.execute(frame, coerced, signed, targetTypeSize));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
             }
-        }
-
-        static IntNode createIntNode() {
-            return IntNodeFactory.create(null);
         }
 
         static final class UnexpectedWrapperException extends ControlFlowException {
@@ -2382,17 +2377,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     case 1:
                         rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
-                                        true, false);
+                                        true);
                         break;
                     case 2:
                         rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
                                         new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
-                                        true, false);
+                                        true);
                         break;
                     case 3:
                         rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
                                         new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
-                                        true, false);
+                                        true);
                         break;
                     default:
                         break;
@@ -2401,7 +2396,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (rootNode == null) {
                 rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
                                 new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
-                                true, false);
+                                true);
             }
 
             return factory().createBuiltinFunction(func.getName(), null, 0, Truffle.getRuntime().createCallTarget(rootNode));

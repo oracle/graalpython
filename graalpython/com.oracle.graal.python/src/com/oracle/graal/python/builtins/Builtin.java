@@ -37,7 +37,7 @@ public @interface Builtin {
 
     String doc() default "";
 
-    PythonBuiltinClassType[] constructsClass() default {};
+    PythonBuiltinClassType constructsClass() default PythonBuiltinClassType.nil;
 
     PythonBuiltinClassType[] base() default {};
 
