@@ -304,9 +304,9 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object moduleName = readModuleNode.executeObject(frame, type);
             Object qualName = readQualNameNode.executeObject(frame, type);
             if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
-                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, PythonAbstractObject.identityHashCode(self));
+                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, PythonAbstractObject.systemHashCode(self));
             }
-            return strFormat("<%s object at 0x%x>", qualName, PythonAbstractObject.identityHashCode(self));
+            return strFormat("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(self));
         }
 
         @TruffleBoundary

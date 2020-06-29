@@ -2032,12 +2032,12 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             return Long.hashCode(objectLib.hash(this));
         } else {
             // everything in Python has an identity, but not everything provides a __hash__ method
-            return identityHashCode(this);
+            return systemHashCode(this);
         }
     }
 
     @TruffleBoundary
-    public static int identityHashCode(Object obj) {
+    public static int systemHashCode(Object obj) {
         return System.identityHashCode(obj);
     }
 
