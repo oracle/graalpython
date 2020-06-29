@@ -111,7 +111,7 @@ def _pickling_benchmarks(module='pickle'):
     }
 
 
-MICRO_BENCHMARKS.update(_pickling_benchmarks('pickle'))
+# MICRO_BENCHMARKS.update(_pickling_benchmarks('pickle'))
 # MICRO_BENCHMARKS.update(_pickling_benchmarks('cPickle'))
 
 
