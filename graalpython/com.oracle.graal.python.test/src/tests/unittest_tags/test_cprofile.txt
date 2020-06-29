@@ -1,2 +1,1 @@
-*graalpython.lib-python.3.test.test_cprofile.CProfileTest.test_run_profile_as_module
 *graalpython.lib-python.3.test.test_cprofile.TestCommandLine.test_sort
