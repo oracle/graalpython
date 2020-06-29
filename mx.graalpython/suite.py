@@ -114,7 +114,7 @@ suite = {
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
         },
-        "ICU4J" : {
+        "ICU4J-66.1" : {
             "moduleName" : "com.ibm.icu",
             "sha1" : "72c7519b6d91f7a1f993bd44a99fe95d67211b27",
             "sourceSha1" : "57d00b7135ca8fa82311d6b9fd345309e4c46f0b",
@@ -206,7 +206,7 @@ suite = {
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "XZ-1.8",
-                "ICU4J",
+                "ICU4J-66.1",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
