@@ -3175,76 +3175,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     abstract static class PyObjectCallNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = {"argsLib.isNull(argsObj)", "kwargsLib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
-        static Object doNoArgsAndNoKeywords(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
-                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
-                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
-                        @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
-                        @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
-                        @Cached CallNode callNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object callable = callableToJavaNode.execute(callableObj);
-                return toNewRefNode.execute(callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return nullToSulongNode.execute(getNativeNullNode.execute());
-            }
-        }
-
-        @Specialization(guards = {"!argsLib.isNull(argsObj)", "kwargsLib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
-        static Object doNoKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
-                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
-                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
-                        @Cached ExecutePositionalStarargsNode expandArgsNode,
-                        @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
-                        @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
-                        @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
-                        @Cached CallNode callNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object callable = callableToJavaNode.execute(callableObj);
-                Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
-                return toNewRefNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
-            } catch (PException e) {
-                // getContext() acts as a branch profile
-                transformExceptionToNativeNode.execute(frame, e);
-                return nullToSulongNode.execute(getNativeNullNode.execute());
-            }
-        }
-
-        @Specialization(guards = {"argsLib.isNull(argsObj)", "!kwargsLib.isNull(kwargsObj)", "!isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
-        static Object doNoArgs(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
-                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
-                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
-                        @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
-                        @Cached CallNode callNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                PKeyword[] keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
-                Object callable = callableToJavaNode.execute(callableObj);
-                return toNewRefNode.execute(callNode.execute(frame, callable, new Object[0], keywords));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return nullToSulongNode.execute(getNativeNullNode.execute());
-            }
-        }
-
-        @Specialization(replaces = {"doNoArgsAndNoKeywords", "doNoKeywords", "doNoArgs"}, limit = "3")
+        @Specialization(limit = "3")
         static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
                         @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
                         @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
