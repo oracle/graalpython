@@ -1934,14 +1934,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding)"}, limit = "3")
+        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         Object doBuffer(VirtualFrame frame, Object strClass, Object obj, Object encoding, Object errors,
                         @CachedLibrary("obj") PythonObjectLibrary bufferLib) {
             if (bufferLib.isBuffer(obj)) {
                 try {
                     // TODO(fa): we should directly call '_codecs.decode'
                     PBytes bytesObj = factory().createBytes(bufferLib.getBufferBytes(obj));
-                    return decodeBytes(frame, strClass, bytesObj, encoding, errors);
+                    Object en = encoding == PNone.NO_VALUE ? "utf-8" : encoding;
+                    return decodeBytes(frame, strClass, bytesObj, en, errors);
                 } catch (UnsupportedMessageException e) {
                     // fall through
                 }
