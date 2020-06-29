@@ -95,6 +95,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_ARG_CONVERTER_FAIL_UNEXPECTED_RETURN = "calling argument converter failed; unexpected return value %s";
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
+    public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
     public static final String CANNOT_ASSIGN_TO = "cannot assign to %s";
@@ -146,9 +147,10 @@ public abstract class ErrorMessages {
     public static final String CHARACTER_MAPPING_MUST_BE_IN_RANGE = "character mapping must be in range(0x%s)";
     public static final String CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR = "character mapping must return integer, None or str";
     public static final String CHR_DOES_NOT_SUPPORT = "chr does not support PInt ";
-    public static final String CLASS_ASIGMENT_D_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
+    public static final String CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
     public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES = "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'";
     public static final String CLASS_MUST_BE_SET_TO_CLASS = "__class__ must be set to a class, not '%p' object";
+    public static final String MUST_BE_SET_TO_S_NOT_P = "%s must be set to a %s, not a '%p'";
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
     public static final String CODE_OBJ_NO_FREE_VARIABLES = "code object passed to %s may not contain free variables";
     public static final String COMPILE_MUST_BE = "compile() mode must be 'exec', 'eval' or 'single'";
@@ -331,6 +333,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_SET_TO_STR_OBJ = "%s must be set to a string object";
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
+    public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";

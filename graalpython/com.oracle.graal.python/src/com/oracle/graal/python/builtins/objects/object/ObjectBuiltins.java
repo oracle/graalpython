@@ -160,7 +160,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 Object otherSlots = getLookupSlotsInOther().execute(value);
                 if (otherSlots == PNone.NO_VALUE || !lib2.equals(selfSlots, otherSlots, lib2)) {
                     errorSlotsBranch.enter();
-                    throw raise(TypeError, ErrorMessages.CLASS_ASIGMENT_D_LAYOUT_DIFFERS_FROM_S, getTypeName(value), getTypeName(lazyClass));
+                    throw raise(TypeError, ErrorMessages.CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(value), getTypeName(lazyClass));
                 }
             }
             lib1.setLazyPythonClass(self, value);

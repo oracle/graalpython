@@ -917,3 +917,43 @@ def test_iter_changed_size():
 
     d = {1:1}
     assert_raises(RuntimeError, iterate_and_update, d.items())
+    
+def test_decorated_method_dict():
+    def assert_bogus_dict_raises(dm):
+        raised = False
+        try:
+            dm.__dict__ = 'a'
+        except TypeError as e:
+            raised = True
+            assert "__dict__ must be set to a dictionary, not a 'str'" == str(e), "invalid error message"
+        assert raised
+
+    class A:
+        def f():
+            pass
+
+    cm = classmethod(A.f)
+    cm.x = 42
+    assert cm.__dict__ == {'x': 42}
+    cm.__dict__ = {1:1}
+    assert cm.__dict__ == {1:1}
+
+    sm = staticmethod(A.f)
+    sm.x = 42
+    assert sm.__dict__ == {'x': 42}
+    sm.__dict__ = {1:1}
+    assert sm.__dict__ == {1:1}
+
+    assert_bogus_dict_raises(classmethod(A.f))
+    assert_bogus_dict_raises(staticmethod(A.f))
+
+    def f(): pass
+    assert_bogus_dict_raises(classmethod(f))
+    assert_bogus_dict_raises(staticmethod(f))
+
+    class A:
+        def f(self):
+            def ff(): pass
+            assert_bogus_dict_raises(classmethod(ff))
+            assert_bogus_dict_raises(staticmethod(ff))
+    A().f()

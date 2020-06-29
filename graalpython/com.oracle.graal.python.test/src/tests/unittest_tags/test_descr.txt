@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_buffer_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_builtin_function_or_method
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_classic_comparisons
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_classmethods
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_classmethods_in_c
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_compattr
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_consistency_with_epg
@@ -28,6 +29,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_monotonicity
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mro_disagreement
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_multiple_inheritance
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mutable_bases_with_failing_mro
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mutable_names
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_newslots
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_not_implemented
@@ -47,6 +49,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_trash
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_special_unbound_method_types
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_specials
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_staticmethods
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_staticmethods_in_c
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_str_of_str_subclass
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_str_subclass_as_dict_key
