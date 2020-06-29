@@ -218,7 +218,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
 
     @TruffleBoundary
     private static void moveTruffleStackTrace(Throwable e, PException pe) {
-        pe.initCause(e.getCause());
+        pe.initCause(e);
         // Host exceptions have their stacktrace already filled in, call this to set
         // the cutoff point to the catch site
         pe.getTruffleStackTrace();
