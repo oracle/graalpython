@@ -9,6 +9,7 @@
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_locale_calendars
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_months
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_setfirstweekday
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_help
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_leapdays
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_leapdays_upper_boundary
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_range

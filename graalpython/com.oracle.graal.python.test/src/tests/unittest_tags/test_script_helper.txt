@@ -1,2 +1,4 @@
 *graalpython.lib-python.3.test.test_script_helper.TestScriptHelper.test_assert_python_failure
+*graalpython.lib-python.3.test.test_script_helper.TestScriptHelper.test_assert_python_failure_raises
+*graalpython.lib-python.3.test.test_script_helper.TestScriptHelper.test_assert_python_ok
 *graalpython.lib-python.3.test.test_script_helper.TestScriptHelper.test_assert_python_ok_raises

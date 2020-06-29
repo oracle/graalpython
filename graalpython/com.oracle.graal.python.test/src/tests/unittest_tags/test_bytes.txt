@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_fixtype
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_lower
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_replace_overflow
+*graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_splitlines
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_strip_whitespace
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_upper
 *graalpython.lib-python.3.test.test_bytes.ByteArraySubclassTest.test_join
@@ -57,6 +58,7 @@
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_fixtype
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_lower
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_replace_overflow
+*graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_splitlines
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_strip
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_strip_whitespace
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_upper

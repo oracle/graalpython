@@ -12,3 +12,4 @@
 *graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testSimplePipe2
 *graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testSimplePipe3
 *graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testWriteOpenSource
+*graalpython.lib-python.3.test.test_pipes.TestMain.test_main

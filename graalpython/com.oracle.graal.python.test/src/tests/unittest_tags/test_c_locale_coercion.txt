@@ -4,3 +4,4 @@
 *graalpython.lib-python.3.test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_one
 *graalpython.lib-python.3.test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_warn
 *graalpython.lib-python.3.test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_zero
+*graalpython.lib-python.3.test.test_c_locale_coercion.TestMain.test_main

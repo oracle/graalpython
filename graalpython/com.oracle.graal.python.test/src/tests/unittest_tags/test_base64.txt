@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_ErrorHeritage
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_a85_padding
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_a85decode_errors
+*graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b16encode
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b32decode_casefold
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b32decode_error
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b85_padding
@@ -10,3 +11,4 @@
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_decodestring_warns
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_encode
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_encodestring_warns
+*graalpython.lib-python.3.test.test_base64.TestMain.test_encode_decode

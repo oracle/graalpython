@@ -9,3 +9,5 @@
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_unoverwritable_fails
 *graalpython.lib-python.3.test.test_venv.BasicTest.test_upgrade
 *graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_devnull
+*graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_explicit_no_pip
+*graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_no_pip_by_default

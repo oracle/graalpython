@@ -1,4 +1,11 @@
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_include_on_stdin
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_compiles_as_much_as_possible
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_d_compile_error
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_d_runtime_error
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_force
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_include_bad_file
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_include_file_no_arg
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_include_file_with_arg
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_include_on_stdin
 *graalpython.lib-python.3.test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_dir_pathlike
 *graalpython.lib-python.3.test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_file_pathlike

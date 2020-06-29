@@ -3,3 +3,11 @@
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_tuple_reuse
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_with_replacement_overflow
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_with_replacement_tuple_reuse
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_permutations_overflow
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_permutations_tuple_reuse
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_product
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_product_issue_25021
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_product_overflow
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_product_pickling
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_product_tuple_reuse
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_zip

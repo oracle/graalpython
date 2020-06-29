@@ -2,3 +2,7 @@
 *graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUDPServer
 *graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUnixDatagramServer
 *graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUnixStreamServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ThreadingUnixDatagramServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ThreadingUnixStreamServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_UnixDatagramServer
+*graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_UnixStreamServer

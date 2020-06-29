@@ -1,7 +1,11 @@
 *graalpython.lib-python.3.test.test_types.ClassCreationTests.test_metaclass_derivation
 *graalpython.lib-python.3.test.test_types.ClassCreationTests.test_metaclass_override_callable
+*graalpython.lib-python.3.test.test_types.ClassCreationTests.test_metaclass_override_function
 *graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_basics
 *graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_defaults
+*graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_exec_body
+*graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_meta
+*graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_meta_with_base
 *graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_metaclass_keywords
 *graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_subclass
 *graalpython.lib-python.3.test.test_types.ClassCreationTests.test_new_class_with_mro_entry
