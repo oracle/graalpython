@@ -3175,18 +3175,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     abstract static class PyObjectCallNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
-                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
-                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
-                        @Cached ExecutePositionalStarargsNode expandArgsNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached AsPythonObjectNode callableToJavaNode,
-                        @Cached AsPythonObjectNode argsToJavaNode,
-                        @Cached AsPythonObjectNode kwargsToJavaNode,
-                        @Cached("createBinaryProfile()") ConditionProfile argsIsNullProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile kwargsIsNullProfile,
-                        @Exclusive @Cached CallNode callNode,
+                        @Cached CastArgsNode castArgsNode,
+                        @Cached CastKwargsNode castKwargsNode,
+                        @Cached CallNode callNode,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
@@ -3194,28 +3188,60 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
-                Object[] args;
-                PKeyword[] keywords;
-
-                // expand positional arguments
-                if (argsIsNullProfile.profile(argsLib.isNull(argsObj))) {
-                    args = new Object[0];
-                } else {
-                    args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
-                }
-
-                // expand keywords
-                if (kwargsIsNullProfile.profile(kwargsLib.isNull(kwargsObj))) {
-                    keywords = PKeyword.EMPTY_KEYWORDS;
-                } else {
-                    keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
-                }
+                Object[] args = castArgsNode.execute(frame, argsObj);
+                PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
                 return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
             } catch (PException e) {
-                // getContext() acts as a branch profile
+                // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
+        }
+
+    }
+
+    @ReportPolymorphism
+    abstract static class CastArgsNode extends Node {
+
+        public abstract Object[] execute(VirtualFrame frame, Object argsObj);
+
+        @Specialization(guards = "lib.isNull(argsObj)")
+        @SuppressWarnings("unused")
+        static Object[] doNull(VirtualFrame frame, Object argsObj,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return new Object[0];
+        }
+
+        @Specialization(guards = "!lib.isNull(argsObj)")
+        static Object[] doNotNull(VirtualFrame frame, Object argsObj,
+                        @Cached ExecutePositionalStarargsNode expandArgsNode,
+                        @Cached AsPythonObjectNode argsToJavaNode,
+                        @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
+            return expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
+        }
+    }
+
+    @ReportPolymorphism
+    abstract static class CastKwargsNode extends Node {
+
+        public abstract PKeyword[] execute(Object kwargsObj);
+
+        @Specialization(guards = "lib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)", limit = "1")
+        @SuppressWarnings("unused")
+        static PKeyword[] doNoKeywords(Object kwargsObj,
+                        @Shared("lenNode") @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return PKeyword.EMPTY_KEYWORDS;
+        }
+
+        @Specialization(guards = {"!lib.isNull(kwargsObj)", "!isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "1")
+        static PKeyword[] doKeywords(Object kwargsObj,
+                        @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
+                        @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
+                        @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode) {
+            return expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
         }
 
         static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingCollectionNodes.LenNode lenNode, Object kwargsObj) {
