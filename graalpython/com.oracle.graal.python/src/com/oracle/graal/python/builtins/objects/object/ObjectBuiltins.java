@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -303,9 +304,9 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object moduleName = readModuleNode.executeObject(frame, type);
             Object qualName = readQualNameNode.executeObject(frame, type);
             if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
-                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, System.identityHashCode(self));
+                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, PythonAbstractObject.systemHashCode(self));
             }
-            return strFormat("<%s object at 0x%x>", qualName, System.identityHashCode(self));
+            return strFormat("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(self));
         }
 
         @TruffleBoundary

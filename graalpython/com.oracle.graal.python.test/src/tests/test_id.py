@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -70,3 +70,16 @@ def test_id_is_constant_even_when_object_changes():
     lid = id(l)
     l.append(12)
     assert id(l) == lid
+
+def test_identity():
+    assert True is True
+    assert memoryview(b"").readonly is True # compare a PInt bool (from C) to a boolean
+
+    assert 12 is 12
+    assert memoryview(b"123").nbytes == 3 # compare PInt (from C) to an int
+    class I(int): pass
+    assert I(12) is not 12
+    assert 12.0 is 12.0
+
+    nan = float('nan')
+    assert nan is nan
