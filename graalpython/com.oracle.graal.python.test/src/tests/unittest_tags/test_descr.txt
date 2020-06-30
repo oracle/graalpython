@@ -18,12 +18,15 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_evil_type_name
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_ex5_from_c3_switch
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_file_fault
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_funny_new
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_hash_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_imul_bug
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_init
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_ipow
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_isinst_isclass
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_keywords
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_meth_class_get
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_method_wrapper
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_methods_in_c
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mixing_slot_wrappers
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_monotonicity
