@@ -1140,6 +1140,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // int(x, base=10)
     @Builtin(name = INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class IntNode extends PythonTernaryBuiltinNode {
 
         private final ConditionProfile invalidBase = ConditionProfile.createBinaryProfile();
@@ -1528,8 +1529,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
         }
 
-        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
-        Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base) {
+        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "2")
+        Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
             // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
             // in CPython. We don't use PythonObjectLibrary here since the original CPython function
             // does not use any of the conversion functions (such as _PyLong_AsInt or
@@ -1545,7 +1547,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (result == PNone.NO_VALUE) {
                     Object truncResult = callTrunc(frame, obj);
                     if (truncResult == PNone.NO_VALUE) {
-                        throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
+                        if (lib.isBuffer(obj)) {
+                            try {
+                                byte[] bytes = lib.getBufferBytes(obj);
+                                return stringToInt(frame, cls, toString(bytes), 10, obj);
+                            } catch (UnsupportedMessageException e) {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
+                            }
+                        } else {
+                            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
+                        }
                     }
                     if (isIntegerType(truncResult)) {
                         result = truncResult;
