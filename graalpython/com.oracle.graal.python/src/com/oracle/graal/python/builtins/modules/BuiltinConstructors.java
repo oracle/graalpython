@@ -2146,23 +2146,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
         Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached GetClassNode getClass) {
             return getClass.execute(obj);
         }
 
-        @Specialization
-        Object type(VirtualFrame frame, Object cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+        @Specialization(guards = "isString(wName)")
+        Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary nslib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary glib,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary nslib,
                         @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
+                        @Cached CastToJavaStringNode castStr,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
             // Determine the proper metatype to deal with this
+            String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
@@ -2195,7 +2196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(globals, glib);
+                        String moduleName = getModuleNameFromGlobals(globals, nslib);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
@@ -2222,6 +2223,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return newType;
             } catch (PException e) {
                 throw e;
+            }
+        }
+
+        @Fallback
+        Object generic(Object cls, Object name, Object bases, Object namespace, Object kwds) {
+            if (!(bases instanceof PTuple)) {
+                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
+            } else if (namespace == PNone.NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
+            } else if (!(namespace instanceof PDict)) {
+                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 3, "dict", bases);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("type fallback reached incorrectly");
             }
         }
 
