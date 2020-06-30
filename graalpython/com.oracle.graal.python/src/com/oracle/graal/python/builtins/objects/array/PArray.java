@@ -25,10 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public class PArray extends PMutableSequence {
 
     private SequenceStorage store;
@@ -54,5 +60,25 @@ public class PArray extends PMutableSequence {
 
     public int len() {
         return store.length();
+    }
+
+    @ExportMessage
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes(
+                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+        // TODO Implement access to the actual bytes which represent the array in memory.
+        // This implementation only works for ByteSequenceStorage.
+        return toByteArrayNode.execute(store);
+    }
+
+    @ExportMessage
+    int getBufferLength(
+                    @Cached SequenceStorageNodes.LenNode lenNode) {
+        // TODO This only works for ByteSequenceStorage since its itemsize is 1.
+        return lenNode.execute(store);
     }
 }
