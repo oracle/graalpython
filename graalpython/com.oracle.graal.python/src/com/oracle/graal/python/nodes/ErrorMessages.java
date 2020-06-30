@@ -46,6 +46,7 @@ public abstract class ErrorMessages {
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
     public static final String ARG_D_MUST_BE_S = "%s arg %d must be a %s";
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
+    public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
     public static final String ARG_D_MUST_BE_S_OR_S = "%s argument %d must be '%s' or '%s'";
     public static final String ARG_D_MUST_NOT_BE_EMPTY = "arg %d must not be empty";
     public static final String ARG_EXPECTED_GOT = "%s argument expected, got %p";
