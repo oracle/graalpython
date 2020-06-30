@@ -222,10 +222,33 @@ def compare_unittests(args):
     mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/compare_unittests.py", "-v"] + args)
 
 
+def run_cpython_test(args):
+    import glob
+    interp_args = []
+    globs = []
+    test_args = []
+    for arg in args:
+        if arg.startswith("-"):
+            if not globs:
+                interp_args.append(arg)
+            else:
+                test_args.append(arg)
+        else:
+            globs.append(arg)
+    testfiles = []
+    for g in globs:
+        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", f"{g}*"))
+    mx.run([python_gvm()] + interp_args + [
+        os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
+    ] + test_args + testfiles)
+
+
 def retag_unittests(args):
     """run the cPython stdlib unittests"""
     parser = ArgumentParser('mx python-retag-unittests')
     parser.add_argument('--upload-results-to')
+    parser.add_argument('--inspect', action='store_true')
+    parser.add_argument('-debug-java', action='store_true')
     parsed_args, remaining_args = parser.parse_known_args(args)
     env = os.environ.copy()
     env.update(
@@ -235,9 +258,14 @@ def retag_unittests(args):
     args = [
         '--experimental-options=true',
         '--python.CatchAllExceptions=true',
-        '--python.WithThread=true',
+        '--python.WithThread=true']
+    if parsed_args.inspect:
+        args.append('--inspect')
+    if parsed_args.debug_java:
+        args.append('-debug-java')
+    args += [
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
-        '--retag',
+        '--retag'
     ]
     mx.run([python_gvm()] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
@@ -1757,6 +1785,7 @@ mx.update_commands(SUITE, {
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
+    'python-run-cpython-unittest': [run_cpython_test, 'test-name'],
     'python-update-unittest-tags': [update_unittest_tags, ''],
     'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
