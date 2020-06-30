@@ -2673,26 +2673,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
-        protected PythonBuiltinClass getNotImplementedClass() {
-            return getCore().lookupType(PythonBuiltinClassType.PNotImplemented);
-        }
-
         @Specialization
         public PNotImplemented module(Object cls) {
-            if (cls != getNotImplementedClass()) {
-                throw raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, "NotImplementedType");
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = "ellipsis", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PEllipsis, isPublic = false)
+    @Builtin(name = "ellipsis", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PEllipsis, isPublic = false)
     @GenerateNodeFactory
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PEllipsis call(Object cls, Object args, Object kwds) {
+        public PEllipsis call(Object cls) {
             return PEllipsis.INSTANCE;
         }
     }
@@ -2700,17 +2692,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "NoneType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
-        protected PythonBuiltinClass getNoneClass() {
-            return getCore().lookupType(PythonBuiltinClassType.PNone);
-        }
-
+        @SuppressWarnings("unused")
         @Specialization
         public PNone module(Object cls) {
-            if (cls != getNoneClass()) {
-                throw raise(TypeError, ErrorMessages.IS_NOT_SUBTYPE_OF, "NoneType.__new__", cls, "NoneType");
-            } else {
-                return PNone.NONE;
-            }
+            return PNone.NONE;
         }
     }
 
