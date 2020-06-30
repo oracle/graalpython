@@ -44,14 +44,40 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class ExceptionUtils {
     private ExceptionUtils() {
+    }
+
+    @TruffleBoundary
+    public static void printPythonLikeStackTrace() {
+        CompilerAsserts.neverPartOfCompilation("printPythonLikeStackTrace is a debug method");
+        final ArrayList<String> stack = new ArrayList<>();
+        Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
+            public Frame visitFrame(FrameInstance frameInstance) {
+                RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+                RootNode rootNode = target.getRootNode();
+                Node location = frameInstance.getCallNode();
+                if (location == null) {
+                    location = rootNode;
+                }
+                appendStackLine(stack, location, rootNode, true);
+                return null;
+            }
+        });
+        printStack(stack);
     }
 
     /**
@@ -63,32 +89,44 @@ public final class ExceptionUtils {
         if (stackTrace != null) {
             ArrayList<String> stack = new ArrayList<>();
             for (TruffleStackTraceElement frame : stackTrace) {
-
-                StringBuilder sb = new StringBuilder();
                 Node location = frame.getLocation();
-                SourceSection sourceSection = location != null ? location.getSourceSection() : null;
-                String rootName = frame.getTarget().getRootNode().getName();
-                if (sourceSection != null) {
-                    sb.append("  ");
-                    String path = sourceSection.getSource().getPath();
-                    if (path != null) {
-                        sb.append("File ");
-                    }
-                    sb.append('"');
-                    sb.append(sourceSection.getSource().getName());
-                    sb.append("\", line ");
-                    sb.append(sourceSection.getStartLine());
-                    sb.append(", in ");
-                    sb.append(rootName);
-                    stack.add(sb.toString());
-                }
+                RootNode rootNode = frame.getTarget().getRootNode();
+                appendStackLine(stack, location, rootNode, false);
             }
-            System.err.println("Traceback (most recent call last):");
-            ListIterator<String> listIterator = stack.listIterator(stack.size());
-            while (listIterator.hasPrevious()) {
-                System.err.println(listIterator.previous());
-            }
+            printStack(stack);
         }
         System.err.println(e.getMessage());
+    }
+
+    private static void appendStackLine(ArrayList<String> stack, Node location, RootNode rootNode, boolean evenWithoutSource) {
+        StringBuilder sb = new StringBuilder();
+        SourceSection sourceSection = location != null ? location.getSourceSection() : null;
+        String rootName = rootNode.getName();
+        if (sourceSection != null) {
+            sb.append("  ");
+            String path = sourceSection.getSource().getPath();
+            if (path != null) {
+                sb.append("File ");
+            }
+            sb.append('"');
+            sb.append(sourceSection.getSource().getName());
+            sb.append("\", line ");
+            sb.append(sourceSection.getStartLine());
+            sb.append(", in ");
+        } else if (evenWithoutSource) {
+            sb.append("unknown location in ");
+        }
+        if (sourceSection != null || evenWithoutSource) {
+            sb.append(rootName);
+            stack.add(sb.toString());
+        }
+    }
+
+    private static void printStack(final ArrayList<String> stack) {
+        System.err.println("Traceback (most recent call last):");
+        ListIterator<String> listIterator = stack.listIterator(stack.size());
+        while (listIterator.hasPrevious()) {
+            System.err.println(listIterator.previous());
+        }
     }
 }
