@@ -30,9 +30,9 @@ import static com.oracle.graal.python.builtins.objects.range.PRange.getLenOfRang
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PRangeIterator extends PIntegerIterator {
-    public final int start;
-    public final int step;
-    public final int len;
+    private final int start;
+    private final int step;
+    private final int len;
 
     public PRangeIterator(Object clazz, DynamicObject storage, int start, int stop, int step) {
         super(clazz, storage);
@@ -53,6 +53,18 @@ public final class PRangeIterator extends PIntegerIterator {
     @Override
     public boolean hasNext() {
         return index < len;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public int getLen() {
+        return len;
+    }
+
+    public int getStep() {
+        return step;
     }
 
     public int getReduceStart() {
