@@ -130,7 +130,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         return arguments;
     }
 
-    public static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
+    private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
         if (self.isFinished()) {
             throw node.raise(StopIteration);
         }
@@ -145,7 +145,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
 
         @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
-        public Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
+        static Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
@@ -164,7 +164,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "cached")
-        public Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
+        static Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached GenericInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
@@ -200,18 +200,18 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getName(PGenerator self, @SuppressWarnings("unused") PNone noValue) {
+        static Object getName(PGenerator self, @SuppressWarnings("unused") PNone noValue) {
             return self.getName();
         }
 
         @Specialization
-        Object setName(PGenerator self, String value) {
+        static Object setName(PGenerator self, String value) {
             self.setName(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(PGenerator self, Object value,
+        static Object setName(PGenerator self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__name__"));
         }
@@ -221,18 +221,18 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getQualname(PGenerator self, @SuppressWarnings("unused") PNone noValue) {
+        static Object getQualname(PGenerator self, @SuppressWarnings("unused") PNone noValue) {
             return self.getQualname();
         }
 
         @Specialization
-        Object setQualname(PGenerator self, String value) {
+        static Object setQualname(PGenerator self, String value) {
             self.setQualname(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setQualname(PGenerator self, Object value,
+        static Object setQualname(PGenerator self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__qualname__"));
         }
@@ -243,7 +243,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object iter(PGenerator self) {
+        static Object iter(PGenerator self) {
             return self;
         }
     }
@@ -252,7 +252,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object next(VirtualFrame frame, PGenerator self,
+        Object next(VirtualFrame frame, PGenerator self,
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
             checkResumable(this, self);
             return resumeGeneratorNode.execute(frame, self, null);
@@ -264,7 +264,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class SendNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object send(VirtualFrame frame, PGenerator self, Object value,
+        Object send(VirtualFrame frame, PGenerator self, Object value,
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
             checkResumable(this, self);
             return resumeGeneratorNode.execute(frame, self, value);
@@ -280,19 +280,19 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Child private GetTracebackNode getTracebackNode;
 
         @ImportStatic({PGuards.class, SpecialMethodNames.class})
-        public abstract static class PrepareExceptionNode extends Node {
+        abstract static class PrepareExceptionNode extends Node {
             public abstract PBaseException execute(VirtualFrame frame, Object type, Object value);
 
             private PRaiseNode raiseNode;
             private IsSubtypeNode isSubtypeNode;
 
             @Specialization
-            PBaseException doException(PBaseException exc, @SuppressWarnings("unused") PNone value) {
+            static PBaseException doException(PBaseException exc, @SuppressWarnings("unused") PNone value) {
                 return exc;
             }
 
             @Specialization(guards = "!isPNone(value)")
-            PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
+            static PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
                             @Cached PRaiseNode raise) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
             }
