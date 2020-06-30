@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
 
 import java.util.List;
 
@@ -107,7 +108,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__objclass__", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {

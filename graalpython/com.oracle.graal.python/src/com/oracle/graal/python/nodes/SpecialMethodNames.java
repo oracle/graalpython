@@ -156,6 +156,7 @@ public abstract class SpecialMethodNames {
     public static final String __SETSTATE__ = "__setstate__";
     public static final String __GETFORMAT__ = "__getformat__";
     public static final String __SETFORMAT__ = "__setformat__";
+    public static final String __OBJCLASS__ = "__objclass__";
     public static final String KEYS = "keys";
     public static final String ITEMS = "items";
     public static final String VALUES = "values";

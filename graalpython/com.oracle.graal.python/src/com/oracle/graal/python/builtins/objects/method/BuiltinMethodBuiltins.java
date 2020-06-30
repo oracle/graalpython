@@ -42,16 +42,20 @@ import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltin
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -59,8 +63,10 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinMethod})
 public class BuiltinMethodBuiltins extends PythonBuiltins {
@@ -192,6 +198,23 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @Specialization
         Object getTextSignature(VirtualFrame frame, PMethod self, Object value) {
             return subNode.execute(frame, self.getFunction(), value);
+        }
+    }
+
+    @Builtin(name = __OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.getFunction().getEnclosingType() == null")
+        Object objclassMissing(@SuppressWarnings("unused") PBuiltinMethod self) {
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
+        }
+
+        @Specialization(guards = "self.getFunction().getEnclosingType() != null")
+        @TruffleBoundary
+        PythonAbstractClass objclass(PBuiltinMethod self,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            return getPythonClass(self.getFunction().getEnclosingType(), profile);
         }
     }
 }
