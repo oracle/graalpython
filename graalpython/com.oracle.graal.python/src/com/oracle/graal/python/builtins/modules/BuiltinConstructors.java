@@ -1564,11 +1564,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         protected static boolean isIntegerType(Object obj) {
-            return PGuards.isBoolean(obj) || isInteger(obj) || PGuards.isPInt(obj);
+            return PGuards.isBoolean(obj) || PGuards.isInteger(obj) || PGuards.isPInt(obj);
         }
 
         protected static boolean isHandledType(Object obj) {
-            return isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
+            return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
         }
 
         protected static FloatBuiltins.IntNode createFloatInt() {
