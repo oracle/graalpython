@@ -84,8 +84,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
-import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -2231,7 +2229,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Fallback
-        Object generic(Object cls, Object name, Object bases, Object namespace, Object kwds) {
+        Object generic(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object name, Object bases, Object namespace, @SuppressWarnings("unused") Object kwds) {
             if (!(bases instanceof PTuple)) {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
             } else if (namespace == PNone.NO_VALUE) {
@@ -2698,6 +2696,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         public PNotImplemented module(Object cls) {
             return PNotImplemented.NOT_IMPLEMENTED;
