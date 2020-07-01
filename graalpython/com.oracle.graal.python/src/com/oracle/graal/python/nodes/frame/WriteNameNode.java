@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -63,8 +64,9 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
         return WriteNameNodeGen.create(attributeId, rhs);
     }
 
-    @Specialization(guards = "hasLocalsDict(frame)")
+    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)")
     protected void writeLocalsDict(VirtualFrame frame, Object value,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
         setItem.execute(frame, frameLocals, attributeId, value);
