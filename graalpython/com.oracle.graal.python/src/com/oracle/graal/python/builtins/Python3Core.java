@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
@@ -228,7 +229,6 @@ public final class Python3Core implements PythonCore {
                         "_functools",
                         "method",
                         "code",
-                        "_warnings",
                         "posix",
                         "_io",
                         "_frozen_importlib",
@@ -422,6 +422,7 @@ public final class Python3Core implements PythonCore {
                         new LZMADecompressorBuiltins(),
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
+                        new WarningsModuleBuiltins(),
                         new GraalPythonModuleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
@@ -636,7 +637,6 @@ public final class Python3Core implements PythonCore {
 
         // core machinery
         createModule("_descriptor");
-        createModule("_warnings");
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
         builtinModules.put("_frozen_importlib_external", bootstrapExternal);

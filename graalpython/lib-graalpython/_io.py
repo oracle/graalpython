@@ -22,7 +22,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import sys
-_warn = sys.modules["_warnings"]._warn
+_warn = sys.modules["_warnings"].warn
 _os = sys.modules.get("posix", sys.modules.get("nt"))
 
 

@@ -61,7 +61,7 @@ public class ImportNode extends AbstractImportNode {
 
     }
 
-    public ExpressionNode asExpression() {
+    public ImportExpression asExpression() {
         return new ImportExpression(this);
     }
 

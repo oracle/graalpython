@@ -515,6 +515,10 @@ def _warn_unawaited_coroutine(coro):
 # - a line number for the line being warning, or 0 to mean any line
 # If either if the compiled regexs are None, match anything.
 try:
+    # BEGIN: Truffle change
+    import _warnings
+    _warnings._register_python_warnings(warn, warn_explicit, sys.modules['warnings'])
+    # END: Truffle change
     from _warnings import (filters, _defaultaction, _onceregistry,
                            warn, warn_explicit, _filters_mutated)
     defaultaction = _defaultaction
