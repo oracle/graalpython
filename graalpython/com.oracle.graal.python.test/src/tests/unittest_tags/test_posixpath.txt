@@ -23,6 +23,7 @@
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_expandvars_nonascii
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_filetime
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_getsize
+*graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_import
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_isdir
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_isfile
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_join_errors

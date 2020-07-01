@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_bigmem.BytearrayTest.test_rfind
 *graalpython.lib-python.3.test.test_bigmem.BytearrayTest.test_slice_and_getitem
 *graalpython.lib-python.3.test.test_bigmem.BytearrayTest.test_split_small
+*graalpython.lib-python.3.test.test_bigmem.BytearrayTest.test_splitlines
 *graalpython.lib-python.3.test.test_bigmem.BytearrayTest.test_startswith
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_compare
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_concat
@@ -22,6 +23,7 @@
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_slice_and_getitem
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_split_large
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_split_small
+*graalpython.lib-python.3.test.test_bigmem.BytesTest.test_splitlines
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_startswith
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_translate
 *graalpython.lib-python.3.test.test_bigmem.BytesTest.test_upper

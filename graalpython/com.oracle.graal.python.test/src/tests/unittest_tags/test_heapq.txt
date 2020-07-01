@@ -43,6 +43,8 @@
 *graalpython.lib-python.3.test.test_heapq.TestHeapPython.test_naive_nbest
 *graalpython.lib-python.3.test.test_heapq.TestHeapPython.test_nbest
 *graalpython.lib-python.3.test.test_heapq.TestHeapPython.test_nbest_with_pushpop
+*graalpython.lib-python.3.test.test_heapq.TestHeapPython.test_nlargest
+*graalpython.lib-python.3.test.test_heapq.TestHeapPython.test_nsmallest
 *graalpython.lib-python.3.test.test_heapq.TestHeapPython.test_push_pop
 *graalpython.lib-python.3.test.test_heapq.TestModules.test_c_functions
 *graalpython.lib-python.3.test.test_heapq.TestModules.test_py_functions

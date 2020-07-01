@@ -1,3 +1,13 @@
+*graalpython.lib-python.3.test.test_re.ExternalTests.test_re_benchmarks
+*graalpython.lib-python.3.test.test_re.ImplementationTest.test_overlap_table
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_bytes
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_flags_repr
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_locale
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_multiple_flags
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_quotes
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_single_flag
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_unknown_flags
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_without_flags
 *graalpython.lib-python.3.test.test_re.ReTests.test_anyall
 *graalpython.lib-python.3.test.test_re.ReTests.test_basic_re_sub
 *graalpython.lib-python.3.test.test_re.ReTests.test_big_codesize
@@ -50,3 +60,11 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_findall
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_subn
 *graalpython.lib-python.3.test.test_re.ReTests.test_repeat_minmax_overflow_maxrepeat
+*graalpython.lib-python.3.test.test_re.ReTests.test_scanner
+*graalpython.lib-python.3.test.test_re.ReTests.test_search_coverage
+*graalpython.lib-python.3.test.test_re.ReTests.test_search_dot_unicode
+*graalpython.lib-python.3.test.test_re.ReTests.test_search_star_plus
+*graalpython.lib-python.3.test.test_re.ReTests.test_special_escapes
+*graalpython.lib-python.3.test.test_re.ReTests.test_stack_overflow
+*graalpython.lib-python.3.test.test_re.ReTests.test_unlimited_zero_width_repeat
+*graalpython.lib-python.3.test.test_re.ReTests.test_weakref

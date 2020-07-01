@@ -70,6 +70,7 @@
 *graalpython.lib-python.3.test.test_optparse.TestHelp.test_help_unicode
 *graalpython.lib-python.3.test.test_optparse.TestHelp.test_help_unicode_description
 *graalpython.lib-python.3.test.test_optparse.TestHelp.test_wrap_columns
+*graalpython.lib-python.3.test.test_optparse.TestMain.test_main
 *graalpython.lib-python.3.test.test_optparse.TestMatchAbbrev.test_match_abbrev
 *graalpython.lib-python.3.test.test_optparse.TestMatchAbbrev.test_match_abbrev_error
 *graalpython.lib-python.3.test.test_optparse.TestMultipleArgs.test_nargs_invalid_float_value

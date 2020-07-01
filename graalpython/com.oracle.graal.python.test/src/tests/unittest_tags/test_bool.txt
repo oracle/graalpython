@@ -26,3 +26,4 @@
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_string
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_subclass
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_types
+*graalpython.lib-python.3.test.test_bool.TestMain.test_main

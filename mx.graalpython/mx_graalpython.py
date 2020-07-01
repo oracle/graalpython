@@ -300,7 +300,15 @@ def update_unittest_tags(args):
     linux_tags = _fetch_tags_for_platform(parsed_args, 'linux')
     darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
 
-    result_tags = linux_tags & darwin_tags
+    tag_blacklist = {
+        # This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
+        ('test_cprofile.txt', '*graalpython.lib-python.3.test.test_cprofile.CProfileTest.test_run_profile_as_module'),
+        # The following two try to read bytecode and fail randomly as our co_code is changing
+        ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_bytecode'),
+        ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_relative_imports_4'),
+    }
+
+    result_tags = linux_tags & darwin_tags - tag_blacklist
     if not parsed_args.untag:
         result_tags |= current_tags
     _write_tags(result_tags)

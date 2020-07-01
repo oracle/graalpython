@@ -1,1 +1,2 @@
 *graalpython.lib-python.3.test.test_xmlrpc_net.PythonBuildersTest.test_python_builders
+*graalpython.lib-python.3.test.test_xmlrpc_net.TestMain.test_main

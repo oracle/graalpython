@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_expandvars_nonascii
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_filetime
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_getsize
+*graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_import
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_isdir
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_isfile
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_join_errors

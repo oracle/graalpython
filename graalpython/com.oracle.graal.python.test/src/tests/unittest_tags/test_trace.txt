@@ -1,1 +1,2 @@
+*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_failures
 *graalpython.lib-python.3.test.test_trace.Test_Ignore.test_ignored

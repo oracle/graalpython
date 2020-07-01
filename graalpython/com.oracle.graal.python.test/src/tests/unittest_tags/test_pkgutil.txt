@@ -21,3 +21,4 @@
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_walk_packages_raises_on_string_or_bytes_input
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_walkpackages_filesys
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_walkpackages_zipfile
+*graalpython.lib-python.3.test.test_pkgutil.TestMain.test_main
