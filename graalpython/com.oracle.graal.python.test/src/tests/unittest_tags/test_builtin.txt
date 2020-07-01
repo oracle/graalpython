@@ -50,4 +50,5 @@
 *graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_unimportable
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_basic
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_inputtypes
+*graalpython.lib-python.3.test.test_builtin.TestType.test_type_doc
 *graalpython.lib-python.3.test.test_builtin.TestType.test_type_nokwargs

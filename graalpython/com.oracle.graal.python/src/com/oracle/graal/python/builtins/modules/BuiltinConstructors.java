@@ -84,6 +84,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -160,6 +163,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -2309,6 +2313,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     } else {
                         pythonClass.setAttribute(key, value);
                     }
+                } else if (SpecialAttributeNames.__DOC__.equals(key)) {
+                    // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
+                    // forcibly encodes the string as UTF-8, and raises an error if that is not
+                    // possible.
+                    String doc = null;
+                    if (value instanceof String) {
+                        doc = (String) value;
+                    } else if (value instanceof PString) {
+                        doc = ((PString) value).getValue();
+                    }
+                    if (doc != null) {
+                        if (!canEncode(doc)) {
+                            throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
+                        }
+                    }
+                    pythonClass.setAttribute(key, value);
                 } else {
                     pythonClass.setAttribute(key, value);
                 }
@@ -2377,6 +2397,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             return pythonClass;
+        }
+
+        @TruffleBoundary
+        private static boolean canEncode(String doc) {
+            return StandardCharsets.UTF_8.newEncoder().canEncode(doc);
         }
 
         @TruffleBoundary
