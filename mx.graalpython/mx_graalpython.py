@@ -519,18 +519,21 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
     if agent_args:
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments
-        new_launcher_path = os.path.join(os.path.dirname(os.path.realpath(python_binary)), 'graalpython-jacoco')
-        with open(python_binary, 'r', encoding='ascii', errors='ignore') as old_launcher:
-            lines = old_launcher.readlines()
+        basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
+        jacoco_basedir = f"{basedir}-jacoco"
+        shutil.rmtree(jacoco_basedir, ignore_errors=True)
+        shutil.copytree(basedir, jacoco_basedir, symlinks=True)
+        launcher_path = os.path.join(jacoco_basedir, 'bin', 'graalpython')
+        with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+            lines = launcher.readlines()
         assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
         lines.insert(-1, f'jvm_args+=({agent_args})\n')
-        with open(new_launcher_path, 'w') as new_launcher:
-            new_launcher.writelines(lines)
-        os.chmod(new_launcher_path, 0o755)
+        with open(launcher_path, 'w') as launcher:
+            launcher.writelines(lines)
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
         for testfile in testfiles:
-            mx.run([new_launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
+            mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
