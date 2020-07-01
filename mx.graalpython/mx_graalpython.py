@@ -537,6 +537,24 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
 
 
+def run_tagged_unittests(python_binary, env=None):
+    if env is None:
+        env = os.environ
+    env = env.copy()
+    env.update(
+        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
+        ENABLE_THREADED_GRAALPYTEST="true",
+        PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
+    )
+    run_python_unittests(
+        python_binary,
+        args=["-v",
+              "--python.WithThread=true"],
+        paths=["test_tagged_unittests.py"],
+        env=env,
+    )
+
+
 def graalpython_gate_runner(args, tasks):
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
@@ -568,19 +586,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            env = os.environ.copy()
-            env.update(
-                ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
-                ENABLE_THREADED_GRAALPYTEST="true",
-                PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
-            )
-            run_python_unittests(
-                python_gvm(),
-                args=["-v",
-                      "--python.WithThread=true"],
-                paths=["test_tagged_unittests.py"],
-                env=env,
-            )
+            run_tagged_unittests(python_gvm())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -1424,11 +1430,7 @@ def python_coverage(args):
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
-            {
-                "args": ["-v", "--python.WithThread=true"],
-                "paths": ["test_tagged_unittests.py"],
-                "tagged": True
-            },
+            {"tagged": True},
         ]
         outputlcov = "coverage.lcov"
         if os.path.exists(outputlcov):
@@ -1442,20 +1444,21 @@ def python_coverage(args):
                 if os.path.exists(outfile):
                     os.unlink(outfile)
                 extra_args = [
+                    "--experimental-options",
                     "--coverage",
                     "--coverage.TrackInternal",
-                    "--coverage.FilterFile=%s/*.%s" % (prefix, pattern),
+                    "--coverage.FilterFile=%s/lib-*python/*.%s" % (prefix, pattern),
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=%s" % outfile,
                 ]
-                with set_env(GRAAL_PYTHON_ARGS=" ".join(extra_args)):
-                    with _dev_pythonhome_context(): # run all our tests in the dev-home, so that lcov has consistent paths
-                        kwds["args"].append("--python.CAPI=" + _get_capi_home())
-                        if kwds.pop("tagged", False):
-                            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                                run_python_unittests(executable, **kwds)
-                        else:
-                            run_python_unittests(executable, **kwds)
+                env = os.environ.copy()
+                env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+                # run all our tests in the dev-home, so that lcov has consistent paths
+                env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
+                if kwds.pop("tagged", False):
+                    run_tagged_unittests(executable, env=env)
+                else:
+                    run_python_unittests(executable, env=env, **kwds)
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
