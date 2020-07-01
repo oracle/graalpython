@@ -1,4 +1,4 @@
-# coding=utf-8
+# -*- coding: iso-8859-1 -*-
 # Copyright (c) 2017, 2018, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
