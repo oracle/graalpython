@@ -515,7 +515,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
 
     args += [_graalpytest_driver(), "-v"]
 
-    agent_args = mx_gate.get_jacoco_agent_args()
+    agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
     if agent_args:
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments
@@ -523,7 +523,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         with open(python_binary, 'r', encoding='ascii', errors='ignore') as old_launcher:
             lines = old_launcher.readlines()
         assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
-        lines.insert(-1, f'jvm_args+=({shlex.join(agent_args)})\n')
+        lines.insert(-1, f'jvm_args+=({agent_args})\n')
         with open(new_launcher_path, 'w') as new_launcher:
             new_launcher.writelines(lines)
         os.chmod(new_launcher_path, 0o755)
