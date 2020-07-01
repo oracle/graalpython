@@ -206,7 +206,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
         @Child private CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
         @Child private LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
-        @Child private TypeNodes.IsSameTypeNode isSameTypeNode;
+        @Child private IsSubtypeNode isSubTypeNode;
         @Child private TypeNodes.GetNameNode getNameNode;
         @Child private IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
 
@@ -354,7 +354,7 @@ public class TypeBuiltins extends PythonBuiltins {
                     newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
                 }
                 Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
-                if (isSameType(newInstanceKlass, self)) {
+                if (isSubType(newInstanceKlass, self)) {
                     if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
                         // do not call init if we are creating a new instance of type and we are
                         // passing keywords or more than one argument see:
@@ -383,12 +383,12 @@ public class TypeBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean isSameType(Object left, Object right) {
-            if (isSameTypeNode == null) {
+        private boolean isSubType(Object left, Object right) {
+            if (isSubTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameTypeNode = insert(IsSameTypeNodeGen.create());
+                isSubTypeNode = insert(IsSubtypeNode.create());
             }
-            return isSameTypeNode.execute(left, right);
+            return isSubTypeNode.execute(left, right);
         }
 
         private String getTypeName(Object clazz) {
