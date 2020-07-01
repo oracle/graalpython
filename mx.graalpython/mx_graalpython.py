@@ -1472,7 +1472,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
     for filename in filenames:
         if filename.endswith(".py"):
             fullname = os.path.join(dirpath, filename)
-            with open(fullname, 'r') as f:
+            with open(fullname, 'rb') as f:
                 try:
                     compile(f.read(), fullname, 'exec')
                 except BaseException as e:
