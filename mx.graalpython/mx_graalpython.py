@@ -33,6 +33,7 @@ import os
 import platform
 import re
 import shutil
+import shlex
 import sys
 
 PY3 = sys.version_info[0] == 3 # compatibility between Python versions
@@ -514,19 +515,22 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
 
     args += [_graalpytest_driver(), "-v"]
 
-    agent_args = " ".join(mx_gate.get_jacoco_agent_args() or [])
+    agent_args = mx_gate.get_jacoco_agent_args()
     if agent_args:
-        # if we leave the excludes, the string is too long and it will be ignored by
-        # the JVM, which ignores JAVA_TOOL_OPTIONS long than 1024 chars silently on JDK8
-        agent_args = re.sub("excludes=[^,]+,", "", agent_args)
-        # we know these can be excluded
-        agent_args += ",excludes=*NodeGen*:*LibraryGen*:*BuiltinsFactory*"
-        assert len(agent_args) < 1024
+        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
+        # with the arguments
+        new_launcher_path = os.path.join(os.path.dirname(os.path.realpath(python_binary)), 'graalpython-jacoco')
+        with open(python_binary, 'r', encoding='ascii', errors='ignore') as old_launcher:
+            lines = old_launcher.readlines()
+        assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
+        lines.insert(-1, f'jvm_args+=({shlex.join(agent_args)})\n')
+        with open(new_launcher_path, 'w') as new_launcher:
+            new_launcher.writelines(lines)
+        os.chmod(new_launcher_path, 0o755)
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
-        env['JAVA_TOOL_OPTIONS'] = agent_args
         for testfile in testfiles:
-            mx.run([python_binary] + args + [testfile], nonZeroIsFatal=True, env=env)
+            mx.run([new_launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
