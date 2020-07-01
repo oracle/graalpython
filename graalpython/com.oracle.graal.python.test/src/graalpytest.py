@@ -38,10 +38,12 @@
 # SOFTWARE.
 
 #!/usr/bin/env mx python
+import os
 import _io
 import sys
 import time
 import _thread
+import collections
 
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
@@ -50,6 +52,101 @@ if os is None:
 FAIL = '\033[91m'
 ENDC = '\033[0m'
 BOLD = '\033[1m'
+
+_fixture_scopes = {"session": {}, "module": {}, "function": {}}
+_itertools_module = None
+_request_class = collections.namedtuple("request", "param")
+
+class Fixture:
+    def __init__(self, fun, **kwargs):
+        self.fun = fun
+        co = fun.__code__
+        self.requests_context = "request" in co.co_varnames[:co.co_argcount]
+        self.params = kwargs.get("params", [])
+        self._values = None
+
+    def eval(self, *args):
+        values = []
+        if self.params:
+            for param in self.params:
+                values.append(self._call_fixture_func(_request_class(param=param)))
+        else:
+            values.append(self._call_fixture_func(_request_class(param=None)))
+        self._values = values
+        return values
+
+    def _call_fixture_func(self, request):
+        if self.requests_context:
+            return self.fun(request)
+        return self.fun()
+
+    def values(self):
+        return self._values
+
+    def name(self):
+        return self.fun.__name__
+
+
+def eval_fixtures(scope):
+    """
+    Evaluate fixtures in the given scope.
+    """
+    for name, f in _fixture_scopes[scope].items():
+        assert name == f.name()
+        f.eval()
+
+
+def is_existing_fixture(name):
+    """
+    Search in all scopes if there is a fixture with the given name.
+    """
+    for scope in _fixture_scopes.values():
+        if scope.get(name):
+            return True
+    return False
+
+
+def get_fixture_values(names):
+    """
+    Computes a list of argument vectors for the given fixture names.
+    It's a list because of parameterized fixtures that cause a cartesian product of all fixture values.
+    """
+    result_vector = []
+    for fixture_name in names:
+        for scope in _fixture_scopes.values():
+            fixture = scope.get(fixture_name)
+            if fixture:
+                result_vector.append(fixture.values())
+
+    global _itertools_module
+    if not _itertools_module:
+        import itertools as _itertools_module
+    return list(_itertools_module.product(*result_vector))
+
+
+class Mark:
+    @staticmethod
+    def usefixtures(*args):
+        def decorator(obj):
+            # TODO register 'args'
+            return obj
+        return decorator
+
+def _pytest_fixture_maker(*args, **kwargs):
+    def _fixture_decorator(fun):
+        scope = kwargs.get("scope", "function")
+        fixture = Fixture(fun, **kwargs)
+        _fixture_scopes[scope][fixture.name()] = fixture
+        return fun
+
+    if len(args) == 1 and callable(args[0]):
+        return _fixture_decorator(args[0])
+    return _fixture_decorator
+
+_pytest_module = type(os)("pytest")
+_pytest_module.mark = Mark()
+_pytest_module.fixture = _pytest_fixture_maker
+sys.modules["pytest"] = _pytest_module
 
 verbose = False
 
@@ -132,8 +229,17 @@ class TestCase(object):
         if verbose:
             with print_lock:
                 print(u"\n\t\u21B3 ", func.__name__, " ", end="", flush=True)
+
+        # insert fixture params
+        co = func.__code__
+        fixture_args = []
+        if co.co_argcount > 0:
+            arg_names = co.co_varnames[:co.co_argcount]
+            fixture_args = get_fixture_values(arg_names)
+
         try:
-            func()
+            for arg_vec in fixture_args:
+                func(*arg_vec)
         except BaseException as e:
             if isinstance(e, SkipTest):
                 print("Skipped: %s" % e)
@@ -167,6 +273,10 @@ class TestCase(object):
                 end = time.monotonic() - start
                 with print_lock:
                     self.success(end) if r else self.failure(end)
+
+            # we are up to run a test function; eval fixtures
+            eval_fixtures("function")
+
             ThreadPool.start(do_run)
 
     def success(self, time):
@@ -348,7 +458,7 @@ class TestRunner(object):
             name = testfile.rpartition("/")[2].partition(".")[0].replace('.py', '')
             directory = testfile.rpartition("/")[0]
             pkg = []
-            while any(f.endswith("__init__.py") for f in os.listdir(directory)):
+            while directory and any(f.endswith("__init__.py") for f in os.listdir(directory)):
                 directory, slash, postfix = directory.rpartition("/")
                 pkg.insert(0, postfix)
             if pkg:
@@ -383,7 +493,13 @@ class TestRunner(object):
                     yield test_module
 
     def run(self):
+        # eval session scope
+        eval_fixtures("session")
+
         for module in self.test_modules():
+            # eval module scope
+            eval_fixtures("module")
+
             if verbose:
                 print(u"\n\u25B9 ", module.__name__, end="")
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
