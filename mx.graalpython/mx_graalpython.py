@@ -237,7 +237,7 @@ def run_cpython_test(args):
             globs.append(arg)
     testfiles = []
     for g in globs:
-        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", f"{g}*"))
+        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", "%s*" % g))
     mx.run([python_gvm()] + interp_args + [
         os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
     ] + test_args + testfiles)
