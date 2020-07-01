@@ -734,8 +734,8 @@ def test_wrapped_string_get():
 def test_reverse_locals():
     a = 'atest'
     b = 'btest'
-    dict = locals()
-    assert list(reversed(dict)) == ['b', 'a'], "expected ['b', 'a'] got " + str(list(reversed(dict))) + " instead "
+    r = list(reversed(locals()))
+    assert r == ['b', 'a'], "expected ['b', 'a'] got " + str(r) + " instead "
 
 def test_concat():
     r = {**{}}
