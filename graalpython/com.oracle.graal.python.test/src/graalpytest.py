@@ -69,16 +69,34 @@ class Fixture:
         values = []
         if self.params:
             for param in self.params:
-                values.append(self._call_fixture_func(_request_class(param=param)))
+                values.extend(self._call_fixture_func(_request_class(param=param)))
         else:
-            values.append(self._call_fixture_func(_request_class(param=None)))
+            values.extend(self._call_fixture_func(_request_class(param=None)))
         self._values = values
         return values
 
     def _call_fixture_func(self, request):
-        if self.requests_context:
-            return self.fun(request)
-        return self.fun()
+        co = self.fun.__code__
+        fixture_args = []
+        start = 1 if self.requests_context else 0
+        if co.co_argcount > start:
+            arg_names = co.co_varnames[start:co.co_argcount]
+            if arg_names and arg_names[0] == "self":
+                arg_names = arg_names[1:]
+            fixture_args = get_fixture_values(arg_names)
+        results = []
+        if fixture_args:
+            for arg_vec in fixture_args:
+                if self.requests_context:
+                    results.append(self.fun(request, *arg_vec))
+                else:
+                    results.append(self.fun(*arg_vec))
+        else:
+            if self.requests_context:
+                results.append(self.fun(request))
+            else:
+                results.append(self.fun())
+        return results
 
     def values(self):
         return self._values
@@ -87,7 +105,18 @@ class Fixture:
         return self.fun.__name__
 
 
-def eval_fixtures(scope):
+def eval_fixture(name):
+    """
+    Evaluate a fixtures with default scope (=function).
+    """
+    fixture = _fixture_scopes["function"].get(name)
+    if fixture:
+        assert name == fixture.name()
+        return fixture.eval()
+    raise ValueError("unknown fixture " + name)
+
+
+def eval_scope(scope):
     """
     Evaluate fixtures in the given scope.
     """
@@ -113,11 +142,16 @@ def get_fixture_values(names):
     """
     result_vector = []
     for fixture_name in names:
-        for scope in _fixture_scopes.values():
-            fixture = scope.get(fixture_name)
-            if fixture:
-                result_vector.append(fixture.values())
-
+        for scope_name, scope in _fixture_scopes.items():
+            # fixtures in higher scope are already eval'd
+            if scope_name == "session" or scope_name == "module":
+                fixture = scope.get(fixture_name)
+                if fixture:
+                    result_vector.append(fixture.values())
+            elif scope_name == "function":
+                result_vector.append(eval_fixture(fixture_name))
+            else:
+                raise ValueError("unknown scope {}".format(scope_name))
     global _itertools_module
     if not _itertools_module:
         import itertools as _itertools_module
@@ -235,6 +269,8 @@ class TestCase(object):
         fixture_args = []
         if co.co_argcount > 0:
             arg_names = co.co_varnames[:co.co_argcount]
+            if arg_names and arg_names[0] == "self":
+                arg_names = arg_names[1:]
             fixture_args = get_fixture_values(arg_names)
 
         try:
@@ -273,10 +309,6 @@ class TestCase(object):
                 end = time.monotonic() - start
                 with print_lock:
                     self.success(end) if r else self.failure(end)
-
-            # we are up to run a test function; eval fixtures
-            eval_fixtures("function")
-
             ThreadPool.start(do_run)
 
     def success(self, time):
@@ -494,11 +526,11 @@ class TestRunner(object):
 
     def run(self):
         # eval session scope
-        eval_fixtures("session")
+        eval_scope("session")
 
         for module in self.test_modules():
             # eval module scope
-            eval_fixtures("module")
+            eval_scope("module")
 
             if verbose:
                 print(u"\n\u25B9 ", module.__name__, end="")
