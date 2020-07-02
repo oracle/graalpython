@@ -59,33 +59,31 @@ public final class PRange extends PImmutableSequence {
             throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_ZERO, "range()", 3);
         }
 
-        int n;
-        if (step > 0) {
-            n = getLenOfRange(start, stop, step);
-        } else {
-            n = getLenOfRange(stop, start, -step);
-        }
-
         this.start = start;
         this.stop = stop;
         this.step = step;
-        this.length = n;
+        this.length = getLenOfRange(start, stop, step);
     }
 
     public static int getLenOfRange(int lo, int hi, int step) {
         int n = 0;
-        if (lo < hi) {
+        if (step > 0 && lo < hi) {
             // the base difference may be > Integer.MAX_VALUE
             long diff = (long) hi - (long) lo - 1;
             // any long > Integer.MAX_VALUE or < Integer.MIN_VALUE gets casted
             // to a
             // negative number
             n = (int) ((diff / step) + 1);
-            if (n < 0) {
-                CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(OverflowError, ErrorMessages.RESULT_TOO_MANY_ITEMS, "range()");
-            }
+        } else if (step < 0 && lo > hi) {
+            long diff = (long) lo - (long) hi - 1;
+            n = (int) ((diff / (-step)) + 1);
         }
+
+        if (n < 0) {
+            CompilerDirectives.transferToInterpreter();
+            throw PRaiseNode.getUncached().raise(OverflowError, ErrorMessages.RESULT_TOO_MANY_ITEMS, "range()");
+        }
+
         return n;
     }
 

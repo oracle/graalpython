@@ -29,9 +29,7 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PArrayIterator extends PBuiltinIterator {
-
     final PArray array;
-    int index;
 
     public PArrayIterator(Object clazz, DynamicObject storage, PArray array) {
         super(clazz, storage);

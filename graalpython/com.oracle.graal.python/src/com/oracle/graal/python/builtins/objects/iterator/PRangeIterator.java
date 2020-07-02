@@ -25,98 +25,57 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.truffle.api.CompilerDirectives;
+import static com.oracle.graal.python.builtins.objects.range.PRange.getLenOfRange;
+
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PRangeIterator extends PIntegerIterator {
-
-    final int stop;
-    final int step;
-    int index;
+    private final int start;
+    private final int step;
+    private final int len;
 
     public PRangeIterator(Object clazz, DynamicObject storage, int start, int stop, int step) {
         super(clazz, storage);
-        index = start;
-        this.stop = stop;
+        this.start = start;
         this.step = step;
+        this.len = getLenOfRange(start, stop, step);
+    }
+
+    public int getLength() {
+        return this.len - this.index;
+    }
+
+    @Override
+    public int next() {
+        return start + (index++) * step;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return index < len;
     }
 
     public int getStart() {
-        return index;
+        return start;
     }
 
-    public int getStop() {
-        return stop;
+    public int getLen() {
+        return len;
     }
 
     public int getStep() {
         return step;
     }
 
-    public int getLength(ConditionProfile stepProfile, ConditionProfile positveRangeProfile) {
-        if (stepProfile.profile(step > 0)) {
-            if (positveRangeProfile.profile(index >= 0 && index < stop)) {
-                return (stop - index - 1) / step + 1;
-            }
-            return PRange.getLenOfRange(index, stop, step);
-        } else {
-            return PRange.getLenOfRange(stop, index, -step);
-        }
+    public int getReduceStart() {
+        return start;
     }
 
-    @Override
-    public int next() {
-        assert hasNext();
-        int value = index;
-        index += step;
-        return value;
+    public int getReduceStop() {
+        return start + len * step;
     }
 
-    @Override
-    public boolean hasNext() {
-        return index < stop;
-    }
-
-    public static final class PRangeReverseIterator extends PIntegerIterator {
-        final int stop;
-        final int step;
-        int index;
-
-        public PRangeReverseIterator(Object clazz, DynamicObject storage, int index, int stop, int step) {
-            super(clazz, storage);
-            this.index = index;
-            this.stop = stop;
-            this.step = step;
-        }
-
-        @Override
-        public int next() {
-            int value = index;
-            index -= step;
-            return value;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index > stop;
-        }
-
-        public int getStop() {
-            return stop;
-        }
-
-        public int getStart() {
-            return index;
-        }
-    }
-
-    public static PRangeIterator require(Object value) {
-        if (value instanceof PRangeIterator) {
-            return (PRangeIterator) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PRangeIterator required.");
+    public int getReduceStep() {
+        return step;
     }
 }

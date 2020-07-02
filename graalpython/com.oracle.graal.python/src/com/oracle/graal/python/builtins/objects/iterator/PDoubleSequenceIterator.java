@@ -28,21 +28,20 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.truffle.api.object.DynamicObject;
 
-public final class PDoubleSequenceIterator extends PDoubleIterator {
+public final class PDoubleSequenceIterator extends PPrimitiveIterator {
 
     final DoubleSequenceStorage sequence;
-    int index;
 
     public PDoubleSequenceIterator(Object clazz, DynamicObject storage, DoubleSequenceStorage sequence) {
         super(clazz, storage);
         this.sequence = sequence;
     }
 
+    @Override
     public DoubleSequenceStorage getSequenceStorage() {
         return sequence;
     }
 
-    @Override
     public double next() {
         assert hasNext();
         return sequence.getDoubleItemNormalized(index++);

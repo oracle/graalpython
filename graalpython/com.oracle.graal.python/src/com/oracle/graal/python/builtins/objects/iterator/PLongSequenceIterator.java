@@ -28,22 +28,20 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.truffle.api.object.DynamicObject;
 
-public final class PLongSequenceIterator extends PLongIterator {
+public final class PLongSequenceIterator extends PPrimitiveIterator {
 
     final LongSequenceStorage sequence;
-    int index;
-    protected boolean stopIterationReached = false;
 
     public PLongSequenceIterator(Object clazz, DynamicObject storage, LongSequenceStorage sequence) {
         super(clazz, storage);
         this.sequence = sequence;
     }
 
+    @Override
     public LongSequenceStorage getSequenceStorage() {
         return sequence;
     }
 
-    @Override
     public long next() {
         assert hasNext();
         return sequence.getLongItemNormalized(index++);

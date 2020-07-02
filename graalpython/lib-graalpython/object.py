@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2020, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -47,7 +47,7 @@ def __reduce__(obj, proto=0):
                 hasargs = False
                 args = tuple()
             kwargs = None
-        getstate = getattr(obj, '__get_state__')
+        getstate = getattr(obj, '__getstate__')
         if getstate is None:
             required = (not hasargs and
                 not isinstance(obj, list) and

@@ -25,21 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
-import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PBaseSequenceIterator;
 import com.oracle.truffle.api.object.DynamicObject;
 
-public final class PSequenceReverseIterator extends PBuiltinIterator {
-
-    private final Object sequence;
-    int index;
-
+public final class PSequenceReverseIterator extends PBaseSequenceIterator {
     public PSequenceReverseIterator(Object clazz, DynamicObject storage, Object sequence, int lengthHint) {
-        super(clazz, storage);
-        this.sequence = sequence;
+        super(clazz, storage, sequence);
         this.index = lengthHint - 1;
-    }
-
-    public Object getObject() {
-        return sequence;
     }
 }

@@ -31,6 +31,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.math.BigInteger;
@@ -50,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -186,9 +188,8 @@ public class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PIntegerIterator iter(PRange self,
-                        @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile) {
-            return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep(), stepPositiveProfile);
+        PIntegerIterator iter(PRange self) {
+            return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep());
         }
     }
 
@@ -362,6 +363,17 @@ public class RangeBuiltins extends PythonBuiltins {
                 }
             }
             return cnt;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object reduce(PRange self,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            PTuple args = factory().createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
+            return factory().createTuple(new Object[]{pol.getLazyPythonClass(self), args});
         }
     }
 }

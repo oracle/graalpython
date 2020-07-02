@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.builtins.objects.range.PRange.getLenOfRange;
 import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
@@ -58,6 +59,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
+import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
@@ -807,7 +809,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createEnumerate(cls, getIterator.executeWith(frame, iterable), start);
         }
 
-        @Specialization(guards = "!isInteger(start)")
+        @Specialization
+        public PEnumerate enumerate(VirtualFrame frame, Object cls, Object iterable, PInt start,
+                        @Cached("create()") GetIteratorNode getIterator) {
+            return factory().createEnumerate(cls, getIterator.executeWith(frame, iterable), start);
+        }
+
+        static boolean isIntegerIndex(Object idx) {
+            return isInteger(idx) || idx instanceof PInt;
+        }
+
+        @Specialization(guards = "!isIntegerIndex(start)")
         public void enumerate(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object iterable, Object start) {
             raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
         }
@@ -819,29 +831,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
-        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PRange range,
-                        @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile stepOneProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile stepMinusOneProfile) {
-            int stop;
-            int start;
-            int step = range.getStep();
-            if (stepOneProfile.profile(step == 1)) {
-                start = range.getStop() - 1;
-                stop = range.getStart() - 1;
-                step = -1;
-            } else if (stepMinusOneProfile.profile(step == -1)) {
-                start = range.getStop() + 1;
-                stop = range.getStart() + 1;
-                step = 1;
-            } else {
-                assert step != 0;
-                long delta = (range.getStop() - (long) range.getStart() - (step > 0 ? -1 : 1)) / step * step;
-                start = (int) (range.getStart() + delta);
-                stop = range.getStart() - step;
-                step = -step;
-            }
-            return factory().createRangeIterator(start, stop, step, stepPositiveProfile);
+        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PRange range) {
+            int lstart = range.getStart();
+            int lstop = range.getStop();
+            int lstep = range.getStep();
+            // TODO: handle long range creation
+            int ulen = getLenOfRange(lstart, lstop, lstep);
+            int new_stop = lstart - lstep;
+            int new_start = new_stop + ulen * lstep;
+
+            return factory().createRangeIterator(new_start, new_stop, -lstep);
         }
 
         @Specialization

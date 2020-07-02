@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.enumerate;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.List;
 
@@ -34,6 +35,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -42,6 +45,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEnumerate)
 public final class EnumerateBuiltins extends PythonBuiltins {
@@ -58,7 +62,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         @Specialization
         Object doNext(VirtualFrame frame, PEnumerate self,
                         @Cached("create()") GetNextNode next) {
-            return factory().createTuple((new Object[]{self.getAndIncrementIndex(), next.execute(frame, self.getIterator())}));
+            return factory().createTuple((new Object[]{self.getAndIncrementIndex(factory()), next.execute(frame, self.getIterator())}));
         }
     }
 
@@ -69,6 +73,17 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         @Specialization
         public Object __iter__(PEnumerate self) {
             return self;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "1")
+        public Object reduce(PEnumerate self,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            PTuple contents = factory().createTuple(new Object[]{self.getIterator(), self.getIndex()});
+            return factory().createTuple(new Object[]{pol.getLazyPythonClass(self), contents});
         }
     }
 }

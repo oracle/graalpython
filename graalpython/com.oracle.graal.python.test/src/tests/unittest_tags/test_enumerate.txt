@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_iteratorgenerator
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_iteratorseqn
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_noniterable
+*graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_basicfunction
@@ -15,6 +16,7 @@
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_iteratorgenerator
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_iteratorseqn
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_noniterable
+*graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_basicfunction
@@ -24,6 +26,7 @@
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_iteratorgenerator
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_iteratorseqn
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_noniterable
+*graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_basicfunction
@@ -33,6 +36,7 @@
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_iteratorgenerator
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_iteratorseqn
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_noniterable
+*graalpython.lib-python.3.test.test_enumerate.TestBig.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_basicfunction
@@ -42,6 +46,7 @@
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_iteratorgenerator
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_iteratorseqn
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_noniterable
+*graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_basicfunction
@@ -51,11 +56,14 @@
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_iteratorgenerator
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_iteratorseqn
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_noniterable
+*graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_args
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_bug1229429
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_gc
+*graalpython.lib-python.3.test.test_enumerate.TestReversed.test_len
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_objmethods
+*graalpython.lib-python.3.test.test_enumerate.TestReversed.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_range_optimization
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_simple
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_argumentcheck
@@ -66,4 +74,5 @@
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_iteratorgenerator
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_iteratorseqn
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_noniterable
+*graalpython.lib-python.3.test.test_enumerate.TestStart.test_pickle
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_tuple_reuse

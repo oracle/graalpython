@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
@@ -155,7 +154,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
@@ -364,6 +362,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PRange createRange(int start, int stop, int step) {
         return trace(new PRange(start, stop, step));
+    }
+
+    public PRange createRange(PRangeIterator rangeIterator) {
+        return createRange(rangeIterator.getReduceStart(), rangeIterator.getReduceStop(), rangeIterator.getReduceStep());
     }
 
     public PSlice createSlice(int start, int stop, int step) {
@@ -744,14 +746,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSequenceReverseIterator(cls, makeStorage(cls), sequence, lengthHint));
     }
 
-    public PIntegerIterator createRangeIterator(int start, int stop, int step, ConditionProfile stepPositiveProfile) {
-        PIntegerIterator object;
-        if (stepPositiveProfile.profile(step > 0)) {
-            object = new PRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, stop, step);
-        } else {
-            object = new PRangeReverseIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, stop, -step);
-        }
-        return trace(object);
+    public PIntegerIterator createRangeIterator(int start, int stop, int step) {
+        return trace(new PRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, stop, step));
     }
 
     public PArrayIterator createArrayIterator(PArray array) {
@@ -793,6 +789,10 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PEnumerate createEnumerate(Object cls, Object iterator, long start) {
+        return trace(new PEnumerate(cls, makeStorage(cls), iterator, start));
+    }
+
+    public PEnumerate createEnumerate(Object cls, Object iterator, PInt start) {
         return trace(new PEnumerate(cls, makeStorage(cls), iterator, start));
     }
 

@@ -25,32 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.object.DynamicObject;
 
-public final class PSequenceIterator extends PBuiltinIterator {
-    protected final Object sequence;
-    protected int index = 0;
-
+public final class PSequenceIterator extends PBaseSequenceIterator {
     public PSequenceIterator(Object clazz, DynamicObject storage, Object sequence) {
-        super(clazz, storage);
-        this.sequence = sequence;
-    }
-
-    public Object getObject() {
-        return sequence;
-    }
-
-    public PSequence getPSequence() {
-        return (PSequence) sequence;
-    }
-
-    public boolean isPSequence() {
-        return sequence instanceof PSequence;
-    }
-
-    public boolean isPList() {
-        return sequence instanceof PList;
+        super(clazz, storage, sequence);
     }
 }

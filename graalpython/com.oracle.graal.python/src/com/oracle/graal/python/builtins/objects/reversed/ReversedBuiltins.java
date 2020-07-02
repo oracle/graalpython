@@ -25,10 +25,14 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -36,9 +40,16 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -47,6 +58,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
 public class ReversedBuiltins extends PythonBuiltins {
@@ -103,13 +115,80 @@ public class ReversedBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object next(PSequenceReverseIterator self) {
+        public int lengthHint(PStringReverseIterator self) {
             return self.index + 1;
         }
 
-        @Specialization
-        public int next(PStringReverseIterator self) {
+        @Specialization(guards = "self.isPSequence()")
+        public Object lengthHint(PSequenceReverseIterator self,
+                        @Cached SequenceNodes.LenNode lenNode) {
+            if (lenNode.execute(self.getPSequence()) == -1) {
+                throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+            }
             return self.index + 1;
+        }
+
+        @Specialization(guards = "!self.isPSequence()")
+        public Object lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
+                        @Cached("create(__ADD__, __RADD__)") LookupAndCallBinaryNode callAdd) {
+            Object len = callLen.executeObject(frame, self.getObject());
+            if (len == PNone.NO_VALUE || len == PNone.NONE) {
+                throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+            }
+            return callAdd.executeObject(frame, self.index, 1);
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        public Object reduce(PStringReverseIterator self,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self, self.value, self.index, pol);
+        }
+
+        @Specialization(guards = "self.isPSequence()")
+        public Object reduce(PSequenceReverseIterator self,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self, self.getPSequence(), self.index, pol);
+        }
+
+        @Specialization(guards = "!self.isPSequence()")
+        public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
+            Object content = callUnaryNode.executeObject(frame, reduce);
+            return reduceInternal(self, content, self.index, pol);
+        }
+
+        private PTuple reduceInternal(Object self, Object arg, Object state, PythonObjectLibrary pol) {
+            Object revIter = pol.getLazyPythonClass(self);
+            PTuple args = factory().createTuple(new Object[]{arg});
+            // callable, args, state (optional)
+            if (state != null) {
+                return factory().createTuple(new Object[]{revIter, args, state});
+            } else {
+                return factory().createTuple(new Object[]{revIter, args});
+            }
+        }
+    }
+
+    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PBuiltinIterator self, Object index,
+                        @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
         }
     }
 }

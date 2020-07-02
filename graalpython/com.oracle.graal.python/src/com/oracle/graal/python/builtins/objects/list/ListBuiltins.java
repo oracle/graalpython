@@ -231,15 +231,13 @@ public class ListBuiltins extends PythonBuiltins {
                         @Cached GetIteratorNode getIteratorNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile stepProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile positiveRangeProfile) throws UnexpectedResultException {
+                        @Cached IsBuiltinClassProfile errorProfile) throws UnexpectedResultException {
             clearStorage(list);
             Object iterObj = getIteratorNode.executeWith(frame, iterable);
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
             PRangeIterator range = (PRangeIterator) iterable.getIterator();
-            final int estimatedMaxLen = range.getLength(stepProfile, positiveRangeProfile);
+            final int estimatedMaxLen = range.getLength();
             int realLen = 0;
             if (estimatedMaxLen > 0) {
                 Object value = null;

@@ -25,33 +25,44 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.ITER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,7 +71,10 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator,
+                PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictReverseItemIterator,
+                PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator,
+                PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictReverseValueIterator})
 public class IteratorBuiltins extends PythonBuiltins {
 
     /*
@@ -102,20 +116,8 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         int next(PRangeIterator self) {
-            if (self.index < self.stop) {
-                int value = self.index;
-                self.index += self.step;
-                return value;
-            }
-            throw raise(StopIteration);
-        }
-
-        @Specialization
-        int next(PRangeReverseIterator self) {
-            if (self.index > self.stop) {
-                int value = self.index;
-                self.index -= self.step;
-                return value;
+            if (self.hasNext()) {
+                return self.next();
             }
             throw raise(StopIteration);
         }
@@ -173,10 +175,24 @@ public class IteratorBuiltins extends PythonBuiltins {
             throw raise(StopIteration);
         }
 
+        @Specialization
+        public Object next(PDictView.PBaseDictIterator<?> self,
+                        @Cached ConditionProfile sizeChanged,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary storageLibrary,
+                        @Cached ConditionProfile profile) {
+            if (profile.profile(self.hasNext())) {
+                if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
+                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
+                }
+                return self.next(factory());
+            }
+            throw raise(PythonErrorType.StopIteration);
+        }
+
         @Specialization(guards = "!self.isPSequence()")
         public Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
-                        @Cached("create()") IsBuiltinClassProfile profile) {
+                        @Cached IsBuiltinClassProfile profile) {
             try {
                 return callGetItem.executeObject(frame, self.getObject(), self.index++);
             } catch (PException e) {
@@ -189,9 +205,8 @@ public class IteratorBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-
         @Specialization
-        public Object __iter__(PythonBuiltinObject self) {
+        public Object __iter__(Object self) {
             return self;
         }
     }
@@ -211,12 +226,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public int lengthHint(PRangeIterator self) {
-            return self.getStop() - self.getStart();
-        }
-
-        @Specialization
-        public int lengthHint(PRangeReverseIterator self) {
-            return self.getStart() - self.getStop();
+            return self.getLength();
         }
 
         @Specialization
@@ -231,12 +241,12 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public long lengthHint(PBaseSetIterator self) {
-            return self.getSet().size() - self.getIndex();
+            return self.getSet().size() - self.index;
         }
 
         @Specialization(guards = "self.isPSequence()")
         public Object lengthHint(PSequenceIterator self,
-                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+                        @Cached SequenceNodes.LenNode lenNode) {
             return lenNode.execute(self.getPSequence()) - self.index;
         }
 
@@ -250,6 +260,109 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SUB__, __RSUB__)") LookupAndCallBinaryNode callSub) {
             return callSub.executeObject(frame, callLen.executeObject(frame, self.getObject()), self.index);
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object reduce(PArrayIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self.array, self.index, context, pol);
+        }
+
+        @Specialization
+        public Object reduce(VirtualFrame frame, PBaseSetIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(storageNode.execute(frame, self)), self.index, context, pol);
+        }
+
+        @Specialization
+        public Object reduce(VirtualFrame frame, PDictView.PBaseDictIterator<?> self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(storageNode.execute(frame, self)), context, pol);
+        }
+
+        @Specialization
+        public Object reduce(PIntegerSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(self.getSequenceStorage()), self.index, context, pol);
+        }
+
+        @Specialization
+        public Object reduce(PPrimitiveIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createList(self.getSequenceStorage()), self.index, context, pol);
+        }
+
+        @Specialization
+        public Object reduce(PStringIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self.value, self.index, context, pol);
+        }
+
+        @Specialization
+        public Object reduce(PRangeIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(factory().createRange(self), self.index, context, pol);
+        }
+
+        @Specialization(guards = "self.isPSequence()")
+        public Object reduce(PSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            return reduceInternal(self.getPSequence(), self.index, context, pol);
+        }
+
+        @Specialization(guards = "!self.isPSequence()")
+        public Object reduceNonSeq(VirtualFrame frame, PSequenceIterator self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
+            Object content = callUnaryNode.executeObject(frame, reduce);
+            return reduceInternal(content, self.index, context, pol);
+        }
+
+        private PTuple reduceInternal(Object arg, PythonContext context, PythonObjectLibrary pol) {
+            return reduceInternal(arg, null, context, pol);
+        }
+
+        private PTuple reduceInternal(Object arg, Object state, PythonContext context, PythonObjectLibrary pol) {
+            PythonModule builtins = context.getCore().getBuiltins();
+            Object iter = pol.lookupAttribute(builtins, ITER);
+            PTuple args = factory().createTuple(new Object[]{arg});
+            // callable, args, state (optional)
+            if (state != null) {
+                return factory().createTuple(new Object[]{iter, args, state});
+            } else {
+                return factory().createTuple(new Object[]{iter, args});
+            }
+        }
+    }
+
+    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object reduce(PBuiltinIterator self, Object index,
+                        @CachedLibrary(value = "index") PythonObjectLibrary pol) {
+            int idx = pol.asSize(index);
+            if (idx < 0) {
+                idx = 0;
+            }
+            self.index = idx;
+            return PNone.NONE;
         }
     }
 }
