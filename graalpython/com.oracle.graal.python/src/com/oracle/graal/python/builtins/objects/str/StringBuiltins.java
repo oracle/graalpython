@@ -57,6 +57,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -1438,18 +1439,32 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "right <= 0")
+        String doEmptyStringInt(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") int right) {
+            return "";
+        }
+
+        @Specialization(guards = {"left.length() == 0", "right > 0"})
+        String doEmptyStringInt(String left, @SuppressWarnings("unused") int right) {
+            return left;
+        }
+
+        @Specialization(guards = {"left.length() == 1", "right > 0"})
+        String doCharInt(String left, int right) {
+            char[] result = new char[right];
+            Arrays.fill(result, left.charAt(0));
+            return new String(result);
+        }
+
+        @Specialization(guards = {"left.length() > 1", "right > 0"})
         String doStringInt(String left, int right) {
-            if (right <= 0) {
-                return "";
-            }
             return repeatString(left, right);
         }
 
         @Specialization(limit = "1")
         String doStringLong(String left, long right,
                         @Exclusive @CachedLibrary("right") PythonObjectLibrary lib) {
-            return doStringInt(left, lib.asSize(right));
+            return doStringIntGeneric(left, lib.asSize(right));
         }
 
         @Specialization
@@ -1464,7 +1479,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 } else {
                     repeat = lib.asSize(right);
                 }
-                return doStringInt(left, repeat);
+                return doStringIntGeneric(left, repeat);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
                 throw raise(MemoryError);
@@ -1481,14 +1496,27 @@ public final class StringBuiltins extends PythonBuiltins {
             return doStringObject(frame, selfStr, times, hasFrame, lib, typeErrorProfile);
         }
 
+        public String doStringIntGeneric(String left, int right) {
+            if (right <= 0) {
+                return "";
+            }
+            return repeatString(left, right);
+        }
+
         @TruffleBoundary
         private String repeatString(String left, int times) {
             try {
-                StringBuilder str = new StringBuilder(Math.multiplyExact(left.length(), times));
-                for (int i = 0; i < times; i++) {
-                    str.append(left);
+                int total = Math.multiplyExact(left.length(), times);
+                char[] result = new char[total];
+                left.getChars(0, left.length(), result, 0);
+                int done = left.length();
+                while (done < total) {
+                    int todo = total - done;
+                    int len = Math.min(done, todo);
+                    System.arraycopy(result, 0, result, done, len);
+                    done += len;
                 }
-                return str.toString();
+                return new String(result);
             } catch (OutOfMemoryError | ArithmeticException e) {
                 throw raise(MemoryError);
             }
