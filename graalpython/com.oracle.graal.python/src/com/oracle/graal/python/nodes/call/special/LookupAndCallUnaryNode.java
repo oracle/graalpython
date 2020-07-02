@@ -210,7 +210,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Cached("create()") CallUnaryMethodNode dispatchNode) {
-        Object attr = getattr.execute(lib.getLazyPythonClass(receiver));
+        Object attr = getattr.execute(frame, lib.getLazyPythonClass(receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 if (handler == null) {
@@ -236,8 +236,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
-
-            Object attr = getattr.execute(lib.getLazyPythonClass(receiver), name);
+            Object attr = getattr.execute(lib.getLazyPythonClass(receiver), name, receiver, true);
             if (profile.profile(attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
                 // global state context manager

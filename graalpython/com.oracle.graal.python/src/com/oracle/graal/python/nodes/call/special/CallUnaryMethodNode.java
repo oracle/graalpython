@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
@@ -54,6 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ReportPolymorphism
 @GenerateUncached
@@ -220,7 +222,12 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     @Specialization(replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingleContext",
                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
     static Object call(VirtualFrame frame, Object func, Object receiver,
-                    @Cached("create()") CallNode callNode) {
-        return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
+                    @Cached("create()") CallNode callNode,
+                    @Cached ConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[0], PKeyword.EMPTY_KEYWORDS);
+        } else {
+            return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
+        }
     }
 }

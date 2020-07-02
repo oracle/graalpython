@@ -66,6 +66,6 @@ public abstract class LookupAndCallVarargsNode extends Node {
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
                     @CachedLibrary("callable") PythonObjectLibrary plib,
                     @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return dispatchNode.execute(frame, getattr.execute(plib.getLazyPythonClass(callable)), arguments, PKeyword.EMPTY_KEYWORDS);
+        return dispatchNode.execute(frame, getattr.execute(frame, plib.getLazyPythonClass(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

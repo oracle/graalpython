@@ -70,6 +70,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     @Child private CallTernaryMethodNode reverseDispatchNode;
     @Child private CallTernaryMethodNode thirdDispatchNode;
     @Child private LookupSpecialMethodNode getThirdAttrNode;
+    @Child private GetClassNode thirdGetClassNode;
     @Child private NotImplementedHandler handler;
     protected final Supplier<NotImplementedHandler> handlerFactory;
 
@@ -146,6 +147,14 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return thirdDispatchNode;
     }
 
+    private GetClassNode ensureThirdGetClass() {
+        if (thirdGetClassNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            thirdGetClassNode = insert(GetClassNode.create());
+        }
+        return thirdGetClassNode;
+    }
+
     @Specialization(guards = "isReversible()")
     Object callObject(
                     VirtualFrame frame,
@@ -169,11 +178,11 @@ public abstract class LookupAndCallTernaryNode extends Node {
         Object rightClass = getClassR.execute(w);
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object leftCallable = getattr.execute(leftClass);
+        Object leftCallable = getattr.execute(frame, leftClass, v);
         Object rightCallable = PNone.NO_VALUE;
 
         if (!isSameTypeNode.execute(leftClass, rightClass)) {
-            rightCallable = getattrR.execute(rightClass);
+            rightCallable = getattrR.execute(frame, rightClass, w);
             if (rightCallable == leftCallable) {
                 rightCallable = PNone.NO_VALUE;
             }
@@ -198,9 +207,9 @@ public abstract class LookupAndCallTernaryNode extends Node {
             }
         }
 
-        Object zCallable = ensureGetAttrZ().execute(z);
+        Object zCallable = ensureGetAttrZ().execute(frame, ensureThirdGetClass().execute(z), z);
         if (zCallable != PNone.NO_VALUE && zCallable != leftCallable && zCallable != rightCallable) {
-            ensureThirdDispatch().execute(frame, zCallable, v, w, z);
+            result = ensureThirdDispatch().execute(frame, zCallable, v, w, z);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }

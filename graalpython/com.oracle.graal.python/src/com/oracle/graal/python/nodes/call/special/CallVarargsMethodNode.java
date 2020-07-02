@@ -45,8 +45,10 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode.VarargsBuiltinDirectInvocationNotSupported;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -54,6 +56,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 @ReportPolymorphism
@@ -134,7 +137,14 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
 
     @Specialization(replaces = {"callVarargsDirect", "callVarargs", "callSelfMethodSingleContext", "callSelfMethod", "callUnary", "callBinary", "callTernary", "callQuaternary"})
     Object call(VirtualFrame frame, Object func, Object[] arguments, PKeyword[] keywords,
-                    @Cached CallNode callNode) {
-        return callNode.execute(frame, func, arguments, keywords);
+                    @Cached CallNode callNode,
+                    @Cached ConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+            Object[] boundArguments = new Object[arguments.length - 1];
+            PythonUtils.arraycopy(arguments, 1, boundArguments, 0, boundArguments.length);
+            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, boundArguments, keywords);
+        } else {
+            return callNode.execute(frame, func, arguments, keywords);
+        }
     }
 }

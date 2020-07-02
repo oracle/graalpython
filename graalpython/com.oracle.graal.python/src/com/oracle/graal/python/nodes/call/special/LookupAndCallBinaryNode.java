@@ -132,7 +132,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return LookupSpecialMethodNode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName);
+        return LookupSpecialMethodNode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName, receiver, true);
     }
 
     protected boolean isReversible() {
@@ -286,7 +286,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @SuppressWarnings("unused") @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @SuppressWarnings("unused") @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        Object leftCallable = getattr.execute(libLeft.getLazyPythonClass(left));
+        Object leftCallable = getattr.execute(frame, libLeft.getLazyPythonClass(left), left);
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 return runErrorHandler(left, right);
@@ -318,9 +318,9 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftClass = libLeft.getLazyPythonClass(left);
-        Object leftCallable = getattr.execute(leftClass);
+        Object leftCallable = getattr.execute(frame, leftClass, left);
         Object rightClass = libRight.getLazyPythonClass(right);
-        Object rightCallable = getattrR.execute(rightClass);
+        Object rightCallable = getattrR.execute(frame, rightClass, right);
         if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
