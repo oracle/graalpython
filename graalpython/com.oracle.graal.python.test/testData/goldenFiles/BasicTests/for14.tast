@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
           FunctionDefinitionNode Name: merge SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

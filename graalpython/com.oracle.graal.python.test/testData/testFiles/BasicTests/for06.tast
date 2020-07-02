@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
         FunctionDefinitionNode Name: fn SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None

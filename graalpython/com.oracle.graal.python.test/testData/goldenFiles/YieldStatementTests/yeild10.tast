@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'yeild10'> SourceSection: [0,24]`def f(): return; y
             Block Nodes: 1
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'positionalOnlyArg05'> SourceSection: [0,34]`def na
           FunctionDefinitionNode Name: name SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

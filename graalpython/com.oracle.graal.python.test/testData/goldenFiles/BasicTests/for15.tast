@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
           FunctionDefinitionNode Name: formatyear SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
         FunctionDefinitionNode Name: add SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None

@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'functionDefCPT22'> SourceSection: [0,25]`def f(*ar
                 Name: a
                 Value: IntegerLiteralNode SourceSection: [17,18]`5`
                   Value: 5
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

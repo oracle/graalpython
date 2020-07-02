@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'yeild04'> SourceSection: [0,20]`def f(): x = yield
             Block Nodes: 0
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

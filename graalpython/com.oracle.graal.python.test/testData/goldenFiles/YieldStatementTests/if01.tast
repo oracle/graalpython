@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'if01'> SourceSection: [0,52]`def gen():â†µ  if b:â
             Block Nodes: 0
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

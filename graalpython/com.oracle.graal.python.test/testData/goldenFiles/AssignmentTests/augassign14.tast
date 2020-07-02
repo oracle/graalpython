@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*a
           FunctionDefinitionNode Name: _method SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

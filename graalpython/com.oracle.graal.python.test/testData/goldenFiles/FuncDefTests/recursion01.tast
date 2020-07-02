@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
               IntegerLiteralNode SourceSection: [27,28]`0`
                 Value: 0
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

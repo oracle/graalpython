@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
           FunctionDefinitionNode Name: outer SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
                           FunctionDefinitionNode Name: inner SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: None
                             ExecutionSlots:
                               FreeVarsSlots: None

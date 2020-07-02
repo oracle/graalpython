@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

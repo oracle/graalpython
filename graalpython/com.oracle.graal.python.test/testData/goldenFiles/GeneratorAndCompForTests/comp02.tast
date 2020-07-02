@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
             Arguments:
               ObjectLiteralNode SourceSection: [18,22]`None`
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

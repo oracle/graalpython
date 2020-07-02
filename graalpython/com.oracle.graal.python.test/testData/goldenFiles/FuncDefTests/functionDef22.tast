@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
           FunctionDefinitionNode Name: test SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                         FunctionDefinitionNode Name: fn1 SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                         FunctionDefinitionNode Name: fn2 SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None

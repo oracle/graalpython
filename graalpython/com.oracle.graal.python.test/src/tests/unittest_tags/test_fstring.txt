@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_fstring.TestCase.test__format__lookup
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_docstring
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_assignment
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_ast_compile_time_concat
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_backslash_char

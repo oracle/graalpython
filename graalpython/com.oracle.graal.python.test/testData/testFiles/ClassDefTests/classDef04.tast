@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 

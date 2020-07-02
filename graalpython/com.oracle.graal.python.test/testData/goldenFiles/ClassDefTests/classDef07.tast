@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                     Identifier: dict
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 

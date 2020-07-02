@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
             Arguments:
               BooleanLiteralNode SourceSection: [43,48]`False`
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

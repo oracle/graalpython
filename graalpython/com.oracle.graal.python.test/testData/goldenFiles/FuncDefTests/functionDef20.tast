@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__
               IntegerLiteralNode SourceSection: [28,29]`0`
                 Value: 0
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

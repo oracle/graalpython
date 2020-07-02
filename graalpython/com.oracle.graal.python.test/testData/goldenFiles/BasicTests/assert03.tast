@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    
           FunctionDefinitionNode Name: avg SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

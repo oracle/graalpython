@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'try01'> SourceSection: [0,60]`def gen(x):↵  try:
             Block Nodes: 1
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

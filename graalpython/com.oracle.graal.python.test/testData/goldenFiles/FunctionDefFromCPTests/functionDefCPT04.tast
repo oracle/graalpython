@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'functionDefCPT04'> SourceSection: [0,17]`def f(**k
           FunctionDefinitionNode Name: f SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

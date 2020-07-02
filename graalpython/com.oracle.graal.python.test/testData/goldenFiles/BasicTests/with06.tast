@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

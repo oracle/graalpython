@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
           FunctionDefinitionNode Name: format SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

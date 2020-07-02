@@ -57,7 +57,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                               FunctionDefinitionNode Name: test SourceSection: None
                                 Arguments: None
                                 KwArguments: None
-                                Documentation: StringLiteralNode: Empty
+                                Documentation: None
                                 FreeVarSlots: __class__, 
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
@@ -129,7 +129,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
           FunctionDefinitionNode Name: test SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

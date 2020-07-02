@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -47,7 +47,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                         FunctionDefinitionNode Name: f SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: a_local_var, 
                           ExecutionSlots:
                             FreeVarsSlots: a_local_var, 
@@ -134,7 +134,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                       FunctionDefinitionNode Name: method01 SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
-                                                        Documentation: StringLiteralNode: Empty
+                                                        Documentation: None
                                                         FreeVarSlots: __class__, , a_local_var, 
                                                         ExecutionSlots:
                                                           FreeVarsSlots: __class__, , a_local_var, 

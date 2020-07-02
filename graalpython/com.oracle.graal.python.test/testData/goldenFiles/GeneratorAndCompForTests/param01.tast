@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'param01'> SourceSection: [0,30]`def fn(a):↵  yie
             Block Nodes: 1
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

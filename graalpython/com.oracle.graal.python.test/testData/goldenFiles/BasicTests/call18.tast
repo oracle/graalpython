@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2])
                   Value: 2
                 PythonObjectFactoryNodeGen SourceSection: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                                           Arguments: None
                                           KwArguments: None
-                                          Documentation: StringLiteralNode: Empty
+                                          Documentation: None
                                           FreeVarSlots: __class__, 
                                           ExecutionSlots:
                                             FreeVarsSlots: __class__, 
@@ -129,7 +129,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                         FunctionDefinitionNode Name: __next__ SourceSection: None
                                           Arguments: None
                                           KwArguments: None
-                                          Documentation: StringLiteralNode: Empty
+                                          Documentation: None
                                           FreeVarSlots: __class__, 
                                           ExecutionSlots:
                                             FreeVarsSlots: __class__, 
@@ -189,7 +189,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                           Block Nodes: 1
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: MyIter, , ret, 
                           ExecutionSlots:
                             FreeVarsSlots: MyIter, , ret, 

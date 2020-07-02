@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
             Block Nodes: 1
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

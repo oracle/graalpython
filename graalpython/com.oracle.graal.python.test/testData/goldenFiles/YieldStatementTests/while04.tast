@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'while04'> SourceSection: [0,81]`def gen(x):↵   w
             Block Nodes: 1
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
