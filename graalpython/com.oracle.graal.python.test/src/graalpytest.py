@@ -39,6 +39,7 @@
 
 #!/usr/bin/env mx python
 import os
+from os.path import dirname, join
 import _io
 import sys
 import time
@@ -496,7 +497,7 @@ class TestCase(object):
 class TestRunner(object):
 
     def __init__(self, paths):
-        self.testfiles = TestRunner.find_testfiles(paths)
+        self.testfiles = TestRunner.find_testfiles(paths[:])
         self.exceptions = []
         self.passed = 0
         self.failed = 0
@@ -515,44 +516,59 @@ class TestRunner(object):
                     pass
         return testfiles
 
+    @staticmethod
+    def find_conftest(test_module_path):
+        test_module_dir = dirname(test_module_path)
+        if "conftest.py" in os.listdir(test_module_dir):
+            return join(test_module_dir, "conftest.py")
+        return None
+
+    @staticmethod
+    def load_module(path):
+        name = path.rpartition("/")[2].partition(".")[0].replace('.py', '')
+        directory = path.rpartition("/")[0]
+        pkg = []
+        while directory and any(f.endswith("__init__.py") for f in os.listdir(directory)):
+            directory, slash, postfix = directory.rpartition("/")
+            pkg.insert(0, postfix)
+        if pkg:
+            sys.path.insert(0, directory)
+            try:
+                test_module = __import__(".".join(pkg + [name]))
+                for p in pkg[1:]:
+                    test_module = getattr(test_module, p)
+                test_module = getattr(test_module, name)
+            except BaseException as e:
+                _, _, tb = sys.exc_info()
+                try:
+                    from traceback import extract_tb
+                    filename, line, func, text = extract_tb(tb)[-1]
+                    self.exceptions.append(
+                        ("In test '%s': Exception occurred in %s:%d" % (path, filename, line), e)
+                    )
+                except BaseException:
+                    self.exceptions.append((path, e))
+            else:
+                return test_module
+            finally:
+                sys.path.pop(0)
+        else:
+            test_module = type(sys)(name, path)
+            try:
+                with _io.FileIO(path, "r") as f:
+                    test_module.__file__ = path
+                    exec(compile(f.readall(), path, "exec"), test_module.__dict__)
+            except BaseException as e:
+                self.exceptions.append((path, e))
+            else:
+                return test_module
+
     def test_modules(self):
         for testfile in self.testfiles:
-            name = testfile.rpartition("/")[2].partition(".")[0].replace('.py', '')
-            directory = testfile.rpartition("/")[0]
-            pkg = []
-            while directory and any(f.endswith("__init__.py") for f in os.listdir(directory)):
-                directory, slash, postfix = directory.rpartition("/")
-                pkg.insert(0, postfix)
-            if pkg:
-                sys.path.insert(0, directory)
-                try:
-                    test_module = __import__(".".join(pkg + [name]))
-                    for p in pkg[1:]:
-                        test_module = getattr(test_module, p)
-                    test_module = getattr(test_module, name)
-                except BaseException as e:
-                    _, _, tb = sys.exc_info()
-                    try:
-                        from traceback import extract_tb
-                        filename, line, func, text = extract_tb(tb)[-1]
-                        self.exceptions.append(
-                            ("In test '%s': Exception occurred in %s:%d" % (testfile, filename, line), e)
-                        )
-                    except BaseException:
-                        self.exceptions.append((testfile, e))
-                else:
-                    yield test_module
-                sys.path.pop(0)
-            else:
-                test_module = type(sys)(name, testfile)
-                try:
-                    with _io.FileIO(testfile, "r") as f:
-                        test_module.__file__ = testfile
-                        exec(compile(f.readall(), testfile, "exec"), test_module.__dict__)
-                except BaseException as e:
-                    self.exceptions.append((testfile, e))
-                else:
-                    yield test_module
+            yield TestRunner.load_module(testfile)
+
+    def load_conftest(self, testfile):
+        TestRunner.load_module(testfile)
 
     def run(self):
         # eval session scope
@@ -561,6 +577,11 @@ class TestRunner(object):
         for module in self.test_modules():
             # eval module scope
             eval_scope("module")
+
+            # load conftest if exists
+            conftest = TestRunner.find_conftest(module.__file__)
+            if conftest and not conftest in _loaded_conftest:
+                self.load_conftest(conftest)
 
             if verbose:
                 print(u"\n\u25B9 ", module.__name__, end="")
