@@ -160,9 +160,17 @@ def get_fixture_values(names):
             if scope_name == "session" or scope_name == "module":
                 fixture = scope.get(fixture_name)
                 if fixture:
-                    result_vector.append(fixture.values())
+                    # evaluate fixtures on demand (could be that we loaded it after the e.g. the session was started)
+                    fvals = fixture.values()
+                    if not fvals:
+                        fvals = fixture.eval()
+                    result_vector.append(fvals)
+                    # will break only the inner loop
+                    break
             elif scope_name == "function":
                 result_vector.append(eval_fixture(fixture_name))
+                # will break only the inner loop
+                break
             else:
                 raise ValueError("unknown scope {}".format(scope_name))
     global _itertools_module
