@@ -65,6 +65,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     protected final String name;
+    protected final boolean ignoreDescriptorException;
     protected final Supplier<NoAttributeHandler> handlerFactory;
     @Child private NoAttributeHandler handler;
 
@@ -93,16 +94,17 @@ public abstract class LookupAndCallUnaryNode extends Node {
     public abstract Object executeObject(VirtualFrame frame, Object receiver);
 
     public static LookupAndCallUnaryNode create(String name) {
-        return LookupAndCallUnaryNodeGen.create(name, null);
+        return LookupAndCallUnaryNodeGen.create(name, null, false);
     }
 
     public static LookupAndCallUnaryNode create(String name, Supplier<NoAttributeHandler> handlerFactory) {
-        return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
+        return LookupAndCallUnaryNodeGen.create(name, handlerFactory, false);
     }
 
-    LookupAndCallUnaryNode(String name, Supplier<NoAttributeHandler> handlerFactory) {
+    LookupAndCallUnaryNode(String name, Supplier<NoAttributeHandler> handlerFactory, boolean ignoreDescriptorException) {
         this.name = name;
         this.handlerFactory = handlerFactory;
+        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     public String getMethodName() {
@@ -208,7 +210,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Specialization(limit = "3")
     Object callObject(VirtualFrame frame, Object receiver,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create()") CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, lib.getLazyPythonClass(receiver), receiver);
         if (attr == PNone.NO_VALUE) {
@@ -236,7 +238,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
-            Object attr = getattr.execute(lib.getLazyPythonClass(receiver), name, receiver, true);
+            Object attr = getattr.execute(lib.getLazyPythonClass(receiver), name, receiver, false);
             if (profile.profile(attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
                 // global state context manager

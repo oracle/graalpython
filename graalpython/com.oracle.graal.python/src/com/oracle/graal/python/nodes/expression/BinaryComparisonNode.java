@@ -57,7 +57,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         this.magicReverseMethod = magicReverseMethod;
         this.operation = operation;
         // see cpython://Objects/object.c#do_richcompare - CPython always calls the reverse method
-        this.callNode = LookupAndCallBinaryNode.create(magicMethod, magicReverseMethod, true);
+        this.callNode = LookupAndCallBinaryNode.create(magicMethod, magicReverseMethod, true, true);
     }
 
     public static BinaryComparisonNode create(String magicMethod, String magicReverseMethod, String operation, ExpressionNode left, ExpressionNode right) {

@@ -66,6 +66,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
 
     protected final String name;
     private final boolean isReversible;
+    protected final boolean ignoreDescriptorException;
     @Child private CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
     @Child private CallTernaryMethodNode reverseDispatchNode;
     @Child private CallTernaryMethodNode thirdDispatchNode;
@@ -79,19 +80,20 @@ public abstract class LookupAndCallTernaryNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object arg1, int arg2, Object arg3);
 
     public static LookupAndCallTernaryNode create(String name) {
-        return LookupAndCallTernaryNodeGen.create(name, false, null);
+        return LookupAndCallTernaryNodeGen.create(name, false, null, false);
     }
 
     public static LookupAndCallTernaryNode createReversible(
                     String name, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory);
+        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, false);
     }
 
     LookupAndCallTernaryNode(
-                    String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory) {
+                    String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
         this.name = name;
         this.isReversible = isReversible;
         this.handlerFactory = handlerFactory;
+        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     protected boolean isReversible() {
@@ -133,7 +135,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
         // this also serves as a branch profile
         if (getThirdAttrNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getThirdAttrNode = insert(LookupSpecialMethodNode.create(name));
+            getThirdAttrNode = insert(LookupSpecialMethodNode.create(name, ignoreDescriptorException));
         }
         return getThirdAttrNode;
     }
@@ -161,8 +163,8 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     Object v,
                     Object w,
                     Object z,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
                     @Cached("create()") GetClassNode getClass,
                     @Cached("create()") GetClassNode getClassR,
                     @Cached("create()") IsSubtypeNode isSubtype,

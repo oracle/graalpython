@@ -50,22 +50,24 @@ import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupAndCallVarargsNode extends Node {
     protected final String name;
+    protected final boolean ignoreDescriptorException;
     @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
     public static LookupAndCallVarargsNode create(String name) {
-        return LookupAndCallVarargsNodeGen.create(name);
+        return LookupAndCallVarargsNodeGen.create(name, false);
     }
 
-    LookupAndCallVarargsNode(String name) {
+    LookupAndCallVarargsNode(String name, boolean ignoreDescriptorException) {
         this.name = name;
+        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     @Specialization(limit = "3")
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
                     @CachedLibrary("callable") PythonObjectLibrary plib,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
         return dispatchNode.execute(frame, getattr.execute(frame, plib.getLazyPythonClass(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }
