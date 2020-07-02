@@ -166,7 +166,7 @@ def _run_cmd(cmd, timeout=TIMEOUT, capture_on_failure=True):
         log("[EXEC] finished '{}' with exit code {} in {:.3f}s", cmd_string, proc.returncode, delta)
         msg = "Finished: {:.3f}s".format(delta)
     
-    return proc.returncode == 0, output.decode("utf-8", "ignore") + "\n" + msg
+    return proc.returncode == 0, output.decode("utf-8", "ignore"), msg
 
 
 def scp(results_file_path, destination_path, destination_name=None):
@@ -181,11 +181,13 @@ def _run_unittest(test_path, timeout, with_cpython=False):
         cmd = ["python3", test_path, "-v"]
     else:
         cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
-    output = _run_cmd(cmd, timeout)[1]
+    _, output, msg = _run_cmd(cmd, timeout)
     output = '''
 ##############################################################
-#### running: {} 
-    '''.format(test_path) + output
+#### running: {}
+{}
+{}
+'''.format(test_path, output, msg)
     return output
 
 
@@ -236,8 +238,8 @@ def get_remote_host(scp_path):
 
 def ssh_ls(scp_path):
     user, host, path = get_remote_host(scp_path)
-    cmd = ['ssh', '{}@{}'.format(user, host), 'ls', '-l', path]
-    return map(lambda l: l.split()[-1], _run_cmd(cmd)[1].splitlines())
+    cmd = ['ssh', '{}@{}'.format(user, host), 'ls', '-1', path]
+    return [f for f in _run_cmd(cmd)[1].splitlines() if f]
 
 
 def read_csv(path):
@@ -979,7 +981,7 @@ def main(prog, args):
     if flags.gate and flags.regression_running_tests:
         log("[REGRESSION] detecting regression, acceptance threshold = {}%".format(
             flags.regression_running_tests * 100))
-        csv_files = list(filter(lambda entry: True if PTRN_VALID_CSV_NAME.match(entry) else False, ssh_ls(flags.path)))
+        csv_files = sorted(f for f in ssh_ls(flags.path) if PTRN_VALID_CSV_NAME.match(f))
         last_csv = csv_files[-1]
         # log('\n'.join(csv_files))
         # read the remote csv and extract stats
