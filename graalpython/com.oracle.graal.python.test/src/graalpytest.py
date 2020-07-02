@@ -54,6 +54,7 @@ ENDC = '\033[0m'
 BOLD = '\033[1m'
 
 _fixture_scopes = {"session": {}, "module": {}, "function": {}}
+_fixture_marks = []
 _itertools_module = None
 _request_class = collections.namedtuple("request", "param")
 
@@ -161,8 +162,9 @@ def get_fixture_values(names):
 class Mark:
     @staticmethod
     def usefixtures(*args):
+        global _fixture_marks
+        _fixture_marks += args
         def decorator(obj):
-            # TODO register 'args'
             return obj
         return decorator
 
@@ -281,6 +283,8 @@ class TestCase(object):
             if arg_names and arg_names[0] == "self":
                 arg_names = arg_names[1:]
             fixture_args = get_fixture_values(arg_names)
+
+        get_fixture_values(_fixture_marks)
 
         try:
             for arg_vec in fixture_args:
