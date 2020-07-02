@@ -58,7 +58,13 @@ BOLD = '\033[1m'
 _fixture_scopes = {"session": {}, "module": {}, "function": {}}
 _fixture_marks = []
 _itertools_module = None
-_request_class = collections.namedtuple("request", "param")
+_request_class = collections.namedtuple("request", "param config")
+_loaded_conftest = {}
+
+class RequestConfig:
+    def getoption(self):
+        return None
+
 
 class Fixture:
     def __init__(self, fun, **kwargs):
@@ -72,9 +78,9 @@ class Fixture:
         values = []
         if self.params:
             for param in self.params:
-                values.extend(self._call_fixture_func(_request_class(param=param)))
+                values.extend(self._call_fixture_func(_request_class(param=param, config=RequestConfig())))
         else:
-            values.extend(self._call_fixture_func(_request_class(param=None)))
+            values.extend(self._call_fixture_func(_request_class(param=None, config=RequestConfig())))
         self._values = values
         return values
 
