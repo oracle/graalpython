@@ -44,6 +44,7 @@ import sys
 import time
 import _thread
 import collections
+import tempfile
 
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
@@ -110,6 +111,10 @@ def eval_fixture(name):
     """
     Evaluate a fixtures with default scope (=function).
     """
+    # TODO remove special handling
+    if name == "tmpdir":
+        return tempfile.mkdtemp()
+
     fixture = _fixture_scopes["function"].get(name)
     if fixture:
         assert name == fixture.name()
@@ -278,10 +283,15 @@ class TestCase(object):
         # insert fixture params
         co = func.__code__
         fixture_args = []
+        arg_tmpdir_idx = -1
         if co.co_argcount > 0:
             arg_names = co.co_varnames[:co.co_argcount]
             if arg_names and arg_names[0] == "self":
                 arg_names = arg_names[1:]
+            try:
+                arg_tmpdir_idx = arg_names.index("tmpdir")
+            except ValueError:
+                arg_tmpdir_idx = -1
             fixture_args = get_fixture_values(arg_names)
 
         get_fixture_values(_fixture_marks)
@@ -309,6 +319,13 @@ class TestCase(object):
                 return False
         else:
             return True
+        finally:
+            if arg_tmpdir_idx != -1:
+                for arg_vec in fixture_args:
+                    print("deleting tempdir {}".format(arg_vec[arg_tmpdir_idx]))
+                    #shutil.rmtree(arg_vec[arg_tmpdir_idx])
+
+
 
     def run_test(self, func):
         if "test_main" in str(func):
