@@ -91,7 +91,12 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "self.isExhausted()")
+        public Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+            throw raise(StopIteration);
+        }
+
+        @Specialization(guards = "!self.isExhausted()")
         Object next(VirtualFrame frame, PArrayIterator self,
                         @Cached("createClassProfile()") ValueProfile itemTypeProfile,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
@@ -102,45 +107,47 @@ public class IteratorBuiltins extends PythonBuiltins {
                 // types
                 return itemTypeProfile.profile(getItemNode.execute(frame, sequenceStorage, self.index++));
             }
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         int next(PIntegerSequenceIterator self) {
-            if (!self.isExhausted() && self.index < self.sequence.length()) {
+            if (self.index < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
             self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         int next(PRangeIterator self) {
             if (self.hasNext()) {
                 return self.next();
             }
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         double next(PDoubleSequenceIterator self) {
-            if (!self.isExhausted() && self.index < self.sequence.length()) {
+            if (self.index < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
             self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         long next(PLongSequenceIterator self) {
-            if (!self.isExhausted() && self.index < self.sequence.length()) {
+            if (self.index < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
             self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         public Object next(PBaseSetIterator self,
                         @Cached("createBinaryProfile()") ConditionProfile sizeChanged,
                         @CachedLibrary(limit = "1") HashingStorageLibrary storageLibrary) {
@@ -151,31 +158,33 @@ public class IteratorBuiltins extends PythonBuiltins {
                 }
                 return iterator.next();
             }
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization(guards = {"self.isPSequence()"})
+        @Specialization(guards = {"self.isPSequence()", "!self.isExhausted()"})
         public Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = getStorage.execute(self.getPSequence());
-            if (!self.isExhausted() && self.index < lenNode.execute(s)) {
+            if (self.index < lenNode.execute(s)) {
                 return getItemNode.execute(frame, s, self.index++);
             }
             self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         public Object next(PStringIterator self) {
             if (self.index < self.value.length()) {
                 return Character.toString(self.value.charAt(self.index++));
             }
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         public Object next(PDictView.PBaseDictIterator<?> self,
                         @Cached ConditionProfile sizeChanged,
                         @CachedLibrary(limit = "3") HashingStorageLibrary storageLibrary,
@@ -186,6 +195,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 }
                 return self.next(factory());
             }
+            self.setExhausted();
             throw raise(PythonErrorType.StopIteration);
         }
 
@@ -197,6 +207,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return callGetItem.executeObject(frame, self.getObject(), self.index++);
             } catch (PException e) {
                 e.expectIndexError(profile);
+                self.setExhausted();
                 throw raise(StopIteration);
             }
         }
@@ -329,7 +340,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
+            Object reduce = pol.lookupAttribute(self.getObject(), __REDUCE__);
             Object content = callUnaryNode.executeObject(frame, reduce);
             return reduceInternal(content, self.index, context, pol);
         }

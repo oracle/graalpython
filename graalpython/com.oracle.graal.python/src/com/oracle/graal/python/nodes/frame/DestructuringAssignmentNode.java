@@ -128,7 +128,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         int len = lenNode.execute(sequenceStorage);
         if (len > slots.length) {
             CompilerDirectives.transferToInterpreter();
-            throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, slots.length);
+            throw getCore().raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, slots.length);
         } else if (len < slots.length) {
             throw ensureRaiseNode().raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, slots.length, len);
         } else {
