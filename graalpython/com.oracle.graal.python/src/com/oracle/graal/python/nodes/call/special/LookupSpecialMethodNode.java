@@ -84,6 +84,10 @@ public abstract class LookupSpecialMethodNode extends Node {
         return LookupSpecialMethodNodeGen.create(name, ignoreDescriptorException);
     }
 
+    public static LookupSpecialMethodNode create(String name) {
+        return LookupSpecialMethodNodeGen.create(name, false);
+    }
+
     public static class BoundDescriptor {
         public final Object descriptor;
 
