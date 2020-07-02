@@ -7,6 +7,7 @@
 package com.oracle.graal.python.runtime.formatting;
 
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.formatting.FormattingBuffer.StringFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 
 /**
@@ -26,6 +27,10 @@ public class TextFormatter extends InternalFormat.Formatter {
      */
     public TextFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
         super(core, result, spec);
+    }
+
+    public TextFormatter(PythonCore core, Spec spec) {
+        super(core, new StringFormattingBuffer(32), spec);
     }
 
     /*

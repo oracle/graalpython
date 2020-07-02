@@ -60,7 +60,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.formatting.FormattingUtils.prepareSpecForFloat;
-import static com.oracle.graal.python.runtime.formatting.FormattingUtils.shouldBeAsStr;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -85,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
+import com.oracle.graal.python.runtime.formatting.FormattingUtils;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -166,16 +167,18 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(FormattingUtils.class)
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "shouldBeAsStr(formatString)")
+        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
+                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+            return strCall.executeObject(frame, self);
+        }
+
+        @Specialization(guards = "!shouldBeAsStr(formatString)")
         @TruffleBoundary
-        String format(double self, String formatString,
-                        @Cached("create()") StrNode strNode,
-                        @Cached("createBinaryProfile()") ConditionProfile strProfile) {
-            if (strProfile.profile(shouldBeAsStr(formatString))) {
-                return strNode.str(self);
-            }
+        String format(double self, String formatString) {
             InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
             FloatFormatter formatter = new FloatFormatter(getCore(), prepareSpecForFloat(spec, getCore(), "float"));
             formatter.format(self);
