@@ -88,6 +88,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean wantsExperimental = false;
     private Map<String, String> enginePolyglotOptions;
     private boolean dontWriteBytecode = false;
+    private String warnOptions = null;
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -152,6 +153,20 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-S":
                     noSite = true;
+                    break;
+                case "-W":
+                    i += 1;
+                    if (warnOptions == null) {
+                        warnOptions = "";
+                    } else {
+                        warnOptions += ",";
+                    }
+                    if (i < arguments.size()) {
+                        warnOptions += arguments.get(i);
+                    } else {
+                        print("Argument expected for the -W option");
+                        printShortHelp();
+                    }
                     break;
                 case "-X":
                     i++;
@@ -230,6 +245,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         inputFile = arg;
                         programArgs.add(inputFile);
                         break;
+                    } else if (arg.startsWith("-W")) {
+                        // alternate allowed form
+                        if (warnOptions == null) {
+                            warnOptions = "";
+                        } else {
+                            warnOptions += ",";
+                        }
+                        warnOptions += arg.substring(2);
                     } else if (!arg.startsWith("--") && arg.length() > 2) {
                         // short arguments can be given together
                         String[] split = arg.substring(1).split("");
@@ -372,12 +395,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
             dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
+            if (warnOptions == null) {
+                warnOptions = System.getenv("PYTHONWARNINGS");
+            }
             String cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
             if (cachePrefix != null) {
                 contextBuilder.option("python.PyCachePrefix", cachePrefix);
             }
         }
-
+        if (warnOptions == null || warnOptions.isEmpty()) {
+            warnOptions = "default";
+        }
         String executable = getContextOptionIfSetViaCommandLine("python.Executable");
         if (executable != null) {
             contextBuilder.option("python.ExecutableList", executable);
@@ -394,6 +422,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.InspectFlag", Boolean.toString(inspectFlag));
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
+        contextBuilder.option("python.WarnOptions", warnOptions);
         contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
@@ -581,9 +610,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "-V     : print the Python version number and exit (also --version)\n" +
                         "         when given twice, print more information about the build\n" +
                         "-X opt : CPython implementation-specific options. Ignored on GraalPython\n" +
-                        // "-W arg : warning control; arg is
-                        // action:message:category:module:lineno\n" +
-                        // " also PYTHONWARNINGS=arg\n" +
+                        "-W arg : warning control; arg is action:message:category:module:lineno\n" +
+                        "         also PYTHONWARNINGS=arg\n" +
                         // "-x : skip first line of source, allowing use of non-Unix forms of
                         // #!cmd\n" +
                         // "-3 : warn about Python 3.x incompatibilities that 2to3 cannot trivially

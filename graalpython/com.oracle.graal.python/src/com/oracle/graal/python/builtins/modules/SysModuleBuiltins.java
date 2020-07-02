@@ -199,6 +199,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute("dont_write_bytecode", context.getOption(PythonOptions.DontWriteBytecodeFlag));
         String pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
         sys.setAttribute("pycache_prefix", pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
+        sys.setAttribute("warnoptions", core.factory().createTuple(context.getOption(PythonOptions.WarnOptions).split(",")));
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !context.getOption(PythonOptions.PythonOptimizeFlag), // debug

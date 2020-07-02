@@ -114,6 +114,9 @@ public final class PythonOptions {
                     "Equivalent to setting the PYTHONPYCACHEPREFIX environment variable for the standard launcher.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> PyCachePrefix = new OptionKey<>("");
 
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONWARNINGS environment variable for the standard launcher.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> WarnOptions = new OptionKey<>("");
+
     @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> CAPI = new OptionKey<>("");
 
