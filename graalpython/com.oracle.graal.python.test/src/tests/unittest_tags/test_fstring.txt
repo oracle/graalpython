@@ -5,6 +5,9 @@
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_backslash_char
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_call
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_compile_time_concat_errors
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_unterminated_string
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_mismatched_parens
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_comments
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_del
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_dict
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_double_braces

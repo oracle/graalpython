@@ -62,6 +62,11 @@ public class FormatStringLiteralNode extends LiteralNode {
     static final String ERROR_MESSAGE_UNTERMINATED_STRING = "f-string: unterminated string";
     static final String ERROR_MESSAGE_INVALID_SYNTAX = "f-string: invalid syntax";
     static final String ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION = "f-string expression part cannot include a backslash";
+    static final String ERROR_MESSAGE_HASH_IN_EXPRESSION = "f-string expression part cannot include '#'";
+    static final String ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH = "f-string: closing parenthesis '%c' does not match opening parenthesis '%c'";
+    static final String ERROR_MESSAGE_UNMATCHED_PAR = "f-string: unmatched '%c'";
+    static final String ERROR_MESSAGE_TOO_MANY_NESTED_PARS = "f-string: too many nested parenthesis";
+    static final String ERROR_MESSAGE_EXPECTING_CLOSING_BRACE = "f-string: expecting '}'";
 
     private static final String EMPTY_STRING = "";
 
@@ -145,7 +150,7 @@ public class FormatStringLiteralNode extends LiteralNode {
 
     private void parse(VirtualFrame frame) {
         // create tokens
-        tokens = createTokens(this, values, true);
+        tokens = createTokens(this, values);
         // create sources from tokens, that marks expressions
         String[] expressionSources = createExpressionSources(values, tokens, 0, tokens.length);
         // and create the expressions
@@ -243,6 +248,8 @@ public class FormatStringLiteralNode extends LiteralNode {
     private static final int STATE_EXPRESSION = 5; // in {}
     private static final int STATE_UNKNOWN = 6;
 
+    private static final int MAX_PAR_NESTING = 200;
+
     // protected for testing
     /**
      * This is the parser of the fstring. As result is a list of tokens, when a token is int array
@@ -256,17 +263,16 @@ public class FormatStringLiteralNode extends LiteralNode {
      *
      * @param node it's needed for raising syntax errors
      * @param values this part of text will be parsed
-     * @param topLevel if there is called recursion on topLevel = false, then the syntax error is
-     *            raised
      * @return a list of tokens
      */
-    protected static int[][] createTokens(FormatStringLiteralNode node, StringPart[] values, boolean topLevel) {
+    protected static int[][] createTokens(FormatStringLiteralNode node, StringPart[] values) {
         int index;
         int state = STATE_TEXT;
         int start = 0;
 
         int braceLevel = 0;
         int braceLevelInExpression = 0;
+        char[] bracesInExpression = new char[MAX_PAR_NESTING];
         List<int[]> resultParts = new ArrayList<>(values.length);
         for (int valueIndex = 0; valueIndex < values.length; valueIndex++) {
             StringPart value = values[valueIndex];
@@ -276,6 +282,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                 String text = value.text;
                 int len = text.length();
                 index = 0;
+                start = 0;
                 while (index < len) {
                     char ch = text.charAt(index);
                     switch (state) {
@@ -328,8 +335,24 @@ public class FormatStringLiteralNode extends LiteralNode {
                         case STATE_EXPRESSION:
                             switch (ch) {
                                 case '{':
-
+                                case '(':
+                                case '[':
+                                    bracesInExpression[braceLevelInExpression] = ch;
                                     braceLevelInExpression++;
+                                    if (braceLevelInExpression >= MAX_PAR_NESTING) {
+                                        raiseInvalidSyntax(node, ERROR_MESSAGE_TOO_MANY_NESTED_PARS);
+                                    }
+                                    break;
+                                case ')':
+                                case ']':
+                                    if (braceLevelInExpression == 0) {
+                                        raiseInvalidSyntax(node, ERROR_MESSAGE_UNMATCHED_PAR, ch);
+                                    }
+                                    braceLevelInExpression--;
+                                    char expected = ch == ')' ? '(' : '[';
+                                    if (bracesInExpression[braceLevelInExpression] != expected) {
+                                        raiseUnmatchingClosingPar(node, bracesInExpression[braceLevelInExpression], ch);
+                                    }
                                     break;
                                 case '}':
                                     if (braceLevelInExpression == 0) {
@@ -341,6 +364,9 @@ public class FormatStringLiteralNode extends LiteralNode {
                                         start = index + 1;
                                     } else {
                                         braceLevelInExpression--;
+                                        if (bracesInExpression[braceLevelInExpression] != '{') {
+                                            raiseUnmatchingClosingPar(node, bracesInExpression[braceLevelInExpression], '}');
+                                        }
                                     }
                                     break;
                                 case '\'':
@@ -383,6 +409,9 @@ public class FormatStringLiteralNode extends LiteralNode {
                                     state = STATE_AFTER_EXCLAMATION;
                                     break;
                                 case ':':
+                                    if (braceLevelInExpression > 0) {
+                                        break;
+                                    }
                                     int[] specifierValue;
                                     if (start < index) {
                                         // cases like {3:spec}
@@ -406,7 +435,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                                             braceLevelInSpecifier--;
                                             if (braceLevelInSpecifier == -1) {
                                                 if (start < index) {
-                                                    int[][] specifierParts = createTokens(node, new StringPart[]{new StringPart(text.substring(start, index), true)}, false);
+                                                    int[][] specifierParts = createTokens(node, new StringPart[]{new StringPart(text.substring(start, index), true)});
                                                     specifierValue[4] = specifierParts.length;
                                                     for (int[] part : specifierParts) {
                                                         part[1] = valueIndex;
@@ -422,6 +451,9 @@ public class FormatStringLiteralNode extends LiteralNode {
                                         }
                                         index++;
                                     }
+                                    break;
+                                case '#':
+                                    raiseInvalidSyntax(node, ERROR_MESSAGE_HASH_IN_EXPRESSION);
                                     break;
                                 case '\n':
                                 case '\b':
@@ -482,6 +514,10 @@ public class FormatStringLiteralNode extends LiteralNode {
                         createExpressionToken(node, values, valueIndex, start, index - 1);
                         raiseInvalidSyntax(node, ERROR_MESSAGE_SINGLE_BRACE);
                         break;
+                    case STATE_EXPRESSION:
+                        // expression is not allowed to span multiple f-strings: f'{3+' f'1}' is not
+                        // the same as f'{3+1}'
+                        raiseInvalidSyntax(node, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
                 }
             }
         }
@@ -506,8 +542,16 @@ public class FormatStringLiteralNode extends LiteralNode {
         return new int[]{TOKEN_TYPE_EXPRESSION, valueIndex, start, end, 0};
     }
 
+    private static void raiseUnmatchingClosingPar(FormatStringLiteralNode node, char opening, char closing) {
+        PythonLanguage.getCore().raiseInvalidSyntax(node, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, closing, opening);
+    }
+
     private static void raiseInvalidSyntax(FormatStringLiteralNode node, String message) {
         PythonLanguage.getCore().raiseInvalidSyntax(node, message);
+    }
+
+    private static void raiseInvalidSyntax(FormatStringLiteralNode node, String message, Object... args) {
+        PythonLanguage.getCore().raiseInvalidSyntax(node, message, args);
     }
 
     private static ExpressionNode createExpression(String src, VirtualFrame frame) {
