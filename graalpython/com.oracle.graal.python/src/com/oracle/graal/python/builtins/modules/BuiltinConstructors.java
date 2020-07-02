@@ -1564,12 +1564,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     } else {
                         result = callIndex(frame, truncResult);
                         if (result == PNone.NO_VALUE) {
-                            result = callInt(frame, obj);
+                            result = callInt(frame, truncResult);
                             if (result == PNone.NO_VALUE) {
                                 throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, "__trunc__", truncResult);
                             }
                         }
                     }
+                }
+            }
+
+            // If a subclass of int is returned by __int__ or __index__, a conversion to int is
+            // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
+            if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
+                // TODO deprecation warning
+                if (PGuards.isPInt(result)) {
+                    result = ((PInt) result).getValue();
+                } else if (PGuards.isBoolean(result)) {
+                    result = (boolean) result ? 1 : 0;
                 }
             }
             return createInt(cls, result);
