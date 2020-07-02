@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -133,7 +132,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName);
+        return LookupSpecialMethodNode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName);
     }
 
     protected boolean isReversible() {
@@ -286,8 +285,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObject(VirtualFrame frame, Object left, Object right,
                     @SuppressWarnings("unused") @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @SuppressWarnings("unused") @CachedLibrary("right") PythonObjectLibrary libRight,
-                    @Cached("create(name)") LookupInheritedAttributeNode getattr) {
-        Object leftCallable = getattr.execute(left);
+                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
+        Object leftCallable = getattr.execute(libLeft.getLazyPythonClass(left));
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 return runErrorHandler(left, right);
@@ -300,8 +299,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     @Specialization(guards = {"isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
-                    @Cached("create(name)") LookupAttributeInMRONode getattr,
-                    @Cached("create(rname)") LookupAttributeInMRONode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname)") LookupSpecialMethodNode getattrR,
                     @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,

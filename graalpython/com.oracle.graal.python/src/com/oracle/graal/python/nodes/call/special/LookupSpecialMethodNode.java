@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,52 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
-public abstract class LookupAndCallVarargsNode extends Node {
+/**
+ * Similar to CPython's lookup_maybe_method, but returns NO_VALUE instead of raising an exception
+ * when the method cannot be looked up
+ */
+public abstract class LookupSpecialMethodNode extends Node {
     protected final String name;
-    @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
-    public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
+    public abstract Object execute(Object type);
 
-    public static LookupAndCallVarargsNode create(String name) {
-        return LookupAndCallVarargsNodeGen.create(name);
-    }
-
-    LookupAndCallVarargsNode(String name) {
+    LookupSpecialMethodNode(String name) {
         this.name = name;
     }
 
-    @Specialization(limit = "3")
-    Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
-                    @CachedLibrary("callable") PythonObjectLibrary plib,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return dispatchNode.execute(frame, getattr.execute(plib.getLazyPythonClass(callable)), arguments, PKeyword.EMPTY_KEYWORDS);
+    public static LookupSpecialMethodNode create(String name) {
+        return LookupSpecialMethodNodeGen.create(name);
+    }
+
+    @Specialization
+    Object lookup(Object type,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupAttr) {
+        return lookupAttr.execute(type);
+    }
+
+    @GenerateUncached
+    public abstract static class Dynamic extends Node {
+
+        public abstract Object execute(Object type, Object name);
+
+        public static Dynamic create() {
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.create();
+        }
+
+        public static Dynamic getUncached() {
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached();
+        }
+
+        @Specialization
+        Object lookup(Object type, Object name,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr) {
+            return lookupAttr.execute(type, name);
+        }
     }
 }

@@ -45,8 +45,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.Supplier;
@@ -71,7 +69,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     @Child private CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
     @Child private CallTernaryMethodNode reverseDispatchNode;
     @Child private CallTernaryMethodNode thirdDispatchNode;
-    @Child private LookupInheritedAttributeNode getThirdAttrNode;
+    @Child private LookupSpecialMethodNode getThirdAttrNode;
     @Child private NotImplementedHandler handler;
     protected final Supplier<NotImplementedHandler> handlerFactory;
 
@@ -130,11 +128,11 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return reverseDispatchNode;
     }
 
-    private LookupInheritedAttributeNode ensureGetAttrZ() {
+    private LookupSpecialMethodNode ensureGetAttrZ() {
         // this also serves as a branch profile
         if (getThirdAttrNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getThirdAttrNode = insert(LookupInheritedAttributeNode.create(name));
+            getThirdAttrNode = insert(LookupSpecialMethodNode.create(name));
         }
         return getThirdAttrNode;
     }
@@ -154,8 +152,8 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     Object v,
                     Object w,
                     Object z,
-                    @Cached("create(name)") LookupAttributeInMRONode getattr,
-                    @Cached("create(name)") LookupAttributeInMRONode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
                     @Cached("create()") GetClassNode getClass,
                     @Cached("create()") GetClassNode getClassR,
                     @Cached("create()") IsSubtypeNode isSubtype,

@@ -40,20 +40,20 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -205,11 +205,12 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     // Object
 
-    @Specialization
+    @Specialization(limit = "3")
     Object callObject(VirtualFrame frame, Object receiver,
-                    @Cached("create(name)") LookupInheritedAttributeNode getattr,
+                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Cached("create()") CallUnaryMethodNode dispatchNode) {
-        Object attr = getattr.execute(receiver);
+        Object attr = getattr.execute(lib.getLazyPythonClass(receiver));
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 if (handler == null) {
@@ -229,13 +230,14 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
         public abstract Object executeObject(Object receiver, String name);
 
-        @Specialization
+        @Specialization(limit = "3")
         static Object doObject(Object receiver, String name,
-                        @Cached LookupInheritedAttributeNode.Dynamic getattr,
+                        @CachedLibrary("receiver") PythonObjectLibrary lib,
+                        @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
 
-            Object attr = getattr.execute(receiver, name);
+            Object attr = getattr.execute(lib.getLazyPythonClass(receiver), name);
             if (profile.profile(attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
                 // global state context manager
