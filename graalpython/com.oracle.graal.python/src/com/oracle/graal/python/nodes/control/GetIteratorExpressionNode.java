@@ -155,7 +155,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                 } else {
                     throw nonIterator(raiseNode, iterObj);
                 }
-            } else {
+            } else if (attrObj != PNone.NONE) {
                 Object getItemAttrObj = lookupGetitemAttrMroNode.execute(clazz, SpecialMethodNames.__GETITEM__);
                 if (getItemAttrObj != PNone.NO_VALUE) {
                     return factory.createSequenceIterator(value);
