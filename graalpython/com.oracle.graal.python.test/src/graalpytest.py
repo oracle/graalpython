@@ -62,8 +62,8 @@ _request_class = collections.namedtuple("request", "param config")
 _loaded_conftest = {}
 
 class RequestConfig:
-    def getoption(self):
-        return None
+    def getoption(self, name):
+        return False
 
 
 class Fixture:
