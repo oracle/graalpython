@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -430,13 +431,15 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization(limit = "3")
-        protected PNone doIt(VirtualFrame frame, Object object, Object key, Object value,
+        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @CachedLibrary("object") PythonObjectLibrary libObj,
+                        @Cached StringNodes.CastToJavaStringCheckedNode castToString,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
                         @Cached("create()") CallTernaryMethodNode callSetNode,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
+            String key = castToString.cast(keyObject, "attribute name must be string, not '%p'", keyObject);
             Object type = libObj.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {

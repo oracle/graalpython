@@ -4,5 +4,6 @@
 *graalpython.lib-python.3.test.test_class.ClassTests.testInit
 *graalpython.lib-python.3.test.test_class.ClassTests.testMisc
 *graalpython.lib-python.3.test.test_class.ClassTests.testSFBug532646
+*graalpython.lib-python.3.test.test_class.ClassTests.testSetattrNonStringName
 *graalpython.lib-python.3.test.test_class.ClassTests.testSetattrWrapperNameIntern
 *graalpython.lib-python.3.test.test_class.ClassTests.testUnaryOps
