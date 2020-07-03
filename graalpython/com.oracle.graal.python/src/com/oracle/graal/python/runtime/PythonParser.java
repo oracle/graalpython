@@ -69,6 +69,11 @@ public interface PythonParser {
          */
         Eval,
         /**
+         * Used for parsing expressions inside f-strings. Such expression should have the same scope
+         * as the f-string itself.
+         */
+        FStringExpression,
+        /**
          * Used for building Truffle tree from deserialized ANTLR parser result. The result
          * expression or statement is not wrapped in any expression.
          */

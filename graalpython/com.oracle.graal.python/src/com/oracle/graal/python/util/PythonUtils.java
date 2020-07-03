@@ -41,6 +41,7 @@
 package com.oracle.graal.python.util;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PythonUtils {
 
@@ -59,5 +60,22 @@ public final class PythonUtils {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw t;
         }
+    }
+
+    /**
+     * Executes {@code String.getChars} and puts all exceptions on the slow path.
+     */
+    @TruffleBoundary
+    public static void getChars(String str, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
+        str.getChars(srcBegin, srcEnd, dst, dstBegin);
+    }
+
+    public static int multiplyExact(int x, int y) throws OverflowException {
+        // copy&paste from Math.multiplyExact
+        long r = (long) x * (long) y;
+        if ((int) r != r) {
+            throw OverflowException.INSTANCE;
+        }
+        return (int) r;
     }
 }

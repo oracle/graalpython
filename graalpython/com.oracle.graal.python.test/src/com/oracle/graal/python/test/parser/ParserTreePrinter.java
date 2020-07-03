@@ -660,9 +660,9 @@ public class ParserTreePrinter implements NodeVisitor {
                     indent(level);
                     sb.append("Values: ");
 
-                    String[] values = new String[((FormatStringLiteralNode) node).getValues().length];
+                    String[] values = new String[((FormatStringLiteralNode) node).getParts().length];
                     int index = 0;
-                    for (FormatStringLiteralNode.StringPart part : ((FormatStringLiteralNode) node).getValues()) {
+                    for (FormatStringLiteralNode.StringPart part : ((FormatStringLiteralNode) node).getParts()) {
                         values[index++] = part.isFormatString() ? "<f>" + part.getText() : "<n>" + part.getText();
                     }
                     add(values);

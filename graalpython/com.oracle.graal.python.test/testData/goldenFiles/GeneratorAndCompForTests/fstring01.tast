@@ -77,6 +77,14 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                         YieldNode SourceSection: [34,43]`f'{name}'`
                                           flagSlot: 0
                                           FormatStringLiteralNode SourceSection: [34,43]`f'{name}'`
+                                            PythonCallUnary SourceSection: [0,14]`format((name))`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              ReadGeneratorFrameVariableNode SourceSection: [8,12]`name`
+                                                Frame: [0,name,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: name

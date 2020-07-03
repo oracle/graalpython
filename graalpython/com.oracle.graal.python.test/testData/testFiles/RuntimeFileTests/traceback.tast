@@ -3713,6 +3713,19 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                             Frame: [1,result,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                         FormatStringLiteralNode SourceSection: [14962,15014]`f'  [Previous line r...`
+                                                          PythonCallUnary SourceSection: [0,17]`format((count-3))`
+                                                            CallUnaryMethodNodeGen SourceSection: None
+                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                              Identifier: format
+                                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                            BinaryArithmeticExpression SourceSection: [8,15]`count-3`
+                                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                                Op: __sub__
+                                                              ReadLocalVariableNode SourceSection: [8,13]`count`
+                                                                Frame: [5,count,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                              IntegerLiteralNode SourceSection: [14,15]`3`
+                                                                Value: 3
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [15032,15058]`last_file = frame.fi...`
                                                     Identifier: last_file
@@ -3988,6 +4001,19 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               Frame: [1,result,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           FormatStringLiteralNode SourceSection: [15723,15775]`f'  [Previous line r...`
+                                            PythonCallUnary SourceSection: [0,17]`format((count-3))`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              BinaryArithmeticExpression SourceSection: [8,15]`count-3`
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __sub__
+                                                ReadLocalVariableNode SourceSection: [8,13]`count`
+                                                  Frame: [5,count,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                IntegerLiteralNode SourceSection: [14,15]`3`
+                                                  Value: 3
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [15785,15798]`return result`
                                       WriteLocalVariableNodeGen SourceSection: None

@@ -268,6 +268,7 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.parser.sst.*;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 
 import com.oracle.graal.python.parser.sst.SSTNode;
 
@@ -283,6 +284,7 @@ import java.util.Arrays;
         public boolean containsContinue;
     }
 	private PythonSSTNodeFactory factory;
+	private ParserMode parserMode;
 	private ScopeEnvironment scopeEnvironment;
 	private LoopState loopState;
 
@@ -353,12 +355,15 @@ import java.util.Arrays;
 			stringStackIndex = start;
 		}
 	}
-    
 
-        public void setFactory(PythonSSTNodeFactory factory) {
-            this.factory = factory;
-            scopeEnvironment = factory.getScopeEnvironment();
-        }
+    public void setFactory(PythonSSTNodeFactory factory) {
+        this.factory = factory;
+        scopeEnvironment = factory.getScopeEnvironment();
+    }
+
+    public void setParserMode(ParserMode parserMode) {
+        this.parserMode = parserMode;
+    }
 
     private static class PythonRecognitionException extends RecognitionException{
         static final long serialVersionUID = 1L;
@@ -485,10 +490,18 @@ locals
 eval_input returns [SSTNode result]
 locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 :
-	{ scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module); }
+	{
+	    if (parserMode != ParserMode.FStringExpression) {
+	        scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module);
+        }
+    }
 	BOM? testlist NEWLINE* EOF
 	{ $result = $testlist.result; }
-	{scopeEnvironment.popScope(); }
+	{
+	    if (parserMode != ParserMode.FStringExpression) {
+	        scopeEnvironment.popScope();
+        }
+    }
 ;
 
 decorator:

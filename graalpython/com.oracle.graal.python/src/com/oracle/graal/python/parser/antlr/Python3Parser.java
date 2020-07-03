@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.parser.sst.*;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 
 import com.oracle.graal.python.parser.sst.SSTNode;
 
@@ -222,6 +223,7 @@ public class Python3Parser extends Parser {
 	        public boolean containsContinue;
 	    }
 		private PythonSSTNodeFactory factory;
+		private ParserMode parserMode;
 		private ScopeEnvironment scopeEnvironment;
 		private LoopState loopState;
 
@@ -292,12 +294,15 @@ public class Python3Parser extends Parser {
 				stringStackIndex = start;
 			}
 		}
-	    
 
-	        public void setFactory(PythonSSTNodeFactory factory) {
-	            this.factory = factory;
-	            scopeEnvironment = factory.getScopeEnvironment();
-	        }
+	    public void setFactory(PythonSSTNodeFactory factory) {
+	        this.factory = factory;
+	        scopeEnvironment = factory.getScopeEnvironment();
+	    }
+
+	    public void setParserMode(ParserMode parserMode) {
+	        this.parserMode = parserMode;
+	    }
 
 	    private static class PythonRecognitionException extends RecognitionException{
 	        static final long serialVersionUID = 1L;
@@ -805,7 +810,11 @@ public class Python3Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			 scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module); 
+
+				    if (parserMode != ParserMode.FStringExpression) {
+				        scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module);
+			        }
+			    
 			setState(223);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -835,7 +844,11 @@ public class Python3Parser extends Parser {
 			setState(232);
 			match(EOF);
 			 _localctx.result =  _localctx.testlist.result; 
-			scopeEnvironment.popScope(); 
+
+				    if (parserMode != ParserMode.FStringExpression) {
+				        scopeEnvironment.popScope();
+			        }
+			    
 			}
 		}
 		catch (RecognitionException re) {

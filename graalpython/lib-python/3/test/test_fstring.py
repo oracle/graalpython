@@ -11,6 +11,7 @@ import ast
 import types
 import decimal
 import unittest
+from test.support import impl_detail
 
 a_global = 'global variable'
 
@@ -79,6 +80,7 @@ f'{a * x()}'"""
         # Make sure x was called.
         self.assertTrue(x.called)
 
+    @impl_detail("ast module", graalvm=False)
     def test_ast_line_numbers(self):
         expr = """
 a = 10
@@ -110,6 +112,7 @@ f'{a * x()}'"""
         self.assertEqual(binop.left.col_offset, 3)
         self.assertEqual(binop.right.col_offset, 7)
 
+    @impl_detail("ast module", graalvm=False)
     def test_ast_line_numbers_multiple_formattedvalues(self):
         expr = """
 f'no formatted values'
@@ -162,6 +165,7 @@ f'eggs {a * x()} spam {b + y()}'"""
         self.assertEqual(binop2.left.col_offset, 23)
         self.assertEqual(binop2.right.col_offset, 27)
 
+    @impl_detail("ast module", graalvm=False)
     def test_ast_line_numbers_nested(self):
         expr = """
 a = 10
@@ -207,6 +211,7 @@ f'{a * f"-{x()}-"}'"""
         self.assertEqual(call.lineno, 3)
         self.assertEqual(call.col_offset, 11)
 
+    @impl_detail("ast module", graalvm=False)
     def test_ast_line_numbers_duplicate_expression(self):
         """Duplicate expression
 
@@ -278,6 +283,7 @@ f'{a * x()} {a * x()} {a * x()}'
         self.assertEqual(binop.left.col_offset, 3)  # FIXME: this is wrong
         self.assertEqual(binop.right.col_offset, 7)  # FIXME: this is wrong
 
+    @impl_detail("ast module", graalvm=False)
     def test_ast_line_numbers_multiline_fstring(self):
         # See bpo-30465 for details.
         expr = """
@@ -583,7 +589,8 @@ non-important content
                              ])
 
         # Different error message is raised for other whitespace characters.
-        self.assertAllRaise(SyntaxError, 'invalid character in identifier',
+        # GraalPython patch: removed the check for error text: "invalid character in identifier"
+        self.assertAllRaise(SyntaxError, '',
                             ["f'''{\xa0}'''",
                              "\xa0",
                              ])
@@ -841,7 +848,8 @@ non-important content
         self.assertEqual(f'{f"{y}"*3}', '555')
 
     def test_invalid_string_prefixes(self):
-        self.assertAllRaise(SyntaxError, 'unexpected EOF while parsing',
+        # GraalPython patch: removed the check for error text: "unexpected EOF while parsing"
+        self.assertAllRaise(SyntaxError, '',
                             ["fu''",
                              "uf''",
                              "Fu''",
@@ -1110,9 +1118,11 @@ non-important content
         self.assertEqual(f'{0!=1}', 'True')
         self.assertEqual(f'{0<=1}', 'True')
         self.assertEqual(f'{0>=1}', 'False')
-        self.assertEqual(f'{(x:="5")}', '5')
+        # GraalPython patch: this requires walrus operator support
+        # self.assertEqual(f'{(x:="5")}', '5')
         self.assertEqual(x, '5')
-        self.assertEqual(f'{(x:=5)}', '5')
+        # GraalPython patch: this requires walrus operator support
+        # self.assertEqual(f'{(x:=5)}', '5')
         self.assertEqual(x, 5)
         self.assertEqual(f'{"="}', '=')
 
@@ -1169,13 +1179,17 @@ non-important content
         #self.assertEqual(f'X{x =       }Y', 'Xx\t=\t'+repr(x)+'Y')
 
     def test_walrus(self):
+        # GraalPython note: when enabling this test, which depends on the walrus operator support,
+        # we may uncomment some other assertions that use walrus. Moreover, the first assert in this
+        # test is duplicated in GraalPython's test_formatting.py, that duplication can be removed too.
         x = 20
         # This isn't an assignment expression, it's 'x', with a format
         # spec of '=10'.
         self.assertEqual(f'{x:=10}', '        20')
 
         # This is an assignment expression, which requires parens.
-        self.assertEqual(f'{(x:=10)}', '10')
+        # GraalPython patch: commented out to allow GraalPython to successfully parse this file
+        # self.assertEqual(f'{(x:=10)}', '10')
         self.assertEqual(x, 10)
 
 

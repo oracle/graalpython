@@ -761,6 +761,21 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
                 out.writeBoolean(part.isFormatString());
                 writeString(part.getText());
             }
+            writeInt(node.literals.length);
+            for (String literal : node.literals) {
+                if (literal == null) {
+                    writeString("");
+                } else {
+                    writeString(literal);
+                }
+            }
+            writeInt(node.expressions.length);
+            for (int i = 0; i < node.expressions.length; i++) {
+                node.expressions[i].accept(this);
+            }
+            for (int i = 0; i < node.expresionsSources.length; i++) {
+                writeString(node.expresionsSources[i]);
+            }
         } catch (IOException e) {
             handleIOExceptin(e);
         }

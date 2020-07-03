@@ -41,15 +41,21 @@
 
 package com.oracle.graal.python.nodes.literal;
 
+import java.util.ArrayList;
+
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.parser.sst.FormatStringParser;
+import com.oracle.graal.python.parser.sst.FormatStringParser.Token;
+import com.oracle.graal.python.runtime.PythonParser.ErrorType;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.test.parser.ParserTestBase;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 
 public class FormatStringTests extends ParserTestBase {
 
@@ -239,6 +245,11 @@ public class FormatStringTests extends ParserTestBase {
     }
 
     @Test
+    public void strWithColon() throws Exception {
+        testFormatString("f'{myarray[:1]}'", "format((myarray[:1]))");
+    }
+
+    @Test
     public void str01() throws Exception {
         testFormatString("f'{name!s}'", "format(str((name)))");
     }
@@ -255,37 +266,37 @@ public class FormatStringTests extends ParserTestBase {
 
     @Test
     public void emptyExpression01() throws Exception {
-        checkSyntaxError("f'{}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void emptyExpression02() throws Exception {
-        checkSyntaxError("f'start{}end'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'start{}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void emptyExpression03() throws Exception {
-        checkSyntaxError("f'start{}}end'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'start{}}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void emptyExpression04() throws Exception {
-        checkSyntaxError("f'start{{{}}}end'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'start{{{}}}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void singleBracket01() throws Exception {
-        checkSyntaxError("f'}'", FormatStringLiteralNode.ERROR_MESSAGE_SINGLE_BRACE);
+        checkSyntaxError("f'}'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
     public void singleBracket02() throws Exception {
-        checkSyntaxError("f'start}end'", FormatStringLiteralNode.ERROR_MESSAGE_SINGLE_BRACE);
+        checkSyntaxError("f'start}end'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
     public void singleBracket03() throws Exception {
-        checkSyntaxError("f'start{{}end'", FormatStringLiteralNode.ERROR_MESSAGE_SINGLE_BRACE);
+        checkSyntaxError("f'start{{}end'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
@@ -315,35 +326,35 @@ public class FormatStringTests extends ParserTestBase {
 
     @Test
     public void missingExpression01() throws Exception {
-        checkSyntaxError("f'{!x}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{!x}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression02() throws Exception {
-        checkSyntaxError("f'{     !x}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{     !x}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression03() throws Exception {
-        checkSyntaxError("f'{ !xr:a}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{ !xr:a}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression04() throws Exception {
-        checkSyntaxError("f'{:x'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{:x'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression05() throws Exception {
-        checkSyntaxError("f'{!'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{!'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression06() throws Exception {
-        checkSyntaxError("f'{10:{ }}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{10:{ }}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
-    private void checkSyntaxError(String text, String expectedMessage) throws Exception {
+    private static void checkSyntaxError(String text, String expectedMessage) throws Exception {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);
         } catch (RuntimeException e) {
@@ -351,37 +362,55 @@ public class FormatStringTests extends ParserTestBase {
         }
     }
 
-    private void testFormatString(String text, String expected) throws Exception {
-        VirtualFrame frame = Truffle.getRuntime().createVirtualFrame(new Object[8], new FrameDescriptor());
-
-        Node parserResult = parse(text, "<fstringtest>", PythonParser.ParserMode.InlineEvaluation, frame);
-
-        Assert.assertTrue("The source has to be just fstring", parserResult instanceof FormatStringLiteralNode);
-        FormatStringLiteralNode fsl = (FormatStringLiteralNode) parserResult;
-        int[][] tokens = FormatStringLiteralNode.createTokens(fsl, fsl.getValues());
-        FormatStringLiteralNode.StringPart[] fslParts = fsl.getValues();
-        String[] expressions = FormatStringLiteralNode.createExpressionSources(fslParts, tokens, 0, tokens.length);
+    private static void testFormatString(String fstring, String expected) throws Exception {
+        assert fstring.startsWith("f'") && fstring.endsWith("'");
+        // remove the f'...', to extract the text of the f-string
+        String text = fstring.substring(2).substring(0, fstring.length() - 3);
+        ArrayList<Token> tokens = new ArrayList<>();
+        FormatStringParser.createTokens(tokens, new MockErrorCallback(), 0, text, 0);
+        ArrayList<String> expressions = FormatStringParser.createExpressionSources(text, tokens, 0, tokens.size(), tokens.size());
         int expressionsIndex = 0;
         StringBuilder actual = new StringBuilder();
         boolean first = true;
         boolean wasLastString = true;
-        for (int index = 0; index < tokens.length; index++) {
-            int[] token = tokens[index];
+        for (int index = 0; index < tokens.size(); index++) {
+            Token token = tokens.get(index);
             if (first) {
                 first = false;
-            } else if (!(wasLastString && token[0] == FormatStringLiteralNode.TOKEN_TYPE_STRING)) {
+            } else if (!(wasLastString && token.type == FormatStringParser.TOKEN_TYPE_STRING)) {
                 actual.append("+");
             }
-            if (token[0] == FormatStringLiteralNode.TOKEN_TYPE_STRING) {
-                actual.append(fslParts[token[1]].getText().substring(token[2], token[3]));
+            if (token.type == FormatStringParser.TOKEN_TYPE_STRING) {
+                actual.append(text, token.startIndex, token.endIndex);
                 wasLastString = true;
             } else {
-                actual.append(expressions[expressionsIndex]);
-                index += token[4];
+                actual.append(expressions.get(expressionsIndex));
+                index += token.formatTokensCount;
                 wasLastString = false;
             }
         }
         Assert.assertEquals(expected, actual.toString());
     }
 
+    private static final class MockErrorCallback implements ParserErrorCallback {
+        @Override
+        public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
+            throw new RuntimeException("SyntaxError: " + String.format(message, args));
+        }
+
+        @Override
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
+            throw new RuntimeException("SyntaxError: " + String.format(message, arguments));
+        }
+
+        @Override
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
+            throw new RuntimeException("SyntaxError: " + String.format(message, arguments));
+        }
+
+        @Override
+        public PythonLanguage getLanguage() {
+            return null;
+        }
+    }
 }

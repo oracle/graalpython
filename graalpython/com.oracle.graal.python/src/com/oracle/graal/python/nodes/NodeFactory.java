@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.KeywordLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
@@ -242,8 +243,8 @@ public class NodeFactory {
         return new StringLiteralNode(value);
     }
 
-    public ExpressionNode createFormatStringLiteral(FormatStringLiteralNode.StringPart[] values) {
-        return new FormatStringLiteralNode(values);
+    public ExpressionNode createFormatStringLiteral(StringPart[] values, ExpressionNode[] exprs, String[] literals) {
+        return new FormatStringLiteralNode(values, exprs, literals);
     }
 
     public ExpressionNode createBytesLiteral(byte[] value) {

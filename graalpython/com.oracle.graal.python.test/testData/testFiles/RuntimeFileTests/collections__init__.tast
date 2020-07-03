@@ -305,6 +305,32 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           Identifier: AttributeError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FormatStringLiteralNode SourceSection: [2189,2237]`f'module {__name__!r...`
+                          PythonCallUnary SourceSection: [0,24]`format(repr((__name_...`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                              Identifier: format
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [7,23]`repr((__name__))`
+                              CallUnaryMethodNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                Identifier: repr
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [13,21]`__name__`
+                                Identifier: __name__
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [0,20]`format(repr((name)))...`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                              Identifier: format
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonCallUnary SourceSection: [7,19]`repr((name))`
+                              CallUnaryMethodNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                Identifier: repr
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [13,17]`name`
+                                Frame: [0,name,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                       NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
@@ -3831,6 +3857,14 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Frame: [7,index,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     FormatStringLiteralNode SourceSection: [12687,12698]`f'_{index}'`
+                                      PythonCallUnary SourceSection: [0,15]`format((index))`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                          Identifier: format
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [8,13]`index`
+                                          Frame: [7,index,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [12711,12725]`seen.add(name)`
                                   PythonCallUnary SourceSection: [12711,12725]`seen.add(name)`
@@ -3907,6 +3941,19 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [12942,13039]`'Type names and fiel...`
+                                    PythonCallUnary SourceSection: [0,20]`format(repr((name)))...`
+                                      CallUnaryMethodNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                        Identifier: format
+                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [7,19]`repr((name))`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                          Identifier: repr
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [13,17]`name`
+                                          Frame: [8,name,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                 NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             IfNode SourceSection: [13049,13197]`if _iskeyword(name):...`
@@ -3928,6 +3975,19 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13099,13190]`'Type names and fiel...`
+                                    PythonCallUnary SourceSection: [0,20]`format(repr((name)))...`
+                                      CallUnaryMethodNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                        Identifier: format
+                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [7,19]`repr((name))`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                          Identifier: repr
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [13,17]`name`
+                                          Frame: [8,name,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                 NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [12743,12767]`[typename] + field_n...`
@@ -3992,6 +4052,19 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13316,13404]`'Field names cannot ...`
+                                    PythonCallUnary SourceSection: [0,20]`format(repr((name)))...`
+                                      CallUnaryMethodNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                        Identifier: format
+                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [7,19]`repr((name))`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                          Identifier: repr
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [13,17]`name`
+                                          Frame: [8,name,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                 NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             IfNode SourceSection: [13414,13515]`if name in seen:↵   ...`
@@ -4017,6 +4090,19 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13460,13505]`f'Encountered duplic...`
+                                    PythonCallUnary SourceSection: [0,20]`format(repr((name)))...`
+                                      CallUnaryMethodNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                        Identifier: format
+                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      PythonCallUnary SourceSection: [7,19]`repr((name))`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                          Identifier: repr
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [13,17]`name`
+                                          Frame: [8,name,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                 NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [13515,13529]`seen.add(name)`
@@ -4257,6 +4343,14 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         YieldNode SourceSection: [14106,14118]`f'{name}=%r'`
                                           flagSlot: 0
                                           FormatStringLiteralNode SourceSection: [14106,14118]`f'{name}=%r'`
+                                            PythonCallUnary SourceSection: [0,14]`format((name))`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              ReadGeneratorFrameVariableNode SourceSection: [8,12]`name`
+                                                Frame: [0,name,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: name
@@ -4367,6 +4461,22 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         Frame: [17,__new__,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       FormatStringLiteralNode SourceSection: [14591,14639]`f'Create new instanc...`
+                        PythonCallUnary SourceSection: [0,18]`format((typename))`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                            Identifier: format
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [8,16]`typename`
+                            Frame: [0,typename,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallUnary SourceSection: [0,18]`format((arg_list))`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                            Identifier: format
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [8,16]`arg_list`
+                            Frame: [11,arg_list,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [14644,14714]`if defaults is not N...`
                       NotNodeGen SourceSection: [14647,14667]`defaults is not None...`
                         IsBuiltinClassProfile SourceSection: None
@@ -4478,6 +4588,29 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FormatStringLiteralNode SourceSection: [14866,14919]`f'Expected {num_fiel...`
+                                            PythonCallUnary SourceSection: [0,20]`format((num_fields))...`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [8,18]`num_fields`
+                                                ReadLocalVariableNode SourceSection: None
+                                                  Frame: [3,num_fields,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadFromCellNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [0,21]`format((len(result))...`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [8,19]`len(result)`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [8,11]`len`
+                                                  Identifier: len
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12,18]`result`
+                                                  Frame: [2,result,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [14929,14942]`return result`
@@ -4504,6 +4637,14 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           Frame: [18,_make,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                       FormatStringLiteralNode SourceSection: [14974,15066]`f'Make a new {typena...`
+                        PythonCallUnary SourceSection: [0,18]`format((typename))`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                            Identifier: format
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [8,16]`typename`
+                            Frame: [0,typename,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15073,15286]`def _replace(_self, ...`
                       Identifier: _replace
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4594,6 +4735,24 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           Identifier: ValueError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FormatStringLiteralNode SourceSection: [15212,15257]`f'Got unexpected fie...`
+                                          PythonCallUnary SourceSection: [0,26]`format(repr((list(kw...`
+                                            CallUnaryMethodNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                              Identifier: format
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [7,25]`repr((list(kwds)))`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                                Identifier: repr
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [13,23]`list(kwds)`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [13,17]`list`
+                                                  Identifier: list
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [18,22]`kwds`
+                                                  Frame: [1,kwds,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                       NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                                   FrameReturnNode SourceSection: [15267,15280]`return result`
@@ -4613,6 +4772,14 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         Frame: [19,_replace,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       FormatStringLiteralNode SourceSection: [15306,15409]`f'Return a new {type...`
+                        PythonCallUnary SourceSection: [0,18]`format((typename))`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                            Identifier: format
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [8,16]`typename`
+                            Frame: [0,typename,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15416,15556]`def __repr__(self):↵...`
                       Identifier: __repr__
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4815,6 +4982,29 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               Frame: [23,method,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             FormatStringLiteralNode SourceSection: [16039,16070]`f'{typename}.{method...`
+                              PythonCallUnary SourceSection: [0,18]`format((typename))`
+                                CallUnaryMethodNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                  Identifier: format
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [8,16]`typename`
+                                  Frame: [0,typename,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [0,25]`format((method.__nam...`
+                                CallUnaryMethodNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                  Identifier: format
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                GetAttributeNodeGen SourceSection: [8,23]`method.__name__`
+                                  GetFixedAttributeNodeGen SourceSection: None
+                                    Key: __name__
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __getattribute__
+                                    IsBuiltinClassProfile SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [8,14]`method`
+                                    Frame: [23,method,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [15918,16007]`(__new__, _make.__fu...`
                           GetIteratorNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [15918,16007]`(__new__, _make.__fu...`
@@ -4862,6 +5052,22 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         StringLiteralNode SourceSection: [16456,16465]`'_asdict'`
                         StringLiteralNode SourceSection: [16484,16500]`'__getnewargs__'`
                         FormatStringLiteralNode SourceSection: [16208,16233]`f'{typename}({arg_li...`
+                          PythonCallUnary SourceSection: [0,18]`format((typename))`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                              Identifier: format
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [8,16]`typename`
+                              Frame: [0,typename,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallUnary SourceSection: [0,18]`format((arg_list))`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                              Identifier: format
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [8,16]`arg_list`
+                              Frame: [11,arg_list,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                         TupleLiteralNode SourceSection: [16256,16258]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [16279,16290]`field_names`
@@ -4976,6 +5182,14 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [27,doc,Illegal]
                                       FormatStringLiteralNode SourceSection: [16756,16789]`f'Alias for field nu...`
+                                        PythonCallUnary SourceSection: [0,15]`format((index))`
+                                          CallUnaryMethodNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                            Identifier: format
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [8,13]`index`
+                                            Frame: [7,index,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [16802,16839]`cache[index] = itemg...`
                                       ReadLocalVariableNode SourceSection: None
                                         Frame: [25,cache,Illegal]
