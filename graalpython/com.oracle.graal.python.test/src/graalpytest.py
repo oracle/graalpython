@@ -208,13 +208,11 @@ class Mark:
         return decorator
 
     @staticmethod
-    def xfail(*args):
-        def decorator(obj):
-            def foo():
-                pass
-            foo.__name__ = obj.__name__
-            return foo
-        return decorator
+    def xfail(obj):
+        def foo():
+            pass
+        foo.__name__ = obj.__name__
+        return foo
 
 def _pytest_fixture_maker(*args, **kwargs):
     def _fixture_decorator(fun):
