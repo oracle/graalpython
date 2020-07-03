@@ -14,3 +14,4 @@
 *graalpython.lib-python.3.test.test_int.IntTestCases.test_non_numeric_input_types
 *graalpython.lib-python.3.test.test_int.IntTestCases.test_small_ints
 *graalpython.lib-python.3.test.test_int.IntTestCases.test_string_float
+*graalpython.lib-python.3.test.test_int.IntTestCases.test_underscores

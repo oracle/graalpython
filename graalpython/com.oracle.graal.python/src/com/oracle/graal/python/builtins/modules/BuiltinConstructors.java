@@ -1148,6 +1148,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private final BranchProfile bigIntegerProfile = BranchProfile.create();
         private final BranchProfile primitiveIntProfile = BranchProfile.create();
         private final BranchProfile fullIntProfile = BranchProfile.create();
+        private final BranchProfile notSimpleDecimalLiteralProfile = BranchProfile.create();
 
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
         @Child private LookupAndCallUnaryNode callIntNode;
@@ -1157,9 +1158,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object stringToIntInternal(String num, int base) {
-            String s = num.replace("_", "");
             try {
-                BigInteger bi = asciiToBigInteger(s, base, false);
+                BigInteger bi = asciiToBigInteger(num, base);
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                     return bi;
                 } else {
@@ -1171,6 +1171,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj) {
+            if (base == 0 || base == 10) {
+                Object value = parseSimpleDecimalLiteral(number);
+                if (value != null) {
+                    return createInt(cls, value);
+                }
+            }
+            notSimpleDecimalLiteralProfile.enter();
             Object value = stringToIntInternal(number, base);
             if (value == null) {
                 invalidValueProfile.enter();
@@ -1221,8 +1228,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        // Copied directly from Jython
-        private static BigInteger asciiToBigInteger(String str, int possibleBase, boolean isLong) throws NumberFormatException {
+        // Adapted from Jython
+        private static BigInteger asciiToBigInteger(String str, int possibleBase) throws NumberFormatException {
             CompilerAsserts.neverPartOfCompilation();
             int base = possibleBase;
             int b = 0;
@@ -1236,20 +1243,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 e--;
             }
 
+            boolean acceptUnderscore = false;
+            boolean raiseIfNotZero = false;
             char sign = 0;
             if (b < e) {
                 sign = str.charAt(b);
                 if (sign == '-' || sign == '+') {
                     b++;
-                    while (b < e && Character.isWhitespace(str.charAt(b))) {
-                        b++;
-                    }
                 }
 
                 if (base == 16) {
                     if (str.charAt(b) == '0') {
                         if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'X') {
                             b += 2;
+                            acceptUnderscore = true;
                         }
                     }
                 } else if (base == 0) {
@@ -1257,23 +1264,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'X') {
                             base = 16;
                             b += 2;
+                            acceptUnderscore = true;
                         } else if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'O') {
                             base = 8;
                             b += 2;
+                            acceptUnderscore = true;
                         } else if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'B') {
                             base = 2;
                             b += 2;
+                            acceptUnderscore = true;
                         } else {
-                            base = 8;
+                            raiseIfNotZero = true;
                         }
                     }
                 } else if (base == 8) {
                     if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'O') {
                         b += 2;
+                        acceptUnderscore = true;
                     }
                 } else if (base == 2) {
                     if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'B') {
                         b += 2;
+                        acceptUnderscore = true;
                     }
                 }
             }
@@ -1282,15 +1294,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 base = 10;
             }
 
-            // if the base >= 22, then an 'l' or 'L' is a digit!
-            if (isLong && base < 22 && e > b && (str.charAt(e - 1) == 'L' || str.charAt(e - 1) == 'l')) {
-                e--;
+            int i = b;
+            while (i < e) {
+                if (str.charAt(i) == '_') {
+                    if (!acceptUnderscore || i == e - 1) {
+                        throw new NumberFormatException("Illegal underscore in int literal");
+                    } else {
+                        acceptUnderscore = false;
+                    }
+                } else {
+                    acceptUnderscore = true;
+                }
+                ++i;
             }
 
             String s = str;
             if (b > 0 || e < str.length()) {
                 s = str.substring(b, e);
             }
+            s = s.replace("_", "");
 
             BigInteger bi;
             if (sign == '-') {
@@ -1298,64 +1320,50 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else {
                 bi = new BigInteger(s, base);
             }
+
+            if (raiseIfNotZero && !bi.equals(BigInteger.ZERO)) {
+                throw new NumberFormatException("Obsolete octal int literal");
+            }
             return bi;
         }
 
-        @TruffleBoundary
-        private static int parseInt(String arg, int base) {
-            if (arg.isEmpty() || base == 0) {
-                throw new NumberFormatException();
+        /**
+         * Fast path parser of integer literals. Accepts only a subset of allowed literals - no
+         * underscores, no leading zeros, no plus sign, no spaces, only ascii digits and the result
+         * must be small enough to fit into long.
+         *
+         * @param arg the string to parse
+         * @return parsed integer, long or null if the literal is not simple enough
+         */
+        private static Object parseSimpleDecimalLiteral(String arg) {
+            if (arg.isEmpty()) {
+                return null;
             }
-            boolean negative = arg.charAt(0) == '-';
-            int start = negative ? 1 : 0;
-            if (arg.length() <= start || arg.charAt(start) == '_') {
-                throw new NumberFormatException();
+            int start = arg.charAt(0) == '-' ? 1 : 0;
+            if (arg.length() <= start || arg.length() > 18 + start) {
+                return null;
             }
-            long value = 0;
-            for (int i = start; i < arg.length(); i++) {
-                char c = arg.charAt(i);
-                if (c == '_') {
-                    continue;
+            if (arg.charAt(start) == '0') {
+                if (arg.length() > start + 1) {
+                    return null;
                 }
-                if (c < '0' || c > '9') {
-                    throw new NumberFormatException();
-                }
-                value = value * base + (c - '0');
-                if (value > Integer.MAX_VALUE) {
-                    throw new NumberFormatException();
-                }
-            }
-            return (int) (negative ? -value : value);
-        }
-
-        private static final long MAX_VALUE = (Long.MAX_VALUE - 10) / 10;
-
-        @TruffleBoundary
-        private static long parseLong(String arg, int base) {
-            if (arg.isEmpty() || base == 0) {
-                throw new NumberFormatException();
-            }
-            boolean negative = arg.charAt(0) == '-';
-            int start = negative ? 1 : 0;
-            if (arg.length() <= start || arg.charAt(start) == '_') {
-                throw new NumberFormatException();
+                return 0;
             }
             long value = 0;
             for (int i = start; i < arg.length(); i++) {
                 char c = arg.charAt(i);
-                if (c == '_') {
-                    continue;
-                }
                 if (c < '0' || c > '9') {
-                    throw new NumberFormatException();
+                    return null;
                 }
-                if (value >= MAX_VALUE) {
-                    // overflow, this will not allow Long.MIN_VALUE to be parsed
-                    throw new NumberFormatException();
-                }
-                value = value * base + (c - '0');
+                value = value * 10 + (c - '0');
             }
-            return negative ? -value : value;
+            if (start != 0) {
+                value = -value;
+            }
+            if (value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE) {
+                return (int) value;
+            }
+            return value;
         }
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
@@ -1404,31 +1412,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         // String
 
-        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
-        int createIntBase10(@SuppressWarnings("unused") Object cls, String arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
-            return parseInt(arg, 10);
-        }
-
-        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
-        long createLongBase10(@SuppressWarnings("unused") Object cls, String arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
-            return parseLong(arg, 10);
-        }
-
         @Specialization(guards = "isNoValue(base)")
         Object createInt(VirtualFrame frame, Object cls, String arg, @SuppressWarnings("unused") PNone base) {
             return stringToInt(frame, cls, arg, 10, arg);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(@SuppressWarnings("unused") Object cls, String arg, int base) throws NumberFormatException {
-            checkBase(base);
-            return parseInt(arg, base);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        long parseLong(@SuppressWarnings("unused") Object cls, String arg, int base) throws NumberFormatException {
-            checkBase(base);
-            return parseLong(arg, base);
         }
 
         @Specialization
@@ -1447,16 +1433,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         // PIBytesLike
 
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(VirtualFrame frame, Object cls, PIBytesLike arg, int base) throws NumberFormatException {
-            return parseInt(cls, toString(frame, arg), base);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        long parseLong(VirtualFrame frame, Object cls, PIBytesLike arg, int base) throws NumberFormatException {
-            return parseLong(cls, toString(frame, arg), base);
-        }
-
         @Specialization
         Object parseBytesError(VirtualFrame frame, Object cls, PIBytesLike arg, int base) {
             checkBase(base);
@@ -1470,31 +1446,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         // PString
 
-        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
-        int createInt(@SuppressWarnings("unused") Object cls, PString arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
-            return parseInt(arg.getValue(), 10);
-        }
-
-        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
-        long createLong(@SuppressWarnings("unused") Object cls, PString arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
-            return parseLong(arg.getValue(), 10);
-        }
-
         @Specialization(guards = "isNoValue(base)")
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base) {
             return stringToInt(frame, cls, arg.getValue(), 10, arg);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(@SuppressWarnings("unused") Object cls, PString arg, int base) throws NumberFormatException {
-            checkBase(base);
-            return parseInt(arg.getValue(), base);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        long parseLong(@SuppressWarnings("unused") Object cls, PString arg, int base) throws NumberFormatException {
-            checkBase(base);
-            return parseLong(arg.getValue(), base);
         }
 
         @Specialization
