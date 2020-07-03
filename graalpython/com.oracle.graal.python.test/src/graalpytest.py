@@ -75,37 +75,35 @@ class Fixture:
         self.params = kwargs.get("params", [])
         self._values = None
 
-    def eval(self, *args):
+    def eval(self, test_class_instance):
         values = []
         if self.params:
             for param in self.params:
-                values.extend(self._call_fixture_func(_request_class(param=param, config=RequestConfig())))
+                values.extend(self._call_fixture_func(test_class_instance, _request_class(param=param, config=RequestConfig())))
         else:
-            values.extend(self._call_fixture_func(_request_class(param=None, config=RequestConfig())))
+            values.extend(self._call_fixture_func(test_class_instance, _request_class(param=None, config=RequestConfig())))
         self._values = values
         return values
 
-    def _call_fixture_func(self, request):
+    def _call_fixture_func(self, test_class_instance, request):
         co = self.fun.__code__
         fixture_args = []
         start = 1 if self.requests_context else 0
+        has_self = False
         if co.co_argcount > start:
             arg_names = co.co_varnames[start:co.co_argcount]
-            if arg_names and arg_names[0] == "self":
+            has_self = arg_names and arg_names[0] == "self"
+            if has_self:
                 arg_names = arg_names[1:]
-            fixture_args = get_fixture_values(arg_names)
+            fixture_args = get_fixture_values(test_class_instance, arg_names)
         results = []
+        fixed_args = ((test_class_instance, ) if has_self else tuple()) + ((request, ) if self.requests_context else tuple())
         if fixture_args:
             for arg_vec in fixture_args:
-                if self.requests_context:
-                    results.append(self.fun(request, *arg_vec))
-                else:
-                    results.append(self.fun(*arg_vec))
+                args = fixed_args + arg_vec
+                results.append(self.fun(*args))
         else:
-            if self.requests_context:
-                results.append(self.fun(request))
-            else:
-                results.append(self.fun())
+            results.append(self.fun(*fixed_args))
         return results
 
     def values(self):
@@ -156,7 +154,7 @@ def eval_scope(scope):
     """
     for name, f in _fixture_scopes[scope].items():
         assert name == f.name()
-        f.eval()
+        f.eval(None)
 
 
 def is_existing_fixture(name):
@@ -169,7 +167,7 @@ def is_existing_fixture(name):
     return False
 
 
-def get_fixture_values(names):
+def get_fixture_values(test_class_instance, names):
     """
     Computes a list of argument vectors for the given fixture names.
     It's a list because of parameterized fixtures that cause a cartesian product of all fixture values.
@@ -184,12 +182,12 @@ def get_fixture_values(names):
                     # evaluate fixtures on demand (could be that we loaded it after the e.g. the session was started)
                     fvals = fixture.values()
                     if not fvals:
-                        fvals = fixture.eval()
+                        fvals = fixture.eval(None)
                     result_vector.append(fvals)
                     # will break only the inner loop
                     break
             elif scope_name == "function":
-                result_vector.append(eval_fixture(fixture_name))
+                result_vector.append(eval_fixture(fixture_name, test_class_instance))
                 # will break only the inner loop
                 break
             else:
@@ -328,9 +326,9 @@ class TestCase(object):
                 arg_tmpdir_idx = arg_names.index("tmpdir")
             except ValueError:
                 arg_tmpdir_idx = -1
-            fixture_args = get_fixture_values(arg_names)
+            fixture_args = get_fixture_values(self, arg_names)
 
-        get_fixture_values(_fixture_marks)
+        get_fixture_values(self, _fixture_marks)
 
         try:
             for arg_vec in fixture_args:
