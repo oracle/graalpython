@@ -40,6 +40,7 @@
 #!/usr/bin/env mx python
 import os
 from os.path import dirname, join
+import os.path as ospath
 import _io
 import sys
 import time
@@ -114,18 +115,38 @@ class Fixture:
         return self.fun.__name__
 
 
-def eval_fixture(name):
+class GraalPyTempdir:
+    def __init__(self, path):
+        assert isinstance(path, str)
+        self._path = path
+
+    def __fspath__(self):
+        return self._path
+
+    def __str__(self):
+        return self._path
+
+    def join(self, *args):
+        res = ospath.join(self._path, *args)
+        return GraalPyTempdir(res)
+
+    def write(self, data, mode='w', ensure=False):
+        with open(self._path, mode) as f:
+            f.write(data)
+
+
+def eval_fixture(name, test_class_instance):
     """
     Evaluate a fixtures with default scope (=function).
     """
     # TODO remove special handling
     if name == "tmpdir":
-        return tempfile.mkdtemp()
+        return [GraalPyTempdir(tempfile.mkdtemp())]
 
     fixture = _fixture_scopes["function"].get(name)
     if fixture:
         assert name == fixture.name()
-        return fixture.eval()
+        return fixture.eval(test_class_instance)
     raise ValueError("unknown fixture " + name)
 
 
