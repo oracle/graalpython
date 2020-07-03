@@ -35,6 +35,8 @@ import re
 import shutil
 import sys
 
+HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
+
 PY3 = sys.version_info[0] == 3 # compatibility between Python versions
 import tempfile
 if PY3:
@@ -1740,6 +1742,95 @@ def python_clean(args):
     if count > 0:
         print ('Cleaning', count, "`*.pyc` files...")
 
+def update_hpy_import_cmd(args):
+    """Update our import of HPy sources."""
+    parser = ArgumentParser('mx python-update-hpy-import')
+    parser.add_argument('--pull', action='store_true', help='Perform a pull of the HPy repo first.', required=False)
+    parser.add_argument('hpy_repo', metavar='HPY_REPO', help='Path to the HPy repo to import from.')
+    parsed_args, remaining_args = parser.parse_known_args(args)
+
+    join = os.path.join
+    vc = SUITE.vc
+
+    current_branch = vc.active_branch(SUITE.dir)
+    if current_branch == "master":
+        mx.abort("updating imports should be done on a branch")
+    if vc.isDirty(SUITE.dir):
+        mx.abort("updating imports should be done on a clean branch")
+
+    hpy_repo_path = parsed_args.hpy_repo
+
+    # do sanity check of the HPy repo
+    hpy_repo_include_dir = join(hpy_repo_path, "hpy", "devel", "include")
+    hpy_repo_runtime_dir = join(hpy_repo_path, "hpy", "devel", "src")
+    hpy_repo_test_dir = join(hpy_repo_path, "test")
+    for d in [hpy_repo_path, hpy_repo_include_dir, hpy_repo_runtime_dir, hpy_repo_test_dir]:
+        if not os.path.isdir(d):
+            mx.abort("HPy import repo is missing directory {}".format(d))
+
+    # We should use 'SUITE.vc' here because HPy always uses Git and this may be different from 'SUITE.vc'.
+    vc_git = mx.vc_system("git")
+
+    # Now that we know the 'hpy_repo_path' looks sane, do a pull if requested.
+    if parsed_args.pull:
+        if not vc_git.is_this_vc(hpy_repo_path):
+            mx.abort("Cannot perform pull for HPy repo because {} is not a valid Git repo.".format(hpy_repo_path))
+        vc_git.pull(hpy_repo_path)
+
+    # determine short revision of HPy
+    import_version = vc_git.git_command(hpy_repo_path, ["rev-parse", "--short", "HEAD"])
+    mx.log("Determined HPy revision {}".format(import_version))
+
+    if vc_git.isDirty(hpy_repo_path):
+        res = raw_input("WARNING: your HPy repo is not clean. Do you want to proceed? (n/y) ")
+        if str(res).strip().lower() != "y":
+            return
+
+    # switch to the HPy import orphan branch
+    vc.git_command(SUITE.dir, ["checkout", HPY_IMPORT_ORPHAN_BRANCH_NAME])
+    assert not SUITE.vc.isDirty(SUITE.dir)
+
+    def import_files(from_dir, to_dir):
+        mx.log("Importing HPy files from {}".format(from_dir))
+        for dirpath, dirnames, filenames in os.walk(from_dir):
+            relative_dir_path = os.path.relpath(dirpath, start=from_dir)
+            # ignore dir 'cpython' and all its subdirs
+            for filename in filenames:
+                src_file = join(dirpath, filename)
+                dest_file = join(to_dir, relative_dir_path, filename)
+                mx.logv("Importing HPy file {} to {}".format(src_file, dest_file))
+
+                # ensure that relative parent directories already exist (ignore existing)
+                os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+
+                # copy file (overwrite existing)
+                mx.copyfile(src_file, dest_file)
+                # we may copy ignored files
+                vc.add(SUITE.dir, dest_file, abortOnError=False)
+
+
+    # headers go into 'com.oracle.graal.python.cext/include'
+    header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
+
+    # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
+    # but exclude subdir 'cpython' (since that's only for CPython)
+    import_files(hpy_repo_include_dir, header_dest)
+
+    # runtime sources go into 'lib-graalpython/module/hpy/src
+    runtime_files_dest = join(_get_core_home(), "modules", "hpy", "src")
+    import_files(hpy_repo_runtime_dir, runtime_files_dest)
+
+    # tests go to 'lib-graalpython/module/hpy/tests
+    test_files_dest = join(_get_core_home(), "modules", "hpy", "test")
+    import_files(hpy_repo_test_dir, test_files_dest)
+
+    SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
+    raw_input("Check that the updated files look as intended, then press RETURN...")
+    SUITE.vc.commit(SUITE.dir, "Update HPy inlined files: %s" % import_version)
+    SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
+    SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -1767,4 +1858,5 @@ mx.update_commands(SUITE, {
     'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
     'clean': [python_clean, ''],
+    'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
 })
