@@ -2990,14 +2990,14 @@ public abstract class CExtNodes {
     public abstract static class SubRefCntNode extends PNodeWithContext {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
 
-        public final Object dec(Object object) {
+        public final long dec(Object object) {
             return execute(object, 1);
         }
 
-        public abstract Object execute(Object object, long value);
+        public abstract long execute(Object object, long value);
 
         @Specialization
-        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value,
+        static long doNativeWrapper(PythonNativeWrapper nativeWrapper, long value,
                         @Cached FreeNode freeNode,
                         @Cached BranchProfile negativeProfile) {
             long refCount = nativeWrapper.getRefCount() - value;
@@ -3009,11 +3009,11 @@ public abstract class CExtNodes {
                 negativeProfile.enter();
                 LOGGER.severe(() -> "native wrapper has negative ref count: " + nativeWrapper);
             }
-            return nativeWrapper;
+            return refCount;
         }
 
         @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
-        static Object doNativeObject(Object object, long value,
+        static long doNativeObject(Object object, long value,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {
@@ -3024,8 +3024,9 @@ public abstract class CExtNodes {
                 if (context.getOption(PythonOptions.TraceNativeMemory) && newRefcnt < 0) {
                     LOGGER.severe(() -> "object has negative ref count: " + CApiContext.asHex(object));
                 }
+                return newRefcnt;
             }
-            return object;
+            return 1;
         }
     }
 
