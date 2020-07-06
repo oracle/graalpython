@@ -1,4 +1,6 @@
 *graalpython.lib-python.3.test.test_smtplib.BadHELOServerTests.testFailingHELO
+*graalpython.lib-python.3.test.test_smtplib.DefaultArgumentsTests.testSendMessage
+*graalpython.lib-python.3.test.test_smtplib.DefaultArgumentsTests.testSendMessageWithMailOptions
 *graalpython.lib-python.3.test.test_smtplib.GeneralTests.testBasic1
 *graalpython.lib-python.3.test.test_smtplib.GeneralTests.testBasic2
 *graalpython.lib-python.3.test.test_smtplib.GeneralTests.testLocalHostName

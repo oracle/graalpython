@@ -45,6 +45,7 @@
 *graalpython.lib-python.3.test.test_tempfile.TestNamedTemporaryFile.test_iter
 *graalpython.lib-python.3.test.test_tempfile.TestNamedTemporaryFile.test_method_lookup
 *graalpython.lib-python.3.test.test_tempfile.TestNamedTemporaryFile.test_multiple_close
+*graalpython.lib-python.3.test.test_tempfile.TestNamedTemporaryFile.test_no_leak_fd
 *graalpython.lib-python.3.test.test_tempfile.TestRandomNameSequence.test_get_six_char_str
 *graalpython.lib-python.3.test.test_tempfile.TestRandomNameSequence.test_many
 *graalpython.lib-python.3.test.test_tempfile.TestRandomNameSequence.test_process_awareness
@@ -76,3 +77,4 @@
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_basic
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_mode_and_encoding
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_multiple_close
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_no_leak_fd

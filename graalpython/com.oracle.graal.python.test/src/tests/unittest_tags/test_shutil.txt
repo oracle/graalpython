@@ -55,6 +55,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_simple
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_special_func
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_subdirectory
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_winerror
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_with_exclude
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copyxattr
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copyxattr_symlinks
@@ -91,6 +92,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestWhich.test_environ_path
 *graalpython.lib-python.3.test.test_shutil.TestWhich.test_environ_path_cwd
 *graalpython.lib-python.3.test.test_shutil.TestWhich.test_environ_path_empty
+*graalpython.lib-python.3.test.test_shutil.TestWhich.test_environ_path_missing
 *graalpython.lib-python.3.test.test_shutil.TestWhich.test_non_matching_mode
 *graalpython.lib-python.3.test.test_shutil.TestWhich.test_nonexistent_file
 *graalpython.lib-python.3.test.test_shutil.TestWhich.test_pathext
@@ -101,6 +103,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_basic
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_empty_path_no_PATH
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_environ_path
+*graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_environ_path_missing
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_non_matching_mode
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_nonexistent_file
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_pathext

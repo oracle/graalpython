@@ -9,6 +9,7 @@
 *graalpython.lib-python.3.test.test_shelve.TestAsciiFileShelve.test_popitem
 *graalpython.lib-python.3.test.test_shelve.TestAsciiFileShelve.test_read
 *graalpython.lib-python.3.test.test_shelve.TestAsciiFileShelve.test_setdefault
+*graalpython.lib-python.3.test.test_shelve.TestAsciiFileShelve.test_update
 *graalpython.lib-python.3.test.test_shelve.TestAsciiFileShelve.test_values
 *graalpython.lib-python.3.test.test_shelve.TestAsciiFileShelve.test_write
 *graalpython.lib-python.3.test.test_shelve.TestAsciiMemShelve.test_bool
@@ -22,6 +23,7 @@
 *graalpython.lib-python.3.test.test_shelve.TestAsciiMemShelve.test_popitem
 *graalpython.lib-python.3.test.test_shelve.TestAsciiMemShelve.test_read
 *graalpython.lib-python.3.test.test_shelve.TestAsciiMemShelve.test_setdefault
+*graalpython.lib-python.3.test.test_shelve.TestAsciiMemShelve.test_update
 *graalpython.lib-python.3.test.test_shelve.TestAsciiMemShelve.test_values
 *graalpython.lib-python.3.test.test_shelve.TestAsciiMemShelve.test_write
 *graalpython.lib-python.3.test.test_shelve.TestBinaryFileShelve.test_bool
@@ -35,6 +37,7 @@
 *graalpython.lib-python.3.test.test_shelve.TestBinaryFileShelve.test_popitem
 *graalpython.lib-python.3.test.test_shelve.TestBinaryFileShelve.test_read
 *graalpython.lib-python.3.test.test_shelve.TestBinaryFileShelve.test_setdefault
+*graalpython.lib-python.3.test.test_shelve.TestBinaryFileShelve.test_update
 *graalpython.lib-python.3.test.test_shelve.TestBinaryFileShelve.test_values
 *graalpython.lib-python.3.test.test_shelve.TestBinaryFileShelve.test_write
 *graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_bool
@@ -48,6 +51,7 @@
 *graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_popitem
 *graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_read
 *graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_setdefault
+*graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_update
 *graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_values
 *graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_write
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_ascii_file_shelf
@@ -60,6 +64,7 @@
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_proto2_file_shelf
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_with
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_writeback_also_writes_immediately
+*graalpython.lib-python.3.test.test_shelve.TestMain.test_main
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_bool
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_constructor
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_get
@@ -71,6 +76,7 @@
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_popitem
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_read
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_setdefault
+*graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_update
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_values
 *graalpython.lib-python.3.test.test_shelve.TestProto2FileShelve.test_write
 *graalpython.lib-python.3.test.test_shelve.TestProto2MemShelve.test_bool
@@ -84,5 +90,6 @@
 *graalpython.lib-python.3.test.test_shelve.TestProto2MemShelve.test_popitem
 *graalpython.lib-python.3.test.test_shelve.TestProto2MemShelve.test_read
 *graalpython.lib-python.3.test.test_shelve.TestProto2MemShelve.test_setdefault
+*graalpython.lib-python.3.test.test_shelve.TestProto2MemShelve.test_update
 *graalpython.lib-python.3.test.test_shelve.TestProto2MemShelve.test_values
 *graalpython.lib-python.3.test.test_shelve.TestProto2MemShelve.test_write

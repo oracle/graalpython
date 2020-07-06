@@ -14,4 +14,5 @@
 *graalpython.lib-python.3.test.test_tabnanny.TestErrPrint.test_errprint
 *graalpython.lib-python.3.test.test_tabnanny.TestFormatWitnesses.test_format_witnesses
 *graalpython.lib-python.3.test.test_tabnanny.TestNannyNag.test_all_methods
+*graalpython.lib-python.3.test.test_tabnanny.TestProcessTokens.test_with_correct_code
 *graalpython.lib-python.3.test.test_tabnanny.TestProcessTokens.test_with_errored_codes_samples

@@ -10,6 +10,10 @@
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_months
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_setfirstweekday
 *graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_help
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_html_output_current_year
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_html_output_year_css
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_html_output_year_encoding
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_illegal_arguments
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_leapdays
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_leapdays_upper_boundary
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_range

@@ -19,6 +19,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_getfilesystemencoding
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_getframe
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_getwindowsversion
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_ioencoding_nonascii
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_no_duplicates_in_meta_path
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_refcount
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_setrecursionlimit_recursion_depth
