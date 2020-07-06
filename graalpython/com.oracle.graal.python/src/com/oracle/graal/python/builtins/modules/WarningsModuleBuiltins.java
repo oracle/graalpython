@@ -45,37 +45,43 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.statement.ImportNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_warnings")
 public class WarningsModuleBuiltins extends PythonBuiltins {
@@ -86,16 +92,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         return WarningsModuleBuiltinsFactory.getFactories();
     }
 
-    private static final HiddenKey FILTERS_MUTATED = new HiddenKey("filtersMutated");
-    private static final HiddenKey PYTHON_WARN = new HiddenKey("warn");
-    private static final HiddenKey PYTHON_WARN_EXPLICIT = new HiddenKey("warn_explicit");
-    private static final HiddenKey PYTHON_WARNINGS = new HiddenKey("warnings");
-
     @Override
     public void initialize(PythonCore core) {
         builtinConstants.put(SpecialAttributeNames.__DOC__, "_warnings provides basic warning filtering support.\n" +
                         "It is a helper module to speed up interpreter start-up.");
-        builtinConstants.put("filters", core.factory().createList());
         builtinConstants.put("_defaultaction", "ignore");
         builtinConstants.put("_onceregistry", core.factory().createDict());
         super.initialize(core);
@@ -105,15 +105,24 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
         PythonModule weakrefModule = core.lookupBuiltinModule("_warnings");
-        if (core.getContext().getOption(PythonOptions.WarnOptions).equals("ignore")) {
-            weakrefModule.setAttribute(FILTERS_MUTATED, -1);
-        } else {
-            weakrefModule.setAttribute(FILTERS_MUTATED, 0);
-        }
+        weakrefModule.setAttribute("filters", initFilters(core));
     }
 
-    protected static boolean ignoreWarnings(PythonModule mod, ReadAttributeFromDynamicObjectNode readState) {
-        return ((int) readState.execute(mod.getStorage(), FILTERS_MUTATED)) < 0;
+    private static PList initFilters(PythonCore core) {
+        return core.factory().createList(new Object[] {
+                            createFilter(core, PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
+                            createFilter(core, PythonBuiltinClassType.DeprecationWarning, "ignore"),
+                            createFilter(core, PythonBuiltinClassType.PendingDeprecationWarning, "ignore"),
+                            createFilter(core, PythonBuiltinClassType.ImportWarning, "ignore"),
+                            createFilter(core, PythonBuiltinClassType.ResourceWarning, "ignore") });
+    }
+
+    private static final PTuple createFilter(PythonCore core, PythonBuiltinClassType cat, String id, Object mod) {
+        return core.factory().createTuple(new Object[] { id, PNone.NONE, cat, mod, 0 });
+    }
+
+    private static final PTuple createFilter(PythonCore core, PythonBuiltinClassType cat, String id) {
+        return core.factory().createTuple(new Object[] { id, PNone.NONE, cat, PNone.NONE, 0 });
     }
 
     protected static Object getOrDefault(Object obj) {
@@ -128,89 +137,149 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_register_python_warnings", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    static abstract class RegisterNode extends PythonBuiltinNode {
-        @Specialization
-        static Object mutate(PythonModule mod,
-                        Object warnMethod,
-                        Object warnExplicitMethod,
-                        PythonModule warningsModule,
-                        @Cached WriteAttributeToDynamicObjectNode writeNode) {
-            DynamicObject storage = mod.getStorage();
-            writeNode.execute(storage, PYTHON_WARN, warnMethod);
-            writeNode.execute(storage, PYTHON_WARN_EXPLICIT, warnExplicitMethod);
-            writeNode.execute(storage, PYTHON_WARNINGS, warningsModule);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "_filters_mutated", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "_filters_mutated", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     static abstract class FiltersMutated extends PythonBuiltinNode {
         @Specialization
-        static Object mutate(PythonModule mod,
-                        @Cached ReadAttributeFromDynamicObjectNode readWarningsNode,
-                        @Cached WriteAttributeToObjectNode writeWarningsFiltersVersion,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeNode) {
-            int version = (int) readNode.execute(mod.getStorage(), FILTERS_MUTATED);
-            writeNode.execute(mod.getStorage(), FILTERS_MUTATED, version + 1);
-            Object warnMod = readWarningsNode.execute(mod.getStorage(),PYTHON_WARNINGS);
-            if (warnMod != PNone.NO_VALUE) {
-                writeWarningsFiltersVersion.execute(warnMod, "_filters_version", version);
-            }
-            return version;
+        static long mutate(@CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return ctx.increaseWarningsFiltersVersion();
         }
     }
 
-    @TruffleBoundary
-    private static final String formatWarning(Object message, Object category, Object filename, Object lineno) {
-        InteropLibrary lib = InteropLibrary.getUncached();
-        StringBuilder sb = new StringBuilder();
-        try {
-            if (filename != null) {
-                sb.append(lib.asString(lib.toDisplayString(filename))).append(":");
-            }
-            if (lineno != null) {
-                sb.append(lib.asString(lib.toDisplayString(lineno))).append(": ");
-            }
-            if (category != null && !(category instanceof PNone)) {
-                sb.append(lib.asString(lib.toDisplayString(category))).append(":");
-            } else {
-                sb.append("UserWarning: ");
-            }
-            sb.append(lib.asString(lib.toDisplayString(message)));
-            return sb.toString();
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
+    @Builtin(name = "_filters_version", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    static abstract class FiltersVersion extends PythonBuiltinNode {
+        @Specialization
+        static long get(@CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return ctx.getWarningsFiltersVersion();
         }
     }
 
-    @Builtin(name = "warn_explicit", parameterNames = {"mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals", "source"},
+    @Builtin(name = "warn_explicit", parameterNames = { //
+                        "mod", "message", "category", "filename", "lineno", //
+                        "module", "registry", "module_globals", "source" }, //
                     declaresExplicitSelf = true, minNumOfPositionalArgs = 5)
     @GenerateNodeFactory
     static abstract class WarnExplicitNode extends PythonBuiltinNode {
-        protected static ExpressionNode getImportNode() {
-            return new ImportNode("warnings").asExpression();
-        }
+        @Child CastToJavaStringNode castStr;
+        @Child HashingCollectionNodes.GetDictStorageNode getDictStorageNode;
+        @Child HashingStorageLibrary hashingLibrary;
+        @Child PythonObjectLibrary objectLibrary;
+        @Child CallUnaryMethodNode callNode;
+        @Child BuiltinFunctions.IsInstanceNode isInstanceNode;
+        @Child BuiltinConstructors.StrNode strNode;
+        @CompilationFinal ConditionProfile gotFrame;
 
         @Specialization
-        Object warn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object filename, Object lineno, Object module, Object registry, Object moduleGlobals, Object source,
-                        @Cached BranchProfile noLogger,
-                        @Cached ReadAttributeFromDynamicObjectNode readState,
-                        @Cached ReadAttributeFromDynamicObjectNode readWarn,
-                        @Cached CallNode callNode) {
-            if (ignoreWarnings(mod, readState)) {
-                return PNone.NONE;
+        Object warn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object filename, Object wLineno, Object module, Object registry, Object moduleGlobals, Object source) {
+            Object sourceLine;
+            int lineno = getObjectLibrary().asSizeWithFrame(lineno, getGotFrameProfile(), frame);
+            if (!(moduleGlobals instanceof PNone)) {
+                if (!(moduleGlobals instanceof PDict)) {
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "module_globals", "dict", moduleGlobals);
+                }
+                sourceLine = getSourceLine(frame, (PDict) moduleGlobals, lineno);
             }
-            Object method = readWarn.execute(mod.getStorage(), PYTHON_WARN_EXPLICIT);
-            if (method == PNone.NO_VALUE) {
-                noLogger.enter();
-                LOGGER.warning(() -> formatWarning(message, category, filename, lineno));
-                return PNone.NONE;
+
+            return warnExplicit(frame, category, message, filename, lineno, module, registry, sourceLine, source);
+        }
+
+        private Object warnExplicit(VirtualFrame frame, Object category, Object message, Object filename, int lineno, Object module, Object registry, Object sourceLine, Object source) {
+            if (!(registry instanceof PNone)) {
+                if (!(registry instanceof PDict)) {
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "'registry'", "dict or None", registry);
+                }
             }
-            return callNode.execute(frame, method, message, category, filename, lineno, getOrDefault(module), getOrDefault(registry), getOrDefault(moduleGlobals), getOrDefault(source));
+
+            if (module == PNone.NO_VALUE) {
+                module = normalizeModule(filename);
+            }
+
+            String text;
+            if (getIsInstanceNode().execute(frame, message, PythonBuiltinClassType.Warning)) {
+                text = getStrNode().executeWith(frame, registry, sourceLine, source, text)
+            } else {
+            }
+
+            return null;
+        }
+
+        private BuiltinConstructors.StrNode getStrNode() {
+            if (strNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                strNode = insert(BuiltinConstructorsFactory.StrNodeFactory.create(null));
+            }
+            return strNode;
+        }
+
+        private BuiltinFunctions.IsInstanceNode getIsInstanceNode() {
+            if (isInstanceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isInstanceNode = insert(BuiltinFunctions.IsInstanceNode.create());
+            }
+            return isInstanceNode;
+        }
+
+        private Object getSourceLine(VirtualFrame frame, PDict moduleGlobals, int lineno) {
+            HashingStorage dictStorage = getDictStorageNode().execute(moduleGlobals);
+            Object loader = getHashingStorageLibrary().getItemWithFrame(dictStorage, SpecialAttributeNames.__LOADER__, getGotFrameProfile(), frame);
+            Object moduleName = getHashingStorageLibrary().getItemWithFrame(dictStorage, SpecialAttributeNames.__NAME__, getGotFrameProfile(), frame);
+            Object getSource = getObjectLibrary().lookupAttribute(loader, "get_source");
+            Object source = getCallNode().executeObject(frame, getSource, moduleName);
+            if (source instanceof PNone) {
+                return null;
+            }
+            String[] sourceLines;
+            try {
+                sourceLines = castStr.execute(source).split("\n");
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "get_source result", "str", source);
+            }
+            try {
+                return sourceLines[lineno - 1];
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw raise(PythonBuiltinClassType.IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            }
+        }
+
+        private CallUnaryMethodNode getCallNode() {
+            if (callNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNode = insert(CallUnaryMethodNode.create());
+            }
+            return callNode;
+        }
+
+        private PythonObjectLibrary getObjectLibrary() {
+            if (objectLibrary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+            }
+            return objectLibrary;
+        }
+
+        private ConditionProfile getGotFrameProfile() {
+            if (gotFrame == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                gotFrame = ConditionProfile.create();
+            }
+            return gotFrame;
+        }
+
+        private HashingStorageLibrary getHashingStorageLibrary() {
+            if (hashingLibrary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hashingLibrary = insert(HashingStorageLibrary.getFactory().createDispatched(3));
+            }
+            return hashingLibrary;
+        }
+
+        private GetDictStorageNode getDictStorageNode() {
+            if (getDictStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDictStorageNode = insert(HashingCollectionNodes.GetDictStorageNode.create());
+            }
+            return getDictStorageNode;
         }
     }
 
