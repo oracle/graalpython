@@ -54,9 +54,11 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
@@ -1030,22 +1032,44 @@ public abstract class ExternalFunctionNodes {
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
         static PTuple doCachedLen(PythonObjectFactory factory, Object[] args,
                         @Cached("args.length") int cachedLen,
+                        @Cached("createToNewRefNodes(args.length)") ToNewRefNode[] toNewRefNodes,
                         @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
 
             for (int i = 0; i < cachedLen; i++) {
-                args[i] = materializePrimitiveNodes[i].execute(factory, args[i]);
+                args[i] = prepareReference(args[i], factory, materializePrimitiveNodes[i], toNewRefNodes[i]);
             }
             return factory.createTuple(args);
         }
 
         @Specialization(replaces = "doCachedLen")
         static PTuple doGeneric(PythonObjectFactory factory, Object[] args,
+                        @Cached ToNewRefNode toNewRefNode,
                         @Cached MaterializePrimitiveNode materializePrimitiveNode) {
 
             for (int i = 0; i < args.length; i++) {
-                args[i] = materializePrimitiveNode.execute(factory, args[i]);
+                args[i] = prepareReference(args[i], factory, materializePrimitiveNode, toNewRefNode);
             }
             return factory.createTuple(args);
+        }
+
+        private static Object prepareReference(Object arg, PythonObjectFactory factory, MaterializePrimitiveNode materializePrimitiveNode, ToNewRefNode toNewRefNode) {
+            Object result = materializePrimitiveNode.execute(factory, arg);
+
+            // Tuples are actually stealing the reference of their items. That's why we need to
+            // increase the reference count by 1 at this point. However, it could be that the
+            // object does not have a native wrapper yet. We use ToNewRefNode to ensure that the
+            // object has a native wrapper or to increase the reference count by 1 if a native
+            // wrapper already exists.
+            toNewRefNode.execute(result);
+            return result;
+        }
+
+        static ToNewRefNode[] createToNewRefNodes(int length) {
+            ToNewRefNode[] newRefNodes = new ToNewRefNode[length];
+            for (int i = 0; i < length; i++) {
+                newRefNodes[i] = ToNewRefNodeGen.create();
+            }
+            return newRefNodes;
         }
 
         static MaterializePrimitiveNode[] createMaterializeNodes(int length) {
