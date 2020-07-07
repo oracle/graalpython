@@ -172,6 +172,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
@@ -1700,6 +1701,31 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             protected static boolean isObType(String key) {
                 return OB_TYPE.getMemberName().equals(key);
+            }
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        int identityHashCode() {
+            int val = Byte.hashCode(state) ^ Long.hashCode(value);
+            if (Double.isNaN(dvalue)) {
+                return val;
+            } else {
+                return val ^ Double.hashCode(dvalue);
+            }
+        }
+
+        @ExportMessage
+        TriState isIdenticalOrUndefined(Object obj) {
+            if (obj instanceof PrimitiveNativeWrapper) {
+                // This basically emulates singletons for boxed values. However, we need to do so to
+                // preserve the invariant that storing an object into a list and getting it out (in
+                // the same critical region) returns the same object.
+                PrimitiveNativeWrapper other = (PrimitiveNativeWrapper) obj;
+                return TriState.valueOf(other.state == state && other.value == value &&
+                                (other.dvalue == dvalue || Double.isNaN(dvalue) && Double.isNaN(other.dvalue)));
+            } else {
+                return TriState.UNDEFINED;
             }
         }
 
