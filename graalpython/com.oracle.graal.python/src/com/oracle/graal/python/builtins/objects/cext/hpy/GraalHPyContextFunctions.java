@@ -81,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -546,16 +545,16 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode resultAsHandleNode,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary objectLibrary,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            // TODO(fa): ensure string
-            PString object = (PString) asPythonObjectNode.execute(context, arguments[1]);
+            Object unicodeObject = asPythonObjectNode.execute(context, arguments[1]);
             try {
-                Object result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, object, "strict");
+                Object result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, "strict");
                 return resultAsHandleNode.execute(context, result);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
@@ -721,7 +720,7 @@ public abstract class GraalHPyContextFunctions {
                     key = fromCharPointerNode.execute(arguments[2]);
                     break;
                 default:
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("should not be reached");
             }
             try {
