@@ -95,8 +95,10 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -108,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -172,9 +175,11 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -909,15 +914,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // id(object)
     @Builtin(name = ID, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class IdNode extends PythonBuiltinNode {
-        /**
-         * The reserved ids at the beginning.
-         *
-         * <pre>
-         * None, NotImplemented, True, False
-         * </pre>
-         */
-        private static final long KNOWN_OBJECTS_COUNT = 4L;
+    public abstract static class IdNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long doObject(Object value,
+                        @Cached IdExpressionNode idNode) {
+            return idNode.executeLong(value);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class IdExpressionNode extends Node {
         // borrowed logic from pypy
         // -1 - (-maxunicode-1): unichar
         // 0 - 255: char
@@ -929,97 +935,124 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final long BASE_EMPTY_UNICODE = 257;
         private static final long BASE_EMPTY_TUPLE = 258;
         private static final long BASE_EMPTY_FROZENSET = 259;
-        private static final long IDTAG_SPECIAL = 11;
-        private static final int IDTAG_SHIFT = 4;
+        private static final int IDTAG_INT     = 1;
+        private static final int IDTAG_FLOAT   = 5;
+        private static final int IDTAG_COMPLEX = 7;
+        private static final int IDTAG_SPECIAL = 11;
+        private static final int IDTAG_SHIFT   = 4;
 
-        /**
-         * The next available global id. We reserve space for all integers to be their own id +
-         * offset.
-         */
-
-        @Child private ReadAttributeFromObjectNode readId = null;
-        @Child private WriteAttributeToObjectNode writeId = null;
-        @Child private SequenceNodes.LenNode lenNode = null;
-        @Child private HashingCollectionNodes.LenNode setLenNode = null;
-
-        @SuppressWarnings("unused")
-        @Specialization
-        int doId(PNone none) {
-            return 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        int doId(PNotImplemented none) {
-            return 1;
-        }
+        public abstract long executeLong(Object value);
 
         @Specialization
-        int doId(boolean value) {
-            return value ? 2 : 3;
+        long doId(boolean value,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return value ? doGeneric(ctx.getCore().getTrue()) : doGeneric(ctx.getCore().getFalse());
         }
 
         @Specialization
         long doId(int integer) {
-            return integer + KNOWN_OBJECTS_COUNT;
+            return ((long) integer) << IDTAG_SHIFT | IDTAG_INT;
         }
 
         @Specialization
-        Object doId(PInt value) {
-            try {
-                return value.intValueExact() + KNOWN_OBJECTS_COUNT;
-            } catch (ArithmeticException e) {
-                return getId(value);
+        long doId(PInt value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            if (isBuiltin.profileIsAnyBuiltinObject(value)) {
+                try {
+                    return doId(value.intValueExact());
+                } catch (ArithmeticException e) {
+                    // fall through
+                }
+            }
+            return doGeneric(value);
+        }
+
+        @Specialization
+        long doString(String s) {
+            if (s.length() == 0) {
+                return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
+            } else if (s.length() == 1) {
+                return (~s.codePointAt(0) << IDTAG_SHIFT) | IDTAG_SPECIAL;
+            } else {
+                return doGeneric(s);
             }
         }
 
         @Specialization
-        int doId(double value) {
-            return Double.hashCode(value);
+        long doPString(PString s,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Cached CastToJavaStringNode castStr) {
+            if (isBuiltin.profileIsAnyBuiltinObject(s)) {
+                String jS = castStr.execute(s);
+                return doString(jS);
+            } else {
+                return doGeneric(s);
+            }
         }
 
-        @Specialization(guards = "isEmpty(value)")
-        Object doEmptyString(@SuppressWarnings("unused") String value) {
-            return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        @Specialization
+        long doTuple(@SuppressWarnings("unused") PTuple value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(value) && lenNode.execute(value) == 0) {
+                return (BASE_EMPTY_TUPLE << IDTAG_SHIFT) | IDTAG_SPECIAL;
+            } else {
+                return doGeneric(value);
+            }
         }
 
-        @Specialization(guards = "isEmpty(value)")
-        Object doEmptyString(@SuppressWarnings("unused") PString value) {
-            return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        @Specialization
+        long doBytes(PBytes value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(value) && lenNode.execute(value) == 0) {
+                return (BASE_EMPTY_BYTES << IDTAG_SHIFT) | IDTAG_SPECIAL;
+            } else {
+                return doGeneric(value);
+            }
         }
 
-        @Specialization(guards = "isEmpty(value)")
-        Object doEmptyTuple(@SuppressWarnings("unused") PTuple value) {
-            return (BASE_EMPTY_TUPLE << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        @Specialization
+        long doFrozenSet(PFrozenSet value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Cached HashingCollectionNodes.LenNode lenNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(value) && lenNode.execute(value) == 0) {
+                return (BASE_EMPTY_FROZENSET << IDTAG_SHIFT) | IDTAG_SPECIAL;
+            } else {
+                return doGeneric(value);
+            }
         }
 
-        @Specialization(guards = "isEmpty(value)")
-        Object doEmptyBytes(@SuppressWarnings("unused") PBytes value) {
-            return (BASE_EMPTY_BYTES << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        @Specialization
+        long doDouble(double value) {
+            return Double.doubleToLongBits(value) << IDTAG_SHIFT | IDTAG_FLOAT;
         }
 
-        @Specialization(guards = "isEmpty(value)")
-        Object doEmptyFrozenSet(@SuppressWarnings("unused") PFrozenSet value) {
-            return (BASE_EMPTY_FROZENSET << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        @Specialization
+        long doPFloat(PFloat value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            if (isBuiltin.profileIsAnyBuiltinObject(value)) {
+                return doDouble(value.getValue());
+            } else {
+                return doGeneric(value);
+            }
         }
 
-        protected boolean isEmptyImmutableBuiltin(Object object) {
-            return (object instanceof PTuple && isEmpty((PTuple) object)) ||
-                            (object instanceof String && PGuards.isEmpty((String) object)) ||
-                            (object instanceof PString && isEmpty((PString) object)) ||
-                            (object instanceof PBytes && isEmpty((PBytes) object)) ||
-                            (object instanceof PFrozenSet && isEmpty((PFrozenSet) object));
+        @Specialization
+        long doComplex(PComplex value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            if (isBuiltin.profileIsAnyBuiltinObject(value)) {
+                int imag = Double.hashCode(value.getImag());
+                int real = Double.hashCode(value.getReal());
+                return (((real << 32) | imag) << IDTAG_SHIFT) | IDTAG_COMPLEX;
+            } else {
+                return doGeneric(value);
+            }
         }
 
-        /**
-         * TODO: {@link #doId(String)} and {@link #doId(double)} are not quite right, because the
-         * hashCode will certainly collide with integer hashes. It should be good for comparisons
-         * between String and String id, though, it'll just look as if we interned all strings from
-         * the Python code's perspective.
-         */
-        @Specialization(guards = "!isEmpty(value)")
-        int doId(String value) {
-            return value.hashCode();
+        @Specialization
+        long doPythonBuiltinClass(PythonBuiltinClass value) {
+            return doGeneric(value.getType());
         }
 
         /**
@@ -1031,55 +1064,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
         long doId(PCode obj) {
             RootCallTarget ct = obj.getRootCallTarget();
             if (ct != null) {
-                return ct.hashCode();
+                return doGeneric(ct);
             } else {
-                return obj.hashCode();
+                return doGeneric(obj);
             }
-        }
-
-        @Specialization(guards = {"!isPCode(obj)", "!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
-        long doId(PythonObject obj) {
-            return getId(obj);
         }
 
         @Fallback
         @TruffleBoundary(allowInlining = true)
-        Object doId(Object obj) {
-            return obj.hashCode();
-        }
-
-        protected boolean isEmpty(PSequence s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceNodes.LenNode.create());
-            }
-            return lenNode.execute(s) == 0;
-        }
-
-        protected boolean isEmpty(PHashingCollection s) {
-            if (setLenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setLenNode = insert(HashingCollectionNodes.LenNode.create());
-            }
-            return setLenNode.execute(s) == 0;
-        }
-
-        private long getId(PythonObject obj) {
-            if (readId == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readId = insert(ReadAttributeFromObjectNode.create());
-            }
-            Object id = readId.execute(obj, ID_KEY);
-            if (id == NO_VALUE) {
-                if (writeId == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    writeId = insert(WriteAttributeToObjectNode.create());
-                }
-                id = getContext().getNextGlobalId();
-                writeId.execute(obj, ID_KEY, id);
-            }
-            assert id instanceof Long : "invalid object ID stored";
-            return (long) id;
+        long doGeneric(Object obj) {
+            return System.identityHashCode(obj);
         }
     }
 
