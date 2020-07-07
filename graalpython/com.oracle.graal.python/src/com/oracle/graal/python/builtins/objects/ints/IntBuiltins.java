@@ -2458,6 +2458,15 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
+    @Builtin(name = "as_integer_ratio", minNumOfPositionalArgs = 1, doc = "Return integer ratio.")
+    abstract static class AsIntegerRatioNode extends PythonBuiltinNode {
+        @Specialization
+        Object get(VirtualFrame frame, Object self, @Cached IntNode intNode) {
+            return factory().createTuple(new Object[]{intNode.execute(frame, self), 1});
+        }
+    }
+
+    @GenerateNodeFactory
     @Builtin(name = SpecialMethodNames.__TRUNC__, minNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
     abstract static class TruncNode extends IntNode {
 
