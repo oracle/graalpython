@@ -76,7 +76,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
@@ -143,6 +145,7 @@ import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -171,6 +174,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -229,6 +233,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinConstructors extends PythonBuiltins {
@@ -1669,6 +1674,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Children private CExtNodes.ToSulongNode[] toSulongNodes;
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
         @Child private SplitArgsNode splitArgsNode;
+        @Child private LookupAttributeInMRONode lookupInit;
+        @Child private LookupAttributeInMRONode lookupNew;
+        @CompilationFinal private ValueProfile profileInit;
+        @CompilationFinal private ValueProfile profileNew;
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -1680,36 +1689,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.needsNativeAllocation()"})
-        Object doManagedObject(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
-            if (varargs.length > 0 || kwargs.length > 0) {
-                // TODO: tfel: this should throw an error only if init isn't overridden
-            }
+        Object doManagedObject(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
+            checkExcessArgs(self, varargs, kwargs);
             return factory().createPythonObject(self);
         }
 
         @Specialization
         Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs) {
-            if (varargs.length > 0 || kwargs.length > 0) {
-                // TODO: tfel: this should throw an error only if init isn't overridden
-            }
+            checkExcessArgs(self, varargs, kwargs);
             return factory().createPythonObject(self);
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
         Object doNativeObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("create()") GetMroNode getMroNode) {
-            if (varargs.length > 0 || kwargs.length > 0) {
-                // TODO: tfel: this should throw an error only if init isn't overridden
-            }
+            checkExcessArgs(self, varargs, kwargs);
             PythonNativeClass nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
             return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
         }
 
         @Specialization(guards = "isNativeClass(self)")
         Object doNativeObjectIndirect(Object self, Object[] varargs, PKeyword[] kwargs) {
-            if (varargs.length > 0 || kwargs.length > 0) {
-                // TODO: tfel: this should throw an error only if init isn't overridden
-            }
+            checkExcessArgs(self, varargs, kwargs);
             return callNativeGenericNewNode(self, varargs, kwargs);
         }
 
@@ -1751,6 +1752,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return asPythonObjectNode.execute(
                             callCapiFunction.call(FUN_PY_OBJECT_NEW, toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs),
                                             toSulongNodes[3].execute(dkwargs)));
+        }
+
+        private void checkExcessArgs(Object type, Object[] varargs, PKeyword[] kwargs) {
+            if (varargs.length != 0 || kwargs.length != 0) {
+                if (profileInit == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    lookupNew = insert(LookupAttributeInMRONode.create(__NEW__));
+                    lookupInit = insert(LookupAttributeInMRONode.create(__INIT__));
+                    profileNew = ValueProfile.createIdentityProfile();
+                    profileInit = ValueProfile.createIdentityProfile();
+                }
+                if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, ObjectNode.class)) {
+                    throw raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
+                }
+                if (!ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileInit, lookupInit, ObjectBuiltins.InitNode.class)) {
+                    throw raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
+                }
+            }
         }
     }
 

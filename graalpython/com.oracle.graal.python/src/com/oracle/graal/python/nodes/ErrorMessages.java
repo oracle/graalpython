@@ -298,6 +298,8 @@ public abstract class ErrorMessages {
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
+    public static final String INIT_TAKES_ONE_ARG = "%N.__init__() takes exactly one argument (the instance to initialize)";
+    public static final String INIT_TAKES_ONE_ARG_OBJECT = "object.__init__() takes exactly one argument (the instance to initialize)";
     public static final String IS_NOT_ITERABLE = "%s is not iterable";
     public static final String IS_NOT_SUBTYPE_OF = "%s.__new__(%N): %N is not a subtype of %s";
     public static final String IS_NOT_TYPE_OBJ = "%s is not a type object (%p)";
@@ -355,6 +357,8 @@ public abstract class ErrorMessages {
     public static final String NEGATIVE_COUNT = "negative count";
     public static final String NEGATIVE_DATA_SIZE = "negative data size";
     public static final String NEGATIVE_SHIFT_COUNT = "negative shift count";
+    public static final String NEW_TAKES_ONE_ARG = "object.__new__() takes exactly one argument (the type to instantiate)";
+    public static final String NEW_TAKES_NO_ARGS = "%N() takes no arguments";
     public static final String NO_ACTIVE_EX_TO_RERAISE = "No active exception to reraise";
     public static final String NO_ARGS = "%s: no arguments";
     public static final String NO_BINDING_FOR_NON_LOCAL = "no binding for nonlocal variable \"%s\" found";

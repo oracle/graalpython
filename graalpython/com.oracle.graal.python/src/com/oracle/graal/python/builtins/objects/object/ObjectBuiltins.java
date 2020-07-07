@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -91,6 +92,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -107,6 +109,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonObject)
 public class ObjectBuiltins extends PythonBuiltins {
@@ -183,17 +186,51 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __INIT__, takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
+        @Child private SplitArgsNode splitArgsNode;
+
         @Override
         public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (splitArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                splitArgsNode = insert(SplitArgsNode.create());
+            }
+            return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
+        }
+
+        @Specialization(guards = {"arguments.length == 0", "keywords.length == 0"})
+        @SuppressWarnings("unused")
+        public PNone initNoArgs(Object self, Object[] arguments, PKeyword[] keywords) {
             return PNone.NONE;
         }
 
-        @Specialization
+        @Specialization(replaces = "initNoArgs", limit = "3")
         @SuppressWarnings("unused")
-        public PNone init(Object self, Object[] arguments, PKeyword[] keywords) {
-            // TODO: tfel: throw an error if we get additional arguments and the __new__
-            // method was the same as object.__new__
+        public PNone init(Object self, Object[] arguments, PKeyword[] keywords,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
+                        @Cached("createIdentityProfile()") ValueProfile profileInit,
+                        @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
+                        @Cached("createIdentityProfile()") ValueProfile profileNew) {
+            if (arguments.length != 0 || keywords.length != 0) {
+                Object type = lib.getLazyPythonClass(self);
+                if (overridesBuiltinMethod(type, profileInit, lookupInit, InitNode.class)) {
+                    throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
+                }
+
+                if (!overridesBuiltinMethod(type, profileInit, lookupNew, BuiltinConstructors.ObjectNode.class)) {
+                    throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
+                }
+            }
             return PNone.NONE;
+        }
+
+        public static <T> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupAttributeInMRONode lookup, Class<T> builtinNodeClass) {
+            Object method = profile.profile(lookup.execute(type));
+            if (method instanceof PBuiltinFunction) {
+                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) method).getBuiltinNodeFactory();
+                return factory == null || !builtinNodeClass.isAssignableFrom(factory.getNodeClass());
+            }
+            return true;
         }
     }
 

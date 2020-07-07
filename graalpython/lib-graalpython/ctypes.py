@@ -132,7 +132,8 @@ class py_object(_SimpleCData):
 
 
 class _CFuncPtr():
-    pass
+    def __init__(self, value):
+        self.value = value
 
 
 _c_functype_cache = {}
@@ -173,7 +174,8 @@ def CFUNCTYPE(restype, *argtypes, **kw):
 
 
 class _Pointer():
-    pass
+    def __init__(self, value):
+        self.value = value
 
 
 def POINTER(basetype):
