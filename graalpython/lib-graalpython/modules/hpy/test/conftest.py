@@ -21,9 +21,9 @@ def hpy_include_dir(request):
         THIS_DIR = os.path.dirname(__file__)
         return os.path.join(THIS_DIR, '../hpy/devel/include')
 
-@pytest.fixture(params=['cpython', 'universal'])
-def abimode(request):
-    return request.param
+@pytest.fixture(scope='session')
+def abimode():
+    return "universal"
 
 @pytest.fixture
 def compiler(request, tmpdir, abimode, hpy_include_dir):

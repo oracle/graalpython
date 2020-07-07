@@ -1,6 +1,7 @@
 import os, sys
-import pytest, py
+import pytest
 import re
+import hpy.devel
 
 PY2 = sys.version_info[0] == 2
 
@@ -103,10 +104,7 @@ class ExtensionCompiler:
         Create and compile a HPy module from the template
         """
         filename = self._expand(name, main_template)
-        sources = [
-            str(py.path.local(__file__).dirpath().dirpath().join(
-                'hpy/devel/src/runtime/argparse.c')),
-        ]
+        sources = hpy.devel.get_sources()
         for i, template in enumerate(extra_templates):
             extra_filename = self._expand('extmod_%d' % i, template)
             sources.append(extra_filename)
@@ -164,8 +162,7 @@ class HPyTest:
         return self.compiler.make_module(source_template, name, extra_templates)
 
     def should_check_refcount(self):
-        # defaults to True on CPython, but is set to False by e.g. PyPy
-        return True
+        return False
 
 
 # the few functions below are copied and adapted from cffi/ffiplatform.py
