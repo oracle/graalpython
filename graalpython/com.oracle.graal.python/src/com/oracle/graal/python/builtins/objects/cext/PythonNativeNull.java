@@ -46,6 +46,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
@@ -99,5 +100,22 @@ public class PythonNativeNull implements TruffleObject {
     boolean isSame(Object other,
                     @CachedLibrary("this.getPtr()") ReferenceLibrary delegateLib) {
         return delegateLib.isSame(ptr, other);
+    }
+
+    @ExportMessage(limit = "1")
+    int identityHashCode(@CachedLibrary("this.getPtr()") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.identityHashCode(ptr);
+    }
+
+    @ExportMessage(limit = "1")
+    boolean isIdentical(Object other, InteropLibrary otherLib,
+                    @CachedLibrary("this.getPtr()") InteropLibrary lib) {
+        return lib.isIdentical(ptr, other, otherLib);
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    TriState isIdenticalOrUndefined(Object other) {
+        throw new AssertionError("cannot delegate isIdenticalOrUndefined for null properly");
     }
 }
