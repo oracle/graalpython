@@ -172,8 +172,8 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
@@ -1461,6 +1461,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
+    @ExportLibrary(ReferenceLibrary.class)
     public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1;
@@ -1703,31 +1704,20 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        @TruffleBoundary
-        int identityHashCode() {
-            int val = System.identityHashCode(state) ^ System.identityHashCode(value);
-            if (Double.isNaN(dvalue)) {
-                return val;
-            } else {
-                return val ^ System.identityHashCode(dvalue);
-            }
-        }
-
-        @ExportMessage
-        static class IsIdenticalOrUndefined {
+        static class IsSame {
 
             @Specialization
-            static TriState doPrimitiveWrapper(PrimitiveNativeWrapper receiver, PrimitiveNativeWrapper other) {
+            static boolean doPrimitiveWrapper(PrimitiveNativeWrapper receiver, PrimitiveNativeWrapper other) {
                 // This basically emulates singletons for boxed values. However, we need to do so to
                 // preserve the invariant that storing an object into a list and getting it out (in
                 // the same critical region) returns the same object.
-                return other.state == receiver.state && other.value == receiver.value && (other.dvalue == receiver.dvalue || Double.isNaN(receiver.dvalue) && Double.isNaN(other.dvalue)) ? TriState.TRUE : TriState.FALSE;
+                return other.state == receiver.state && other.value == receiver.value && (other.dvalue == receiver.dvalue || Double.isNaN(receiver.dvalue) && Double.isNaN(other.dvalue));
             }
 
             @Fallback
             @SuppressWarnings("unused")
-            static TriState doGeneric(PrimitiveNativeWrapper receiver, Object other) {
-                return TriState.FALSE;
+            static boolean doGeneric(PrimitiveNativeWrapper receiver, Object other) {
+                return false;
             }
         }
     }
