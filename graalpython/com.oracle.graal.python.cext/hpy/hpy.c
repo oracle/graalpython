@@ -157,3 +157,24 @@ void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
 void* graal_hpy_context_to_native(void* cobj) {
     return truffle_deref_handle_for_managed(cobj);
 }
+
+typedef void* VoidPtr;
+POLYGLOT_DECLARE_TYPE(VoidPtr);
+
+#define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
+    void* graal_hpy_##__jtype__##_array_to_native(const void* jarray, int64_t len) { \
+        int64_t i; \
+        int64_t size = len + 1; \
+        __ctype__* carr = (__ctype__*) malloc(size * sizeof(__ctype__)); \
+        carr[len] = (__ctype__)0; \
+        for (i=0; i < len; i++) { \
+            carr[i] = __element_cast__(polyglot_get_array_element(jarray, i)); \
+        } \
+        return polyglot_from_##__polyglot_type__##_array(carr, len); \
+    } \
+
+PRIMITIVE_ARRAY_TO_NATIVE(byte, int8_t, i8, polyglot_as_i8);
+PRIMITIVE_ARRAY_TO_NATIVE(int, int32_t, i32, polyglot_as_i32);
+PRIMITIVE_ARRAY_TO_NATIVE(long, int64_t, i64, polyglot_as_i64);
+PRIMITIVE_ARRAY_TO_NATIVE(double, double, double, polyglot_as_double);
+PRIMITIVE_ARRAY_TO_NATIVE(pointer, VoidPtr, VoidPtr, (VoidPtr));

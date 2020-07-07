@@ -53,4 +53,9 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_FROM_I8_ARRAY = "graal_hpy_from_i8_array";
     public static final String GRAAL_HPY_FROM_WCHAR_ARRAY = "graal_hpy_from_wchar_array";
     public static final String GRAAL_HPY_CONTEXT_TO_NATIVE = "graal_hpy_context_to_native";
+    public static final String GRAAL_HPY_BYTE_ARRAY_TO_NATIVE = "graal_hpy_byte_array_to_native";
+    public static final String GRAAL_HPY_INT_ARRAY_TO_NATIVE = "graal_hpy_int_array_to_native";
+    public static final String GRAAL_HPY_LONG_ARRAY_TO_NATIVE = "graal_hpy_long_array_to_native";
+    public static final String GRAAL_HPY_DOUBLE_ARRAY_TO_NATIVE = "graal_hpy_double_array_to_native";
+    public static final String GRAAL_HPY_POINTER_ARRAY_TO_NATIVE = "graal_hpy_pointer_array_to_native";
 }

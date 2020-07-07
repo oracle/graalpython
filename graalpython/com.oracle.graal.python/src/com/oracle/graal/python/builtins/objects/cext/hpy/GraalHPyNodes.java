@@ -48,11 +48,13 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywor
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.PtrArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethKeywordsRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethNoargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethORoot;
@@ -76,17 +78,14 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public class GraalHPyNodes {
 
@@ -161,62 +160,6 @@ public class GraalHPyNodes {
         }
     }
 
-    @ExportLibrary(NativeTypeLibrary.class)
-    @ExportLibrary(InteropLibrary.class)
-    public static class PtrArray implements TruffleObject {
-
-        private final Object[] arr;
-
-        public PtrArray(Object[] arr) {
-            this.arr = arr;
-        }
-
-        @ExportMessage
-        boolean hasArrayElements() {
-            return true;
-        }
-
-        @ExportMessage
-        long getArraySize() {
-            return arr.length;
-        }
-
-        @ExportMessage
-        boolean isArrayElementReadable(long idx) {
-            return 0 <= idx && idx < arr.length;
-        }
-
-        @ExportMessage
-        boolean isArrayElementModifiable(long idx) {
-            return isArrayElementReadable(idx);
-        }
-
-        @ExportMessage
-        boolean isArrayElementInsertable(long idx) {
-            return false;
-        }
-
-        @ExportMessage
-        Object readArrayElement(long idx) {
-            return arr[(int) idx];
-        }
-
-        @ExportMessage
-        void writeArrayElement(long idx, Object value) {
-            arr[(int) idx] = value;
-        }
-
-        @ExportMessage
-        boolean hasNativeType() {
-            return false;
-        }
-
-        @ExportMessage
-        Object getNativeType() {
-            return null;
-        }
-    }
-
     @GenerateUncached
     public abstract static class HPyAddFunctionNode extends PNodeWithContext {
 
@@ -226,6 +169,7 @@ public class GraalHPyNodes {
         static PBuiltinFunction doIt(GraalHPyContext context, Object methodDef,
                         @CachedLibrary("methodDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @CachedLibrary(limit = "1") InteropLibrary ptrArrayLib,
                         @Cached PCallHPyFunction callGetNameNode,
                         @Cached PCallHPyFunction callGetDocNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
@@ -233,7 +177,16 @@ public class GraalHPyNodes {
                         @Cached BranchProfile profile,
                         @Cached PRaiseNode raiseNode) {
             String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_NAME, methodDef));
-            String methodDoc = castToJavaStringNode.execute(callGetDocNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_DOC, methodDef));
+
+            // note: 'ml_doc' may be NULL; in this case, we would store 'None'
+            Object methodDoc = PNone.NONE;
+            try {
+                if (!resultLib.isNull(interopLibrary.readMember(methodDef, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_DOC))) {
+                    methodDoc = castToJavaStringNode.execute(callGetDocNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_DOC, methodDef));
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                // fall through
+            }
 
             try {
                 Object methodFlagsObj = interopLibrary.readMember(methodDef, "ml_flags");
@@ -254,10 +207,17 @@ public class GraalHPyNodes {
                 boolean hpyStyleMeth = context.isHPyMeth(flags);
                 if (hpyStyleMeth) {
                     // HPy-style methods
-                    Object[] callable = new Object[1];
-                    Object[] trampoline = new Object[1];
-                    resultLib.execute(mlMethObj, new PtrArray(callable), new PtrArray(trampoline));
-                    rootNode = createHPyWrapperRootNode(language, flags, methodName, callable[0]);
+                    PtrArrayWrapper callableArr = new PtrArrayWrapper(1);
+                    PtrArrayWrapper trampolineArr = new PtrArrayWrapper(1);
+                    resultLib.execute(mlMethObj, callableArr, trampolineArr);
+                    Object callable = null;
+                    try {
+                        callable = ptrArrayLib.readArrayElement(callableArr, 0);
+                    } catch (InvalidArrayIndexException e) {
+                        profile.enter();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot get function pointer for %s", methodName);
+                    }
+                    rootNode = createHPyWrapperRootNode(language, flags, methodName, callable);
                 } else {
                     // CPy-style methods
                     // TODO(fa) support static and class methods
