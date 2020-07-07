@@ -59,19 +59,30 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
 public abstract class AbstractImportNode extends StatementNode {
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child PythonObjectFactory objectFactory;
 
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
 
+    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
+
     public AbstractImportNode() {
         super();
+    }
+
+    private PythonLanguage getPythonLanguage() {
+        if (languageRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            languageRef = lookupLanguageReference(PythonLanguage.class);
+        }
+        return languageRef.get();
     }
 
     private ContextReference<PythonContext> getContextRef() {
@@ -152,7 +163,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     protected boolean emulateJython() {
-        return getContext().getOption(PythonOptions.EmulateJython);
+        return getPythonLanguage().getEngineOption(PythonOptions.EmulateJython);
     }
 
     @Override

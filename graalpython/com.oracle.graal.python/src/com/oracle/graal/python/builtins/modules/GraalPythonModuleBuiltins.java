@@ -129,8 +129,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonContext context = core.getContext();
         PythonModule mod = core.lookupBuiltinModule(__GRAALPYTHON__);
+        PythonLanguage language = context.getLanguage();
         if (!ImageInfo.inImageBuildtimeCode()) {
-            mod.setAttribute("home", context.getLanguage().getHome());
+            mod.setAttribute("home", language.getHome());
         }
         String coreHome = context.getCoreHome();
         String stdlibHome = context.getStdlibHome();
@@ -138,7 +139,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         Env env = context.getEnv();
         LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        mod.setAttribute("jython_emulation_enabled", context.getOption(PythonOptions.EmulateJython));
+        mod.setAttribute("jython_emulation_enabled", language.getEngineOption(PythonOptions.EmulateJython));
         mod.setAttribute("host_import_enabled", context.getEnv().isHostLookupAllowed());
         mod.setAttribute("core_home", coreHome);
         mod.setAttribute("stdlib_home", stdlibHome);

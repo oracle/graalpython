@@ -60,6 +60,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -72,7 +73,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
     }
 
     @Specialization
-    boolean doIt(Object left, Object right,
+    static boolean doIt(Object left, Object right,
                     @Cached IsNode isNode) {
         return isNode.execute(left, right);
     }
@@ -89,30 +90,30 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         // Primitives
         @Specialization
-        boolean doBB(boolean left, boolean right) {
+        static boolean doBB(boolean left, boolean right) {
             return left == right;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doBI(boolean left, int right) {
+        static boolean doBI(boolean left, int right) {
             return false;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doBL(boolean left, long right) {
+        static boolean doBL(boolean left, long right) {
             return false;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doBD(boolean left, double right) {
+        static boolean doBD(boolean left, double right) {
             return false;
         }
 
         @Specialization
-        boolean doBP(boolean left, PInt right,
+        static boolean doBP(boolean left, PInt right,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
             PythonCore core = ctxt.getCore();
             if (left) {
@@ -124,28 +125,28 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doIB(int left, boolean right) {
+        static boolean doIB(int left, boolean right) {
             return false;
         }
 
         @Specialization
-        boolean doII(int left, int right) {
+        static boolean doII(int left, int right) {
             return left == right;
         }
 
         @Specialization
-        boolean doIL(int left, long right) {
+        static boolean doIL(int left, long right) {
             return left == right;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doID(int left, double right) {
+        static boolean doID(int left, double right) {
             return false;
         }
 
         @Specialization
-        boolean doIP(int left, PInt right,
+        static boolean doIP(int left, PInt right,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileIsAnyBuiltinObject(right)) {
                 try {
@@ -160,28 +161,28 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doLB(long left, boolean right) {
+        static boolean doLB(long left, boolean right) {
             return false;
         }
 
         @Specialization
-        boolean doLI(long left, int right) {
+        static boolean doLI(long left, int right) {
             return left == right;
         }
 
         @Specialization
-        boolean doLL(long left, long right) {
+        static boolean doLL(long left, long right) {
             return left == right;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doLD(long left, double right) {
+        static boolean doLD(long left, double right) {
             return false;
         }
 
         @Specialization
-        boolean doLP(long left, PInt right,
+        static boolean doLP(long left, PInt right,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileIsAnyBuiltinObject(right)) {
                 try {
@@ -196,68 +197,68 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doDB(double left, boolean right) {
+        static boolean doDB(double left, boolean right) {
             return false;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doDI(double left, int right) {
+        static boolean doDI(double left, int right) {
             return false;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        boolean doDL(double left, long right) {
+        static boolean doDL(double left, long right) {
             return false;
         }
 
         @Specialization
-        boolean doDD(double left, double right) {
+        static boolean doDD(double left, double right) {
             // n.b. we simulate that the primitive NaN is a singleton; this is required to make
             // 'nan = float("nan"); nan is nan' work
             return left == right || (Double.isNaN(left) && Double.isNaN(right));
         }
 
         @Specialization
-        boolean doPB(PInt left, boolean right,
+        static boolean doPB(PInt left, boolean right,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
             return doBP(right, left, ctxt);
         }
 
         @Specialization
-        boolean doPI(PInt left, int right,
+        static boolean doPI(PInt left, int right,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             return doIP(right, left, isBuiltin);
         }
 
         @Specialization
-        boolean doPL(PInt left, long right,
+        static boolean doPL(PInt left, long right,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             return doLP(right, left, isBuiltin);
         }
 
         // types
         @Specialization
-        boolean doCT(PythonBuiltinClass left, PythonBuiltinClassType right) {
+        static boolean doCT(PythonBuiltinClass left, PythonBuiltinClassType right) {
             return left.getType() == right;
         }
 
         @Specialization
-        boolean doTC(PythonBuiltinClassType left, PythonBuiltinClass right) {
+        static boolean doTC(PythonBuiltinClassType left, PythonBuiltinClass right) {
             return right.getType() == left;
         }
 
         // native objects
         @Specialization
-        boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+        static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @Cached CExtNodes.PointerCompareNode isNode) {
             return isNode.execute(__EQ__, left, right);
         }
 
         // code
         @Specialization
-        boolean doCode(PCode left, PCode right) {
+        static boolean doCode(PCode left, PCode right) {
             // Special case for code objects: Frames create them on-demand even if they refer to the
             // same function. So we need to compare the root nodes.
             if (left != right) {
@@ -275,9 +276,10 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         // none
         @Specialization
-        boolean doObjectPNone(Object left, PNone right,
-                        @Cached.Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            if (ctxt.getOption(PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
+        static boolean doObjectPNone(Object left, PNone right,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            if (language.getEngineOption(PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
                             right == PNone.NONE) {
                 return true;
             }
@@ -285,14 +287,15 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         @Specialization
-        boolean doPNoneObject(PNone left, Object right,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            return doObjectPNone(right, left, ctxt);
+        static boolean doPNoneObject(PNone left, Object right,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            return doObjectPNone(right, left, language, ctxt);
         }
 
         // everything else
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        boolean doGeneric(Object left, Object right,
+        static boolean doGeneric(Object left, Object right,
                         @CachedLibrary("left") PythonObjectLibrary lib) {
             if (left == right) {
                 return true;

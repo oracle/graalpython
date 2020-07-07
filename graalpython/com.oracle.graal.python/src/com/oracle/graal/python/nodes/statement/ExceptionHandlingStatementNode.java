@@ -55,7 +55,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
-import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -70,7 +71,8 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @CompilationFinal private LoopConditionProfile contextChainHandledProfile;
     @CompilationFinal private LoopConditionProfile contextChainContextProfile;
     @CompilationFinal private Boolean shouldCatchAllExceptions;
-    @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> contextRef;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
     protected void tryChainExceptionFromHandler(PException handlerException, TruffleException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
@@ -164,7 +166,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return contextChainContextProfile;
     }
 
-    protected PythonContext getContext() {
+    protected final PythonContext getContext() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             contextRef = lookupContextReference(PythonLanguage.class);
@@ -172,7 +174,15 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return contextRef.get();
     }
 
-    protected PythonObjectFactory factory() {
+    protected final PythonLanguage getPythonLanguage() {
+        if (languageRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            languageRef = lookupLanguageReference(PythonLanguage.class);
+        }
+        return languageRef.get();
+    }
+
+    protected final PythonObjectFactory factory() {
         if (ofactory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             ofactory = insert(PythonObjectFactory.create());
@@ -180,12 +190,8 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return ofactory;
     }
 
-    protected boolean shouldCatchAllExceptions() {
-        if (shouldCatchAllExceptions == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            shouldCatchAllExceptions = getContext().getOption(PythonOptions.CatchAllExceptions);
-        }
-        return shouldCatchAllExceptions;
+    protected final boolean shouldCatchAllExceptions() {
+        return getPythonLanguage().getEngineOption(PythonOptions.CatchAllExceptions);
     }
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
@@ -197,7 +203,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return pe.getExceptionForReraise();
     }
 
-    protected PException wrapJavaExceptionIfApplicable(Throwable e) {
+    protected final PException wrapJavaExceptionIfApplicable(Throwable e) {
         if (e instanceof ControlFlowException) {
             return null;
         }
@@ -212,7 +218,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
 
     @TruffleBoundary
     private static void moveTruffleStackTrace(Throwable e, PException pe) {
-        pe.initCause(e.getCause());
+        pe.initCause(e);
         // Host exceptions have their stacktrace already filled in, call this to set
         // the cutoff point to the catch site
         pe.getTruffleStackTrace();

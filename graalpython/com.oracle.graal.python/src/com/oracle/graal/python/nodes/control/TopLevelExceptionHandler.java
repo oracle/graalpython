@@ -264,7 +264,12 @@ public class TopLevelExceptionHandler extends RootNode {
             traceback = traceback.getNextChain();
         }
         if (traceback != null) {
-            traceback.getException().printStackTrace();
+            PException exception = traceback.getException();
+            if (exception.getCause() != null && exception.getCause().getStackTrace().length != 0) {
+                exception.getCause().printStackTrace();
+            } else {
+                exception.printStackTrace();
+            }
         }
     }
 

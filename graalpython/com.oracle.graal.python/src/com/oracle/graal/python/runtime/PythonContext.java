@@ -258,6 +258,7 @@ public final class PythonContext {
     }
 
     public <T> T getOption(OptionKey<T> key) {
+        assert !PythonOptions.isEngineOption(key) : "Querying engine option via context.";
         if (CompilerDirectives.inInterpreter()) {
             return getEnv().getOptions().get(key);
         } else {

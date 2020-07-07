@@ -559,7 +559,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
-        boolean internal = !coreIsInitialized && !ctxt.getOption(PythonOptions.ExposeInternalSources);
+        boolean internal = !coreIsInitialized && !ctxt.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal(true);
         }

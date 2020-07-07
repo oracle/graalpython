@@ -170,6 +170,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -1094,7 +1095,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
 
-        @CompilationFinal private Boolean emulateJython;
+        @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
         public static IsInstanceNode create() {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create();
@@ -1109,8 +1110,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         boolean isInstance(VirtualFrame frame, Object instance, PythonAbstractClass cls,
-                        @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
-                        @Cached("create()") IsSubtypeNode isSubtypeNode) {
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
             Object instanceClass = getClassNode.execute(instance);
             return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls);
         }
@@ -1119,7 +1120,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         boolean isInstanceTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
-                        @Cached("create()") IsInstanceNode isInstanceNode) {
+                        @Cached IsInstanceNode isInstanceNode) {
             Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
@@ -1132,7 +1133,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = "isInstanceTupleConstantLen")
         boolean isInstance(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Cached("create()") IsInstanceNode instanceNode) {
+                        @Cached IsInstanceNode instanceNode) {
             for (Object cls : getArray(clsTuple)) {
                 if (instanceNode.executeWith(frame, instance, cls)) {
                     return true;
@@ -1143,12 +1144,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
-            PythonContext context = getContext();
-            TruffleLanguage.Env env = context.getEnv();
-            if (context.getOption(PythonOptions.EmulateJython) && env.isHostObject(cls)) {
-                Object hostCls = env.asHostObject(cls);
-                Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
-                return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
+            if (getPythonLanguage().getEngineOption(PythonOptions.EmulateJython)) {
+                TruffleLanguage.Env env = getContext().getEnv();
+                if (env.isHostObject(cls)) {
+                    Object hostCls = env.asHostObject(cls);
+                    Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
+                    return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
+                }
             }
             return isInstanceCheckInternal(frame, instance, cls) || typeInstanceCheckNode.executeWith(frame, cls, instance);
         }
@@ -1167,6 +1169,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
             }
             return getObjectArrayNode.execute(tuple);
+        }
+
+        private PythonLanguage getPythonLanguage() {
+            if (languageRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageRef = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageRef.get();
         }
     }
 

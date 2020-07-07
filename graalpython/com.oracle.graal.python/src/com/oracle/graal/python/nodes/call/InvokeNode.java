@@ -35,6 +35,7 @@ import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -46,11 +47,13 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
-        return PythonLanguage.getContext().getOption(PythonOptions.ForceInlineGeneratorCalls);
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.getCurrent().getEngineOption(PythonOptions.ForceInlineGeneratorCalls);
     }
 
     protected static boolean forceSplitBuiltins() {
-        return PythonLanguage.getContext().getOption(PythonOptions.EnableForcedSplits);
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.getCurrent().getEngineOption(PythonOptions.EnableForcedSplits);
     }
 
     @TruffleBoundary
