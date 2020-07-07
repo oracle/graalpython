@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 public class MathGuards {
 
     public static boolean fitLong(double value) {
-        return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
+        return Long.MIN_VALUE < value && value < Long.MAX_VALUE;
     }
 
     public static boolean fitInt(double value) {
