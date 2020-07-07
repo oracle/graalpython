@@ -1769,22 +1769,36 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         public abstract Object execute(Object object, Object attrName);
 
-        @Specialization
-        static Object doIt(Object object, String attrName,
+        @Specialization(limit = "2")
+        static Object doIt(Object object, Object attrName,
+                        @CachedLibrary("attrName") InteropLibrary libAttrName,
+                        @Cached PRaiseNode raiseNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                         @Cached CallBinaryMethodNode callGetattributeNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattrNode,
                         @Cached CallBinaryMethodNode callGetattrNode,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasGetattrProfile) {
+            if (!libAttrName.isString(attrName)) {
+                throw raiseNode.raise(TypeError, "attribute name must be string, not '%p'", attrName);
+            }
+
+            String attrNameStr;
+            try {
+                attrNameStr = libAttrName.asString(attrName);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
+
             try {
                 Object attrGetattribute = lookupGetattributeNode.execute(object, __GETATTRIBUTE__);
-                return callGetattributeNode.executeObject(attrGetattribute, object, attrName);
+                return callGetattributeNode.executeObject(attrGetattribute, object, attrNameStr);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
                 Object attrGetattr = lookupGetattrNode.execute(object, __GETATTR__);
                 if (hasGetattrProfile.profile(attrGetattr != PNone.NO_VALUE)) {
-                    return callGetattrNode.executeObject(attrGetattr, object, attrName);
+                    return callGetattrNode.executeObject(attrGetattr, object, attrNameStr);
                 }
                 throw pe;
             }
