@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGet
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
@@ -937,6 +938,22 @@ public abstract class GraalHPyContextFunctions {
                 raiseNativeNode.raiseInt(null, -1, TypeError, "%p object does not support item assignment", receiver);
             }
             return -1;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyFromPyObject extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            return asHandleNode.execute(asContextNode.execute(arguments[0]), asPythonObjectNode.execute(arguments[1]));
         }
     }
 }
