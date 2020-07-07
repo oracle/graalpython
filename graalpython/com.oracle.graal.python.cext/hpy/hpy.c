@@ -118,6 +118,9 @@ void* graal_hpy_from_string(const char *ptr) {
 	return polyglot_from_string(ptr, SRC_CS);
 }
 
+typedef void* VoidPtr;
+POLYGLOT_DECLARE_TYPE(VoidPtr);
+
 typedef union {
 	void *ptr;
 	float f;
@@ -141,11 +144,17 @@ OutVarPtr* graal_hpy_allocate_outvar() {
 	return polyglot_from_OutVarPtr(truffle_managed_malloc(sizeof(OutVarPtr)));
 }
 
-HPy* graal_hpy_array_to_native(HPy *source, uint64_t len) {
+/*
+ * Transforms a Java handle array to native.
+ * TODO(fa): This currently uses a workaround because Sulong does not fully
+ * support passing structs via interop. Therefore, we pretend to have 'void *'
+ * array and convert to handle using 'HPy_FromVoidP'.
+ */
+HPy* graal_hpy_array_to_native(VoidPtr *source, uint64_t len) {
 	uint64_t i;
 	HPy *dest = (HPy *)malloc(len*sizeof(HPy));
 	for (i=0; i < len; i++) {
-		dest[i] = source[i];
+		dest[i] = HPy_FromVoidP(source[i]);
 	}
 	return dest;
 }
@@ -157,9 +166,6 @@ void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
 void* graal_hpy_context_to_native(void* cobj) {
     return truffle_deref_handle_for_managed(cobj);
 }
-
-typedef void* VoidPtr;
-POLYGLOT_DECLARE_TYPE(VoidPtr);
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
     void* graal_hpy_##__jtype__##_array_to_native(const void* jarray, int64_t len) { \
