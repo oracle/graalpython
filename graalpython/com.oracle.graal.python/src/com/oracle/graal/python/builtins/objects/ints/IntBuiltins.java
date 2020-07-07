@@ -408,7 +408,7 @@ public class IntBuiltins extends PythonBuiltins {
             try {
                 return Math.floorDiv(left, right.intValueExact());
             } catch (ArithmeticException e) {
-                return 0;
+                return left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
@@ -424,7 +424,7 @@ public class IntBuiltins extends PythonBuiltins {
             try {
                 return Math.floorDiv(left, right.longValueExact());
             } catch (ArithmeticException e) {
-                return 0;
+                return left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
