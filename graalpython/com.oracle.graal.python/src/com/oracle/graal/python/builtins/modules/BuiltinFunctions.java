@@ -283,7 +283,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         String doL(long x,
                         @Cached ConditionProfile isMinLong) {
             if (isMinLong.profile(x == Long.MIN_VALUE)) {
-                return buildString(true, bigToString(PInt.longToBigInteger(x)));
+                return buildString(true, bigToString(PInt.longToBigInteger(x).abs()));
             }
             return buildString(x < 0, longToString(Math.abs(x)));
         }
