@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.floats;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -240,7 +241,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             try {
                 return factory().createInt(fromDouble(self));
             } catch (NumberFormatException e) {
-                throw raise(ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
+                throw raise(Double.isNaN(self) ? ValueError : OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
             }
         }
 
