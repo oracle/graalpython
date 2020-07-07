@@ -413,7 +413,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         if (handle == -1) {
             // resize
             int newSize = Math.max(16, hpyHandleTable.length * 2);
-            LOGGER.info(() -> "resizing HPy handle table to " + newSize);
+            LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
             hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
             handle = allocateHandle();
         }
