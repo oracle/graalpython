@@ -127,7 +127,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
 
     static CallTargetInvokeNode createInvokeNode(ContextReference<PythonContext> contextRef) {
         CApiContext cApiContext = contextRef.get().getCApiContext();
-        return CallTargetInvokeNode.create(cApiContext.getTriggerAsyncActionsCallTarget(), false, false);
+        return CallTargetInvokeNode.create(cApiContext.getTriggerAsyncActionsCallTarget(), null, false, false);
     }
 
     static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {

@@ -183,7 +183,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
-            return CallTargetInvokeNode.create(target, false, true);
+            return CallTargetInvokeNode.create(target, null, false, true);
         }
 
         protected static boolean sameCallTarget(RootCallTarget target1, CallTarget target2) {
