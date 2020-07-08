@@ -487,6 +487,9 @@ class TestCase(object):
             return self
 
         def __exit__(self, exc_type, exc, traceback):
+            self.type = exc_type
+            self.value = exc
+            self.tb = traceback
             import re
             if not exc_type:
                 assert False, "expected '%r' to be raised" % self.exc_type
