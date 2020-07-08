@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.complex;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -68,6 +70,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.prepareSpecForFloat;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.shouldBeAsStr;
 
 import java.util.List;
 
@@ -87,7 +91,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
+import com.oracle.graal.python.runtime.formatting.FloatFormatter;
+import com.oracle.graal.python.runtime.formatting.InternalFormat;
+import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -715,16 +724,69 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         String repr(PComplex self) {
-            return self.toString();
+            return repr(self, getCore());
+        }
+
+        private static String repr(PComplex self, PythonCore core) {
+            if (self.getReal() == 0 && Math.copySign(1.0, self.getReal()) == 1.0) {
+                // Real part is +0: just output the imaginary part and do not include parens
+                return format(self.getImag(), core) + 'j';
+            } else {
+                // real without '+' sign, but imaginary always with sign
+                return '(' + format(self.getReal(), core) + format(self.getImag(), '+', core) + "j)";
+            }
+        }
+
+        private static String format(double value, PythonCore core) {
+            return format(value, InternalFormat.Spec.NONE, core);
+        }
+
+        private static String format(double value, char sign, PythonCore core) {
+            // CPython uses "r" type, but also some internal flags that cause that integer values
+            // are printed without the decimal part, which is mostly what "g" does
+            InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', sign, false, InternalFormat.Spec.UNSPECIFIED, false, -1, 'g');
+            FloatFormatter f = new FloatFormatter(core, spec);
+            return f.format(value).getResult();
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
-    abstract static class StrNode extends PythonBuiltinNode {
+    abstract static class StrNode extends ReprNode {
+    }
+
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class FormatNode extends PythonBinaryBuiltinNode {
         @Specialization
-        String repr(PComplex self) {
-            return self.toString();
+        @TruffleBoundary
+        String format(PComplex self, String formatString,
+                        @Cached("createBinaryProfile()") ConditionProfile strProfile) {
+            if (strProfile.profile(shouldBeAsStr(formatString))) {
+                return ReprNode.repr(self, getCore());
+            }
+            InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
+            validateSpec(spec);
+            ComplexFormatter formatter = new ComplexFormatter(getCore(), prepareSpecForFloat(spec, getCore(), "complex"));
+            formatter.format(self);
+            return formatter.pad().getResult();
+        }
+
+        @Fallback
+        Object doOther(@SuppressWarnings("unused") Object self, Object format) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", format);
+        }
+
+        private void validateSpec(Spec spec) {
+            if (spec.getFill(' ') == '0') {
+                raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
+            }
+
+            char align = spec.getAlign('>');
+            if (align == '=') {
+                raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
+            }
         }
     }
 

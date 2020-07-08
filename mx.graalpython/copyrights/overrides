@@ -502,7 +502,8 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/exceptio
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/FloatFormatter.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/IntegerFormatter.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/InternalFormat.java,jython.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/StringFormatter.java,jython.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/StringFormatProcessor.java,jython.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/FormatProcessor.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/TextFormatter.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/object/PythonObjectFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/PImmutableSequence.java,zippy.copyright

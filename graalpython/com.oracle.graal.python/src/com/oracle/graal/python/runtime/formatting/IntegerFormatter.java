@@ -6,20 +6,20 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * A class that provides the implementation of integer formatting. In a limited way, it acts like a
- * StringBuilder to which text and one or more numbers may be appended, formatted according to the
- * format specifier supplied at construction. These are ephemeral objects that are not, on their
- * own, thread safe.
+ * StringFormattingBuffer to which text and one or more numbers may be appended, formatted according
+ * to the format specifier supplied at construction. These are ephemeral objects that are not, on
+ * their own, thread safe.
  */
 public class IntegerFormatter extends InternalFormat.Formatter {
 
@@ -30,18 +30,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * @param result destination buffer
      * @param spec parsed conversion specification
      */
-    public IntegerFormatter(PythonCore core, StringBuilder result, Spec spec) {
+    public IntegerFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
         super(core, result, spec);
-    }
-
-    /**
-     * Construct the formatter from a specification, allocating a buffer internally for the result.
-     *
-     * @param spec parsed conversion specification
-     */
-    public IntegerFormatter(PythonCore core, Spec spec) {
-        // Rule of thumb: big enough for 32-bit binary with base indicator 0b
-        this(core, new StringBuilder(34), spec);
     }
 
     /*
@@ -242,7 +232,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     }
 
     // Limits used in format_c(BigInteger)
-    private static final BigInteger LIMIT_UNICODE = BigInteger.valueOf(0x10ffff);
+    public static final BigInteger LIMIT_UNICODE = BigInteger.valueOf(0x110000);
     private static final BigInteger LIMIT_BYTE = BigInteger.valueOf(256);
 
     /**
@@ -416,7 +406,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      */
     void format_c(int value) {
         // Limit is 256 if we're formatting for byte output, unicode range otherwise.
-        int limit = bytes ? 256 : LIMIT_UNICODE.intValue() + 1;
+        int limit = bytes ? 256 : LIMIT_UNICODE.intValue();
         if (value < 0 || value >= limit) {
             throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, limit);
         } else {
@@ -486,7 +476,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * @param value the value to generate a hexadecimal string from
      * @return the hexadecimal representation of value, with "-" sign prepended if necessary
      */
-    private static final String toHexString(BigInteger value) {
+    private static String toHexString(BigInteger value) {
         int signum = value.signum();
 
         // obvious shortcut
@@ -496,7 +486,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
         // we want to work in absolute numeric value (negative sign is added afterward)
         byte[] input = value.abs().toByteArray();
-        StringBuilder sb = new StringBuilder(input.length * 2);
+        FormattingBuffer.StringFormattingBuffer sb = new FormattingBuffer.StringFormattingBuffer(input.length * 2);
 
         int b;
         for (int i = 0; i < input.length; i++) {
@@ -518,7 +508,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * @param value the value to generate an octal string from
      * @return the octal representation of value, with "-" sign prepended if necessary
      */
-    private static final String toOctalString(BigInteger value) {
+    private static String toOctalString(BigInteger value) {
         int signum = value.signum();
 
         // obvious shortcut
@@ -560,7 +550,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * @param value the value to generate a binary string from
      * @return the binary representation of value, with "-" sign prepended if necessary
      */
-    private static final String toBinaryString(BigInteger value) {
+    private static String toBinaryString(BigInteger value) {
         int signum = value.signum();
 
         // obvious shortcut
@@ -570,7 +560,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
         // we want to work in absolute numeric value (negative sign is added afterward)
         byte[] input = value.abs().toByteArray();
-        StringBuilder sb = new StringBuilder(value.bitCount());
+        FormattingBuffer.StringFormattingBuffer sb = new FormattingBuffer.StringFormattingBuffer(value.bitCount());
 
         int b;
         for (int i = 0; i < input.length; i++) {
@@ -587,8 +577,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
     /**
      * A minor variation on {@link IntegerFormatter} to handle "traditional" %-formatting. The
-     * difference is in support for <code>spec.precision</code>, the formatting octal in "alternate"
-     * mode (0 and 0123, not 0o0 and 0o123), and in c-format (in the error logic).
+     * difference is in support for <code>spec.precision</code>, and in c-format (in the error
+     * logic).
      */
     public static class Traditional extends IntegerFormatter {
 
@@ -599,42 +589,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        public Traditional(PythonCore core, StringBuilder result, Spec spec) {
+        public Traditional(PythonCore core, FormattingBuffer result, Spec spec) {
             super(core, result, spec);
-        }
-
-        /**
-         * Construct the formatter from a specification, allocating a buffer internally for the
-         * result.
-         *
-         * @param spec parsed conversion specification
-         */
-        public Traditional(PythonCore core, Spec spec) {
-            this(core, new StringBuilder(), spec);
-        }
-
-        /**
-         * Format the value as octal (into {@link #result}). The options for mandatory sign and for
-         * the presence of a base-prefix "0" are dealt with by reference to the format
-         * specification.
-         *
-         * @param value to convert
-         */
-        @Override
-        void format_o(BigInteger value) {
-            String number;
-            int signum = value.signum();
-            if (signum < 0) {
-                // Negative value: deal with sign and base, and convert magnitude.
-                negativeSign(null);
-                number = toOctalString(value.negate());
-            } else {
-                // Positive value: deal with sign, base and magnitude.
-                positiveSign(null);
-                number = toOctalString(value);
-            }
-            // Append to result.
-            appendOctalNumber(number);
         }
 
         /**
@@ -644,40 +600,11 @@ public class IntegerFormatter extends InternalFormat.Formatter {
          */
         @Override
         void format_c(BigInteger value) {
-            if (value.signum() < 0) {
-                throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_LESS_THAN_MIN);
-            } else {
-                // Limit is 256 if we're formatting for byte output, unicode range otherwise.
-                BigInteger limit = bytes ? LIMIT_BYTE : LIMIT_UNICODE;
-                if (value.compareTo(limit) >= 0) {
-                    throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_GREATER_THAN_MAX);
-                } else {
-                    result.appendCodePoint(value.intValue());
-                }
+            assert !bytes; // for bytes we use directly BytesFormatter
+            if (value.signum() < 0 || value.compareTo(LIMIT_UNICODE) >= 0) {
+                throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
             }
-        }
-
-        /**
-         * Format the value as octal (into {@link #result}). The options for mandatory sign and for
-         * the presence of a base-prefix "0" are dealt with by reference to the format
-         * specification.
-         *
-         * @param value to convert
-         */
-        @Override
-        void format_o(int value) {
-            String number;
-            if (value < 0) {
-                // Negative value: deal with sign and convert magnitude.
-                negativeSign(null);
-                number = Integer.toOctalString(-value);
-            } else {
-                // Positive value: deal with sign, base and magnitude.
-                positiveSign(null);
-                number = Integer.toOctalString(value);
-            }
-            // Append to result.
-            appendOctalNumber(number);
+            result.appendCodePoint(value.intValue());
         }
 
         /**
@@ -687,17 +614,11 @@ public class IntegerFormatter extends InternalFormat.Formatter {
          */
         @Override
         void format_c(int value) {
-            if (value < 0) {
-                throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_LESS_THAN_MIN);
-            } else {
-                // Limit is 256 if we're formatting for byte output, unicode range otherwise.
-                int limit = bytes ? 256 : LIMIT_UNICODE.intValue() + 1;
-                if (value >= limit) {
-                    throw errors.raise(OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_GREATER_THAN_MAX);
-                } else {
-                    result.appendCodePoint(value);
-                }
+            assert !bytes; // for bytes we use directly BytesFormatter
+            if (value < 0 || value >= LIMIT_UNICODE.intValue()) {
+                throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
             }
+            result.appendCodePoint(value);
         }
 
         /**
@@ -709,6 +630,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         @Override
         void appendNumber(String number) {
             int n, p = spec.getPrecision(0);
+            result.ensureAdditionalCapacity(p);
             for (n = number.length(); n < p; n++) {
                 result.append('0');
             }

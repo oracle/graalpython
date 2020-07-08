@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,9 +16,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * A class that provides the implementation of floating-point formatting. In a limited way, it acts
- * like a StringBuilder to which text and one or more numbers may be appended, formatted according
- * to the format specifier supplied at construction. These are ephemeral objects that are not, on
- * their own, thread safe.
+ * like a StringFormattingBuffer to which text and one or more numbers may be appended, formatted
+ * according to the format specifier supplied at construction. These are ephemeral objects that are
+ * not, on their own, thread safe.
  */
 public class FloatFormatter extends InternalFormat.Formatter {
 
@@ -47,7 +47,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * @param result destination buffer
      * @param spec parsed conversion specification
      */
-    public FloatFormatter(PythonCore core, StringBuilder result, Spec spec) {
+    public FloatFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
         super(core, result, spec);
         if (spec.alternate) {
             // Alternate form means do not trim the zero fractional digits.
@@ -70,7 +70,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * @param spec parsed conversion specification
      */
     public FloatFormatter(PythonCore core, Spec spec) {
-        this(core, new StringBuilder(size(spec)), spec);
+        this(core, new FormattingBuffer.StringFormattingBuffer(size(spec)), spec);
     }
 
     /**
@@ -164,12 +164,6 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
         // Precision defaults to 6 (or 12 for none-format)
         int precision = spec.getPrecision(Spec.specified(spec.type) ? 6 : 12);
-
-        // Guard against excessive result precision
-        // XXX Possibly better raised before result is allocated/sized.
-        if (precision > MAX_PRECISION) {
-            throw precisionTooLarge("float");
-        }
 
         /*
          * By default, the prefix of a positive number is "", but the format specifier may override
@@ -546,7 +540,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
         } else {
 
             // Generate digit sequence (with no decimal point) with custom rounding.
-            StringBuilder pointlessBuffer = new StringBuilder(20);
+            FormattingBuffer.StringFormattingBuffer pointlessBuffer = new FormattingBuffer.StringFormattingBuffer(20);
             int exp = reprDigits(Math.abs(value), precision, pointlessBuffer);
 
             if (-4 <= exp && exp < expThreshold) {
@@ -705,7 +699,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * @param buf for digits of result (recommend size be 20)
      * @return the exponent
      */
-    private static int reprDigits(double value, int maxDigits, StringBuilder buf) {
+    private static int reprDigits(double value, int maxDigits, FormattingBuffer.StringFormattingBuffer buf) {
 
         // Most of the work is done by Double.
         String s = Double.toString(value);
@@ -716,6 +710,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
         boolean allZero = true;
 
         // Scan whole part and fractional part digits
+        buf.ensureAdditionalCapacity(s.length()); // this may over-allocate a bit
         while (p < end) {
             c = s.charAt(p++);
             if (Character.isDigit(c)) {

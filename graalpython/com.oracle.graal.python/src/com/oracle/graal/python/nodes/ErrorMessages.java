@@ -71,7 +71,7 @@ public abstract class ErrorMessages {
     public static final String ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE = "attribute %s of %s object is not writable";
     public static final String ATTR_S_READONLY = "attribute %s is read-only";
     public static final String ATTR_VALUE_MUST_BE_BOOL = "attribute value type must be bool";
-    public static final String B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P = " %%b requires bytes, or an object that implements %s, not '%p'";
+    public static final String B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P = "%%b requires a bytes-like object, or an object that implements __bytes__, not '%p'";
     public static final String BAD_ARG_TO_INTERNAL_FUNC = "bad argument to internal function";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_P = "bad argument to internal function %p";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P = "bad argument to internal function, was '%s' (type '%p')";
@@ -88,7 +88,7 @@ public abstract class ErrorMessages {
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
-    public static final String C_ARG_NOT_IN_RANGE = "%c arg not in range(0x%s)";
+    public static final String C_ARG_NOT_IN_RANGE = "%%c arg not in range(0x%s)";
     public static final String CALL_STACK_NOT_DEEP_ENOUGH = "call stack is not deep enough";
     public static final String CALLING_ARG_CONVERTER_FAIL_EXPECTED_D_GOT_P = "calling argument converter failed; expected %d but got %d parameters.";
     public static final String CALLING_ARG_CONVERTER_FAIL_INCOMPATIBLE_PARAMS = "calling argument converter failed; incompatible parameters '%s'";
@@ -356,7 +356,7 @@ public abstract class ErrorMessages {
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";
     public static final String NON_STRING_IN_CODE_SLOT = "non-string found in code slot";
     public static final String NOT_A_ZIP_FILE = "not a Zip file: '%s'";
-    public static final String NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING = "not all arguments converted during string formatting";
+    public static final String NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING = "not all arguments converted during %s formatting";
     public static final String NOT_ALLOWED_S_S_FORMAT_SPECIFIERS_S = "%s not allowed %s%s format specifier%s";
     public static final String NOT_ENOUGH_ARGS_FOR_FORMAT_STRING = "not enough arguments for format string";
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
@@ -401,6 +401,10 @@ public abstract class ErrorMessages {
     public static final String READONLY_ATTRIBUTE = "readonly attribute";
     public static final String REQUIRES_CODE_OBJ = "%s() requires a code object with %d free vars, not %d";
     public static final String REQUIRES_INT_OR_CHAR = "%%%c requires int or char";
+    public static final String S_FORMAT_NUMBER_IS_REQUIRED_NOT_S = "%%%s format: a number is required, not %p";
+    public static final String S_FORMAT_INTEGER_IS_REQUIRED_NOT_S = "%%%s format: an integer is required, not %p";
+    public static final String C_ARG_NOT_IN_RANGE256_DECIMAL = "%%c arg not in range(256)";
+    public static final String C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = "%%c requires an integer in range(256) or a single byte";
     public static final String REQUIRES_OBJ_THAT_IMPLEMENTS_S = " %%r requires an object that implements %s";
     public static final String REQUIRES_STRING_AS_LEFT_OPERAND = "'in <string>' requires string as left operand, not %P";
     public static final String RESULT_TOO_MANY_ITEMS = "%s result has too many items";
@@ -509,5 +513,7 @@ public abstract class ErrorMessages {
     public static final String ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED = "access to internal language %s is not permitted";
     public static final String POW_BASE_NOT_INVERTIBLE = "base is not invertible for the given modulus";
     public static final String POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = "0.0 cannot be raised to a negative power";
+    public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
+    public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
 }
