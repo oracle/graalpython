@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -94,6 +96,16 @@ public class SocketBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SocketBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5)
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object init(Object self, Object family, Object type, Object proto, Object fileno) {
+            return PNone.NONE;
+        }
     }
 
     // accept()
