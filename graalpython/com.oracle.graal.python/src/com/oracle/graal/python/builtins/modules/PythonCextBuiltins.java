@@ -522,7 +522,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
-            return nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
+            return nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
         }
 
         @Specialization(guards = "isDecoratedManagedFunction(callable)")
@@ -534,7 +534,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
-            Object managedCallable = nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
+            Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
             RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, null);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);

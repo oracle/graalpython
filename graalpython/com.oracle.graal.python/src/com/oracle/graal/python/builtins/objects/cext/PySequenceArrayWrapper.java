@@ -132,7 +132,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         // code path, we don't speculate that either of those objects is
         // constant anymore, so any caching on them won't happen anyway
         PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return lib.getDelegate(this) == lib.getDelegate((PySequenceArrayWrapper) obj);
+        return lib.getDelegate(this) == lib.getDelegate(obj);
     }
 
     @ExportMessage
