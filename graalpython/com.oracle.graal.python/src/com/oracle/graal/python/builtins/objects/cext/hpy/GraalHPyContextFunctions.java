@@ -640,14 +640,15 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyAsPythonObjectNode handleAsPythonObjectNode,
                         @Cached ToNewRefNode toPyObjectPointerNode) throws ArityException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext hPyContext = asContextNode.execute(arguments[0]);
-            return toPyObjectPointerNode.execute(hPyContext.getContext().getCApiContext(), asHandleNode.execute(hPyContext, arguments[1]));
+            Object object = handleAsPythonObjectNode.execute(hPyContext, arguments[1]);
+            return toPyObjectPointerNode.execute(hPyContext.getContext().getCApiContext(), object);
         }
     }
 
