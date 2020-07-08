@@ -264,20 +264,31 @@ public class GraalHPyNodes {
                 // fall through
             }
 
+            Object methodFlagsObj;
+            int flags;
+            Object mlMethObj;
             try {
-                Object methodFlagsObj = interopLibrary.readMember(methodDef, "ml_flags");
+                methodFlagsObj = interopLibrary.readMember(methodDef, "ml_flags");
                 if (!resultLib.fitsInInt(methodFlagsObj)) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_flags of %s is not an integer", methodName);
                 }
-                int flags = resultLib.asInt(methodFlagsObj);
+                flags = resultLib.asInt(methodFlagsObj);
 
-                Object mlMethObj = interopLibrary.readMember(methodDef, "ml_meth");
+                mlMethObj = interopLibrary.readMember(methodDef, "ml_meth");
                 if (!resultLib.isExecutable(mlMethObj)) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_meth of %s is not callable", methodName);
                 }
+            } catch (UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
+            }
 
+            try {
                 PRootNode rootNode;
                 PythonLanguage language = context.getContext().getLanguage();
                 boolean hpyStyleMeth = context.isHPyMeth(flags);
@@ -307,10 +318,7 @@ public class GraalHPyNodes {
             } catch (UnsupportedMessageException e) {
                 profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "HPy C API symbol %s is not callable", "");
-            } catch (UnknownIdentifierException e) {
-                e.printStackTrace();
             }
-            return null;
         }
 
         @TruffleBoundary
