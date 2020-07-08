@@ -61,8 +61,10 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddFunctionNode;
@@ -967,12 +969,17 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached ResolveHandleNode resolveHandleNode,
+                        @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
-            return asHandleNode.execute(asContextNode.execute(arguments[0]), asPythonObjectNode.execute(arguments[1]));
+            // IMPORTANT: this is not stealing the reference. The CPython implementation actually
+            // increases the reference count by 1.
+            Object resolvedPyObject = asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(arguments[1]), false));
+            return asHandleNode.execute(asContextNode.execute(arguments[0]), resolvedPyObject);
         }
     }
 }
