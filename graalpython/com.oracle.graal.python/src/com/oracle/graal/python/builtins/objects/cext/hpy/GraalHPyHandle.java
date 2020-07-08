@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -54,6 +55,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -73,6 +75,7 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     public GraalHPyHandle(Object delegate) {
+        assert delegate != null : "HPy handles to Java null are not allowed";
         this.delegate = delegate;
     }
 
@@ -84,6 +87,7 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     long asPointer() throws UnsupportedMessageException {
         if (!isPointer()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
         return id;
@@ -91,8 +95,11 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     void toNative(
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        this.id = context.getHPyContext().getHPyHandleForObject(this);
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached("createCountingProfile()") ConditionProfile notNativeProfile) {
+        if (notNativeProfile.profile(!isPointer())) {
+            id = context.getHPyContext().getHPyHandleForObject(this);
+        }
     }
 
     @ExportMessage
