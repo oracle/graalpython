@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -116,6 +117,8 @@ public class PythonNativeNull implements TruffleObject {
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     TriState isIdenticalOrUndefined(Object other) {
-        throw new AssertionError("cannot delegate isIdenticalOrUndefined for null properly");
+        String msg = "cannot delegate isIdenticalOrUndefined for null properly";
+        CompilerDirectives.bailout(msg);
+        throw new AssertionError(msg);
     }
 }
