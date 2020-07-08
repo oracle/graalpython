@@ -61,6 +61,7 @@ _fixture_marks = []
 _itertools_module = None
 _request_class = collections.namedtuple("request", "param config")
 _loaded_conftest = {}
+_created_tmp_dirs = []
 
 class RequestConfig:
     def getoption(self, name):
@@ -139,7 +140,10 @@ def eval_fixture(name, test_class_instance):
     """
     # TODO remove special handling
     if name == "tmpdir":
-        return [GraalPyTempdir(tempfile.mkdtemp())]
+        tmp_dir = tempfile.mkdtemp()
+        global _created_tmp_dirs
+        _created_tmp_dirs.append(tmp_dir)
+        return [GraalPyTempdir(tmp_dir)]
 
     fixture = _fixture_scopes["function"].get(name)
     if fixture:
@@ -233,6 +237,18 @@ sys.modules["pytest"] = _pytest_module
 
 verbose = False
 
+
+def _cleanup_tempdirs():
+    import shutil
+    # remove all created temp dirs
+    global _created_tmp_dirs, verbose
+    if verbose:
+        print("Cleaning temp dirs: {!r}".format(_created_tmp_dirs))
+    for tmp_dir in _created_tmp_dirs:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    _created_tmp_dirs = []
+
+
 print_lock = _thread.RLock()
 class ThreadPool():
     cnt_lock = _thread.RLock()
@@ -316,15 +332,10 @@ class TestCase(object):
         # insert fixture params
         co = func.__code__
         fixture_args = []
-        arg_tmpdir_idx = -1
         if co.co_argcount > 0:
             arg_names = co.co_varnames[:co.co_argcount]
             if arg_names and arg_names[0] == "self":
                 arg_names = arg_names[1:]
-            try:
-                arg_tmpdir_idx = arg_names.index("tmpdir")
-            except ValueError:
-                arg_tmpdir_idx = -1
             fixture_args = get_fixture_values(self, arg_names)
 
         get_fixture_values(self, _fixture_marks)
@@ -352,12 +363,6 @@ class TestCase(object):
                 return False
         else:
             return True
-        finally:
-            if arg_tmpdir_idx != -1:
-                for arg_vec in fixture_args:
-                    print("deleting tempdir {}".format(arg_vec[arg_tmpdir_idx]))
-                    #shutil.rmtree(arg_vec[arg_tmpdir_idx])
-
 
 
     def run_test(self, func):
@@ -644,6 +649,7 @@ class TestRunner(object):
                 print(exc)
 
         if self.exceptions or self.failed:
+            _cleanup_tempdirs()
             os._exit(1)
 
 
@@ -699,4 +705,7 @@ if __name__ == "__main__":
     for pth in python_paths:
         sys.path.append(pth)
 
-    TestRunner(paths).run()
+    try:
+        TestRunner(paths).run()
+    finally:
+        _cleanup_tempdirs()
