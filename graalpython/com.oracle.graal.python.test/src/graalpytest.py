@@ -228,6 +228,7 @@ def _pytest_fixture_maker(*args, **kwargs):
 _pytest_module = type(os)("pytest")
 _pytest_module.mark = Mark()
 _pytest_module.fixture = _pytest_fixture_maker
+_pytest_module.raises = lambda x: TestCase.assertRaisesRegex(x, None)
 sys.modules["pytest"] = _pytest_module
 
 verbose = False
