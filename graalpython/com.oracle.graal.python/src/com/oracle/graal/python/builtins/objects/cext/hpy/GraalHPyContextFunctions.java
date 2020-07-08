@@ -179,6 +179,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyEnsureHandleNode ensureHandleNode) throws ArityException {
             if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext hpyContext = asContextNode.execute(arguments[0]);
@@ -187,6 +188,7 @@ public abstract class GraalHPyContextFunctions {
                 try {
                     hpyContext.releaseHPyHandleForObject((int) handle.asPointer());
                 } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("trying to release non-native handle that claims to be native");
                 }
             }
