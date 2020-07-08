@@ -133,7 +133,7 @@ public final class WrapTpNew extends SlotWrapper {
                 }
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) builtinProfile.profile(newMethod)).getBuiltinNodeFactory();
                 if (factory != null) {
-                    if (!factory.getNodeClass().isAssignableFrom(getNode().getClass())) {
+                    if (!factory.getNodeClass().isInstance(getNode())) {
                         if ((state & IS_UNSAFE_STATE) == 0) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             reportPolymorphicSpecialize();
