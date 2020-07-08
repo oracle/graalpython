@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
@@ -624,16 +625,22 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode resultAsHandleNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached FromCharPointerNode fromCharPointerNode) throws ArityException {
+                        @Cached PCallHPyFunction callFromWcharArrayNode,
+                        @Cached UnicodeFromWcharNode unicodeFromWcharNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 3) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            long length = castToJavaLongNode.execute(arguments[2]);
+            long len = castToJavaLongNode.execute(arguments[2]);
+            // Note: 'len' may be -1; in this case, function GRAAL_HPY_I8_FROM_WCHAR_ARRAY will
+            // use 'wcslen' to determine the C array's length.
+            long byteLen = len == -1 ? -1 : len * context.getWcharSize();
+            Object dataArray = callFromWcharArrayNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_I8_FROM_WCHAR_ARRAY, arguments[1], byteLen);
             try {
-                // TODO(fa) provide element size, length, and encoding
-                return resultAsHandleNode.execute(context, fromCharPointerNode.execute(arguments[1]));
+                // UnicodeFromWcharNode always expects an i8 array
+                return resultAsHandleNode.execute(context, unicodeFromWcharNode.execute(dataArray, context.getWcharSize()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return context.getNullHandle();

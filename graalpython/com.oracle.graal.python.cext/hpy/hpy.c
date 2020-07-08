@@ -42,6 +42,8 @@
 #include <polyglot.h>
 #include <truffle.h>
 
+#include <wchar.h>
+
 #define SRC_CS "utf-8"
 
 POLYGLOT_DECLARE_TYPE(HPy);
@@ -74,7 +76,10 @@ void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
 	return polyglot_from_i8_array(arr, len);
 }
 
-void* graal_hpy_from_wchar_array(void *arr, uint64_t len) {
+wchar_t* graal_hpy_from_wchar_array(wchar_t *arr, uint64_t len) {
+    if (len == -1) {
+        len = (uint64_t) wcslen(arr);
+    }
 	return polyglot_from_wchar_t_array(arr, len);
 }
 
@@ -116,6 +121,17 @@ void* graal_hpy_get_m_methods(HPyModuleDef *moduleDef) {
 
 void* graal_hpy_from_string(const char *ptr) {
 	return polyglot_from_string(ptr, SRC_CS);
+}
+
+/*
+ * Casts a 'wchar_t*' array to an 'int8_t*' array and also associates the proper length.
+ * The length is determined using 'wcslen' if 'len == -1'.
+ */
+int8_t* graal_hpy_i8_from_wchar_array(wchar_t *arr, uint64_t len) {
+    if (len == -1) {
+        len = (uint64_t) (wcslen(arr) * sizeof(wchar_t));
+    }
+	return polyglot_from_i8_array((int8_t *) arr, len);
 }
 
 typedef void* VoidPtr;
