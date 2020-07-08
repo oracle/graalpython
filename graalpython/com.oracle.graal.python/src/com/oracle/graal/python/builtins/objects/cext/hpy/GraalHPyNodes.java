@@ -61,11 +61,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethVarargsRoot;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -76,6 +79,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -157,6 +161,78 @@ public class GraalHPyNodes {
                 profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "HPy C API symbol %s is not callable", name);
             }
+        }
+    }
+
+    /**
+     * Use this node to transform an exception to native if a Python exception was thrown during an
+     * upcall and before returning to native code. This node will correctly link to the current
+     * frame using the frame reference and tries to avoid any materialization of the frame. The
+     * exception is then registered in the native context as the current exception.
+     */
+    @GenerateUncached
+    public abstract static class HPyTransformExceptionToNativeNode extends Node {
+
+        public abstract void execute(Frame frame, GraalHPyContext nativeContext, PException e);
+
+        public final void execute(GraalHPyContext nativeContext, PException e) {
+            execute(null, nativeContext, e);
+        }
+
+        @Specialization
+        static void setCurrentException(Frame frame, GraalHPyContext nativeContext, PException e,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
+            // TODO connect f_back
+            getCurrentFrameRef.execute(frame).markAsEscaped();
+            nativeContext.setCurrentException(e);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyRaiseNode extends Node {
+
+        public final int raiseInt(Frame frame, GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object... arguments) {
+            return executeInt(frame, nativeContext, errorValue, errType, format, arguments);
+        }
+
+        public final Object raise(Frame frame, GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object... arguments) {
+            return execute(frame, nativeContext, errorValue, errType, format, arguments);
+        }
+
+        public final int raiseIntWithoutFrame(GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object... arguments) {
+            return executeInt(null, nativeContext, errorValue, errType, format, arguments);
+        }
+
+        public final Object raiseWithoutFrame(GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object... arguments) {
+            return execute(null, nativeContext, errorValue, errType, format, arguments);
+        }
+
+        public abstract Object execute(Frame frame, GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object[] arguments);
+
+        public abstract int executeInt(Frame frame, GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object[] arguments);
+
+        @Specialization
+        static int doInt(Frame frame, GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object[] arguments,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);
+            } catch (PException p) {
+                transformExceptionToNativeNode.execute(frame, nativeContext, p);
+            }
+            return errorValue;
+        }
+
+        @Specialization
+        static Object doObject(Frame frame, GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object[] arguments,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);
+            } catch (PException p) {
+                transformExceptionToNativeNode.execute(frame, nativeContext, p);
+            }
+            return errorValue;
         }
     }
 
@@ -378,19 +454,24 @@ public class GraalHPyNodes {
     public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
 
         @Specialization
-        static Object doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle,
+        static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            return handle.getDelegate();
+        }
+
+        @Specialization
+        static Object doInt(GraalHPyContext hpyContext, int handle,
                         @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
             return ensureHandleNode.executeInt(hpyContext, handle).getDelegate();
         }
 
         @Specialization
-        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
+        static Object doLong(GraalHPyContext hpyContext, long handle,
                         @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
             return ensureHandleNode.executeLong(hpyContext, handle).getDelegate();
         }
 
-        @Specialization
-        static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object object,
+        @Specialization(replaces = "doHandle")
+        static Object doObject(GraalHPyContext hpyContext, Object object,
                         @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
             return ensureHandleNode.execute(hpyContext, object).getDelegate();
         }

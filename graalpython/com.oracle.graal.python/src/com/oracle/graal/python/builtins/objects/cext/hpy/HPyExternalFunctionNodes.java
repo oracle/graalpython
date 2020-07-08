@@ -45,14 +45,19 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -61,6 +66,10 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -68,7 +77,10 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -108,6 +120,8 @@ public abstract class HPyExternalFunctionNodes {
         Object doIt(VirtualFrame frame, String name, Object callable, Object[] frameArgs,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached HPyCheckFunctionResultNode checkFunctionResultNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
             Object[] arguments = new Object[frameArgs.length + 1];
@@ -122,7 +136,8 @@ public abstract class HPyExternalFunctionNodes {
             Object state = ForeignCallContext.enter(frame, ctx, this);
 
             try {
-                return asPythonObjectNode.execute(hPyContext, lib.execute(callable, arguments));
+                GraalHPyHandle resultHandle = ensureHandleNode.execute(hPyContext, lib.execute(callable, arguments));
+                return asPythonObjectNode.execute(hPyContext, checkFunctionResultNode.execute(hPyContext, name, resultHandle));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
@@ -348,6 +363,63 @@ public abstract class HPyExternalFunctionNodes {
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+    }
+
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    @ImportStatic(PGuards.class)
+    abstract static class HPyCheckFunctionResultNode extends PNodeWithContext {
+        public abstract GraalHPyHandle execute(GraalHPyContext nativeContext, String name, GraalHPyHandle handle);
+
+        @Specialization(guards = "isNullHandle(nativeContext, handle)")
+        GraalHPyHandle doNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
+            return handle;
+        }
+
+        @Specialization(guards = "!isNullHandle(nativeContext, handle)", replaces = "doNullHandle")
+        GraalHPyHandle doNonNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, false, nativeContext, raiseNode, factory, language);
+            return handle;
+        }
+
+        @Specialization(replaces = {"doNullHandle", "doNonNullHandle"})
+        GraalHPyHandle doGeneric(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
+            return handle;
+        }
+
+        private void checkFunctionResult(String name, boolean indicatesError, GraalHPyContext context, PRaiseNode raise, PythonObjectFactory factory, PythonLanguage language) {
+            PException currentException = context.getCurrentException();
+            boolean errOccurred = currentException != null;
+            if (indicatesError) {
+                // consume exception
+                context.setCurrentException(null);
+                if (!errOccurred) {
+                    throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR, name);
+                } else {
+                    throw currentException.getExceptionForReraise();
+                }
+            } else if (errOccurred) {
+                // consume exception
+                context.setCurrentException(null);
+                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
+                sysExc.setCause(currentException.getEscapedException());
+                throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
+            }
+        }
+
+        protected static boolean isNullHandle(GraalHPyContext nativeContext, GraalHPyHandle handle) {
+            return handle == nativeContext.getNullHandle();
         }
     }
 

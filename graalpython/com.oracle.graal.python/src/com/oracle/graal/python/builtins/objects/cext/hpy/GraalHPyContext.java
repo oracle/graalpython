@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -258,6 +259,16 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public long getWcharSize() {
         assert this.wcharSize >= 0 : "wchar size is not available";
         return wcharSize;
+    }
+
+    /** Set the global exception state. */
+    public void setCurrentException(PException e) {
+        getContext().setCurrentException(e);
+    }
+
+    /** Get the global exception state. */
+    public PException getCurrentException() {
+        return getContext().getCurrentException();
     }
 
     @ExportMessage
@@ -480,6 +491,5 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
             return handles[--top];
         }
-
     }
 }
