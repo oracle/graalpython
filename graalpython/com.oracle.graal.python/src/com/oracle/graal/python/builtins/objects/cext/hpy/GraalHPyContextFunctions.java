@@ -284,13 +284,20 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode) throws ArityException {
+                        @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
-            return castToJavaLongNode.execute(convertPIntToPrimitiveNode.execute(null, object, 1, Long.BYTES));
+            try {
+                return castToJavaLongNode.execute(convertPIntToPrimitiveNode.execute(null, object, 1, Long.BYTES));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(context, e);
+                return -1L;
+            }
         }
     }
 
