@@ -190,6 +190,7 @@ def _dev_pythonhome():
 
 
 def punittest(ars):
+    args = []
     if "--regex" not in ars:
         args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
     args += ars
