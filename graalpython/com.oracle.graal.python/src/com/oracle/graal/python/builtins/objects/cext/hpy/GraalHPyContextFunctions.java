@@ -397,7 +397,11 @@ public abstract class GraalHPyContextFunctions {
             PDict dict = (PDict) left;
             Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
             try {
-                return asHandleNode.execute(hashingStorageLibrary.getItem(dict.getDictStorage(), key));
+                Object item = hashingStorageLibrary.getItem(dict.getDictStorage(), key);
+                if (item != null) {
+                    return asHandleNode.execute(item);
+                }
+                return context.getNullHandle();
             } catch (PException e) {
                 // This function has the same (odd) error behavior as PyDict_GetItem: If an error
                 // occurred, the error is cleared and NULL is returned.
