@@ -94,6 +94,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -505,9 +506,12 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached HPyRaiseNode raiseNode) throws ArityException {
             if (arguments.length != 3) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
@@ -517,7 +521,13 @@ public abstract class GraalHPyContextFunctions {
             }
             // the cast is now guaranteed because it is a subtype of PBaseException and there it is
             // a type
-            return raiseNode.raiseIntWithoutFrame(context, 0, (LazyPythonClass) errTypeObj, "exception %s not a BaseException subclass", errTypeObj);
+            Object valueObj = fromCharPointerNode.execute(arguments[2]);
+            try {
+                String errorMessage = castToJavaStringNode.execute(valueObj);
+                return raiseNode.raiseIntWithoutFrame(context, 0, (LazyPythonClass) errTypeObj, errorMessage);
+            } catch (CannotCastException e) {
+                return raiseNode.raiseIntWithoutFrame(context, -1, TypeError, "exception value is not a valid string");
+            }
         }
     }
 
