@@ -42,6 +42,9 @@ PyCF_ONLY_AST = 0
 
 
 class AST:
+    def __init__(self, *args, **kwargs):
+        pass
+
     def __dir__(self):
         return []
 
