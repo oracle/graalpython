@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALLBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
@@ -60,6 +61,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -77,6 +79,16 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ReferenceTypeBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object init(Object self, Object obj, Object callback) {
+            return PNone.NONE;
+        }
     }
 
     // ref.__callback__
