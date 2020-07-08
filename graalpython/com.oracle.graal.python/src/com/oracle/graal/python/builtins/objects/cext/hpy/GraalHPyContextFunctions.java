@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFr
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -342,11 +343,13 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hashingStorageLibrary,
                         @Cached("createClassProfile()") ValueProfile profile,
+                        @Cached("createCountingProfile()") ConditionProfile updateStorageProfile,
                         @Cached HPyRaiseNode raiseNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 4) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(4, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
@@ -358,7 +361,11 @@ public abstract class GraalHPyContextFunctions {
             Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
             Object value = valueAsPythonObjectNode.execute(context, arguments[3]);
             try {
-                hashingStorageLibrary.setItem(dict.getDictStorage(), key, value);
+                HashingStorage dictStorage = dict.getDictStorage();
+                HashingStorage updatedStorage = hashingStorageLibrary.setItem(dictStorage, key, value);
+                if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
+                    dict.setDictStorage(updatedStorage);
+                }
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
