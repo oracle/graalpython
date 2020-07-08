@@ -190,9 +190,6 @@ def _dev_pythonhome():
 
 
 def punittest(ars):
-    args = ["-Dpolyglot.engine.CompilationExceptionsAreFatal=false"
-            "-Dpolyglot.engine.PerformanceWarningsAreFatal=false",
-            "-Dpolyglot.engine.CompilationExceptionsArePrinted=true"]
     if "--regex" not in ars:
         args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
     args += ars
@@ -1729,14 +1726,14 @@ def checkout_find_version_for_graalvm(args):
                     break
 
 orig_clean = mx.command_function("clean")
-def python_clean(args): 
+def python_clean(args):
     orig_clean(args)
     count = 0;
     for path in os.walk(SUITE.dir):
         for file in glob.iglob(os.path.join(path[0], '*.pyc')):
             count += 1
             os.remove(file)
-            
+
     if count > 0:
         print ('Cleaning', count, "`*.pyc` files...")
 
