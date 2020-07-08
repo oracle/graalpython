@@ -974,8 +974,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (s.length() == 1) {
                 return (~s.codePointAt(0) << IDTAG_SHIFT) | IDTAG_SPECIAL;
             } else {
-                return doGeneric(s);
+                return strHash(s);
             }
+        }
+
+        @TruffleBoundary
+        private static int strHash(String s) {
+            return s.hashCode();
         }
 
         @Specialization
