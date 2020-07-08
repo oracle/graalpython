@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ReportPolymorphism
 @GenerateUncached
@@ -207,7 +209,12 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     "doBuiltinMethodOIOCached", "doBuiltinMethodCached", "doBuiltinMethodOIOCtCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext",
                     "callSelfMethod"})
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
-                    @Cached CallNode callNode) {
-        return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
+                    @Cached CallNode callNode,
+                    @Cached ConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[]{arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
+        } else {
+            return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
+        }
     }
 }

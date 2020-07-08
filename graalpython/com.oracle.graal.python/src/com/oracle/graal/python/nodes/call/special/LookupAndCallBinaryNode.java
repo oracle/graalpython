@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -74,6 +73,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     protected final String name;
     protected final String rname;
     protected final Supplier<NotImplementedHandler> handlerFactory;
+    protected final boolean ignoreDescriptorException;
     private final boolean alwaysCheckReverse;
 
     @Child private CallBinaryMethodNode dispatchNode;
@@ -104,36 +104,37 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
-    LookupAndCallBinaryNode(String name, String rname, Supplier<NotImplementedHandler> handlerFactory, boolean alwaysCheckReverse) {
+    LookupAndCallBinaryNode(String name, String rname, Supplier<NotImplementedHandler> handlerFactory, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
         this.name = name;
         this.rname = rname;
         this.handlerFactory = handlerFactory;
         this.alwaysCheckReverse = alwaysCheckReverse;
+        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     public static LookupAndCallBinaryNode create(String name) {
-        return LookupAndCallBinaryNodeGen.create(name, null, null, false);
+        return LookupAndCallBinaryNodeGen.create(name, null, null, false, false);
     }
 
     public static LookupAndCallBinaryNode createReversible(String name, String reverseName, Supplier<NotImplementedHandler> handlerFactory) {
         assert name.startsWith("__") && reverseName.startsWith("__r");
-        return LookupAndCallBinaryNodeGen.create(name, reverseName, handlerFactory, false);
+        return LookupAndCallBinaryNodeGen.create(name, reverseName, handlerFactory, false, false);
     }
 
     public static LookupAndCallBinaryNode create(String name, String rname) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, null, false);
+        return LookupAndCallBinaryNodeGen.create(name, rname, null, false, false);
     }
 
-    public static LookupAndCallBinaryNode create(String name, String rname, boolean alwaysCheckReverse) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, null, alwaysCheckReverse);
+    public static LookupAndCallBinaryNode create(String name, String rname, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
+        return LookupAndCallBinaryNodeGen.create(name, rname, null, alwaysCheckReverse, ignoreDescriptorException);
     }
 
     public static LookupAndCallBinaryNode create(String name, String rname, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, handlerFactory, false);
+        return LookupAndCallBinaryNodeGen.create(name, rname, handlerFactory, false, false);
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName);
+        return LookupSpecialMethodNode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName, receiver, ignoreDescriptorException);
     }
 
     protected boolean isReversible() {
@@ -286,8 +287,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObject(VirtualFrame frame, Object left, Object right,
                     @SuppressWarnings("unused") @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @SuppressWarnings("unused") @CachedLibrary("right") PythonObjectLibrary libRight,
-                    @Cached("create(name)") LookupInheritedAttributeNode getattr) {
-        Object leftCallable = getattr.execute(left);
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        Object leftCallable = getattr.execute(frame, libLeft.getLazyPythonClass(left), left);
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 return runErrorHandler(left, right);
@@ -300,8 +301,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     @Specialization(guards = {"isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
-                    @Cached("create(name)") LookupAttributeInMRONode getattr,
-                    @Cached("create(rname)") LookupAttributeInMRONode getattrR,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
                     @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
@@ -319,9 +320,9 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftClass = libLeft.getLazyPythonClass(left);
-        Object leftCallable = getattr.execute(leftClass);
+        Object leftCallable = getattr.execute(frame, leftClass, left);
         Object rightClass = libRight.getLazyPythonClass(right);
-        Object rightCallable = getattrR.execute(rightClass);
+        Object rightCallable = getattrR.execute(frame, rightClass, right);
         if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }

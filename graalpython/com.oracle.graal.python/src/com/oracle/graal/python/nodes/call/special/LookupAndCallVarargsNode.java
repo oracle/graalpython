@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -50,23 +49,25 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupAndCallVarargsNode extends Node {
-    private final String name;
+    protected final String name;
+    protected final boolean ignoreDescriptorException;
     @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
     public static LookupAndCallVarargsNode create(String name) {
-        return LookupAndCallVarargsNodeGen.create(name);
+        return LookupAndCallVarargsNodeGen.create(name, false);
     }
 
-    LookupAndCallVarargsNode(String name) {
+    LookupAndCallVarargsNode(String name, boolean ignoreDescriptorException) {
         this.name = name;
+        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     @Specialization(limit = "3")
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
                     @CachedLibrary("callable") PythonObjectLibrary plib,
-                    @Cached("create()") LookupAttributeInMRONode.Dynamic getattr) {
-        return dispatchNode.execute(frame, getattr.execute(plib.getLazyPythonClass(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        return dispatchNode.execute(frame, getattr.execute(frame, plib.getLazyPythonClass(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

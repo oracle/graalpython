@@ -414,6 +414,7 @@ class TimeTestCase(unittest.TestCase):
         t1 = time.mktime(gt1)
         self.assertAlmostEqual(t1, t0, delta=0.2)
 
+    @support.impl_detail("racy test", graalvm=False)
     def test_localtime_without_arg(self):
         lt0 = time.localtime()
         lt1 = time.localtime(None)

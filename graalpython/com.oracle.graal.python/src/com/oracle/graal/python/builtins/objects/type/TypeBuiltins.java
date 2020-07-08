@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -205,7 +206,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private LookupAndCallTernaryNode callNewGet = LookupAndCallTernaryNode.create(__GET__);
         @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
         @Child private CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
-        @Child private LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
+        @Child private LookupSpecialMethodNode lookupInit = LookupSpecialMethodNode.create(__INIT__);
         @Child private IsSubtypeNode isSubTypeNode;
         @Child private TypeNodes.GetNameNode getNameNode;
         @Child private IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
@@ -360,7 +361,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         // passing keywords or more than one argument see:
                         // https://github.com/python/cpython/blob/2102c789035ccacbac4362589402ac68baa2cd29/Objects/typeobject.c#L3538
                     } else {
-                        Object initMethod = lookupInit.execute(newInstanceKlass);
+                        Object initMethod = lookupInit.execute(frame, newInstanceKlass, newInstance);
                         if (initMethod != PNone.NO_VALUE) {
                             Object[] initArgs;
                             if (doCreateArgs) {

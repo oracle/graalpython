@@ -44,11 +44,13 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
     public static CallQuaternaryMethodNode create() {
@@ -94,7 +96,12 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
 
     @Specialization(replaces = {"callSingle", "call", "callMethodSingle", "callMethod"})
     Object generic(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3, Object arg4,
-                    @Cached CallNode callNode) {
-        return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3, arg4}, PKeyword.EMPTY_KEYWORDS);
+                    @Cached CallNode callNode,
+                    @Cached ConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[]{arg2, arg3, arg4}, PKeyword.EMPTY_KEYWORDS);
+        } else {
+            return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3, arg4}, PKeyword.EMPTY_KEYWORDS);
+        }
     }
 }

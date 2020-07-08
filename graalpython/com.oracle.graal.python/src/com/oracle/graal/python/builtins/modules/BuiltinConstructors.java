@@ -162,7 +162,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -171,6 +170,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -856,16 +856,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "3")
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @CachedLibrary("sequence") PythonObjectLibrary lib,
-                        @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
+                        @Cached("create(__REVERSED__)") LookupSpecialMethodNode reversedNode,
                         @Cached("create()") CallUnaryMethodNode callReversedNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
-                        @Cached("create(__GETITEM__)") LookupAttributeInMRONode getItemNode,
+                        @Cached("create(__GETITEM__)") LookupSpecialMethodNode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile noReversedProfile,
                         @Cached("createBinaryProfile()") ConditionProfile noGetItemProfile) {
             Object sequenceKlass = lib.getLazyPythonClass(sequence);
-            Object reversed = reversedNode.execute(sequenceKlass);
+            Object reversed = reversedNode.execute(frame, sequenceKlass, sequence);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
-                Object getItem = getItemNode.execute(sequenceKlass);
+                Object getItem = getItemNode.execute(frame, sequenceKlass, sequence);
                 if (noGetItemProfile.profile(getItem == PNone.NO_VALUE)) {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
