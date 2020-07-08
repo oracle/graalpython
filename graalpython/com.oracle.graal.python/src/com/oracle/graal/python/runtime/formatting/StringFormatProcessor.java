@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -59,6 +60,11 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
     @Override
     Object parseMappingKey(int start, int end) {
         return formatText.substring(start, end);
+    }
+
+    @Override
+    protected boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass) {
+        return !isString(args1, lazyClass) && isMapping(args1);
     }
 
     @Override

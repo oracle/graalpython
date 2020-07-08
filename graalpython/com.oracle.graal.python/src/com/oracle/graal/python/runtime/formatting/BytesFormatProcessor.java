@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -113,6 +114,13 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             // exactly like in CPython, all errors are translated to this
             throw core.raise(TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
         }
+    }
+
+    @Override
+    protected boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass) {
+        return !isString(args1, lazyClass) && isMapping(args1) && //
+                        !isSubtype(lazyClass, PythonBuiltinClassType.PBytes) && //
+                        !isSubtype(lazyClass, PythonBuiltinClassType.PByteArray);
     }
 
     @Override

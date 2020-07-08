@@ -6,6 +6,7 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -17,6 +18,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -220,6 +222,24 @@ abstract class FormatProcessor<T> {
     }
 
     /**
+     * Should this argument be treated as a mapping or as a single argument. This logic differs
+     * between string and bytes formatting.
+     */
+    protected abstract boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass);
+
+    protected boolean isString(Object args1, Object lazyClass) {
+        return PGuards.isString(args1) || isSubtype(lazyClass, PythonBuiltinClassType.PString);
+    }
+
+    protected boolean isMapping(Object args1) {
+        return lookupAttribute(args1, __GETITEM__) != PNone.NO_VALUE;
+    }
+
+    protected static boolean isSubtype(Object lazyClass, PythonBuiltinClassType clazz) {
+        return IsSubtypeNodeGen.getUncached().execute(lazyClass, clazz);
+    }
+
+    /**
      * Main service of this class: format one or more arguments with the format string supplied at
      * construction.
      */
@@ -238,15 +258,16 @@ abstract class FormatProcessor<T> {
 
         // We need to do a full subtype-check because native objects may inherit from tuple but have
         // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
-        boolean tupleArgs = PGuards.isPTuple(args1) || IsSubtypeNodeGen.getUncached().execute(PythonObjectLibrary.getUncached().getLazyPythonClass(args1), PythonBuiltinClassType.PTuple);
-        assert tupleArgs || !PGuards.isPTuple(args1);
+        PythonObjectLibrary args1Lib = PythonObjectLibrary.getFactory().getUncached(args1);
+        final Object args1LazyClass = args1Lib.getLazyPythonClass(args1);
+        boolean tupleArgs = PGuards.isPTuple(args1) || isSubtype(args1LazyClass, PythonBuiltinClassType.PTuple);
         if (tupleArgs) {
             // We will simply work through the tuple elements
             argIndex = 0;
         } else {
             // Not a tuple, but possibly still some kind of container: use
             // special argIndex values.
-            if (!PGuards.isString(args1) && PythonObjectLibrary.getUncached().isMapping(args1)) {
+            if (useAsMapping(args1, args1Lib, args1LazyClass)) {
                 mapping = args1;
                 argIndex = -3;
             }

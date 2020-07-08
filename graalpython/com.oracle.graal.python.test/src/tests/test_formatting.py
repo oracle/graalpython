@@ -53,6 +53,12 @@ class Polymorph:
         return b"bytes"
 
 
+# This is all one needs to implement to satisfy PyCheck_Mapping
+class MyPseudoMapping:
+    def __getitem__(self, item):
+        return item
+
+
 def test_formatting():
     # tests some corner-cases that the standard tests do not cover
     assert format(-12e8, "0=30,.4f") == '-0,000,000,001,200,000,000.0000'
@@ -73,6 +79,10 @@ def test_formatting():
 
     assert type(bytearray("hello %d", "ascii") % 42) == bytearray
     assert type(b"hello %d" % 42) == bytes
+
+    # No error about too many arguments,
+    # because the object is considered as a mapping...
+    assert " " % MyPseudoMapping() == " "
 
 
 def test_complex_formatting():
