@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
           FunctionDefinitionNode Name: outer SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                         FunctionDefinitionNode Name: recursionInner SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: recursionInner, 
                           ExecutionSlots:
                             FreeVarsSlots: recursionInner, 

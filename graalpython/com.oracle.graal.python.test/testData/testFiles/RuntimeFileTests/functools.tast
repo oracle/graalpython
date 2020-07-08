@@ -2050,7 +2050,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       FunctionDefinitionNode Name: __init__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, 
@@ -2104,7 +2104,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       FunctionDefinitionNode Name: __lt__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, , mycmp, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, , mycmp, 
@@ -2187,7 +2187,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       FunctionDefinitionNode Name: __gt__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, , mycmp, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, , mycmp, 
@@ -2270,7 +2270,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       FunctionDefinitionNode Name: __eq__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, , mycmp, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, , mycmp, 
@@ -2353,7 +2353,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       FunctionDefinitionNode Name: __le__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, , mycmp, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, , mycmp, 
@@ -2436,7 +2436,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       FunctionDefinitionNode Name: __ge__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, , mycmp, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, , mycmp, 
@@ -2629,7 +2629,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __new__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2933,7 +2933,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __call__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -3096,7 +3096,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FunctionDefinitionNode Name: __repr__ SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
@@ -3373,7 +3373,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __reduce__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -3490,7 +3490,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __setstate__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -3918,7 +3918,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -4137,7 +4137,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -4375,7 +4375,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: _make_unbound_method SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -4410,7 +4410,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       FunctionDefinitionNode Name: _method SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: self, 
                                         ExecutionSlots:
                                           FreeVarsSlots: self, 
@@ -4608,7 +4608,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __get__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -4842,7 +4842,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FunctionDefinitionNode Name: __isabstractmethod__ SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
@@ -4990,7 +4990,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Identifier: hash
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -5068,7 +5068,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: __hash__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -5641,7 +5641,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       FunctionDefinitionNode Name: decorating_function SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: maxsize, , typed, 
                         ExecutionSlots:
                           FreeVarsSlots: maxsize, , typed, 
@@ -5728,7 +5728,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         FunctionDefinitionNode Name: _lru_cache_wrapper SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -5991,7 +5991,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         FunctionDefinitionNode Name: wrapper SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: misses, , user_function, 
                           ExecutionSlots:
                             FreeVarsSlots: misses, , user_function, 
@@ -6092,7 +6092,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FunctionDefinitionNode Name: wrapper SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
                             ExecutionSlots:
                               FreeVarsSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
@@ -6271,7 +6271,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FunctionDefinitionNode Name: wrapper SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
                             ExecutionSlots:
                               FreeVarsSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
@@ -8158,7 +8158,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       FunctionDefinitionNode Name: is_related SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: bases, , cls, 
                         ExecutionSlots:
                           FreeVarsSlots: bases, , cls, 
@@ -8331,7 +8331,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       FunctionDefinitionNode Name: is_strict_base SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: types, 
                         ExecutionSlots:
                           FreeVarsSlots: types, 
@@ -9641,7 +9641,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FunctionDefinitionNode Name: wrapper SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: dispatch, 
                             ExecutionSlots:
                               FreeVarsSlots: dispatch, 

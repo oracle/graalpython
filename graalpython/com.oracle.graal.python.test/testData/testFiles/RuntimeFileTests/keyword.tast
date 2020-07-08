@@ -77,7 +77,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
         FunctionDefinitionNode Name: main SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None

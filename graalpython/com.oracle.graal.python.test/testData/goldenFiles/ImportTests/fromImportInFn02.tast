@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'fromImportInFn02'> SourceSection: [0,40]`def fn():
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

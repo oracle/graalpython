@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -41,7 +41,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                         FunctionDefinitionNode Name: get_nested_class SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
@@ -115,7 +115,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                       FunctionDefinitionNode Name: method_and_var SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
-                                                        Documentation: StringLiteralNode: Empty
+                                                        Documentation: None
                                                         FreeVarSlots: __class__, 
                                                         ExecutionSlots:
                                                           FreeVarsSlots: __class__, 
@@ -159,7 +159,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                       FunctionDefinitionNode Name: test SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
-                                                        Documentation: StringLiteralNode: Empty
+                                                        Documentation: None
                                                         FreeVarSlots: __class__, , method_and_var, 
                                                         ExecutionSlots:
                                                           FreeVarsSlots: __class__, , method_and_var, 
@@ -207,7 +207,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                       FunctionDefinitionNode Name: actual_global SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
-                                                        Documentation: StringLiteralNode: Empty
+                                                        Documentation: None
                                                         FreeVarSlots: __class__, 
                                                         ExecutionSlots:
                                                           FreeVarsSlots: __class__, 
@@ -256,7 +256,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                       FunctionDefinitionNode Name: str SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
-                                                        Documentation: StringLiteralNode: Empty
+                                                        Documentation: None
                                                         FreeVarSlots: __class__, 
                                                         ExecutionSlots:
                                                           FreeVarsSlots: __class__, 

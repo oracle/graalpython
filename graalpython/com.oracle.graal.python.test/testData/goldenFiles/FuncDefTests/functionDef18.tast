@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
           FunctionDefinitionNode Name: __new__ SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

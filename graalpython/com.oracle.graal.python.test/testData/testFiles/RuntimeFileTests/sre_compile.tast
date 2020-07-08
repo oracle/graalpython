@@ -392,7 +392,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -500,7 +500,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _compile SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -2821,7 +2821,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _compile_charset SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -3166,7 +3166,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             ObjectLiteralNode SourceSection: [9782,9786]`None`
             ObjectLiteralNode SourceSection: [9794,9798]`None`
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -4459,7 +4459,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -4648,7 +4648,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _bytes_to_codes SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -4773,7 +4773,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _simple SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -5102,7 +5102,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _get_iscased SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -5215,7 +5215,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _get_literal_prefix SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -5634,7 +5634,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _get_charset_prefix SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -6260,7 +6260,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _compile_info SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -6860,7 +6860,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: isstring SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -6916,7 +6916,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _code SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -7047,7 +7047,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: _hex_code SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -7176,7 +7176,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         FunctionDefinitionNode Name: dis SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -7267,7 +7267,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       FunctionDefinitionNode Name: dis_ SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
                         ExecutionSlots:
                           FreeVarsSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
@@ -7314,7 +7314,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         KwDefaultExpressionNode SourceSection: None
                                           Name: to
                                           Value: ObjectLiteralNode SourceSection: [21152,21156]`None`
-                                      Documentation: StringLiteralNode: Empty
+                                      Documentation: None
                                       FreeVarSlots: end, , labels, , level, , offset_width, , start, 
                                       ExecutionSlots:
                                         FreeVarsSlots: end, , labels, , level, , offset_width, , start, 
@@ -7486,7 +7486,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     FunctionDefinitionNode Name: print_2 SourceSection: None
                                       Arguments: None
                                       KwArguments: None
-                                      Documentation: StringLiteralNode: Empty
+                                      Documentation: None
                                       FreeVarSlots: end, , level, , offset_width, 
                                       ExecutionSlots:
                                         FreeVarsSlots: end, , level, , offset_width, 
@@ -9784,7 +9784,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             IntegerLiteralNode SourceSection: [26292,26293]`0`
               Value: 0
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None

@@ -1516,7 +1516,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
         FunctionDefinitionNode Name: _compile SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -1814,7 +1814,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
           FunctionDefinitionNode Name: _compile_repl SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -1874,7 +1874,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
         FunctionDefinitionNode Name: _expand SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -1957,7 +1957,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
         FunctionDefinitionNode Name: _subx SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -2065,7 +2065,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Frame: [1,template,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: None
                         ExecutionSlots:
                           FreeVarsSlots: None
@@ -2141,7 +2141,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
         FunctionDefinitionNode Name: _pickle SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -2275,7 +2275,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 IntegerLiteralNode SourceSection: [13971,13972]`0`
                                   Value: 0
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
@@ -2555,7 +2555,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             FunctionDefinitionNode Name: scan SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 

@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
         FunctionDefinitionNode Name: make_implementation_info SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -137,7 +137,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
         FunctionDefinitionNode Name: make_flags_class SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -238,7 +238,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                       FunctionDefinitionNode Name: make_func SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: None
                         ExecutionSlots:
                           FreeVarsSlots: None
@@ -273,7 +273,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     FunctionDefinitionNode Name: func SourceSection: None
                                       Arguments: None
                                       KwArguments: None
-                                      Documentation: StringLiteralNode: Empty
+                                      Documentation: None
                                       FreeVarSlots: i, 
                                       ExecutionSlots:
                                         FreeVarsSlots: i, 
@@ -434,7 +434,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
         FunctionDefinitionNode Name: make_float_info_class SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -520,7 +520,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
         FunctionDefinitionNode Name: make_hash_info_class SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -666,7 +666,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
               IntegerLiteralNode SourceSection: [4532,4533]`0`
                 Value: 0
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -711,7 +711,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
         FunctionDefinitionNode Name: make_excepthook SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -739,7 +739,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                       FunctionDefinitionNode Name: simple_print_traceback SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: None
                         ExecutionSlots:
                           FreeVarsSlots: None
@@ -996,7 +996,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                       FunctionDefinitionNode Name: __print_traceback__ SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: simple_print_traceback, 
                         ExecutionSlots:
                           FreeVarsSlots: simple_print_traceback, 
@@ -1170,7 +1170,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
           FunctionDefinitionNode Name: breakpointhook SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -1448,7 +1448,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
           FunctionDefinitionNode Name: getrecursionlimit SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -1490,7 +1490,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
           FunctionDefinitionNode Name: displayhook SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

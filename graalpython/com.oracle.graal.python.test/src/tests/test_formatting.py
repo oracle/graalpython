@@ -145,3 +145,13 @@ class FormattingErrorsTest(unittest.TestCase):
 
         self.assertRaises(ValueError, lambda: format(3+2j, "f=30,.4f"))
         self.assertRaises(ValueError, lambda: format(3+2j, "0=30,.4f"))
+
+
+class MyFloat(float):
+    def __str__(self):
+        return "__str__ overridden for float"
+
+
+def test_overridden_str():
+    assert "{}".format(MyFloat(2)) == "__str__ overridden for float"
+    assert "{0:10}".format(MyFloat(2)) == "       2.0"

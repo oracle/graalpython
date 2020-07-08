@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                           FunctionDefinitionNode Name: _keep_positive SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 

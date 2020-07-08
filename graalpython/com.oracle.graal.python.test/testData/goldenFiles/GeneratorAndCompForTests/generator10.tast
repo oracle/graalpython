@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
             Block Nodes: 1
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

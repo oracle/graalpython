@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           FunctionDefinitionNode Name: hasattr SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -103,7 +103,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           FunctionDefinitionNode Name: any SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -179,7 +179,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           FunctionDefinitionNode Name: all SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -255,7 +255,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           FunctionDefinitionNode Name: filter SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -608,7 +608,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -727,7 +727,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         FunctionDefinitionNode Name: __next__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -823,7 +823,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -869,7 +869,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 

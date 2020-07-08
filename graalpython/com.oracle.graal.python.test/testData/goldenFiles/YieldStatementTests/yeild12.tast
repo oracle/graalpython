@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'yeild12'> SourceSection: [0,21]`def f(): yield fro
             Block Nodes: 0
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

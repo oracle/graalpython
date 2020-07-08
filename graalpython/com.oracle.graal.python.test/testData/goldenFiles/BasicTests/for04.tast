@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

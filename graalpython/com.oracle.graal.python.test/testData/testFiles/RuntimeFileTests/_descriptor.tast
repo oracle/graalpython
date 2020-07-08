@@ -11,7 +11,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
         FunctionDefinitionNode Name: _f SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -72,7 +72,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
         FunctionDefinitionNode Name: make_named_tuple_class SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -226,7 +226,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                       FunctionDefinitionNode Name: __str__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, 
@@ -275,7 +275,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                       FunctionDefinitionNode Name: __repr__ SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: __class__, , fields, , name, 
                                         ExecutionSlots:
                                           FreeVarsSlots: __class__, , fields, , name, 
@@ -430,7 +430,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                       FunctionDefinitionNode Name: _define_named_tuple_methods SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: fields, , named_tuple, 
                         ExecutionSlots:
                           FreeVarsSlots: fields, , named_tuple, 
@@ -485,7 +485,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                             FunctionDefinitionNode Name: make_func SourceSection: None
                                               Arguments: None
                                               KwArguments: None
-                                              Documentation: StringLiteralNode: Empty
+                                              Documentation: None
                                               FreeVarSlots: None
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
@@ -520,7 +520,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                           FunctionDefinitionNode Name: func SourceSection: None
                                                             Arguments: None
                                                             KwArguments: None
-                                                            Documentation: StringLiteralNode: Empty
+                                                            Documentation: None
                                                             FreeVarSlots: i, 
                                                             ExecutionSlots:
                                                               FreeVarsSlots: i, 
@@ -702,7 +702,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                             FunctionDefinitionNode Name: __init__ SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
@@ -763,7 +763,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                             FunctionDefinitionNode Name: __delattr__ SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
@@ -826,7 +826,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                             FunctionDefinitionNode Name: __getattr__ SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
@@ -891,7 +891,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                             FunctionDefinitionNode Name: __setattr__ SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
@@ -961,7 +961,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                             FunctionDefinitionNode Name: __repr__ SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 

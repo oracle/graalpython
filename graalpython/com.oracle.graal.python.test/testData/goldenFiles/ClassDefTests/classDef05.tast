@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

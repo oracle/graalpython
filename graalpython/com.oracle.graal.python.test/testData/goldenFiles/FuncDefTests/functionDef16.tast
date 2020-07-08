@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
           FunctionDefinitionNode Name: test SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                         FunctionDefinitionNode Name: inner SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                       FunctionDefinitionNode Name: inner_inner SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: end, 
                                         ExecutionSlots:
                                           FreeVarsSlots: end, 

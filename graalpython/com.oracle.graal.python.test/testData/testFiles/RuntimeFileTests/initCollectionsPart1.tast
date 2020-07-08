@@ -186,7 +186,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         FunctionDefinitionNode Name: __getattr__ SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -359,7 +359,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           Block Nodes: 0
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -496,7 +496,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           Block Nodes: 0
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -652,7 +652,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           Block Nodes: 0
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2347,7 +2347,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         FunctionDefinitionNode Name: __sizeof__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -4397,7 +4397,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         FunctionDefinitionNode Name: _make SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: _len, , num_fields, , tuple_new, 
                           ExecutionSlots:
                             FreeVarsSlots: _len, , num_fields, , tuple_new, 
@@ -4511,7 +4511,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       FunctionDefinitionNode Name: _replace SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: field_names, 
                         ExecutionSlots:
                           FreeVarsSlots: field_names, 
@@ -5706,7 +5706,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 Arguments:
                                   ObjectLiteralNode SourceSection: [22656,22660]`None`
                                 KwArguments: None
-                                Documentation: StringLiteralNode: Empty
+                                Documentation: None
                                 FreeVarSlots: __class__, 
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
@@ -6426,7 +6426,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             FunctionDefinitionNode Name: __reduce__ SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
@@ -6566,7 +6566,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             FunctionDefinitionNode Name: __repr__ SourceSection: None
                               Arguments: None
                               KwArguments: None
-                              Documentation: StringLiteralNode: Empty
+                              Documentation: None
                               FreeVarSlots: __class__, 
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 

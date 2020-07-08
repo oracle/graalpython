@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                       FunctionDefinitionNode Name: decorating_function SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: fillvalue, 
                         ExecutionSlots:
                           FreeVarsSlots: fillvalue, 
@@ -134,7 +134,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                     FunctionDefinitionNode Name: wrapper SourceSection: None
                                       Arguments: None
                                       KwArguments: None
-                                      Documentation: StringLiteralNode: Empty
+                                      Documentation: None
                                       FreeVarSlots: fillvalue, , repr_running, , user_function, 
                                       ExecutionSlots:
                                         FreeVarsSlots: fillvalue, , repr_running, , user_function, 
@@ -411,7 +411,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -526,7 +526,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -596,7 +596,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr1 SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -770,7 +770,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments:
                             StringLiteralNode SourceSection: [1983,1985]`''`
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1086,7 +1086,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_tuple SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1169,7 +1169,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_list SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1251,7 +1251,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_array SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1380,7 +1380,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_set SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1488,7 +1488,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_frozenset SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1596,7 +1596,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_deque SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1678,7 +1678,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_dict SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1955,7 +1955,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_str SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2224,7 +2224,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_int SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2432,7 +2432,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         FunctionDefinitionNode Name: repr_instance SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2690,7 +2690,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
         FunctionDefinitionNode Name: _possibly_sorted SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None

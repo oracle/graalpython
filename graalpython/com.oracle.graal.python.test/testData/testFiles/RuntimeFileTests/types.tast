@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         FunctionDefinitionNode Name: _f SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -161,7 +161,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           Block Nodes: 0
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -211,7 +211,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         FunctionDefinitionNode Name: _c SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -273,7 +273,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           Block Nodes: 0
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -369,7 +369,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: _m SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1531,7 +1531,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             ObjectLiteralNode SourceSection: [4936,4940]`None`
                             ObjectLiteralNode SourceSection: [4946,4950]`None`
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1675,7 +1675,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           Arguments:
                             ObjectLiteralNode SourceSection: [5359,5363]`None`
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1807,7 +1807,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: __set__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1898,7 +1898,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: __delete__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -1979,7 +1979,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: getter SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2131,7 +2131,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: setter SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2247,7 +2247,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: deleter SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2411,7 +2411,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2514,7 +2514,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: send SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2581,7 +2581,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: throw SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2660,7 +2660,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: close SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -2727,7 +2727,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           FunctionDefinitionNode Name: gi_code SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
@@ -2798,7 +2798,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           FunctionDefinitionNode Name: gi_frame SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
@@ -2869,7 +2869,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           FunctionDefinitionNode Name: gi_running SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
@@ -2940,7 +2940,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           FunctionDefinitionNode Name: gi_yieldfrom SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
@@ -3056,7 +3056,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: __next__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -3114,7 +3114,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -3599,7 +3599,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         FunctionDefinitionNode Name: wrapped SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: _collections_abc, , func, 
                           ExecutionSlots:
                             FreeVarsSlots: _collections_abc, , func, 

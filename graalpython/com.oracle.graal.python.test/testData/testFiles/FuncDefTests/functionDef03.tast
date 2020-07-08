@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'functionDef03'> SourceSection: [0,35]`↵def foo()
           FunctionDefinitionNode Name: foo SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
         FunctionDefinitionNode Name: mydecorator SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                       FunctionDefinitionNode Name: wrap SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: delta, 
                         ExecutionSlots:
                           FreeVarsSlots: delta, 
@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                     FunctionDefinitionNode Name: wrapped_f SourceSection: None
                                       Arguments: None
                                       KwArguments: None
-                                      Documentation: StringLiteralNode: Empty
+                                      Documentation: None
                                       FreeVarSlots: delta, , fn, 
                                       ExecutionSlots:
                                         FreeVarsSlots: delta, , fn, 
@@ -172,7 +172,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
           FunctionDefinitionNode Name: getNumber SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

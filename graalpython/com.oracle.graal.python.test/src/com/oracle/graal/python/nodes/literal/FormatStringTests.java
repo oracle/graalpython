@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,14 +41,15 @@
 
 package com.oracle.graal.python.nodes.literal;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.test.parser.ParserTestBase;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import org.junit.Assert;
-import org.junit.Test;
 
 public class FormatStringTests extends ParserTestBase {
 
@@ -208,6 +209,11 @@ public class FormatStringTests extends ParserTestBase {
     }
 
     @Test
+    public void embeddedColon() throws Exception {
+        testFormatString("f'{var[:1]}'", "format((var[:1]))");
+    }
+
+    @Test
     public void parser01() throws Exception {
         testFormatString("f'{name}'", "format((name))");
     }
@@ -352,7 +358,7 @@ public class FormatStringTests extends ParserTestBase {
 
         Assert.assertTrue("The source has to be just fstring", parserResult instanceof FormatStringLiteralNode);
         FormatStringLiteralNode fsl = (FormatStringLiteralNode) parserResult;
-        int[][] tokens = FormatStringLiteralNode.createTokens(fsl, fsl.getValues(), true);
+        int[][] tokens = FormatStringLiteralNode.createTokens(fsl, fsl.getValues());
         FormatStringLiteralNode.StringPart[] fslParts = fsl.getValues();
         String[] expressions = FormatStringLiteralNode.createExpressionSources(fslParts, tokens, 0, tokens.length);
         int expressionsIndex = 0;

@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'await01'> SourceSection: [0,28]`async def f():↵ 
           FunctionDefinitionNode Name: f SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

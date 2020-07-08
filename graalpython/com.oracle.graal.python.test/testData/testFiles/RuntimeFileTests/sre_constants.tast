@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             ObjectLiteralNode SourceSection: [971,975]`None`
                             ObjectLiteralNode SourceSection: [981,985]`None`
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -425,7 +425,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                         FunctionDefinitionNode Name: __new__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -518,7 +518,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                         FunctionDefinitionNode Name: __str__ SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: __class__, 
                           ExecutionSlots:
                             FreeVarsSlots: __class__, 
@@ -609,7 +609,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         FunctionDefinitionNode Name: _makecodes SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -1201,7 +1201,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 FunctionDefinitionNode Name: dump SourceSection: None
                   Arguments: None
                   KwArguments: None
-                  Documentation: StringLiteralNode: Empty
+                  Documentation: None
                   FreeVarSlots: None
                   ExecutionSlots:
                     FreeVarsSlots: None

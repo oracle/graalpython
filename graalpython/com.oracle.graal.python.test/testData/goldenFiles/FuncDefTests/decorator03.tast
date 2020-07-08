@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
             FunctionDefinitionNode Name: fn SourceSection: None
               Arguments: None
               KwArguments: None
-              Documentation: StringLiteralNode: Empty
+              Documentation: None
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None

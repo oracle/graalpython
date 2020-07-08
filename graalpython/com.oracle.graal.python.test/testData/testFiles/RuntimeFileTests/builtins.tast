@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
             BooleanLiteralNode SourceSection: [2209,2213]`True`
             ObjectLiteralNode SourceSection: [2222,2226]`None`
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -80,7 +80,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
         FunctionDefinitionNode Name: __import__ SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None

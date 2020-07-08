@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                 Name: k2
                 Value: IntegerLiteralNode SourceSection: [28,29]`0`
                   Value: 0
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
