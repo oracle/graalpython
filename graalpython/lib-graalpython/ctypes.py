@@ -52,7 +52,12 @@ class CDLL(object):
     Calling the functions releases the Python GIL during the call and
     reacquires it afterwards.
     """
-    pass
+    def __init__(self, name, mode=0, handle=None,
+                 use_errno=False,
+                 use_last_error=False):
+        # TODO
+        pass
+
 
 
 # Dummy classes:
