@@ -206,7 +206,8 @@ public abstract class FunctionNodes {
     @GenerateUncached
     public abstract static class GetSignatureNode extends PNodeWithContext {
         private static Signature doFunctionInternal(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
-            return getFunctionCodeNode.execute(function).getSignature();
+            PCode code = getFunctionCodeNode.execute(function);
+            return code.getSignature();
         }
 
         public abstract Signature execute(Object function);

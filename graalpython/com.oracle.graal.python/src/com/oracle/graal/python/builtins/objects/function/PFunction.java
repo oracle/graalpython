@@ -72,6 +72,7 @@ public class PFunction extends PythonObject {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.newInstance());
         this.name = name;
         this.qualname = qualname;
+        assert code != null;
         this.code = code;
         this.enclosingClassName = enclosingClassName;
         this.globals = globals;
@@ -146,6 +147,7 @@ public class PFunction extends PythonObject {
 
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
+        assert code != null : "code cannot be null";
         this.code = code;
     }
 
