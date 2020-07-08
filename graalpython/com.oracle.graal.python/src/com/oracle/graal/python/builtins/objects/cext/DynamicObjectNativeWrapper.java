@@ -1460,6 +1460,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
     public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1;
