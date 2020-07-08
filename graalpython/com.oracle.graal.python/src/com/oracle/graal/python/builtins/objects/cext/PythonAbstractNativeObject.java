@@ -92,10 +92,8 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.TriState;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(PythonObjectLibrary.class)
-@ExportLibrary(ReferenceLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
@@ -302,22 +300,6 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     TriState isIdenticalOrUndefined(Object other,
                     @CachedLibrary(limit = "3") InteropLibrary lib) {
         return TriState.valueOf(lib.isIdentical(object, other, lib));
-    }
-
-    @ExportMessage
-    static class IsSame {
-
-        @Specialization
-        static boolean doNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
-                        @CachedLibrary("receiver.object") ReferenceLibrary referenceLibrary) {
-            return referenceLibrary.isSame(receiver.object, other.object);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean doOther(PythonAbstractNativeObject receiver, Object other) {
-            return false;
-        }
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")

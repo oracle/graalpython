@@ -107,7 +107,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public abstract class TypeNodes {
 
