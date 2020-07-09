@@ -931,11 +931,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final long BASE_EMPTY_UNICODE = 257;
         private static final long BASE_EMPTY_TUPLE = 258;
         private static final long BASE_EMPTY_FROZENSET = 259;
-        private static final int IDTAG_INT     = 1;
-        private static final int IDTAG_FLOAT   = 5;
+        private static final int IDTAG_INT = 1;
+        private static final int IDTAG_FLOAT = 5;
         private static final int IDTAG_COMPLEX = 7;
         private static final int IDTAG_SPECIAL = 11;
-        private static final int IDTAG_SHIFT   = 4;
+        private static final int IDTAG_SHIFT = 4;
 
         public abstract long executeLong(Object value);
 
