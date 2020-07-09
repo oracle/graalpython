@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -52,9 +54,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorNodeGen;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorWithoutFrameNodeGen;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIteratorObjectNodeGen;
@@ -100,15 +100,12 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         static Object doGeneric(Object value,
                         @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
                         @CachedLibrary(limit = "4") PythonObjectLibrary plib,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrMroNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupGetitemAttrMroNode,
-                        @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             // NOTE: it's fine to pass 'null' frame since the caller must already take care of the
             // global state
-            return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, lookupAttrMroNode, lookupGetitemAttrMroNode, dispatchGetattribute, isIteratorObjectNode, factory,
+            return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, isIteratorObjectNode, factory,
                             raiseNode);
         }
 
@@ -138,25 +135,22 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
         @Specialization(guards = {"!isNoValue(value)", "!plib.isReflectedObject(value, value)"})
         static Object doGeneric(VirtualFrame frame, Object value,
-                        @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
+                        @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
                         @CachedLibrary(limit = "4") PythonObjectLibrary plib,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrMroNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupGetitemAttrMroNode,
-                        @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            Object clazz = plib.getLazyPythonClass(value);
-            Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz, SpecialMethodNames.__ITER__));
-            if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
-                Object iterObj = dispatchGetattribute.executeObject(frame, attrObj, value);
-                if (isIteratorObjectNode.execute(iterObj)) {
-                    return iterObj;
-                } else {
-                    throw nonIterator(raiseNode, iterObj);
+            Object iterMethod = iterMethodProfile.profile(plib.lookupSpecialMethod(value, __ITER__));
+            if (iterMethod != PNone.NONE) {
+                if (iterMethod != PNone.NO_VALUE) {
+                    Object iterObj = plib.getAndCallMethodIgnoreGetException(value, frame, iterMethod);
+                    if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
+                        return iterObj;
+                    } else {
+                        throw nonIterator(raiseNode, iterObj);
+                    }
                 }
-            } else if (attrObj != PNone.NONE) {
-                Object getItemAttrObj = lookupGetitemAttrMroNode.execute(clazz, SpecialMethodNames.__GETITEM__);
+                Object getItemAttrObj = plib.lookupSpecialMethod(value, __GETITEM__);
                 if (getItemAttrObj != PNone.NO_VALUE) {
                     return factory.createSequenceIterator(value);
                 }

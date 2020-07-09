@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -286,5 +287,11 @@ final class DefaultPythonBooleanExports {
     public static Object lookupAttribute(Boolean x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {
         return lookup.execute(x, name, inheritedOnly);
+    }
+
+    @ExportMessage
+    public static Object getAndCallMethodInternal(Boolean receiver, ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
+                    @Cached PythonAbstractObject.GetAndCallMethodNode getAndCallMethodNode) {
+        return getAndCallMethodNode.execute(state, receiver, ignoreGetException, method, arguments);
     }
 }

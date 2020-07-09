@@ -211,4 +211,10 @@ final class DefaultPythonDoubleExports {
                     @Exclusive @Cached LookupAttributeNode lookup) {
         return lookup.execute(x, name, inheritedOnly);
     }
+
+    @ExportMessage
+    public static Object getAndCallMethodInternal(Double receiver, ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
+                    @Cached PythonAbstractObject.GetAndCallMethodNode getAndCallMethodNode) {
+        return getAndCallMethodNode.execute(state, receiver, ignoreGetException, method, arguments);
+    }
 }

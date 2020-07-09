@@ -110,6 +110,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -140,16 +141,17 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -1018,6 +1020,65 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     return PNone.NO_VALUE;
                 }
             }
+        }
+    }
+
+    @ExportMessage
+    public Object getAndCallMethodInternal(ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
+                    @Cached GetAndCallMethodNode getAndCallMethodNode) {
+        return getAndCallMethodNode.execute(state, this, ignoreGetException, method, arguments);
+
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class GetAndCallMethodNode extends Node {
+        public abstract Object execute(ThreadState state, Object receiver, boolean ignoreGetException, Object method, Object[] arguments);
+
+        @Specialization(guards = "isNoValue(method)")
+        @SuppressWarnings("unused")
+        public static Object processNoValue(ThreadState state, Object receiver, boolean ignoreGetException, PNone method, Object[] arguments) {
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "isFunction(method)")
+        public static Object getAndCallFunction(ThreadState state, Object receiver, @SuppressWarnings("unused") boolean ignoreGetException, Object method, Object[] arguments,
+                        @Cached ConditionProfile hasStateProfile,
+                        @Cached CallNode callMethod) {
+            VirtualFrame frame = null;
+            if (hasStateProfile.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return callMethod.execute(frame, method, PositionalArgumentsNode.prependArgument(receiver, arguments));
+        }
+
+        @Specialization(limit = "3", replaces = "getAndCallFunction")
+        public static Object getAndCallGeneric(ThreadState state, Object receiver, boolean ignoreGetException, Object method, Object[] arguments,
+                        @CachedLibrary("receiver") PythonObjectLibrary plib,
+                        @Cached ConditionProfile hasStateProfile,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
+                        @Cached CallNode callGet,
+                        @Cached CallNode callMethod) {
+            if (PGuards.isFunction(method)) {
+                return getAndCallFunction(state, receiver, ignoreGetException, method, arguments, hasStateProfile, callMethod);
+            }
+            VirtualFrame frame = null;
+            if (hasStateProfile.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            Object get = lookupGet.execute(method, __GET__);
+            Object callable = method;
+            if (get != PNone.NO_VALUE) {
+                try {
+                    callable = callGet.execute(frame, get, method, receiver, plib.getLazyPythonClass(receiver));
+                } catch (PException pe) {
+                    if (ignoreGetException) {
+                        return PNone.NO_VALUE;
+                    }
+                    throw pe;
+                }
+            }
+            return callMethod.execute(frame, callable, arguments);
         }
     }
 

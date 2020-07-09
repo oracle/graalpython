@@ -569,7 +569,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
      *
-     * @param receiver
+     * @param receiver self
      * @param name attribute name
      * @param inheritedOnly determines whether the lookup should start on the class or on the object
      */
@@ -583,6 +583,39 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public final Object lookupAttribute(Object receiver, String name) {
         return lookupAttribute(receiver, name, false);
+    }
+
+    /**
+     * Looks up a method object on the receiver's type that can be called with one of the
+     * getAndCallMethod methods.
+     * 
+     * @param receiver self
+     * @param name method name
+     * @return unbound method descriptor
+     */
+    public Object lookupSpecialMethod(Object receiver, String name) {
+        return lookupAttribute(receiver, name, true);
+    }
+
+    /**
+     * Calls an unbound method descriptor, typically obtained using {@link #lookupSpecialMethod}.
+     *
+     * @param receiver self
+     * @param method the function object or other descriptor
+     * @param arguments method arguments, not containing the receiver
+     * @return return value of the function
+     */
+    public final Object getAndCallMethod(Object receiver, VirtualFrame frame, Object method, Object... arguments) {
+        return getAndCallMethodInternal(receiver, frame != null ? PArguments.getThreadState(frame) : null, false, method, arguments);
+    }
+
+    public final Object getAndCallMethodIgnoreGetException(Object receiver, VirtualFrame frame, Object method, Object... arguments) {
+        return getAndCallMethodInternal(receiver, frame != null ? PArguments.getThreadState(frame) : null, true, method, arguments);
+    }
+
+    protected Object getAndCallMethodInternal(Object receiver, ThreadState state, boolean ignoreGetException, Object method, Object... arguments) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
     /**

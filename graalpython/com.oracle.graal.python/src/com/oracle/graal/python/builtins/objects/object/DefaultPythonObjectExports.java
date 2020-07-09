@@ -40,16 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -244,7 +246,7 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object asPString(Object receiver,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Cached.Exclusive @Cached PRaiseNode raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         if (lib.isString(receiver)) {
             try {
                 return lib.asString(receiver);
@@ -264,7 +266,7 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     static double asJavaDouble(Object receiver,
-                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         if (canBeJavaDouble(receiver, interopLib)) {
             try {
@@ -280,11 +282,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    public static Object lookupAttribute(@SuppressWarnings("unused") Object x, @SuppressWarnings("unused") String name, @SuppressWarnings("unused") boolean inheritedOnly) {
-        return PNone.NO_VALUE;
-    }
-
-    @ExportMessage
     static boolean canBeJavaLong(@SuppressWarnings("unused") Object receiver,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         return interopLib.fitsInLong(receiver);
@@ -292,7 +289,7 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     static long asJavaLong(Object receiver,
-                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         if (canBeJavaDouble(receiver, interopLib)) {
             try {
@@ -315,7 +312,7 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static long asPInt(Object receiver,
                     @CachedLibrary("receiver") InteropLibrary lib,
-                    @Cached.Exclusive @Cached PRaiseNode raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         if (lib.fitsInLong(receiver)) {
             try {
                 return lib.asLong(receiver);
@@ -328,4 +325,15 @@ final class DefaultPythonObjectExports {
         throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }
 
+    @ExportMessage
+    static Object lookupAttribute(Object x, String name, boolean inheritedOnly,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        return lookup.execute(x, name, inheritedOnly);
+    }
+
+    @ExportMessage
+    static Object getAndCallMethodInternal(Object receiver, ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
+                    @Cached PythonAbstractObject.GetAndCallMethodNode getAndCallMethodNode) {
+        return getAndCallMethodNode.execute(state, receiver, ignoreGetException, method, arguments);
+    }
 }
