@@ -7,6 +7,7 @@ to be able to use e.g. pytest.raises (which on PyPy will be implemented by a
 "fake pytest module")
 """
 from .support import HPyTest
+import pytest
 
 
 class TestBasic(HPyTest):
@@ -115,6 +116,7 @@ class TestBasic(HPyTest):
         """)
         assert mod.f(41.5) == 42.5
 
+    @pytest.mark.xfail
     def test_bool(self):
         mod = self.make_module("""
             HPy_DEF_METH_O(f)
@@ -173,6 +175,7 @@ class TestBasic(HPyTest):
             mod.f("not an integer")
         assert str(exc.value) == 'hello world'
 
+    @pytest.mark.xfail
     def test_builtin_handles(self):
         import pytest
         mod = self.make_module("""
