@@ -919,14 +919,6 @@ public abstract class PythonObjectLibrary extends Library {
         return asSizeWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
     }
 
-    public final int asSizeWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return asSizeWithState(receiver, PArguments.getThreadState(frame));
-        } else {
-            return asSize(receiver);
-        }
-    }
-
     /**
      * @see #asSizeWithState(Object, Object, ThreadState)
      */
