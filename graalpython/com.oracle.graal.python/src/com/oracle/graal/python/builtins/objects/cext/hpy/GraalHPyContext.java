@@ -277,11 +277,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @ExportMessage(limit = "1")
+    @SuppressWarnings("static-method")
     long asPointer(
                     @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
         if (isPointer()) {
             return interopLibrary.asPointer(nativePointer);
         }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw UnsupportedMessageException.create();
     }
 
@@ -294,16 +296,19 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         return new PythonAbstractObject.Keys(HPyContextMembers.values);
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMemberReadable(String key) {
         return HPyContextMembers.isValid(key);
     }
@@ -320,6 +325,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean hasNativeType() {
         return true;
     }
@@ -458,6 +464,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     // These methods could be static but they are deliberately implemented as member methods because
     // we may fetch the constants from the native library at initialization time.
 
+    @SuppressWarnings("static-method")
     public boolean isHPyMeth(int flags) {
         return (flags & HPy_METH) != 0;
     }

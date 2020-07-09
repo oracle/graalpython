@@ -103,6 +103,7 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean hasNativeType() {
         return true;
     }
@@ -146,16 +147,19 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         return new PythonAbstractObject.Keys(new String[]{I});
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMemberReadable(String key) {
         return I.equals(key);
     }

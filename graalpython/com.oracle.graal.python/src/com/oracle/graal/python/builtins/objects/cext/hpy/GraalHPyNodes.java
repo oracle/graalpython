@@ -65,6 +65,8 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -99,21 +101,21 @@ public class GraalHPyNodes {
         public abstract Object execute(GraalHPyContext context, String name);
 
         @Specialization(guards = "cachedName == name", limit = "1", assumptions = "singleContextAssumption()")
-        Object doReceiverCachedIdentity(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
+        static Object doReceiverCachedIdentity(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
                         @Cached("name") @SuppressWarnings("unused") String cachedName,
                         @Cached("importHPySymbolUncached(context, name)") Object sym) {
             return sym;
         }
 
         @Specialization(guards = "cachedName.equals(name)", limit = "1", assumptions = "singleContextAssumption()", replaces = "doReceiverCachedIdentity")
-        Object doReceiverCached(GraalHPyContext context, @SuppressWarnings("unused") String name,
+        static Object doReceiverCached(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
                         @Cached("name") @SuppressWarnings("unused") String cachedName,
                         @Cached("importHPySymbolUncached(context, name)") Object sym) {
             return sym;
         }
 
         @Specialization(replaces = {"doReceiverCached", "doReceiverCachedIdentity"})
-        Object doGeneric(GraalHPyContext context, String name,
+        static Object doGeneric(GraalHPyContext context, String name,
                         @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
                         @Cached PRaiseNode raiseNode) {
             return importHPySymbol(raiseNode, interopLib, context.getLLVMLibrary(), name);
@@ -250,6 +252,7 @@ public class GraalHPyNodes {
                         @Cached PCallHPyFunction callGetDocNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                         @Cached BranchProfile profile,
                         @Cached PRaiseNode raiseNode) {
             String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_NAME, methodDef));
@@ -297,7 +300,7 @@ public class GraalHPyNodes {
                     PtrArrayWrapper callableArr = new PtrArrayWrapper(1);
                     PtrArrayWrapper trampolineArr = new PtrArrayWrapper(1);
                     resultLib.execute(mlMethObj, callableArr, trampolineArr);
-                    Object callable = null;
+                    Object callable;
                     try {
                         callable = ptrArrayLib.readArrayElement(callableArr, 0);
                     } catch (InvalidArrayIndexException e) {
@@ -311,7 +314,13 @@ public class GraalHPyNodes {
                     rootNode = createWrapperRootNode(language, flags, methodName, mlMethObj);
                 }
 
-                return createWrapperFunction(factory, methodName, rootNode);
+                PBuiltinFunction function = createWrapperFunction(factory, methodName, rootNode);
+
+                // write doc string; we need to directly write to the storage otherwise it is
+                // disallowed writing to builtin types.
+                writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.__DOC__, methodDoc);
+
+                return function;
             } catch (UnsupportedTypeException | ArityException e) {
                 profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);

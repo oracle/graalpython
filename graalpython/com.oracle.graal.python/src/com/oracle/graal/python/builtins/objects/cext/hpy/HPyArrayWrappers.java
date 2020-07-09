@@ -155,7 +155,7 @@ public class HPyArrayWrappers {
         }
 
         @ExportMessage
-        Object readArrayElement(long idx) {
+        Object readArrayElement(@SuppressWarnings("unused") long idx) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError();
         }
@@ -219,11 +219,13 @@ public class HPyArrayWrappers {
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         boolean hasNativeType() {
             return true;
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         Object getNativeType(
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext().getHPyArrayNativeType();
@@ -254,11 +256,13 @@ public class HPyArrayWrappers {
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         boolean hasNativeType() {
             return false;
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         Object getNativeType() {
             return null;
         }
