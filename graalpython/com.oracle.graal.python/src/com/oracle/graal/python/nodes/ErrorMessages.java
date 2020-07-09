@@ -129,6 +129,8 @@ public abstract class ErrorMessages {
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
     public static final String CANNOT_RESIZE_BUFFER = "cannot resize buffer";
     public static final String CANNOT_SPECIFY_FILTERS = "Cannot specify filters except with FORMAT_RAW";
+    public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
+    public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
     public static final String CANNOT_USE_TO_INITIALIZE_ARRAY = "cannot use a %p to initialize an array with typecode '%s'";
@@ -518,4 +520,6 @@ public abstract class ErrorMessages {
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
+    public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
+    public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";
 }

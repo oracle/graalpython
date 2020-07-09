@@ -33,6 +33,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -422,7 +423,7 @@ abstract class FormatProcessor<T> {
              * Encode as an InternalFormat.Spec. The values in the constructor always have specified
              * values, except for sign, width and precision.
              */
-            InternalFormat.Spec spec = new InternalFormat.Spec(fill, align, sign, altFlag, width, false, precision, c);
+            InternalFormat.Spec spec = new InternalFormat.Spec(fill, align, sign, altFlag, width, Spec.NONE, precision, c);
 
             /*
              * Process argument according to format specification decoded from the string. It is

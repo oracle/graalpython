@@ -60,7 +60,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
-import static com.oracle.graal.python.runtime.formatting.FormattingUtils.prepareSpecForFloat;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateAndPrepareForFloat;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -98,8 +98,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
-import com.oracle.graal.python.runtime.formatting.FormattingUtils;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
+import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -135,7 +135,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         String str(double self) {
-            InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', InternalFormat.Spec.NONE, false, InternalFormat.Spec.UNSPECIFIED, false, 0, 'r');
+            Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
             FloatFormatter f = new FloatFormatter(getCore(), spec);
             f.setMinFracDigits(1);
             return doFormat(self, f);
@@ -168,20 +168,19 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @ImportStatic(FormattingUtils.class)
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "shouldBeAsStr(formatString)")
+        @Specialization(guards = "formatString.isEmpty()")
         Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
             return strCall.executeObject(frame, self);
         }
 
-        @Specialization(guards = "!shouldBeAsStr(formatString)")
+        @Specialization(guards = "!formatString.isEmpty()")
         @TruffleBoundary
         String format(double self, String formatString) {
             InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
-            FloatFormatter formatter = new FloatFormatter(getCore(), prepareSpecForFloat(spec, getCore(), "float"));
+            FloatFormatter formatter = new FloatFormatter(getCore(), validateAndPrepareForFloat(spec, getCore(), "float"));
             formatter.format(self);
             return formatter.pad().getResult();
         }

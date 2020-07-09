@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -89,7 +91,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.formatting.FloatFormatter;
+import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
+import com.oracle.graal.python.runtime.formatting.InternalFormat;
+import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -2371,6 +2378,84 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
+    }
+
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class FormatNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "formatString.isEmpty()")
+        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
+                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+            return strCall.executeObject(frame, self);
+        }
+
+        @Specialization(guards = "!formatString.isEmpty()")
+        @TruffleBoundary
+        String formatI(int self, String formatString) {
+            PythonCore core = getCore();
+            Spec spec = getSpec(formatString, core);
+            if (isDoubleSpec(spec)) {
+                return formatDouble(core, spec, self);
+            }
+            validateIntegerSpec(core, spec);
+            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+            formatter.format(self);
+            return formatter.pad().getResult();
+        }
+
+        @Specialization(guards = "!formatString.isEmpty()")
+        String formatL(long self, String formatString) {
+            return formatPI(factory().createInt(self), formatString);
+        }
+
+        @Specialization(guards = "!formatString.isEmpty()")
+        @TruffleBoundary
+        String formatPI(PInt self, String formatString) {
+            PythonCore core = getCore();
+            Spec spec = getSpec(formatString, core);
+            if (isDoubleSpec(spec)) {
+                // Note: this should really call PyNumber_Float
+                double doubleVal = PythonObjectLibrary.getUncached().asJavaDouble(self);
+                return formatDouble(core, spec, doubleVal);
+            }
+            validateIntegerSpec(core, spec);
+            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+            formatter.format(self.getValue());
+            return formatter.pad().getResult();
+        }
+
+        @Fallback
+        Object doOther(@SuppressWarnings("unused") Object self, Object format) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", format);
+        }
+
+        private static Spec getSpec(String formatString, PythonCore core) {
+            Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+            return spec.withDefaults(Spec.NUMERIC);
+        }
+
+        private static boolean isDoubleSpec(Spec spec) {
+            return spec.type == 'e' || spec.type == 'E' || spec.type == 'f' || //
+                            spec.type == 'F' || spec.type == 'g' || //
+                            spec.type == 'G' || spec.type == '%';
+        }
+
+        private static String formatDouble(PythonCore core, Spec spec, double value) {
+            FloatFormatter formatter = new FloatFormatter(core, spec);
+            formatter.format(value);
+            return formatter.pad().getResult();
+        }
+
+        private static void validateIntegerSpec(PythonCore core, Spec spec) {
+            if (Spec.specified(spec.precision)) {
+                throw core.raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
+            }
+            if (spec.type == 'c' && Spec.specified(spec.sign)) {
+                throw core.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
+            }
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__HASH__, minNumOfPositionalArgs = 1)

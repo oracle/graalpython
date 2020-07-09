@@ -6,9 +6,13 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
+import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.specified;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
@@ -24,10 +28,6 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
     /** The rounding mode dominant in the formatter. */
     static final RoundingMode ROUND_PY = RoundingMode.HALF_EVEN;
-
-    /** Limit the size of results. */
-    // No-one needs more than log(Double.MAX_VALUE) - log2(Double.MIN_VALUE) = 1383 digits.
-    static final int MAX_PRECISION = 1400;
 
     /** If it contains no decimal point, this length is zero, and 1 otherwise. */
     private int lenPoint;
@@ -163,19 +163,28 @@ public class FloatFormatter extends InternalFormat.Formatter {
         setStart();
 
         // Precision defaults to 6 (or 12 for none-format)
-        int precision = spec.getPrecision(Spec.specified(spec.type) ? 6 : 12);
+        int precision = spec.getPrecision(6);
 
         /*
          * By default, the prefix of a positive number is "", but the format specifier may override
          * it, and the built-in type complex needs to override the format.
          */
         char sign = spec.sign;
-        if (positivePrefix == null && Spec.specified(sign) && sign != '-') {
+        if (positivePrefix == null && specified(sign) && sign != '-') {
             positivePrefix = Character.toString(sign);
         }
 
+        char type = spec.type;
+        int expThresholdAdj = 0;
+        if (!specified(spec.type) && specified(spec.precision)) {
+            // No specifier normally means do what __str__ would do, but if precision is specified,
+            // we switch to g, moreover, CPython also adjusts the exponential notation threshold
+            type = 'g';
+            expThresholdAdj = -1;
+        }
+
         // Different process for each format type, ignoring case for now.
-        switch (Character.toLowerCase(spec.type)) {
+        switch (Character.toLowerCase(type)) {
             case 'e':
                 // Exponential case: 1.23e-45
                 format_e(value, positivePrefix, precision);
@@ -186,19 +195,25 @@ public class FloatFormatter extends InternalFormat.Formatter {
                 format_f(value, positivePrefix, precision);
                 break;
 
-            case 'n':
-                // Locale-sensitive version of g-format should be here. (Désolé de vous decevoir.)
-                // XXX Set a variable here to signal localisation in/after groupDigits?
             case 'g':
                 // General format: fixed or exponential according to value.
-                format_g(value, positivePrefix, precision, 0);
+                format_g(value, positivePrefix, precision, expThresholdAdj);
+                break;
+
+            case 'n':
+                // Locale aware version of 'g'
+                format_g(value, positivePrefix, precision, expThresholdAdj);
+                DecimalFormat format = getCurrentDecimalFormat();
+                if (format != null) {
+                    setGroupingAndGroupSize(format);
+                    DecimalFormatSymbols symbols = format.getDecimalFormatSymbols();
+                    if (lenPoint > 0) {
+                        result.setCharAt(lenWhole, symbols.getDecimalSeparator());
+                    }
+                }
                 break;
 
             case Spec.NONE:
-                // None format like g-format but goes exponential at precision-1
-                format_g(value, positivePrefix, precision, -1);
-                break;
-
             case 'r':
                 // For float.__repr__, very special case, breaks all the rules.
                 format_r(value, positivePrefix);
@@ -221,9 +236,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
         }
 
         // If required to, group the whole-part digits.
-        if (spec.grouping) {
-            groupDigits(3, ',');
-        }
+        groupWholePartIfRequired();
 
         return this;
     }

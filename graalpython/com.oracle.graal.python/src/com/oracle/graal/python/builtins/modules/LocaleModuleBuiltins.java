@@ -102,7 +102,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
 
             int posVariantSep = posixLocaleId.indexOf('.');
             if (posVariantSep < 0) {
-                country = posixLocaleId.substring(posCountrySep, len);
+                country = posixLocaleId.substring(posCountrySep + 1, len);
             } else {
                 country = posixLocaleId.substring(posCountrySep + 1, posVariantSep);
                 variant = posixLocaleId.substring(posVariantSep + 1, len);
@@ -174,9 +174,11 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             Currency currency = numberFormat.getCurrency();
 
             DecimalFormatSymbols decimalFormatSymbols;
+            int groupSize = -1;
             if (numberFormat instanceof DecimalFormat) {
                 DecimalFormat decimalFormat = (DecimalFormat) numberFormat;
                 decimalFormatSymbols = decimalFormat.getDecimalFormatSymbols();
+                groupSize = decimalFormat.getGroupingSize();
             } else {
                 decimalFormatSymbols = new DecimalFormatSymbols(locale);
             }
@@ -185,7 +187,11 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             dict.put("decimal_point", String.valueOf(decimalFormatSymbols.getDecimalSeparator()));
             dict.put("thousands_sep", String.valueOf(decimalFormatSymbols.getGroupingSeparator()));
             // TODO: set the proper grouping
-            dict.put("grouping", factory().createList());
+            if (groupSize != -1) {
+                dict.put("grouping", factory().createList(new Object[]{groupSize, 0}));
+            } else {
+                dict.put("grouping", factory().createList());
+            }
 
             // LC_MONETARY
             dict.put("int_curr_symbol", decimalFormatSymbols.getInternationalCurrencySymbol());
