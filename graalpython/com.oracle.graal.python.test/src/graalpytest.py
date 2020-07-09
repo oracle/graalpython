@@ -201,6 +201,7 @@ def get_fixture_values(test_class_instance, names):
         import itertools as _itertools_module
     return list(_itertools_module.product(*result_vector))
 
+_skipped_marker = object()
 
 class Mark:
     @staticmethod
@@ -213,7 +214,7 @@ class Mark:
 
     @staticmethod
     def xfail(obj):
-        def foo():
+        def foo(self):
             pass
         foo.__name__ = obj.__name__
         return foo
@@ -312,6 +313,7 @@ class TestCase(object):
         self.exceptions = []
         self.passed = 0
         self.failed = 0
+        self.skipped_n = 0
 
     def get_useful_frame(self, tb):
         from traceback import extract_tb
@@ -328,6 +330,9 @@ class TestCase(object):
         if verbose:
             with print_lock:
                 print(u"\n\t\u21B3 ", func.__name__, " ", end="", flush=True)
+
+        if func.__code__ is Mark.xfail(func).__code__:
+            return _skipped_marker
 
         # insert fixture params
         co = func.__code__
@@ -376,7 +381,10 @@ class TestCase(object):
                 r = self.run_safely(func)
                 end = time.monotonic() - start
                 with print_lock:
-                    self.success(end) if r else self.failure(end)
+                    if r is _skipped_marker:
+                        self.skipped()
+                    else:
+                        self.success(end) if r else self.failure(end)
             ThreadPool.start(do_run)
 
     def success(self, time):
@@ -391,6 +399,10 @@ class TestCase(object):
         if verbose:
             print("[%.3fs]" % time, end=" ")
         print(fail_msg, end="", flush=True)
+
+    def skipped(self):
+        self.skipped_n += 1
+        print("s ", end="", flush=True)
 
     def assertIsInstance(self, value, cls):
         assert isinstance(value, cls), "Expected %r to be instance of %r" % (value, cls)
@@ -541,6 +553,7 @@ class TestRunner(object):
         self.exceptions = []
         self.passed = 0
         self.failed = 0
+        self.skipped_n = 0
 
     @staticmethod
     def find_testfiles(paths):
@@ -635,10 +648,11 @@ class TestRunner(object):
                 self.exceptions += testcase.exceptions
                 self.passed += testcase.passed
                 self.failed += testcase.failed
+                self.skipped_n += testcase.skipped_n
             if verbose:
                 print()
         ThreadPool.shutdown()
-        print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
+        print("\n\nRan %d tests (%d passes, %d failures, %d skipped)" % (self.passed + self.failed, self.passed, self.failed, self.skipped_n))
         for e in self.exceptions:
             msg, exc = e
             print(msg)
