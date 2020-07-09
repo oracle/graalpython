@@ -42,19 +42,18 @@ package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.HiddenKey;
 
 public final class HiddenKeyDescriptor extends PythonBuiltinObject {
-    private final HiddenKey key;
+    private final HiddenPythonKey key;
     private final Object type;
 
-    public HiddenKeyDescriptor(HiddenKey key, Object type) {
+    public HiddenKeyDescriptor(HiddenPythonKey key, Object type) {
         super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
         this.key = key;
         this.type = type;
     }
 
-    public HiddenKey getKey() {
+    public HiddenPythonKey getKey() {
         return key;
     }
 

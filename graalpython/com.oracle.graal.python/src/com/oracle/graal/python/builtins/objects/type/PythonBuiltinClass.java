@@ -38,7 +38,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 
 /**
  * A Python built-in class that is immutable.
@@ -55,7 +55,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @Override
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
+        if (name instanceof HiddenPythonKey || !PythonLanguage.getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
             throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
