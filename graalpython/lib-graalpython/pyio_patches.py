@@ -95,6 +95,9 @@ sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding="utf
 sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
 
+import atexit
+atexit.register(sys.stdout.close)
+atexit.register(sys.stderr.close)
 
 # See comment in _pyio.py. This method isn't strictly necessary and is provided
 # on CPython for performance. Because it goes through memoryview, it is slower
