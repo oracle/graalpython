@@ -337,6 +337,8 @@ class GraalPythonTags(object):
     unittest_sandboxed = 'python-unittest-sandboxed'
     unittest_multi = 'python-unittest-multi-context'
     unittest_jython = 'python-unittest-jython'
+    unittest_hpy = 'python-unittest-hpy'
+    unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -451,6 +453,10 @@ def _graalpytest_root():
     return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
 
+def _hpy_test_root():
+    return os.path.join(_get_core_home(), "modules", "hpy", "test")
+
+
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None, env=None):
     args = args or []
     args = ["--experimental-options=true",
@@ -535,6 +541,14 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
             run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"])
+
+    with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
+        if task:
+            run_python_unittests(python_gvm(), paths=[_hpy_test_root()])
+
+    with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
+        if task:
+            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"], paths=[_hpy_test_root()])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -1821,7 +1835,7 @@ def update_hpy_import_cmd(args):
     import_files(hpy_repo_runtime_dir, runtime_files_dest)
 
     # tests go to 'lib-graalpython/module/hpy/tests
-    test_files_dest = join(_get_core_home(), "modules", "hpy", "test")
+    test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
 
     SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
