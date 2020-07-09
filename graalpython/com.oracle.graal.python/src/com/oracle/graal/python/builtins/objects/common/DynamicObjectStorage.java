@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -72,6 +73,7 @@ import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -101,8 +103,30 @@ public final class DynamicObjectStorage extends HashingStorage {
         this.mro = mro;
     }
 
-    protected static Object[] keyList(DynamicObjectStorage self) {
-        return self.store.getShape().getKeyList().toArray();
+    protected static Object[] keyArray(DynamicObjectStorage self) {
+        return DynamicObjectStorage.keyArray(self.store.getShape());
+    }
+
+    protected static Object[] keyArray(Shape shape) {
+        List<Object> keyList = keyList(shape);
+        return keyList.toArray(new Object[keyList.size()]);
+    }
+
+    protected static List<Object> keyList(Shape shape) {
+        return filter(shape.getKeyList());
+    }
+
+    @TruffleBoundary
+    private static List<Object> filter(List<Object> l) {
+        ArrayList<Object> keyList = new ArrayList<>(l.size());
+        Iterator<Object> it = l.iterator();
+        while (it.hasNext()) {
+            Object n = it.next();
+            if (!(n instanceof HiddenPythonKey)) {
+                keyList.add(n);
+            }
+        }
+        return keyList;
     }
 
     @ExportMessage
@@ -112,7 +136,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @ExplodeLoop
         static int cachedLen(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "keyList(self)", dimensions = 1) Object[] keys,
+                        @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
                         @Cached ReadAttributeFromDynamicObjectNode readNode) {
             int len = 0;
             for (int i = 0; i < keys.length; i++) {
@@ -126,7 +150,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization(replaces = "cachedLen")
         static int length(DynamicObjectStorage self,
                         @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            return cachedLen(self, self.store.getShape(), keyList(self), readNode);
+            return cachedLen(self, self.store.getShape(), keyArray(self), readNode);
         }
 
         private static boolean hasStringKey(DynamicObjectStorage self, String key, ReadAttributeFromDynamicObjectNode readNode) {
@@ -169,7 +193,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object notString(DynamicObjectStorage self, Object key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
-                        @Exclusive @Cached(value = "cachedShape.getKeyList().toArray()", dimensions = 1) Object[] keyList,
+                        @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
@@ -310,7 +334,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @ExplodeLoop
         static Object cachedLen(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "keyList(self)", dimensions = 1) Object[] keys,
+                        @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
                         @Shared("readNodeInject") @Cached ReadAttributeFromDynamicObjectNode readNode) {
             Object result = firstValue;
             for (int i = 0; i < keys.length; i++) {
@@ -323,7 +347,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization(replaces = "cachedLen")
         static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Shared("readNodeInject") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            return cachedLen(self, node, firstValue, self.store.getShape(), keyList(self), readNode);
+            return cachedLen(self, node, firstValue, self.store.getShape(), keyArray(self), readNode);
         }
 
         private static Object runNode(DynamicObjectStorage self, Object key, Object acc, ReadAttributeFromDynamicObjectNode readNode, ForEachNode<Object> node) {
@@ -410,7 +434,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         public KeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
             super(store, readNode);
-            this.keyIter = store.getShape().getKeys().iterator();
+            this.keyIter = keyList(store.getShape()).iterator();
         }
 
         @Override
@@ -430,7 +454,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         public ReverseKeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
             super(store, readNode);
-            this.keyList = store.getShape().getKeyList();
+            keyList = keyList(store.getShape());
             this.index = keyList.size() - 1;
         }
 
@@ -466,7 +490,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @TruffleBoundary
         private static Iterator<Object> getIterator(Shape shape) {
-            return shape.getKeys().iterator();
+            return keyList(shape).iterator();
         }
 
         @TruffleBoundary

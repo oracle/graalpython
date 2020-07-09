@@ -129,19 +129,19 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public class TypeBuiltins extends PythonBuiltins {
 
-    public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(__DICTOFFSET__);
-    public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(__ITEMSIZE__);
-    public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(__BASICSIZE__);
-    public static final HiddenKey TYPE_ALLOC = new HiddenKey(__ALLOC__);
-    public static final HiddenKey TYPE_DEALLOC = new HiddenKey("__dealloc__");
-    public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
+    public static final HiddenPythonKey TYPE_DICTOFFSET = new HiddenPythonKey(__DICTOFFSET__);
+    public static final HiddenPythonKey TYPE_ITEMSIZE = new HiddenPythonKey(__ITEMSIZE__);
+    public static final HiddenPythonKey TYPE_BASICSIZE = new HiddenPythonKey(__BASICSIZE__);
+    public static final HiddenPythonKey TYPE_ALLOC = new HiddenPythonKey(__ALLOC__);
+    public static final HiddenPythonKey TYPE_DEALLOC = new HiddenPythonKey("__dealloc__");
+    public static final HiddenPythonKey TYPE_FREE = new HiddenPythonKey("__free__");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

@@ -38,52 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.attributes;
+package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMappingproxy;
-
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
 
-@ImportStatic({PGuards.class, PythonOptions.class})
-public abstract class ObjectAttributeNode extends PNodeWithContext {
-    protected static Object attrKey(Object key) {
-        if (key instanceof PString) {
-            return ((PString) key).getValue();
-        } else {
-            return key;
-        }
+/**
+ * Use instead of {@link HiddenKey} which does comparison based on object identity.
+ */
+public class HiddenPythonKey {
+    private final String name;
+
+    public HiddenPythonKey(String name) {
+        assert name != null;
+        this.name = name;
     }
 
-    protected static boolean hasBuiltinDict(PythonObject object, PythonObjectLibrary lib, IsBuiltinClassProfile profileDict, IsBuiltinClassProfile profileMapping) {
-        PHashingCollection dict = lib.getDict(object);
-        return dict != null && (profileDict.profileObject(dict, PDict) || profileMapping.profileObject(dict, PMappingproxy));
-    }
-
-    protected static Location getLocationOrNull(Property prop) {
-        return prop == null ? null : prop.getLocation();
-    }
-
-    protected static boolean isHiddenKey(Object key) {
-        return key instanceof HiddenPythonKey || key instanceof HiddenKey;
+    public String getName() {
+        return name;
     }
 
     @Override
-    public NodeCost getCost() {
-        // really just a few guards and delegation
-        return NodeCost.NONE;
+    public String toString() {
+        return name;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final HiddenPythonKey other = (HiddenPythonKey) obj;
+        return name.equals(other.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
+
 }

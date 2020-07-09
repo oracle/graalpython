@@ -587,8 +587,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             String strKey;
             if (k instanceof String) {
                 strKey = (String) k;
-            } else if (k instanceof PString) {
-                strKey = ((PString) k).getValue();
             } else {
                 continue;
             }
