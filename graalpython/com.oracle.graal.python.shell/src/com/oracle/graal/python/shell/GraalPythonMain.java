@@ -395,8 +395,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
             dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
-            if (warnOptions == null) {
-                warnOptions = System.getenv("PYTHONWARNINGS");
+
+            String envWarnOptions = System.getenv("PYTHONWARNINGS");
+            if (envWarnOptions != null && !envWarnOptions.isEmpty()) {
+                if (warnOptions == null) {
+                    warnOptions = envWarnOptions;
+                } else {
+                    warnOptions = envWarnOptions + "," + warnOptions;
+                }
             }
             String cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
             if (cachePrefix != null) {
