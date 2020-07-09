@@ -1789,7 +1789,7 @@ def update_hpy_import_cmd(args):
     if parsed_args.pull:
         if not vc_git.is_this_vc(hpy_repo_path):
             mx.abort("Cannot perform pull for HPy repo because {} is not a valid Git repo.".format(hpy_repo_path))
-        vc_git.pull(hpy_repo_path)
+        vc_git.pull(hpy_repo_path, update=True)
 
     # determine short revision of HPy
     import_version = vc_git.git_command(hpy_repo_path, ["rev-parse", "--short", "HEAD"])
