@@ -1043,8 +1043,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         long doComplex(PComplex value,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileIsAnyBuiltinObject(value)) {
-                int imag = Double.hashCode(value.getImag());
-                int real = Double.hashCode(value.getReal());
+                long imag = Double.hashCode(value.getImag());
+                long real = Double.hashCode(value.getReal());
                 return (((real << 32) | imag) << IDTAG_SHIFT) | IDTAG_COMPLEX;
             } else {
                 return doGeneric(value);
