@@ -165,8 +165,9 @@ public class HPyArrayWrappers {
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException, InvalidArrayIndexException, UnsupportedTypeException {
             if (!isPointer()) {
                 delegate[(int) idx] = value;
+            } else {
+                lib.writeArrayElement(nativePointer, idx, value);
             }
-            lib.writeArrayElement(nativePointer, idx, value);
         }
 
         @ExportMessage
