@@ -142,17 +142,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
-                        Double.MAX_VALUE,       // DBL_MAX
-                        Double.MAX_EXPONENT,    // DBL_MAX_EXP
-                        308,                    // DBL_MIN_10_EXP
-                        Double.MIN_VALUE,       // DBL_MIN
-                        Double.MIN_EXPONENT,    // DBL_MIN_EXP
-                        -307,                   // DBL_MIN_10_EXP
-                        10,                     // DBL_DIG
-                        53,                     // DBL_MANT_DIG
-                        2.2204460492503131e-16, // DBL_EPSILON
-                        2,                      // FLT_RADIX
-                        1                       // FLT_ROUNDS
+                        Double.MAX_VALUE,           // DBL_MAX
+                        Double.MAX_EXPONENT + 1,    // DBL_MAX_EXP
+                        308,                        // DBL_MIN_10_EXP
+                        Double.MIN_VALUE,           // DBL_MIN
+                        Double.MIN_EXPONENT,        // DBL_MIN_EXP
+                        -307,                       // DBL_MIN_10_EXP
+                        10,                         // DBL_DIG
+                        53,                         // DBL_MANT_DIG
+                        2.2204460492503131e-16,     // DBL_EPSILON
+                        2,                          // FLT_RADIX
+                        1                           // FLT_ROUNDS
         }));
         builtinConstants.put("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 

@@ -384,7 +384,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PComplex complexFromLongLong(Object cls, PInt real, PInt imaginary) {
-            return createComplex(cls, real.doubleValue(), imaginary.doubleValue());
+            return createComplex(cls, real.doubleValueWithOverflow(getRaiseNode()), imaginary.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization
@@ -409,7 +409,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(imag)")
         PComplex complexFromLong(Object cls, PInt real, @SuppressWarnings("unused") PNone imag) {
-            return createComplex(cls, real.doubleValue(), 0);
+            return createComplex(cls, real.doubleValueWithOverflow(getRaiseNode()), 0);
         }
 
         @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"}, limit = "1")
@@ -433,7 +433,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PComplex complexFromPIntComplex(Object cls, PInt one, PComplex two) {
-            return createComplex(cls, one.doubleValue() - two.getImag(), two.getReal());
+            return createComplex(cls, one.doubleValueWithOverflow(getRaiseNode()) - two.getImag(), two.getReal());
         }
 
         @Specialization
@@ -475,12 +475,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PComplex value = getComplexNumberFromObject(frame, one, lib);
             if (value == null) {
                 if (lib.canBeJavaDouble(one)) {
-                    return createComplex(cls, lib.asJavaDouble(one), two.doubleValue());
+                    return createComplex(cls, lib.asJavaDouble(one), two.doubleValueWithOverflow(getRaiseNode()));
                 } else {
                     throw raiseFirstArgError(one);
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValue());
+            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization(guards = "!isString(one)", limit = "1")

@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.floats;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -240,7 +241,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             try {
                 return factory().createInt(fromDouble(self));
             } catch (NumberFormatException e) {
-                throw raise(ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
+                throw raise(Double.isNaN(self) ? ValueError : OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
             }
         }
 
@@ -295,7 +296,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDPi(double left, PInt right) {
-            return left + right.doubleValue();
+            return left + right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -344,7 +345,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDPi(double left, PInt right) {
-            return left - right.doubleValue();
+            return left - right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -354,7 +355,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doPiD(PInt left, double right) {
-            return left.doubleValue() - right;
+            return left.doubleValueWithOverflow(getRaiseNode()) - right;
         }
 
         @SuppressWarnings("unused")
@@ -381,7 +382,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDP(double left, PInt right) {
-            return left * right.doubleValue();
+            return left * right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -411,7 +412,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(frame, left);
             if (leftPrimitive != null) {
-                return leftPrimitive * right.doubleValue();
+                return leftPrimitive * right.doubleValueWithOverflow(getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -439,7 +440,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doDPi(double left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doOperation(left, right.doubleValue(), negativeRaise);
+            return doOperation(left, right.doubleValueWithOverflow(getRaiseNode()), negativeRaise);
         }
 
         /**
@@ -518,14 +519,14 @@ public final class FloatBuiltins extends PythonBuiltins {
         double doDPi(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
                         @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
-            return doDD(frame, left.doubleValue(), right, none, callPow, negativeRaise);
+            return doDD(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
         }
 
         @Specialization(replaces = "doDPi")
         Object doDPiToComplex(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
                         @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doDDToComplex(frame, left.doubleValue(), right, none, callPow, negativeRaise);
+            return doDDToComplex(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
         }
 
         @Specialization
@@ -570,7 +571,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doDL(double left, PInt right) {
             raiseDivisionByZero(right.isZero());
-            return Math.floor(left / right.doubleValue());
+            return Math.floor(left / right.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization
@@ -588,7 +589,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doPiD(PInt left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return Math.floor(left.doubleValue() / right);
+            return Math.floor(left.doubleValueWithOverflow(getRaiseNode()) / right);
         }
 
         @SuppressWarnings("unused")
@@ -832,7 +833,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDPi(double left, PInt right) {
-            return left / right.doubleValue();
+            return left / right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -842,7 +843,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double div(PInt left, double right) {
-            return left.doubleValue() / right;
+            return left.doubleValueWithOverflow(getRaiseNode()) / right;
         }
 
         @Specialization
@@ -936,7 +937,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqDbPI(double a, PInt b) {
-            return a == b.doubleValue();
+            return Double.isFinite(a) && a == b.doubleValue();
         }
 
         @Specialization
@@ -954,7 +955,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
                         @Cached FromNativeSubclassNode getFloat) {
-            return getFloat.execute(frame, left) == right.doubleValue();
+            return eqDbPI(getFloat.execute(frame, left), right);
         }
 
         @Fallback
@@ -980,7 +981,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean neDbPI(double a, PInt b) {
-            return a != b.doubleValue();
+            return !(Double.isFinite(a) && a == b.doubleValue());
         }
 
         @Specialization
@@ -998,7 +999,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
                         @Cached FromNativeSubclassNode getFloat) {
-            return getFloat.execute(frame, left) != right.doubleValue();
+            return neDbPI(getFloat.execute(frame, left), right);
         }
 
         @Fallback

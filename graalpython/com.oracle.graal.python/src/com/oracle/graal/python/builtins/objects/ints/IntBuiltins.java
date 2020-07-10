@@ -408,7 +408,7 @@ public class IntBuiltins extends PythonBuiltins {
             try {
                 return Math.floorDiv(left, right.intValueExact());
             } catch (ArithmeticException e) {
-                return 0;
+                return left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
@@ -424,7 +424,7 @@ public class IntBuiltins extends PythonBuiltins {
             try {
                 return Math.floorDiv(left, right.longValueExact());
             } catch (ArithmeticException e) {
-                return 0;
+                return left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
@@ -2454,6 +2454,15 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
             return 1;
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "as_integer_ratio", minNumOfPositionalArgs = 1, doc = "Return integer ratio.")
+    abstract static class AsIntegerRatioNode extends PythonBuiltinNode {
+        @Specialization
+        Object get(VirtualFrame frame, Object self, @Cached IntNode intNode) {
+            return factory().createTuple(new Object[]{intNode.execute(frame, self), 1});
         }
     }
 

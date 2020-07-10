@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
 
@@ -322,6 +323,19 @@ public final class PInt extends PythonBuiltinObject {
     @TruffleBoundary
     public static double doubleValue(BigInteger value) {
         return value.doubleValue();
+    }
+
+    public double doubleValueWithOverflow(PRaiseNode raise) {
+        return doubleValueWithOverflow(value, raise);
+    }
+
+    @TruffleBoundary
+    public static double doubleValueWithOverflow(BigInteger value, PRaiseNode raise) {
+        double d = value.doubleValue();
+        if (Double.isInfinite(d)) {
+            throw raise.raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
+        }
+        return d;
     }
 
     public int intValue() {

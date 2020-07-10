@@ -279,11 +279,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return x.toString(2);
         }
 
+        @TruffleBoundary
+        protected BigInteger bigAbs(BigInteger x) {
+            return x.abs();
+        }
+
         @Specialization
         String doL(long x,
                         @Cached ConditionProfile isMinLong) {
             if (isMinLong.profile(x == Long.MIN_VALUE)) {
-                return buildString(true, bigToString(PInt.longToBigInteger(x)));
+                return buildString(true, bigToString(bigAbs(PInt.longToBigInteger(x))));
             }
             return buildString(x < 0, longToString(Math.abs(x)));
         }

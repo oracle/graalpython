@@ -40,14 +40,11 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -88,11 +85,7 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     @Specialization
     public double toDouble(PInt x,
                     @Cached PRaiseNode raise) {
-        double value = x.doubleValue();
-        if (Double.isInfinite(value)) {
-            throw raise.raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
-        }
-        return value;
+        return x.doubleValueWithOverflow(raise);
     }
 
     @Specialization(limit = "1")
