@@ -936,7 +936,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqDbPI(double a, PInt b) {
-            return Double.isFinite(a) && a == b.doubleValue();
+            return compareDoubleToLargeInt(a, b) == 0;
         }
 
         @Specialization
@@ -962,6 +962,23 @@ public final class FloatBuiltins extends PythonBuiltins {
         PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
+        // adapted from CPython's float_richcompare in floatobject.c
+        static double compareDoubleToLargeInt(double v, PInt w) {
+            if (!Double.isFinite(v)) {
+                return v;
+            }
+            int vsign = v == 0.0 ? 0 : v < 0.0 ? -1 : 1;
+            int wsign = w.isZero() ? 0 : w.isNegative() ? -1 : 1;
+            if (vsign != wsign) {
+                return vsign - wsign;
+            }
+            if (w.bitLength() <= 48) {
+                return v - w.doubleValue();
+            } else {
+                return new BigDecimal(v).compareTo(new BigDecimal(w.getValue()));
+            }
+        }
     }
 
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
@@ -980,7 +997,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean neDbPI(double a, PInt b) {
-            return !(Double.isFinite(a) && a == b.doubleValue());
+            return EqNode.compareDoubleToLargeInt(a, b) != 0;
         }
 
         @Specialization
@@ -1024,7 +1041,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPI(double x, PInt y) {
-            return x < y.doubleValue();
+            return EqNode.compareDoubleToLargeInt(x, y) < 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
@@ -1089,7 +1106,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPI(double x, PInt y) {
-            return x <= y.doubleValue();
+            return EqNode.compareDoubleToLargeInt(x, y) <= 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
@@ -1154,7 +1171,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPI(double x, PInt y) {
-            return x > y.doubleValue();
+            return EqNode.compareDoubleToLargeInt(x, y) > 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
@@ -1219,7 +1236,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPI(double x, PInt y) {
-            return x >= y.doubleValue();
+            return EqNode.compareDoubleToLargeInt(x, y) >= 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")

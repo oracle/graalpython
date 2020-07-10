@@ -17,6 +17,7 @@
 *graalpython.lib-python.3.test.test_long.LongTest.test_long
 *graalpython.lib-python.3.test.test_long.LongTest.test_format
 *graalpython.lib-python.3.test.test_long.LongTest.test_lshift_of_zero
+*graalpython.lib-python.3.test.test_long.LongTest.test_mixed_compares
 *graalpython.lib-python.3.test.test_long.LongTest.test_mod_division
 *graalpython.lib-python.3.test.test_long.LongTest.test_nan_inf
 *graalpython.lib-python.3.test.test_long.LongTest.test_negative_shift_count
