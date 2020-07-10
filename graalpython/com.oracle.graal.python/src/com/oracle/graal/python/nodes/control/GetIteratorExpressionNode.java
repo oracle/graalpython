@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -100,12 +101,13 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         static Object doGeneric(Object value,
                         @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
                         @CachedLibrary(limit = "4") PythonObjectLibrary plib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary methodLib,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             // NOTE: it's fine to pass 'null' frame since the caller must already take care of the
             // global state
-            return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, isIteratorObjectNode, factory,
+            return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, methodLib, isIteratorObjectNode, factory,
                             raiseNode);
         }
 
@@ -137,13 +139,15 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         static Object doGeneric(VirtualFrame frame, Object value,
                         @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
                         @CachedLibrary(limit = "4") PythonObjectLibrary plib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary methodLib,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             Object iterMethod = iterMethodProfile.profile(plib.lookupSpecialMethod(value, __ITER__));
             if (iterMethod != PNone.NONE) {
                 if (iterMethod != PNone.NO_VALUE) {
-                    Object iterObj = plib.getAndCallMethodIgnoreGetException(value, frame, iterMethod);
+                    // TODO frame may be null
+                    Object iterObj = methodLib.callUnboundMethodIgnoreGetException(iterMethod, PArguments.getThreadState(frame), value);
                     if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
                         return iterObj;
                     } else {

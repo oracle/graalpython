@@ -1083,6 +1083,61 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    // TODO interop
+    public Object callFunction(ThreadState state, Object[] arguments,
+                    @Exclusive @Cached ConditionProfile hasStateProfile,
+                    @Exclusive @Cached CallNode callNode) {
+        VirtualFrame frame = null;
+        if (hasStateProfile.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return callNode.execute(frame, this, arguments);
+    }
+
+    @ExportMessage
+    public Object callUnboundMethod(ThreadState state, Object receiver, Object[] arguments,
+                    @Exclusive @Cached CallUnboundMethodNode call) {
+        return call.execute(state, this, false, receiver, arguments);
+    }
+
+    @ExportMessage
+    public Object callUnboundMethodIgnoreGetException(ThreadState state, Object receiver, Object[] arguments,
+                    @Exclusive @Cached CallUnboundMethodNode call) {
+        return call.execute(state, this, true, receiver, arguments);
+    }
+
+    @GenerateUncached
+    public abstract static class CallUnboundMethodNode extends Node {
+        public abstract Object execute(ThreadState state, Object method, boolean ignoreGetException, Object receiver, Object[] arguments);
+
+        @Specialization(limit = "3")
+        Object getAndCall(ThreadState state, Object method, boolean ignoreGetException, Object receiver, Object[] arguments,
+                        @CachedLibrary("receiver") PythonObjectLibrary plib,
+                        @Cached ConditionProfile hasStateProfile,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
+                        @Cached CallNode callGet,
+                        @Cached CallNode callMethod) {
+            VirtualFrame frame = null;
+            if (hasStateProfile.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            Object get = lookupGet.execute(method, __GET__);
+            Object callable = method;
+            if (get != PNone.NO_VALUE) {
+                try {
+                    callable = callGet.execute(frame, get, method, receiver, plib.getLazyPythonClass(receiver));
+                } catch (PException pe) {
+                    if (ignoreGetException) {
+                        return PNone.NO_VALUE;
+                    }
+                    throw pe;
+                }
+            }
+            return callMethod.execute(frame, callable, arguments);
+        }
+    }
+
+    @ExportMessage
     public boolean canBePInt(@Shared("asPIntLookupAttr") @Cached LookupInheritedAttributeNode.Dynamic lookup) {
         return lookup.execute(this, __INDEX__) != PNone.NO_VALUE || lookup.execute(this, __INT__) != PNone.NO_VALUE;
     }

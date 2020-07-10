@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -605,17 +608,52 @@ public abstract class PythonObjectLibrary extends Library {
      * @param arguments method arguments, not containing the receiver
      * @return return value of the function
      */
-    public final Object getAndCallMethod(Object receiver, VirtualFrame frame, Object method, Object... arguments) {
-        return getAndCallMethodInternal(receiver, frame != null ? PArguments.getThreadState(frame) : null, false, method, arguments);
+    public final Object getAndCallMethod(Object receiver, ThreadState state, Object method, Object... arguments) {
+        return getAndCallMethodInternal(receiver, state, false, method, arguments);
     }
 
-    public final Object getAndCallMethodIgnoreGetException(Object receiver, VirtualFrame frame, Object method, Object... arguments) {
-        return getAndCallMethodInternal(receiver, frame != null ? PArguments.getThreadState(frame) : null, true, method, arguments);
+    /**
+     * Calls an unbound method descriptor, typically obtained using {@link #lookupSpecialMethod}.
+     * Ignores exceptions raised in {@code __get__} and returns {@link PNone#NO_VALUE} in that case.
+     *
+     * @param receiver self
+     * @param method the function object or other descriptor
+     * @param arguments method arguments, not containing the receiver
+     * @return return value of the function or {@link PNone#NO_VALUE}
+     */
+    public final Object getAndCallMethodIgnoreGetException(Object receiver, ThreadState state, Object method, Object... arguments) {
+        return getAndCallMethodInternal(receiver, state, true, method, arguments);
     }
 
     protected Object getAndCallMethodInternal(Object receiver, ThreadState state, boolean ignoreGetException, Object method, Object... arguments) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
+
+    public Object callFunction(Object callable, ThreadState state, Object... arguments) {
+        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
+    }
+
+    public Object callUnboundMethod(Object method, ThreadState state, Object receiver, Object... arguments) {
+        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
+    }
+
+    public Object callUnboundMethodIgnoreGetException(Object method, ThreadState state, Object self, Object... arguments) {
+        return callUnboundMethod(method, state, method, arguments);
+    }
+
+    public Object callSpecialMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
+        Object method = lookupSpecialMethod(receiver, methodName);
+        // TODO
+        // Expects possible NO_VALUE and passes it through
+        return getAndCallMethod(receiver, state, method, arguments);
+    }
+
+    public Object callRegularMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
+        Object boundMethod = lookupAttribute(receiver, methodName);
+        // Expects possible NO_VALUE and passes it through
+        // FIXME wrong specialization
+        return callFunction(boundMethod, state, arguments);
     }
 
     /**
