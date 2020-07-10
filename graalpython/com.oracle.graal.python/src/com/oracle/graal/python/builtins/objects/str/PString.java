@@ -179,7 +179,8 @@ public final class PString extends PImmutableSequence {
     }
 
     @ExportMessage
-    public String asPath(@Cached CastToJavaStringNode castToJavaStringNode) {
+    public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
+                    @Cached CastToJavaStringNode castToJavaStringNode) {
         try {
             return castToJavaStringNode.execute(this);
         } catch (CannotCastException e) {

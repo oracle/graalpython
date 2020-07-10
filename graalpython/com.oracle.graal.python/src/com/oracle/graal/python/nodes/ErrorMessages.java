@@ -46,6 +46,7 @@ public abstract class ErrorMessages {
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
     public static final String ARG_D_MUST_BE_S = "%s arg %d must be a %s";
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
+    public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
     public static final String ARG_D_MUST_BE_S_OR_S = "%s argument %d must be '%s' or '%s'";
     public static final String ARG_D_MUST_NOT_BE_EMPTY = "arg %d must not be empty";
     public static final String ARG_EXPECTED_GOT = "%s argument expected, got %p";
@@ -293,7 +294,7 @@ public abstract class ErrorMessages {
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String IS_NOT_ITERABLE = "%s is not iterable";
-    public static final String IS_NOT_SUBTYPE_OF = "%s(%s) is not a subtype of %s";
+    public static final String IS_NOT_SUBTYPE_OF = "%s.__new__(%N): %N is not a subtype of %s";
     public static final String IS_NOT_TYPE_OBJ = "%s is not a type object (%p)";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_CLSS_WAS = "issubclass() arg 2 must be a class or tuple of classes";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE = "isinstance() arg 2 must be a type or tuple of types (was: %s)";
@@ -516,4 +517,5 @@ public abstract class ErrorMessages {
     public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
+    public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
 }

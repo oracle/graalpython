@@ -65,7 +65,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 @ImportStatic(PGuards.class)
 public abstract class CastToJavaStringNode extends PNodeWithContext {
 
-    public abstract String execute(Object x);
+    public abstract String execute(Object x) throws CannotCastException;
 
     @Specialization
     static String doString(String x) {

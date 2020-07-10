@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -114,7 +115,7 @@ public final class WrapTpNew extends SlotWrapper {
                     state |= NOT_SUBTP_STATE;
                 }
                 throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                                "%s.__new__(%N): %N is not a subtype of %s",
+                                ErrorMessages.IS_NOT_SUBTYPE_OF,
                                 getOwner().getName(), arg0, arg0, getOwner().getName());
             }
             // CPython walks the bases and checks that the first non-heaptype base has the new that

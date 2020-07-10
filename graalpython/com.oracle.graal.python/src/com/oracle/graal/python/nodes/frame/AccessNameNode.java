@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface AccessNameNode {
@@ -51,8 +53,9 @@ public interface AccessNameNode {
         return PArguments.getSpecialArgument(frame) != null;
     }
 
-    default boolean hasLocalsDict(VirtualFrame frame) {
-        return PArguments.getSpecialArgument(frame) instanceof PDict;
+    default boolean hasLocalsDict(VirtualFrame frame, IsBuiltinClassProfile isBuiltin) {
+        Object specialArgument = PArguments.getSpecialArgument(frame);
+        return specialArgument instanceof PDict && isBuiltin.profileObject(specialArgument, PythonBuiltinClassType.PDict);
     }
 
     public abstract String getAttributeId();

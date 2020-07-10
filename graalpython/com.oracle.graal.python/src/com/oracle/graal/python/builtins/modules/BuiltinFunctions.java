@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
@@ -183,6 +182,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -747,26 +747,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract PCode execute(VirtualFrame frame, Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
 
-        @Specialization
-        PCode compile(VirtualFrame frame, PBytes pBytes, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            try {
-                byte[] bytes = toBytesNode.execute(frame, pBytes);
-                Charset charset = PythonFileDetector.findEncodingStrict(bytes);
-                return compile(createString(bytes, charset), filename, mode, kwFlags, kwDontInherit, kwOptimize);
-            } catch (PythonFileDetector.InvalidEncodingException e) {
-                throw handleInvalidEncoding(filename, e);
-            }
-        }
-
-        @TruffleBoundary
-        private RuntimeException handleInvalidEncoding(String filename, PythonFileDetector.InvalidEncodingException e) {
-            PythonContext context = getContext();
-            // Create non-empty source to avoid overwriting the message with "unexpected EOF"
-            Source source = PythonLanguage.newSource(context, " ", filename, mayBeFromFile);
-            throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
-        }
-
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
@@ -805,10 +785,59 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return factory().createCode(ct);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        PCode compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
-            return code;
+        @Specialization(limit = "3")
+        PCode generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+                        @Cached CastToJavaStringNode castStr,
+                        @CachedLibrary("wSource") InteropLibrary interopLib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            if (wSource instanceof PCode) {
+                return (PCode) wSource;
+            }
+            String filename = lib.asPathWithState(wFilename, PArguments.getThreadState(frame));
+            String mode;
+            try {
+                mode = castStr.execute(wMode);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.ARG_S_MUST_BE_S_NOT_P, "compile()", "mode", "str", wMode);
+            }
+            String source = sourceAsString(wSource, filename, interopLib, lib);
+            return compile(source, filename, mode, kwFlags, kwDontInherit, kwOptimize);
+        }
+
+        // modeled after _Py_SourceAsString
+        String sourceAsString(Object source, String filename, InteropLibrary interopLib, PythonObjectLibrary pyLib) {
+            if (interopLib.isString(source)) {
+                try {
+                    return interopLib.asString(source);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else if (pyLib.isBuffer(source)) {
+                // cpython checks for bytes and bytearray separately, but we deal with it as
+                // buffers, since that's fast for us anyway
+                try {
+                    byte[] bytes;
+                    try {
+                        bytes = pyLib.getBufferBytes(source);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                    Charset charset = PythonFileDetector.findEncodingStrict(bytes);
+                    return createString(bytes, charset);
+                } catch (PythonFileDetector.InvalidEncodingException e) {
+                    throw handleInvalidEncoding(filename, e);
+                }
+            } else {
+                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
+            }
+        }
+
+        @TruffleBoundary
+        private RuntimeException handleInvalidEncoding(String filename, PythonFileDetector.InvalidEncodingException e) {
+            PythonContext context = getContext();
+            // Create non-empty source to avoid overwriting the message with "unexpected EOF"
+            Source source = PythonLanguage.newSource(context, " ", filename, mayBeFromFile);
+            throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
         }
 
         @TruffleBoundary

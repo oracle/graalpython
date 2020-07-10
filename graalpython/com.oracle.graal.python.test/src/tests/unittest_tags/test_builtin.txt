@@ -6,11 +6,16 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_bytearray_translate
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_callable
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_cmp
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_compile_async_generator
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_compile_top_level_await
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_construct_singletons
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_delattr
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_eval
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec_redirected
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter_pickle
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_general_eval
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_hex
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_id
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_isinstance
@@ -45,3 +50,5 @@
 *graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_unimportable
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_basic
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_inputtypes
+*graalpython.lib-python.3.test.test_builtin.TestType.test_type_doc
+*graalpython.lib-python.3.test.test_builtin.TestType.test_type_nokwargs

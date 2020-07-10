@@ -84,6 +84,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -160,6 +161,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -2146,23 +2148,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
         Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached GetClassNode getClass) {
             return getClass.execute(obj);
         }
 
-        @Specialization
-        Object type(VirtualFrame frame, Object cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+        @Specialization(guards = "isString(wName)")
+        Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary nslib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary glib,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary nslib,
                         @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
+                        @Cached CastToJavaStringNode castStr,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
             // Determine the proper metatype to deal with this
+            String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
@@ -2195,7 +2198,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(globals, glib);
+                        String moduleName = getModuleNameFromGlobals(globals, nslib);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
@@ -2222,6 +2225,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return newType;
             } catch (PException e) {
                 throw e;
+            }
+        }
+
+        @Fallback
+        Object generic(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object name, Object bases, Object namespace, @SuppressWarnings("unused") Object kwds) {
+            if (!(bases instanceof PTuple)) {
+                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
+            } else if (namespace == PNone.NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
+            } else if (!(namespace instanceof PDict)) {
+                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 3, "dict", bases);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("type fallback reached incorrectly");
             }
         }
 
@@ -2295,6 +2311,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     } else {
                         pythonClass.setAttribute(key, value);
                     }
+                } else if (SpecialAttributeNames.__DOC__.equals(key)) {
+                    // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
+                    // forcibly encodes the string as UTF-8, and raises an error if that is not
+                    // possible.
+                    String doc = null;
+                    if (value instanceof String) {
+                        doc = (String) value;
+                    } else if (value instanceof PString) {
+                        doc = ((PString) value).getValue();
+                    }
+                    if (doc != null) {
+                        if (!canEncode(doc)) {
+                            throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
+                        }
+                    }
+                    pythonClass.setAttribute(key, value);
                 } else {
                     pythonClass.setAttribute(key, value);
                 }
@@ -2363,6 +2395,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             return pythonClass;
+        }
+
+        @TruffleBoundary
+        private static boolean canEncode(String doc) {
+            return StandardCharsets.UTF_8.newEncoder().canEncode(doc);
         }
 
         @TruffleBoundary
@@ -2659,26 +2696,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
-        protected PythonBuiltinClass getNotImplementedClass() {
-            return getCore().lookupType(PythonBuiltinClassType.PNotImplemented);
-        }
-
+        @SuppressWarnings("unused")
         @Specialization
         public PNotImplemented module(Object cls) {
-            if (cls != getNotImplementedClass()) {
-                throw raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, "NotImplementedType");
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = "ellipsis", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PEllipsis, isPublic = false)
+    @Builtin(name = "ellipsis", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PEllipsis, isPublic = false)
     @GenerateNodeFactory
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PEllipsis call(Object cls, Object args, Object kwds) {
+        public PEllipsis call(Object cls) {
             return PEllipsis.INSTANCE;
         }
     }
@@ -2686,17 +2716,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "NoneType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
-        protected PythonBuiltinClass getNoneClass() {
-            return getCore().lookupType(PythonBuiltinClassType.PNone);
-        }
-
+        @SuppressWarnings("unused")
         @Specialization
         public PNone module(Object cls) {
-            if (cls != getNoneClass()) {
-                throw raise(TypeError, ErrorMessages.IS_NOT_SUBTYPE_OF, "NoneType.__new__", cls, "NoneType");
-            } else {
-                return PNone.NONE;
-            }
+            return PNone.NONE;
         }
     }
 

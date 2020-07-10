@@ -41,8 +41,10 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PNodeWithContext extends Node {
@@ -58,5 +60,11 @@ public abstract class PNodeWithContext extends Node {
      */
     protected boolean isUncached() {
         return !isAdoptable();
+    }
+
+    @TruffleBoundary
+    public void printStack() {
+        // a convenience methods for debugging
+        ExceptionUtils.printPythonLikeStackTrace();
     }
 }

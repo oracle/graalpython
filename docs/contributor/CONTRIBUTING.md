@@ -167,16 +167,11 @@ implementation isn't quite ready, so you have to put the flags somewhere else to
 debug. You can see `-debug-java` and `--inspect` below, to debug in Java
 debugger or Chromium, respectively.
 
-    ENABLE_CPYTHON_TAGGED_UNITTESTS=true mx python3 \
-        graalpython/com.oracle.graal.python.test/src/graalpytest.py \
-        [-debug-java] [--inspect] \
-        graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py \
-        -k NAME-OF-CPYTHON-UNITTEST
+    mx python-run-cpython-unittest [-debug-java] [--inspect] NAME-OF-CPYTHON-UNITTEST
 
 A tag file can be regenerated with
 
-    mx python graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py \
-        --retag NAME-OF-CPYTHON-UNITTEST
+    mx python-retag-unittests NAME-OF-CPYTHON-UNITTEST
 
 There's also multiple other gates that may fail with changes. One of these is
 our *style* gate, which checks formatting rules and copyrights. To auto-fix most

@@ -362,4 +362,10 @@ public final class PException extends RuntimeException implements TruffleExcepti
     public PException getExceptionForReraise() {
         return pythonException.getExceptionForReraise(getTraceback());
     }
+
+    @TruffleBoundary
+    public void printStack() {
+        // a convenience methods for debugging
+        ExceptionUtils.printPythonLikeStackTrace(this);
+    }
 }

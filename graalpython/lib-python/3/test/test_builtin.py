@@ -27,6 +27,7 @@ from types import AsyncGeneratorType, FunctionType
 from operator import neg
 from test.support import (
     EnvironmentVarGuard, TESTFN, check_warnings, swap_attr, unlink,
+    impl_detail,
     maybe_get_event_loop_policy)
 from test.support.script_helper import assert_python_ok
 from unittest.mock import MagicMock, patch
@@ -370,6 +371,7 @@ class BuiltinTest(unittest.TestCase):
                 rv = ns['f']()
                 self.assertEqual(rv, tuple(expected))
 
+    @impl_detail("async support", graalvm=False)
     def test_compile_top_level_await(self):
         """Test whether code some top level await can be compiled.
 
@@ -421,6 +423,7 @@ class BuiltinTest(unittest.TestCase):
         finally:
             asyncio.set_event_loop_policy(policy)
 
+    @impl_detail("async support", graalvm=False)
     def test_compile_async_generator(self):
         """
         With the PyCF_ALLOW_TOP_LEVEL_AWAIT flag added in 3.8, we want to
