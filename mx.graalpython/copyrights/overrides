@@ -353,7 +353,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PIntegerSequenceIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PLongSequenceIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PRangeIterator.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PRangeReverseIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PSequenceIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PStringIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PZip.java,zippy.copyright
