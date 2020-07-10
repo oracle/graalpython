@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_comparison
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_datetime_datetime
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_decode
+*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_default
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_repr
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time_struct

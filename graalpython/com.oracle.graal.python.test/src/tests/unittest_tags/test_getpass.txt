@@ -1,2 +1,9 @@
+*graalpython.lib-python.3.test.test_getpass.GetpassGetuserTest.test_username_falls_back_to_pwd
+*graalpython.lib-python.3.test.test_getpass.GetpassGetuserTest.test_username_priorities_of_env_values
+*graalpython.lib-python.3.test.test_getpass.GetpassGetuserTest.test_username_takes_username_from_env
+*graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_flushes_stream_after_prompt
 *graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_raises_on_empty_input
 *graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_trims_trailing_newline
+*graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_uses_stderr_as_default
+*graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_uses_stdin_as_default_input
+*graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_uses_stdin_as_different_locale

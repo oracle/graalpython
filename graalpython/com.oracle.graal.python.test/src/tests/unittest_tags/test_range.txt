@@ -2,7 +2,10 @@
 *graalpython.lib-python.3.test.test_range.RangeTest.test_empty
 *graalpython.lib-python.3.test.test_range.RangeTest.test_invalid_invocation
 *graalpython.lib-python.3.test.test_range.RangeTest.test_issue11845
+*graalpython.lib-python.3.test.test_range.RangeTest.test_iterator_pickling
+*graalpython.lib-python.3.test.test_range.RangeTest.test_large_exhausted_iterator_pickling
 *graalpython.lib-python.3.test.test_range.RangeTest.test_odd_bug
+*graalpython.lib-python.3.test.test_range.RangeTest.test_pickling
 *graalpython.lib-python.3.test.test_range.RangeTest.test_range
 *graalpython.lib-python.3.test.test_range.RangeTest.test_range_iterators_invocation
 *graalpython.lib-python.3.test.test_range.RangeTest.test_repr

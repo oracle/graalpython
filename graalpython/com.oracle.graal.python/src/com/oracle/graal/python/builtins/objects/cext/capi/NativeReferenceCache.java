@@ -69,7 +69,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.IntValueProfile;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 public final class NativeReferenceCache implements TruffleObject {
@@ -118,7 +117,7 @@ public final class NativeReferenceCache implements TruffleObject {
             return pointerObject;
         }
 
-        @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(referenceLibrary, pointerObject, ref)"}, //
+        @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
                         rewriteOn = {CannotCastException.class, InvalidCacheEntry.class}, //
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
@@ -126,7 +125,7 @@ public final class NativeReferenceCache implements TruffleObject {
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
                         @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
                         @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
-                        @CachedLibrary("ref.ptrObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
+                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
                 // If this is stealing the reference, we need to fixup the managed reference count.
@@ -207,8 +206,8 @@ public final class NativeReferenceCache implements TruffleObject {
             return pointerObject;
         }
 
-        static boolean isSame(ReferenceLibrary referenceLibrary, Object pointerObject, NativeObjectReference cachedObjectRef) {
-            return referenceLibrary.isSame(cachedObjectRef.ptrObject, pointerObject);
+        static boolean isSame(InteropLibrary interoplibrary, Object pointerObject, NativeObjectReference cachedObjectRef) {
+            return interoplibrary.isIdentical(cachedObjectRef.ptrObject, pointerObject, interoplibrary);
         }
 
         static NativeObjectReference lookupNativeReference(PythonContext context, Object pointerObject, Object refCnt) {

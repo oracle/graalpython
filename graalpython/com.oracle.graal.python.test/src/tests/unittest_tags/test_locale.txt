@@ -43,6 +43,7 @@
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_getpreferredencoding
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_getsetlocale_issue1813
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_invalid_iterable_in_localetuple
+*graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_invalid_locale_format_in_localetuple
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_setlocale_category
 *graalpython.lib-python.3.test.test_locale.TestMiscellaneous.test_strcoll_3303
 *graalpython.lib-python.3.test.test_locale.TestNumberFormatting.test_format_deprecation

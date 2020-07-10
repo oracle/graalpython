@@ -74,6 +74,7 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
@@ -2024,19 +2025,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public int identityHashCode(
-                    @CachedLibrary("this") PythonObjectLibrary objectLib) {
-        if (objectLib.isHashable(this)) {
-            return Long.hashCode(objectLib.hash(this));
-        } else {
-            // everything in Python has an identity, but not everything provides a __hash__ method
-            return systemHashCode(this);
-        }
+    public int identityHashCode(@Cached BuiltinFunctions.IdExpressionNode idNode) {
+        return Long.hashCode(idNode.executeLong(0));
     }
 
     @TruffleBoundary
-    public static int systemHashCode(Object obj) {
-        return System.identityHashCode(obj);
+    public static int systemHashCode(Object value) {
+        return System.identityHashCode(value);
     }
 
     @ExportMessage

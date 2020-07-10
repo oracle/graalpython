@@ -167,7 +167,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public abstract class CExtNodes {
 
@@ -2710,12 +2709,12 @@ public abstract class CExtNodes {
          * native context, so we can be sure that the "nativeClassStableAssumption" (which is
          * per-context) is from the context in which this native object was created.
          */
-        @Specialization(guards = {"referenceLibrary.isSame(cachedObj, obj)", "memberName == cachedMemberName"}, //
+        @Specialization(guards = {"lib.isIdentical(cachedObj, obj, lib)", "memberName == cachedMemberName"}, //
                         limit = "1", //
                         assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
         public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") NativeMember memberName,
                         @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
-                        @CachedLibrary("cachedObj") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
+                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Cached("memberName") @SuppressWarnings("unused") NativeMember cachedMemberName,
                         @Cached("doSlowPath(obj, memberName)") Object result) {
             return result;
@@ -3158,12 +3157,12 @@ public abstract class CExtNodes {
         }
 
         @Specialization(limit = "3", //
-                        guards = {"isSame(referenceLibrary, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
+                        guards = {"isSame(lib, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
                         assumptions = "singleContextAssumption()", //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper resolveObjectCached(@SuppressWarnings("unused") Object pointerObject,
                         @Cached("pointerObject") @SuppressWarnings("unused") Object cachedPointerObject,
-                        @CachedLibrary("cachedPointerObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib,
                         @Cached("resolveHandleUncached(pointerObject)") PythonNativeWrapper cachedValue,
                         @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
             associationValidAssumption.check();
@@ -3195,8 +3194,8 @@ public abstract class CExtNodes {
             return null;
         }
 
-        static boolean isSame(ReferenceLibrary referenceLibrary, Object left, Object right) {
-            return referenceLibrary.isSame(left, right);
+        static boolean isSame(InteropLibrary lib, Object left, Object right) {
+            return lib.isIdentical(left, right, lib);
         }
 
         static Assumption singleContextAssumption() {

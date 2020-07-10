@@ -47,6 +47,7 @@
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_is_safe
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_is_unsafe
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_safe
+*graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_time
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_unknown
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid3
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid4

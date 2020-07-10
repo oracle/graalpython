@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_fileno
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_get_key
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_get_map
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_modify
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_modify_unregister
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_register
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_unregister
@@ -91,6 +92,7 @@
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_fileno
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_get_key
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_get_map
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_modify
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_modify_unregister
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_register
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_unregister

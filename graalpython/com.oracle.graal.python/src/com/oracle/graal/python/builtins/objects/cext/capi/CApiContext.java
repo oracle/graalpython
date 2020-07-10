@@ -89,7 +89,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public final class CApiContext extends CExtContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
@@ -119,7 +118,7 @@ public final class CApiContext extends CExtContext {
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
 
     /** Just used for integrity checks if assertions are enabled. */
-    @CompilationFinal private ReferenceLibrary referenceLibrary;
+    @CompilationFinal private InteropLibrary interoplibrary;
 
     /**
      * Required to emulate PyLongObject's ABI; number of bits per digit (equal to
@@ -523,14 +522,14 @@ public final class CApiContext extends CExtContext {
 
     /**
      * Checks if the given {@link NativeObjectReference} objects point to the same native object.
-     * This method lazily initializes {@link #referenceLibrary} as a side-effect.
+     * This method lazily initializes {@link #interoplibrary} as a side-effect.
      */
     private boolean isReferenceToSameNativeObject(NativeObjectReference old, NativeObjectReference ref) {
-        if (referenceLibrary == null) {
+        if (interoplibrary == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            referenceLibrary = ReferenceLibrary.getFactory().getUncached(old.ptrObject);
+            interoplibrary = InteropLibrary.getFactory().getUncached();
         }
-        return referenceLibrary.isSame(old.ptrObject, ref.ptrObject);
+        return interoplibrary.isIdentical(old.ptrObject, ref.ptrObject, interoplibrary);
     }
 
     static int idFromRefCnt(long refCnt) {

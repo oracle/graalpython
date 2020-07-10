@@ -1,3 +1,4 @@
 *graalpython.lib-python.3.test.test_utf8_mode.UTF8ModeTests.test_filesystemencoding
 *graalpython.lib-python.3.test.test_utf8_mode.UTF8ModeTests.test_io
 *graalpython.lib-python.3.test.test_utf8_mode.UTF8ModeTests.test_io_encoding
+*graalpython.lib-python.3.test.test_utf8_mode.UTF8ModeTests.test_pyio_encoding
