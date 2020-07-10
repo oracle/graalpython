@@ -996,20 +996,26 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached ConditionProfile isInheritedOnlyProfile,
                         @Cached ConditionProfile noValueProfile,
                         @Cached CallNode callNode,
-                        @Cached IsBuiltinClassProfile isAttrErrorProfile) {
+                        @Cached IsBuiltinClassProfile isAttrErrorProfile1,
+                        @Cached IsBuiltinClassProfile isAttrErrorProfile2) {
             if (isInheritedOnlyProfile.profile(inheritedOnly)) {
                 return lookup.execute(receiver, name);
             } else {
                 Object getAttrFunc = lookup.execute(receiver, __GETATTRIBUTE__);
                 try {
-                    return callNode.execute(getAttrFunc, receiver, name);
-                } catch (PException pe) {
-                    pe.expect(AttributeError, isAttrErrorProfile);
-                    getAttrFunc = lookup.execute(receiver, __GETATTR__);
-                    if (noValueProfile.profile(getAttrFunc == PNone.NO_VALUE)) {
-                        return PNone.NO_VALUE;
+                    try {
+                        return callNode.execute(getAttrFunc, receiver, name);
+                    } catch (PException pe) {
+                        pe.expect(AttributeError, isAttrErrorProfile1);
+                        getAttrFunc = lookup.execute(receiver, __GETATTR__);
+                        if (noValueProfile.profile(getAttrFunc == PNone.NO_VALUE)) {
+                            return PNone.NO_VALUE;
+                        }
+                        return callNode.execute(getAttrFunc, receiver, name);
                     }
-                    return callNode.execute(getAttrFunc, receiver, name);
+                } catch (PException pe) {
+                    pe.expect(AttributeError, isAttrErrorProfile2);
+                    return PNone.NO_VALUE;
                 }
             }
         }
