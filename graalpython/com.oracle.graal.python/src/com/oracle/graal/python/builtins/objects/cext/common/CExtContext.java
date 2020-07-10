@@ -51,10 +51,8 @@ public abstract class CExtContext {
     private static final int METH_KEYWORDS = 0x0002;
     private static final int METH_NOARGS = 0x0004;
     private static final int METH_O = 0x0008;
-    @SuppressWarnings("unused")
-    private static final int METH_CLASS = 0x0010;
-    @SuppressWarnings("unused")
-    private static final int METH_STATIC = 0x0020;
+    @SuppressWarnings("unused") private static final int METH_CLASS = 0x0010;
+    @SuppressWarnings("unused") private static final int METH_STATIC = 0x0020;
     private static final int METH_FASTCALL = 0x0080;
 
     private final PythonContext context;
