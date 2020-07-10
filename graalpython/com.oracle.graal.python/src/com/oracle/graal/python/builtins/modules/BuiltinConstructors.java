@@ -1756,11 +1756,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private void checkExcessArgs(Object type, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length != 0 || kwargs.length != 0) {
-                if (profileInit == null) {
+                if (lookupNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     lookupNew = insert(LookupAttributeInMRONode.create(__NEW__));
+                }
+                if (lookupInit == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     lookupInit = insert(LookupAttributeInMRONode.create(__INIT__));
+                }
+                if (profileNew == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     profileNew = ValueProfile.createIdentityProfile();
+                }
+                if (profileInit == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     profileInit = ValueProfile.createIdentityProfile();
                 }
                 if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, ObjectNode.class)) {
