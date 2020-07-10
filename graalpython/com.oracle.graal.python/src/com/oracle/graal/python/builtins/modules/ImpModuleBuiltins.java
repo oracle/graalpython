@@ -266,8 +266,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static final String CAPI_LOAD_ERROR = "Could not load C API from %s.\n";
-
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
             PythonContext context = getContext();
@@ -286,10 +284,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     }
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
                 } catch (IOException | RuntimeException e) {
-                    LOGGER.severe(() -> String.format(CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
+                    LOGGER.severe(() -> String.format(ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
                     LOGGER.severe(() -> "Original error was: " + e);
                     e.printStackTrace();
-                    throw raise(PythonErrorType.ImportError, CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                    throw raise(PythonErrorType.ImportError, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
