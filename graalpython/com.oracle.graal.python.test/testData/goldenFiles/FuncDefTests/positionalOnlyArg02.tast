@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'positionalOnlyArg02'> SourceSection: [0,51]`def na
               ObjectLiteralNode SourceSection: [16,20]`None`
               ObjectLiteralNode SourceSection: [33,37]`None`
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

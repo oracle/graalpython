@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
             Block Nodes: 0
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'basicInFn05'> SourceSection: [0,39]`def fn():↵  
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

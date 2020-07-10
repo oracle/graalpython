@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
           FunctionDefinitionNode Name: make_named_tuple_class SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -167,7 +167,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                                           Arguments: None
                                           KwArguments: None
-                                          Documentation: StringLiteralNode: Empty
+                                          Documentation: None
                                           FreeVarSlots: __class__, , fields, , name, 
                                           ExecutionSlots:
                                             FreeVarsSlots: __class__, , fields, , name, 

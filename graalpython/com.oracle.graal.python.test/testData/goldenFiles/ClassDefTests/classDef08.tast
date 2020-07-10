@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                           FunctionDefinitionNode Name: fn1 SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
@@ -107,7 +107,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                           FunctionDefinitionNode Name: fn2 SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 

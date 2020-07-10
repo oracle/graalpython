@@ -17,7 +17,7 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
               KwDefaultExpressionNode SourceSection: None
                 Name: metaclass
                 Value: ObjectLiteralNode SourceSection: [50,54]`None`
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

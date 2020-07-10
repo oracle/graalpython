@@ -68,7 +68,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                           FunctionDefinitionNode Name: f SourceSection: None
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 

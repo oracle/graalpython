@@ -21,6 +21,7 @@
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_readline_binary_mode
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_readline_buffering
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_readline_os_chmod_raises_OSError
+*graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_stdin_binary_mode
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_zero_byte_files
 *graalpython.lib-python.3.test.test_fileinput.MiscTest.test_all
 *graalpython.lib-python.3.test.test_fileinput.Test_fileinput_close.test_state_is_None

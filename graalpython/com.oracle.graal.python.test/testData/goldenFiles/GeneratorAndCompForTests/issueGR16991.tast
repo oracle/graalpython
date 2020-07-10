@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
             Block Nodes: 1
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

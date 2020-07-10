@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'expression01'> SourceSection: [0,13]`def f(): pass
           FunctionDefinitionNode Name: f SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

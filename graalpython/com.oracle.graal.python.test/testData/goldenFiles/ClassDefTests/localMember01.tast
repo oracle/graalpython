@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                         FunctionDefinitionNode Name: f SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None

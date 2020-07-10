@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -206,7 +206,8 @@ public abstract class FunctionNodes {
     @GenerateUncached
     public abstract static class GetSignatureNode extends PNodeWithContext {
         private static Signature doFunctionInternal(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
-            return getFunctionCodeNode.execute(function).getSignature();
+            PCode code = getFunctionCodeNode.execute(function);
+            return code.getSignature();
         }
 
         public abstract Signature execute(Object function);

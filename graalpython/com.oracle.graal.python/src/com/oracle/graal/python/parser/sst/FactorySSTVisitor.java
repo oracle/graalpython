@@ -131,8 +131,6 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
-    private static final ExpressionNode EMPTY_DOC = new com.oracle.graal.python.nodes.literal.StringLiteralNode("");
-
     protected final ScopeEnvironment scopeEnvironment;
     protected final Source source;
     protected final NodeFactory nodeFactory;
@@ -810,10 +808,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
 
         body = functionBody;
-        if (doc == null) {
-            doc = EMPTY_DOC;
-        }
-
         ExpressionNode funcDef;
         ExpressionNode returnTarget;
 

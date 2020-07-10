@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'functionDefCPT07'> SourceSection: [0,33]`def f(foo
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

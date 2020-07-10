@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
@@ -77,7 +78,7 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
     }
 
     protected static boolean isHiddenKey(Object key) {
-        return key instanceof HiddenKey;
+        return key instanceof HiddenPythonKey || key instanceof HiddenKey;
     }
 
     @Override

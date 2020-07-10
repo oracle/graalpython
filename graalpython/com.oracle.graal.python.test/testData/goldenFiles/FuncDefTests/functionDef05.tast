@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'functionDef05'> SourceSection: [0,34]`def foo(par1
               IntegerLiteralNode SourceSection: [15,17]`10`
                 Value: 10
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

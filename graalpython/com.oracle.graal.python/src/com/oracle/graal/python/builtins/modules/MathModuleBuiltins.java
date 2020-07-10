@@ -129,7 +129,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double doPI(PInt value) {
-            return count(value.doubleValue());
+            return count(value.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization(guards = "!isNumber(value)", limit = "1")
@@ -175,6 +175,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Override
         public double doPI(PInt value) {
+            // Tests require that OverflowError is raised when the value does not fit into double
+            // but we don't actually need the double value, so this is called for side-effect only:
+            value.doubleValueWithOverflow(getRaiseNode());
             BigInteger bValue = value.getValue();
             checkMathDomainError(bValue.compareTo(BigInteger.ZERO) < 0);
             return sqrtBigNumber(bValue).doubleValue();

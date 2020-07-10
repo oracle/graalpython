@@ -107,7 +107,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public abstract class TypeNodes {
 
@@ -607,10 +606,10 @@ public abstract class TypeNodes {
             return left.getType() == right;
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @CachedLibrary("left") ReferenceLibrary referenceLibrary) {
-            return referenceLibrary.isSame(left, right);
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return lib.isIdentical(left, right, lib);
         }
 
         @Fallback
@@ -639,12 +638,12 @@ public abstract class TypeNodes {
             return cachedClassType;
         }
 
-        @Specialization(guards = "isPythonAbstractClass(object)", limit = "1", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
+        @Specialization(guards = "isPythonAbstractClass(object)", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
         static Object doPythonAbstractClass(Object object,
                         @Cached("weak(object)") WeakReference<PythonAbstractClass> cachedObjectRef,
-                        @CachedLibrary("object") ReferenceLibrary referenceLibrary) throws NotSameTypeException {
+                        @CachedLibrary(limit = "2") InteropLibrary lib) throws NotSameTypeException {
             Object cachedObject = cachedObjectRef.get();
-            if (referenceLibrary.isSame(object, cachedObject)) {
+            if (lib.isIdentical(object, cachedObject, lib)) {
                 return cachedObject;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();

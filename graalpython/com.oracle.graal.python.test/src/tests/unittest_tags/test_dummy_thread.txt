@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_dummy_thread.LockTests.test_LockType_context_manager
+*graalpython.lib-python.3.test.test_dummy_thread.LockTests.test_acquire_timeout
 *graalpython.lib-python.3.test.test_dummy_thread.LockTests.test_cond_acquire_fail
 *graalpython.lib-python.3.test.test_dummy_thread.LockTests.test_cond_acquire_success
 *graalpython.lib-python.3.test.test_dummy_thread.LockTests.test_improper_release
@@ -17,6 +18,7 @@
 *graalpython.lib-python.3.test.test_dummy_thread.MiscTests.test_stack_size_None
 *graalpython.lib-python.3.test.test_dummy_thread.MiscTests.test_stack_size_not_None
 *graalpython.lib-python.3.test.test_dummy_thread.RLockTests.test_multiple_acquire
+*graalpython.lib-python.3.test.test_dummy_thread.ThreadTests.test_RaiseException
 *graalpython.lib-python.3.test.test_dummy_thread.ThreadTests.test_SystemExit
 *graalpython.lib-python.3.test.test_dummy_thread.ThreadTests.test_arg_passing
 *graalpython.lib-python.3.test.test_dummy_thread.ThreadTests.test_args_not_tuple

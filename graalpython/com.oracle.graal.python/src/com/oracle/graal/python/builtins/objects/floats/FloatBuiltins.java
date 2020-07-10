@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -58,9 +60,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.prepareSpecForFloat;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.ByteOrder;
 import java.util.List;
@@ -81,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -93,8 +98,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
+import com.oracle.graal.python.runtime.formatting.FormattingUtils;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
-import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -133,7 +138,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', InternalFormat.Spec.NONE, false, InternalFormat.Spec.UNSPECIFIED, false, 0, 'r');
             FloatFormatter f = new FloatFormatter(getCore(), spec);
             f.setMinFracDigits(1);
-            return f.format(self).getResult();
+            return doFormat(self, f);
         }
 
         public static StrNode create() {
@@ -148,6 +153,11 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached FromNativeSubclassNode getFloat) {
             return PFloat.doubleToString(getFloat.execute(frame, object));
         }
+
+        @TruffleBoundary
+        private static String doFormat(double d, FloatFormatter f) {
+            return f.format(d).getResult();
+        }
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
@@ -158,64 +168,27 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(FormattingUtils.class)
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "shouldBeAsStr(formatString)")
+        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
+                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+            return strCall.executeObject(frame, self);
+        }
+
+        @Specialization(guards = "!shouldBeAsStr(formatString)")
         @TruffleBoundary
-        String format(double self, String formatString,
-                        @Cached("create()") StrNode strNode,
-                        @Cached("createBinaryProfile()") ConditionProfile strProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile unknownProfile) {
-            if (strProfile.profile(shouldBeAsStr(formatString))) {
-                return strNode.str(self);
-            }
+        String format(double self, String formatString) {
             InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
-            FloatFormatter formatter = prepareFormatter(spec);
-            if (unknownProfile.profile(formatter == null)) {
-                // The type code was not recognised in prepareFormatter
-                throw Formatter.unknownFormat(getCore(), spec.type, "float");
-            }
+            FloatFormatter formatter = new FloatFormatter(getCore(), prepareSpecForFloat(spec, getCore(), "float"));
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
-        private FloatFormatter prepareFormatter(InternalFormat.Spec spec) {
-            // Slight differences between format types
-            switch (spec.type) {
-                case 'n':
-                case InternalFormat.Spec.NONE:
-                case 'e':
-                case 'f':
-                case 'g':
-                case 'E':
-                case 'F':
-                case 'G':
-                case '%':
-                    if (spec.type == 'n' && spec.grouping) {
-                        throw Formatter.notAllowed(getCore(), "Grouping", "float", spec.type);
-                    }
-                    // Check for disallowed parts of the specification
-                    if (spec.alternate) {
-                        throw Formatter.alternateFormNotAllowed(getCore(), "float");
-                    }
-                    // spec may be incomplete. The defaults are those commonly used for numeric
-                    // formats.
-                    InternalFormat.Spec usedSpec = spec.withDefaults(InternalFormat.Spec.NUMERIC);
-                    return new FloatFormatter(getCore(), usedSpec);
-                default:
-                    return null;
-            }
-        }
-
-        private static boolean shouldBeAsStr(String spec) {
-            if (spec.isEmpty()) {
-                return true;
-            }
-            if (spec.length() == 1) {
-                char c = spec.charAt(0);
-                return ((c >= '0' && c <= '9') || c == ' ' || c == '_' || c == '+' || c == '-' || c == '<' || c == '>' || c == '=' || c == '^');
-            }
-            return false;
+        @Fallback
+        String other(@SuppressWarnings("unused") Object self, Object formatString) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", formatString);
         }
     }
 
@@ -268,13 +241,13 @@ public final class FloatBuiltins extends PythonBuiltins {
             try {
                 return factory().createInt(fromDouble(self));
             } catch (NumberFormatException e) {
-                throw raise(ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
+                throw raise(Double.isNaN(self) ? ValueError : OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
             }
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static BigInteger fromDouble(double self) {
-            return BigDecimal.valueOf(self).toBigInteger();
+            return new BigDecimal(self, MathContext.UNLIMITED).toBigInteger();
         }
     }
 
@@ -323,7 +296,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDPi(double left, PInt right) {
-            return left + right.doubleValue();
+            return left + right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -372,7 +345,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDPi(double left, PInt right) {
-            return left - right.doubleValue();
+            return left - right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -382,7 +355,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doPiD(PInt left, double right) {
-            return left.doubleValue() - right;
+            return left.doubleValueWithOverflow(getRaiseNode()) - right;
         }
 
         @SuppressWarnings("unused")
@@ -409,7 +382,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDP(double left, PInt right) {
-            return left * right.doubleValue();
+            return left * right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -439,7 +412,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(frame, left);
             if (leftPrimitive != null) {
-                return leftPrimitive * right.doubleValue();
+                return leftPrimitive * right.doubleValueWithOverflow(getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -467,7 +440,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doDPi(double left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doOperation(left, right.doubleValue(), negativeRaise);
+            return doOperation(left, right.doubleValueWithOverflow(getRaiseNode()), negativeRaise);
         }
 
         /**
@@ -546,14 +519,14 @@ public final class FloatBuiltins extends PythonBuiltins {
         double doDPi(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
                         @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
-            return doDD(frame, left.doubleValue(), right, none, callPow, negativeRaise);
+            return doDD(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
         }
 
         @Specialization(replaces = "doDPi")
         Object doDPiToComplex(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
                         @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doDDToComplex(frame, left.doubleValue(), right, none, callPow, negativeRaise);
+            return doDDToComplex(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
         }
 
         @Specialization
@@ -598,7 +571,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doDL(double left, PInt right) {
             raiseDivisionByZero(right.isZero());
-            return Math.floor(left / right.doubleValue());
+            return Math.floor(left / right.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization
@@ -616,7 +589,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doPiD(PInt left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return Math.floor(left.doubleValue() / right);
+            return Math.floor(left.doubleValueWithOverflow(getRaiseNode()) / right);
         }
 
         @SuppressWarnings("unused")
@@ -860,7 +833,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double doDPi(double left, PInt right) {
-            return left / right.doubleValue();
+            return left / right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
@@ -870,7 +843,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         double div(PInt left, double right) {
-            return left.doubleValue() / right;
+            return left.doubleValueWithOverflow(getRaiseNode()) / right;
         }
 
         @Specialization
@@ -964,7 +937,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqDbPI(double a, PInt b) {
-            return a == b.doubleValue();
+            return Double.isFinite(a) && a == b.doubleValue();
         }
 
         @Specialization
@@ -982,7 +955,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
                         @Cached FromNativeSubclassNode getFloat) {
-            return getFloat.execute(frame, left) == right.doubleValue();
+            return eqDbPI(getFloat.execute(frame, left), right);
         }
 
         @Fallback
@@ -1008,7 +981,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean neDbPI(double a, PInt b) {
-            return a != b.doubleValue();
+            return !(Double.isFinite(a) && a == b.doubleValue());
         }
 
         @Specialization
@@ -1026,7 +999,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
                         @Cached FromNativeSubclassNode getFloat) {
-            return getFloat.execute(frame, left) != right.doubleValue();
+            return neDbPI(getFloat.execute(frame, left), right);
         }
 
         @Fallback

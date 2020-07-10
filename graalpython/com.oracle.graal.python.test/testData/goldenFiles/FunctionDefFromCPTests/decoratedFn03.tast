@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
             FunctionDefinitionNode Name: f SourceSection: None
               Arguments: None
               KwArguments: None
-              Documentation: StringLiteralNode: Empty
+              Documentation: None
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None

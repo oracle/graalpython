@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
           FunctionDefinitionNode Name: b_func SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -51,7 +51,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                           Block Nodes: 1
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: Y, , exec_gen, 
                           ExecutionSlots:
                             FreeVarsSlots: Y, , exec_gen, 
@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                       FunctionDefinitionNode Name: doit SourceSection: None
                                         Arguments: None
                                         KwArguments: None
-                                        Documentation: StringLiteralNode: Empty
+                                        Documentation: None
                                         FreeVarSlots: exec_gen, 
                                         ExecutionSlots:
                                           FreeVarsSlots: exec_gen, 

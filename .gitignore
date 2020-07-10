@@ -21,6 +21,7 @@ GRAALPYTHON_UNIT_TESTS.dist
 mx.graalpython/eclipse-launches
 asv
 *.json
+!**/resources/*.json
 language
 *.bc
 *.iml

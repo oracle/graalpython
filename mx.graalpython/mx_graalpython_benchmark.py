@@ -301,7 +301,7 @@ class GraalPythonVm(GuestVm):
 
         # Otherwise, we're running from the source tree
         truffle_options = [
-            # '-Dgraal.TruffleCompilationExceptionsAreFatal=true'
+            # "-Dpolyglot.engine.CompilationExceptionsAreFatal=true"
         ]
 
         dists = ["GRAALPYTHON", "TRUFFLE_NFI", "GRAALPYTHON-LAUNCHER"]

@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec_redirected
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter_pickle
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_hex
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_id
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_isinstance
@@ -31,6 +32,16 @@
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty_non_ascii
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty_non_ascii_unicode_errors
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint_with_args_and_keywords
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_reset
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_set
 *graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint_with_passthru_error
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_good_path_builtin
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_good_path_empty_string
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_good_path_noop_0
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_good_path_other
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_ignored_when_hook_is_set
+*graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_unimportable
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_basic
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_inputtypes

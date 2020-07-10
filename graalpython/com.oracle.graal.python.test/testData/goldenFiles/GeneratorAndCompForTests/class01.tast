@@ -59,7 +59,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                             Block Nodes: 2
                             Arguments: None
                             KwArguments: None
-                            Documentation: StringLiteralNode: Empty
+                            Documentation: None
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 

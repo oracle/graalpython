@@ -58,9 +58,9 @@ public class InternalFormat {
 
     /**
      * A class that provides the base for implementations of type-specific formatting. In a limited
-     * way, it acts like a StringBuilder to which text and one or more numbers may be appended,
-     * formatted according to the format specifier supplied at construction. These are ephemeral
-     * objects that are not, on their own, thread safe.
+     * way, it acts like a StringFormattingBuffer to which text and one or more numbers may be
+     * appended, formatted according to the format specifier supplied at construction. These are
+     * ephemeral objects that are not, on their own, thread safe.
      */
     public static class Formatter implements Appendable {
         final ParserErrorCallback errors;
@@ -68,7 +68,7 @@ public class InternalFormat {
         /** The specification according to which we format any number supplied to the method. */
         protected final Spec spec;
         /** The (partial) result. */
-        protected StringBuilder result;
+        protected FormattingBuffer result;
 
         /**
          * Signals the client's intention to make a PyBytes (or other byte-like) interpretation of
@@ -94,7 +94,7 @@ public class InternalFormat {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        protected Formatter(ParserErrorCallback errors, StringBuilder result, Spec spec) {
+        protected Formatter(ParserErrorCallback errors, FormattingBuffer result, Spec spec) {
             this.errors = errors;
             this.spec = spec;
             this.result = result;
@@ -109,7 +109,7 @@ public class InternalFormat {
          * @param width of buffer initially
          */
         public Formatter(PythonCore core, Spec spec, int width) {
-            this(core, new StringBuilder(width), spec);
+            this(core, new FormattingBuffer.StringFormattingBuffer(width), spec);
         }
 
         /**
@@ -223,7 +223,7 @@ public class InternalFormat {
             if (result == null) {
                 return ("[]");
             } else {
-                StringBuilder buf = new StringBuilder(result.length() + 20);
+                FormattingBuffer.StringFormattingBuffer buf = new FormattingBuffer.StringFormattingBuffer(result.length() + 20);
                 buf.append(result);
                 try {
                     int p = start;
@@ -750,7 +750,7 @@ public class InternalFormat {
          */
         @Override
         public String toString() {
-            StringBuilder buf = new StringBuilder();
+            FormattingBuffer.StringFormattingBuffer buf = new FormattingBuffer.StringFormattingBuffer();
             if (specified(fill)) {
                 buf.append(fill);
             }

@@ -68,7 +68,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         FunctionDefinitionNode Name: makepath SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -1628,7 +1628,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         FunctionDefinitionNode Name: _getuserbase SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -1690,7 +1690,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       FunctionDefinitionNode Name: joinuser SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: None
                         ExecutionSlots:
                           FreeVarsSlots: None
@@ -1908,7 +1908,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         FunctionDefinitionNode Name: _get_path SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -3004,7 +3004,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         FunctionDefinitionNode Name: sethelper SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -3070,7 +3070,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       FunctionDefinitionNode Name: register_readline SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: None
                         ExecutionSlots:
                           FreeVarsSlots: None
@@ -3299,7 +3299,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         FunctionDefinitionNode Name: venv SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -4464,7 +4464,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         FunctionDefinitionNode Name: _script SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None

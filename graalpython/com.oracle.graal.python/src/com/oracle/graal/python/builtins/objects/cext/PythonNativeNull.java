@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 /**
  * A simple wrapper around native {@code NULL}.
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
-@ExportLibrary(ReferenceLibrary.class)
 public class PythonNativeNull implements TruffleObject {
     private Object ptr;
 
@@ -96,8 +96,21 @@ public class PythonNativeNull implements TruffleObject {
     }
 
     @ExportMessage(limit = "1")
-    boolean isSame(Object other,
-                    @CachedLibrary("this.getPtr()") ReferenceLibrary delegateLib) {
-        return delegateLib.isSame(ptr, other);
+    int identityHashCode(@CachedLibrary("this.getPtr()") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.identityHashCode(ptr);
+    }
+
+    @ExportMessage(limit = "1")
+    boolean isIdentical(Object other, InteropLibrary otherLib,
+                    @CachedLibrary("this.getPtr()") InteropLibrary lib) {
+        return lib.isIdentical(ptr, other, otherLib);
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    TriState isIdenticalOrUndefined(Object other) {
+        String msg = "cannot delegate isIdenticalOrUndefined for null properly";
+        CompilerDirectives.bailout(msg);
+        throw new AssertionError(msg);
     }
 }

@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'funcDoc03'> SourceSection: [0,23]`def fn(): f'1234
           FunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

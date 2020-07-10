@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -162,7 +163,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -171,6 +171,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -218,7 +219,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -384,7 +384,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PComplex complexFromLongLong(Object cls, PInt real, PInt imaginary) {
-            return createComplex(cls, real.doubleValue(), imaginary.doubleValue());
+            return createComplex(cls, real.doubleValueWithOverflow(getRaiseNode()), imaginary.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization
@@ -409,7 +409,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(imag)")
         PComplex complexFromLong(Object cls, PInt real, @SuppressWarnings("unused") PNone imag) {
-            return createComplex(cls, real.doubleValue(), 0);
+            return createComplex(cls, real.doubleValueWithOverflow(getRaiseNode()), 0);
         }
 
         @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"}, limit = "1")
@@ -433,7 +433,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PComplex complexFromPIntComplex(Object cls, PInt one, PComplex two) {
-            return createComplex(cls, one.doubleValue() - two.getImag(), two.getReal());
+            return createComplex(cls, one.doubleValueWithOverflow(getRaiseNode()) - two.getImag(), two.getReal());
         }
 
         @Specialization
@@ -475,12 +475,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PComplex value = getComplexNumberFromObject(frame, one, lib);
             if (value == null) {
                 if (lib.canBeJavaDouble(one)) {
-                    return createComplex(cls, lib.asJavaDouble(one), two.doubleValue());
+                    return createComplex(cls, lib.asJavaDouble(one), two.doubleValueWithOverflow(getRaiseNode()));
                 } else {
                     throw raiseFirstArgError(one);
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValue());
+            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization(guards = "!isString(one)", limit = "1")
@@ -856,16 +856,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "3")
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @CachedLibrary("sequence") PythonObjectLibrary lib,
-                        @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
+                        @Cached("create(__REVERSED__)") LookupSpecialMethodNode reversedNode,
                         @Cached("create()") CallUnaryMethodNode callReversedNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
-                        @Cached("create(__GETITEM__)") LookupAttributeInMRONode getItemNode,
+                        @Cached("create(__GETITEM__)") LookupSpecialMethodNode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile noReversedProfile,
                         @Cached("createBinaryProfile()") ConditionProfile noGetItemProfile) {
             Object sequenceKlass = lib.getLazyPythonClass(sequence);
-            Object reversed = reversedNode.execute(sequenceKlass);
+            Object reversed = reversedNode.execute(frame, sequenceKlass, sequence);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
-                Object getItem = getItemNode.execute(sequenceKlass);
+                Object getItem = getItemNode.execute(frame, sequenceKlass, sequence);
                 if (noGetItemProfile.profile(getItem == PNone.NO_VALUE)) {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
@@ -2337,7 +2337,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     } else {
                         // TODO: check for __weakref__
                         // TODO avoid if native slots are inherited
-                        HiddenKey hiddenSlotKey = new HiddenKey(slotName);
+                        HiddenPythonKey hiddenSlotKey = new HiddenPythonKey(slotName);
                         HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
                         pythonClass.setAttribute(slotName, slotDesc);
                     }

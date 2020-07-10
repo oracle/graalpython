@@ -75,7 +75,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -91,10 +90,9 @@ import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
+import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(PythonObjectLibrary.class)
-@ExportLibrary(ReferenceLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
@@ -228,9 +226,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
-        @Specialization(guards = "object == cachedObject.get()", limit = "1", assumptions = "singleContextAssumption")
+        @Specialization(guards = "object == cachedObject.get()", limit = "1", assumptions = "getSingleContextAssumption()")
         static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
-                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
                         @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
@@ -240,12 +237,11 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return cachedClass;
         }
 
-        @Specialization(guards = "isSame(referenceLibrary, cachedObject, object)", limit = "1", assumptions = "singleContextAssumption")
+        @Specialization(guards = "isSame(lib, cachedObject, object)", assumptions = "getSingleContextAssumption()")
         static Object getNativeClassCached(PythonAbstractNativeObject object,
-                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
                         @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass,
-                        @CachedLibrary("object.object") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
         }
@@ -274,10 +270,10 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return new WeakReference<>(object);
         }
 
-        static boolean isSame(ReferenceLibrary referenceLibrary, WeakReference<PythonAbstractNativeObject> cachedObjectRef, PythonAbstractNativeObject object) {
+        static boolean isSame(InteropLibrary lib, WeakReference<PythonAbstractNativeObject> cachedObjectRef, PythonAbstractNativeObject object) {
             PythonAbstractNativeObject cachedObject = cachedObjectRef.get();
             if (cachedObject != null) {
-                return referenceLibrary.isSame(cachedObject.object, object.object);
+                return lib.isIdentical(cachedObject.object, object.object, lib);
             }
             return false;
         }
@@ -289,19 +285,20 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
-    static class IsSame {
+    int identityHashCode(@CachedLibrary("this.object") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.identityHashCode(object);
+    }
 
-        @Specialization
-        static boolean doNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
-                        @CachedLibrary("receiver.object") ReferenceLibrary referenceLibrary) {
-            return referenceLibrary.isSame(receiver.object, other.object);
-        }
+    @ExportMessage
+    boolean isIdentical(Object other, InteropLibrary otherInterop,
+                    @CachedLibrary("this.object") InteropLibrary lib) {
+        return lib.isIdentical(object, other, otherInterop);
+    }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean doOther(PythonAbstractNativeObject receiver, Object other) {
-            return false;
-        }
+    @ExportMessage
+    TriState isIdenticalOrUndefined(Object other,
+                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+        return TriState.valueOf(lib.isIdentical(object, other, lib));
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")

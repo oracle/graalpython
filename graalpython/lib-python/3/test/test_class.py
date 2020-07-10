@@ -489,7 +489,6 @@ class ClassTests(unittest.TestCase):
 
         self.assertRaises(TypeError, hash, C2())
 
-    @support.impl_detail("StackOverflowError kills the test ", graalvm=False)
     def testSFBug532646(self):
         # Test for SF bug 532646
 

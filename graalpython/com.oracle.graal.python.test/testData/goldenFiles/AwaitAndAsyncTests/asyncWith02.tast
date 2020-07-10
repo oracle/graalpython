@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
           FunctionDefinitionNode Name: f SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

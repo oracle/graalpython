@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                   ListLiteralNode SourceSection: [60,62]`[]`
                     PythonObjectFactoryNodeGen SourceSection: None
                 KwArguments: None
-                Documentation: StringLiteralNode: Empty
+                Documentation: None
                 FreeVarSlots: None
                 ExecutionSlots:
                   FreeVarsSlots: None
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
           FunctionDefinitionNode Name: bla SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

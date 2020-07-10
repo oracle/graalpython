@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
           FunctionDefinitionNode Name: outer SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                         FunctionDefinitionNode Name: inner SourceSection: None
                           Arguments: None
                           KwArguments: None
-                          Documentation: StringLiteralNode: Empty
+                          Documentation: None
                           FreeVarSlots: x, 
                           ExecutionSlots:
                             FreeVarsSlots: x, 

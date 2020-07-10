@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
         FunctionDefinitionNode Name: outer SourceSection: None
           Arguments: None
           KwArguments: None
-          Documentation: StringLiteralNode: Empty
+          Documentation: None
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                       FunctionDefinitionNode Name: toInternal SourceSection: None
                         Arguments: None
                         KwArguments: None
-                        Documentation: StringLiteralNode: Empty
+                        Documentation: None
                         FreeVarSlots: var, 
                         ExecutionSlots:
                           FreeVarsSlots: var, 

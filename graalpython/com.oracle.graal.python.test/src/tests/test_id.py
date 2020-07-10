@@ -44,13 +44,6 @@ def test_small_int_id_is_constant():
     assert id(x) == id(y) == id(128)
 
 
-def test_string_id_is_constant():
-    assert id("str") == id("str")
-    x = "str"
-    y = "str"
-    assert id(x) == id(y) == id("str")
-
-
 def test_object_id_is_constant():
     x = object()
     xid = id(x)

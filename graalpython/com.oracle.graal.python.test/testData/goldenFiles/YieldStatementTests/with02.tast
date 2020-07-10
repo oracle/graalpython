@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
             Block Nodes: 2
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: Empty
+            Documentation: None
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

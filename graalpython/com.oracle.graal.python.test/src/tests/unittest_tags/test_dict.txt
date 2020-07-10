@@ -26,7 +26,9 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_init_use_after_free
 *graalpython.lib-python.3.test.test_dict.DictTest.test_instance_dict_getattr_str_subclass
 *graalpython.lib-python.3.test.test_dict.DictTest.test_invalid_keyword_arguments
+*graalpython.lib-python.3.test.test_dict.DictTest.test_itemiterator_pickling
 *graalpython.lib-python.3.test.test_dict.DictTest.test_items
+*graalpython.lib-python.3.test.test_dict.DictTest.test_iterator_pickling
 *graalpython.lib-python.3.test.test_dict.DictTest.test_keys
 *graalpython.lib-python.3.test.test_dict.DictTest.test_keys_contained
 *graalpython.lib-python.3.test.test_dict.DictTest.test_len
@@ -46,6 +48,9 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_reverse_iterator_for_empty_dict
 *graalpython.lib-python.3.test.test_dict.DictTest.test_reverse_iterator_for_shared_shared_dicts
 *graalpython.lib-python.3.test.test_dict.DictTest.test_reversed
+*graalpython.lib-python.3.test.test_dict.DictTest.test_reverseitemiterator_pickling
+*graalpython.lib-python.3.test.test_dict.DictTest.test_reverseiterator_pickling
+*graalpython.lib-python.3.test.test_dict.DictTest.test_reversevaluesiterator_pickling
 *graalpython.lib-python.3.test.test_dict.DictTest.test_setdefault
 *graalpython.lib-python.3.test.test_dict.DictTest.test_setitem_atomic_at_resize
 *graalpython.lib-python.3.test.test_dict.DictTest.test_splittable_del
@@ -60,6 +65,7 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_tuple_keyerror
 *graalpython.lib-python.3.test.test_dict.DictTest.test_update
 *graalpython.lib-python.3.test.test_dict.DictTest.test_values
+*graalpython.lib-python.3.test.test_dict.DictTest.test_valuesiterator_pickling
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_bool
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_constructor
 *graalpython.lib-python.3.test.test_dict.GeneralMappingTests.test_get
