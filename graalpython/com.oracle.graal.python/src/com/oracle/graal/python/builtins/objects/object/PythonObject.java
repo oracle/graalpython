@@ -33,7 +33,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -174,7 +175,15 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + TypeNodes.GetNameNode.doSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(this)) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        String className = "unknown";
+        if (storedPythonClass instanceof PythonManagedClass) {
+            className = ((PythonManagedClass) storedPythonClass).getName();
+        } else if (storedPythonClass instanceof PythonBuiltinClassType) {
+            className = ((PythonBuiltinClassType) storedPythonClass).getName();
+        } else if (PGuards.isNativeClass(storedPythonClass)) {
+            className = "native";
+        }
+        return "<" + className + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     @ExportMessage
