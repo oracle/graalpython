@@ -271,6 +271,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private void ensureCapiWasLoaded() {
             PythonContext context = getContext();
             if (!context.hasCApiContext()) {
+                if (!context.getEnv().isNativeAccessAllowed()) {
+                    throw raise(ImportError, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                }
+
                 Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 
