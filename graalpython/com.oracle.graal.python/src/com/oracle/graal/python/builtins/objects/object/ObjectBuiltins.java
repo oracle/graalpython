@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -213,22 +213,23 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached("createIdentityProfile()") ValueProfile profileNew) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = lib.getLazyPythonClass(self);
-                if (overridesBuiltinMethod(type, profileInit, lookupInit, InitNode.class)) {
+                if (overridesBuiltinMethod(type, profileInit, lookupInit, ObjectBuiltinsFactory.InitNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
-                if (!overridesBuiltinMethod(type, profileInit, lookupNew, BuiltinConstructors.ObjectNode.class)) {
+                if (!overridesBuiltinMethod(type, profileInit, lookupNew, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }
             return PNone.NONE;
         }
 
-        public static <T> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupAttributeInMRONode lookup, Class<T> builtinNodeClass) {
+        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupAttributeInMRONode lookup,
+                        Class<T> builtinNodeFactoryClass) {
             Object method = profile.profile(lookup.execute(type));
             if (method instanceof PBuiltinFunction) {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) method).getBuiltinNodeFactory();
-                return factory == null || !builtinNodeClass.isAssignableFrom(factory.getNodeClass());
+                return !builtinNodeFactoryClass.isInstance(factory);
             }
             return true;
         }

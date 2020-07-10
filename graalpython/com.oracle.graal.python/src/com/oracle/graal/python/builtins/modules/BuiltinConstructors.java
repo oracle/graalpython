@@ -146,6 +146,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -1772,10 +1773,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     profileInit = ValueProfile.createIdentityProfile();
                 }
-                if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, ObjectNode.class)) {
+                if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
                 }
-                if (!ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileInit, lookupInit, ObjectBuiltins.InitNode.class)) {
+                if (!ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileInit, lookupInit, ObjectBuiltinsFactory.InitNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }
