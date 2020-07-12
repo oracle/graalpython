@@ -70,8 +70,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
-import static com.oracle.graal.python.runtime.formatting.FormattingUtils.prepareSpecForFloat;
-import static com.oracle.graal.python.runtime.formatting.FormattingUtils.shouldBeAsStr;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateAndPrepareForFloat;
 
 import java.util.List;
 
@@ -84,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -94,7 +94,6 @@ import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
-import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -728,25 +727,9 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         private static String repr(PComplex self, PythonCore core) {
-            if (self.getReal() == 0 && Math.copySign(1.0, self.getReal()) == 1.0) {
-                // Real part is +0: just output the imaginary part and do not include parens
-                return format(self.getImag(), core) + 'j';
-            } else {
-                // real without '+' sign, but imaginary always with sign
-                return '(' + format(self.getReal(), core) + format(self.getImag(), '+', core) + "j)";
-            }
-        }
-
-        private static String format(double value, PythonCore core) {
-            return format(value, InternalFormat.Spec.NONE, core);
-        }
-
-        private static String format(double value, char sign, PythonCore core) {
-            // CPython uses "r" type, but also some internal flags that cause that integer values
-            // are printed without the decimal part, which is mostly what "g" does
-            InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', sign, false, InternalFormat.Spec.UNSPECIFIED, false, -1, 'g');
-            FloatFormatter f = new FloatFormatter(core, spec);
-            return f.format(value).getResult();
+            ComplexFormatter formatter = new ComplexFormatter(core, new Spec(-1, Spec.NONE));
+            formatter.format(self);
+            return formatter.pad().getResult();
         }
     }
 
@@ -759,16 +742,19 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
-        @Specialization
+
+        @Specialization(guards = "formatString.isEmpty()")
+        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
+                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+            return strCall.executeObject(frame, self);
+        }
+
+        @Specialization(guards = "!formatString.isEmpty()")
         @TruffleBoundary
-        String format(PComplex self, String formatString,
-                        @Cached("createBinaryProfile()") ConditionProfile strProfile) {
-            if (strProfile.profile(shouldBeAsStr(formatString))) {
-                return ReprNode.repr(self, getCore());
-            }
+        String format(PComplex self, String formatString) {
             InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
             validateSpec(spec);
-            ComplexFormatter formatter = new ComplexFormatter(getCore(), prepareSpecForFloat(spec, getCore(), "complex"));
+            ComplexFormatter formatter = new ComplexFormatter(getCore(), validateAndPrepareForFloat(spec, getCore(), "complex"));
             formatter.format(self);
             return formatter.pad().getResult();
         }
@@ -780,12 +766,12 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         private void validateSpec(Spec spec) {
             if (spec.getFill(' ') == '0') {
-                raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
+                throw raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
             }
 
             char align = spec.getAlign('>');
             if (align == '=') {
-                raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
+                throw raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
             }
         }
     }

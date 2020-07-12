@@ -84,6 +84,16 @@ def test_formatting():
     # because the object is considered as a mapping...
     assert " " % MyPseudoMapping() == " "
 
+    # Localized format still honors the sign specifier
+    assert format(1234.5, "+n").startswith("+")
+
+
+class MyComplex(complex):
+    def __repr__(self):
+        return 'wrong answer'
+    def __str__(self):
+        return '42'
+
 
 def test_complex_formatting():
     assert format(3+2j, ">20,.4f") == "      3.0000+2.0000j"
@@ -102,6 +112,8 @@ def test_complex_formatting():
     assert format(1+2j, "") == "(1+2j)"
     assert format(complex(1, float("NaN")), "") == "(1+nanj)"
     assert format(complex(1, float("Inf")), "") == "(1+infj)"
+    assert format(MyComplex(3j), "") == "42"
+    assert format(MyComplex(3j), " <5") == "3j   "
 
 
 class AnyRepr:
@@ -147,11 +159,29 @@ class FormattingErrorsTest(unittest.TestCase):
         self.assertRaises(ValueError, lambda: format(3+2j, "0=30,.4f"))
 
 
-class MyFloat(float):
-    def __str__(self):
-        return "__str__ overridden for float"
-
-
 def test_overridden_str():
+    class MyInt(int):
+        def __str__(self):
+            return '42'
+
+    class MyFloat(float):
+        def __str__(self):
+            return "__str__ overridden for float"
+
+    # floats w/o type specifier, but with other flags should produce
+    # something like __str__ but not actually call __str__. Only when
+    # the formatting string is empty it calls actual __str__.
     assert "{}".format(MyFloat(2)) == "__str__ overridden for float"
     assert "{0:10}".format(MyFloat(2)) == "       2.0"
+    assert format(MyFloat(2), "") == "__str__ overridden for float"
+    assert format(MyFloat(2), "5") == "  2.0"
+
+    assert format(10000.0, '_') == "10_000.0"
+    assert format(10000.0, '') == "10000.0"
+    # if precision is set use '%g' instead of the __str__ like formatting:
+    assert format(10000.0, "+,.3") == "+1e+04"
+
+    assert "{}".format(MyInt(2)) == "42"
+    assert "{0:10}".format(MyInt(2)) == "         2"
+    assert format(MyInt(2), "")  == "42"
+    assert format(MyInt(2), "5") == "    2"
