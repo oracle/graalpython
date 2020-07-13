@@ -863,6 +863,8 @@ class SourceLoader(_LoaderBasics):
         hash_based = False
         check_source = True
         try:
+            if __graalpython__.in_image_buildtime:
+                raise NotImplementedError
             bytecode_path = cache_from_source(source_path)
         except NotImplementedError:
             bytecode_path = None
