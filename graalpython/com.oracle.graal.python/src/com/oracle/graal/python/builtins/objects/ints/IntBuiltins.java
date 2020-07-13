@@ -233,12 +233,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         private Object makeInt(BigDecimal d) {
             try {
-                return d.intValueExact();
+                return intValueExact(d);
             } catch (ArithmeticException e) {
                 // does not fit int, so try long
             }
             try {
-                return d.longValueExact();
+                return longValueExact(d);
             } catch (ArithmeticException e) {
                 // does not fit long, try BigInteger
             }
@@ -248,6 +248,16 @@ public class IntBuiltins extends PythonBuiltins {
                 // has non-zero fractional part, which should not happen
                 throw new IllegalStateException();
             }
+        }
+
+        @TruffleBoundary
+        private static int intValueExact(BigDecimal d) {
+            return d.intValueExact();
+        }
+
+        @TruffleBoundary
+        private static long longValueExact(BigDecimal d) {
+            return d.longValueExact();
         }
 
         @TruffleBoundary

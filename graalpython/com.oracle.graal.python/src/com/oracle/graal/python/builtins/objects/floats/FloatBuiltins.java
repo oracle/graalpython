@@ -976,8 +976,13 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (w.bitLength() <= 48) {
                 return v - w.doubleValue();
             } else {
-                return new BigDecimal(v).compareTo(new BigDecimal(w.getValue()));
+                return compareUsingBigDecimal(v, w.getValue());
             }
+        }
+
+        @TruffleBoundary
+        private static double compareUsingBigDecimal(double v, BigInteger w) {
+            return new BigDecimal(v).compareTo(new BigDecimal(w));
         }
     }
 
