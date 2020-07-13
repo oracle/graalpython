@@ -704,7 +704,9 @@ public class IntBuiltins extends PythonBuiltins {
                     result = Math.multiplyExact(result, base);
                 }
                 exponent >>= 1;
-                base = Math.multiplyExact(base, base);
+                if (exponent != 0) {    // prevent overflow in last iteration
+                    base = Math.multiplyExact(base, base);
+                }
             }
             return result;
         }
@@ -1313,15 +1315,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doIPi(int left, PInt right) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
+        Object doIPi(int left, PInt right) {
+            return doHugeShift(PInt.longToBigInteger(left), right);
         }
 
         @Specialization
-        PInt doLPi(long left, PInt right) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
+        Object doLPi(long left, PInt right) {
+            return doHugeShift(PInt.longToBigInteger(left), right);
         }
 
         @Specialization
@@ -1331,15 +1331,20 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doPiL(PInt left, long right) {
+        Object doPiL(PInt left, long right) {
             raiseNegativeShiftCount(right < 0);
-            return factory().createInt(op(left.getValue(), (int) right));
+            int rightI = (int) right;
+            if (rightI == right) {
+                return factory().createInt(op(left.getValue(), rightI));
+            }
+            // right is >= 2**31, BigInteger's bitLength is at most 2**31-1
+            // therefore the result of shifting right is just the sign bit
+            return left.isNegative() ? -1 : 0;
         }
 
         @Specialization
-        PInt doPInt(PInt left, PInt right) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(left.getValue(), right.intValue()));
+        Object doPInt(PInt left, PInt right) {
+            return doHugeShift(left.getValue(), right);
         }
 
         private void raiseNegativeShiftCount(boolean cond) {
@@ -1354,8 +1359,19 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        private Object doHugeShift(BigInteger left, PInt right) {
+            raiseNegativeShiftCount(!right.isZeroOrPositive());
+            try {
+                return factory().createInt(op(left, right.intValueExact()));
+            } catch (ArithmeticException e) {
+                // right is >= 2**31, BigInteger's bitLength is at most 2**31-1
+                // therefore the result of shifting right is just the sign bit
+                return left.signum() < 0 ? -1 : 0;
+            }
+        }
+
         @TruffleBoundary
-        public static BigInteger op(BigInteger left, int right) {
+        private static BigInteger op(BigInteger left, int right) {
             return left.shiftRight(right);
         }
 
