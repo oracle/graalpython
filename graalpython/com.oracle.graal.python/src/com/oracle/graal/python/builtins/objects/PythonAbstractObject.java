@@ -43,6 +43,9 @@ package com.oracle.graal.python.builtins.objects;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -135,16 +138,16 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -191,6 +194,21 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         nativeWrapper = null;
     }
 
+    /**
+     * Checks if the object is a Mapping as described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>. Mappings
+     * are treated differently to other containers in some interop messages.
+     */
+    private static boolean isAbstractMapping(Object receiver, PythonObjectLibrary lib) {
+        return lib.isSequence(receiver) && lib.lookupAttribute(receiver, KEYS, true) != PNone.NO_VALUE && //
+                        lib.lookupAttribute(receiver, ITEMS, true) != PNone.NO_VALUE && //
+                        lib.lookupAttribute(receiver, VALUES, true) != PNone.NO_VALUE;
+    }
+
+    private boolean isAbstractMapping(PythonObjectLibrary thisLib) {
+        return isAbstractMapping(this, thisLib);
+    }
+
     @ExportMessage
     public void writeMember(String key, Object value,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode,
@@ -218,7 +236,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (dataModelLibrary.isMapping(this)) {
+            if (isAbstractMapping(dataModelLibrary)) {
                 setItemNode.execute(this, key, value);
             } else {
                 writeNode.execute(this, key, value);
@@ -277,7 +295,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public boolean hasArrayElements(
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
-        return dataModelLibrary.isSequence(this) && !dataModelLibrary.isMapping(this);
+        return dataModelLibrary.isSequence(this) && !isAbstractMapping(dataModelLibrary);
     }
 
     @ExportMessage
@@ -289,7 +307,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
-                if (dataModelLibrary.isMapping(this)) {
+                if (isAbstractMapping(dataModelLibrary)) {
                     throw UnsupportedMessageException.create();
                 } else {
                     // TODO(fa) refine exception handling
@@ -504,8 +522,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
         if (includeInternal) {
             // we use the internal flag to also return dictionary keys for mappings
-            if (dataModelLibrary.isMapping(this)) {
-                PList mapKeys = castToList.executeWithGlobalState(keysNode.executeObject(this, SpecialMethodNames.KEYS));
+            if (isAbstractMapping(dataModelLibrary)) {
+                PList mapKeys = castToList.executeWithGlobalState(keysNode.executeObject(this, KEYS));
                 int len = lenNode.execute(mapKeys);
                 for (int i = 0; i < len; i++) {
                     Object key = getItemNode.execute(mapKeys, i);
@@ -549,7 +567,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (dataModelLibrary.isMapping(this) && getDelItemNode.execute(this, __DELITEM__) != PNone.NO_VALUE) {
+            if (isAbstractMapping(dataModelLibrary) && getDelItemNode.execute(this, __DELITEM__) != PNone.NO_VALUE) {
                 delItemNode.execute(this, member);
             } else {
                 deleteAttributeNode.execute(this, member);
@@ -644,9 +662,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public boolean isSequenceType(
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                    @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
                     @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
-                    @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile lenProfile,
                     @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
         if (isLazyClass.profile(lib.isLazyPythonClass(this))) {
             if (lenProfile.profile(hasLenNode.execute(this, __LEN__) != PNone.NO_VALUE)) {
@@ -660,18 +678,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public boolean isMappingType(
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                    @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
                     @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
-                    @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
-                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile,
-                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
-                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
-                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
-        if (isSequenceType(lib, hasGetItemNode, hasLenNode, isLazyClass, lenProfile, getItemProfile)) {
-            return profile.profile(hasKeysNode.execute(this, SpecialMethodNames.KEYS) != PNone.NO_VALUE &&
-                            hasItemsNode.execute(this, SpecialMethodNames.ITEMS) != PNone.NO_VALUE &&
-                            hasValuesNode.execute(this, SpecialMethodNames.VALUES) != PNone.NO_VALUE);
+                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
+        if (isLazyClass.profile(lib.isLazyPythonClass(this))) {
+            return getItemProfile.profile(hasGetItemNode.execute(this, __GETITEM__) != PNone.NO_VALUE);
         }
         return false;
     }
@@ -1504,7 +1514,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
                 }
-            } else if (!isImmutable.execute(object) || dataModelLibrary.isMapping(object)) {
+            } else if (!isImmutable.execute(object) || isAbstractMapping(object, dataModelLibrary)) {
                 // If the member does not exist yet, it is insertable if this object is mutable,
                 // i.e., it's not a builtin object or it is a mapping.
                 info |= INSERTABLE;

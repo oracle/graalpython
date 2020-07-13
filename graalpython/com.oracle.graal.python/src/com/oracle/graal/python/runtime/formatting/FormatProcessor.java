@@ -6,7 +6,6 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -18,7 +17,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -232,8 +230,8 @@ abstract class FormatProcessor<T> {
         return PGuards.isString(args1) || isSubtype(lazyClass, PythonBuiltinClassType.PString);
     }
 
-    protected boolean isMapping(Object args1) {
-        return lookupAttribute(args1, __GETITEM__) != PNone.NO_VALUE;
+    protected static boolean isMapping(Object args1) {
+        return PythonObjectLibrary.getUncached().isMapping(args1);
     }
 
     protected static boolean isSubtype(Object lazyClass, PythonBuiltinClassType clazz) {
