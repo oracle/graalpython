@@ -54,7 +54,10 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -193,8 +196,14 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
         public String normalize(String form, PString unistr,
                         @Cached("form") String cachedForm,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
-            return normalize(form, unistr.getValue(), cachedForm, cachedNormForm);
+            try {
+                return normalize(form, castToJavaStringNode.execute(unistr), cachedForm, cachedNormForm);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
         }
 
     }
@@ -226,8 +235,14 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
         public boolean normalize(String form, PString unistr,
                         @Cached("form") String cachedForm,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
-            return isNormalized(form, unistr.getValue(), cachedForm, cachedNormForm);
+            try {
+                return isNormalized(form, castToJavaStringNode.execute(unistr), cachedForm, cachedNormForm);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
         }
     }
 }
