@@ -46,6 +46,7 @@ public abstract class ErrorMessages {
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
     public static final String ARG_D_MUST_BE_S = "%s arg %d must be a %s";
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
+    public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
     public static final String ARG_D_MUST_BE_S_OR_S = "%s argument %d must be '%s' or '%s'";
     public static final String ARG_D_MUST_NOT_BE_EMPTY = "arg %d must not be empty";
     public static final String ARG_EXPECTED_GOT = "%s argument expected, got %p";
@@ -128,6 +129,8 @@ public abstract class ErrorMessages {
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
     public static final String CANNOT_RESIZE_BUFFER = "cannot resize buffer";
     public static final String CANNOT_SPECIFY_FILTERS = "Cannot specify filters except with FORMAT_RAW";
+    public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
+    public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
     public static final String CANNOT_USE_TO_INITIALIZE_ARRAY = "cannot use a %p to initialize an array with typecode '%s'";
@@ -293,7 +296,7 @@ public abstract class ErrorMessages {
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String IS_NOT_ITERABLE = "%s is not iterable";
-    public static final String IS_NOT_SUBTYPE_OF = "%s(%s) is not a subtype of %s";
+    public static final String IS_NOT_SUBTYPE_OF = "%s.__new__(%N): %N is not a subtype of %s";
     public static final String IS_NOT_TYPE_OBJ = "%s is not a type object (%p)";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_CLSS_WAS = "issubclass() arg 2 must be a class or tuple of classes";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE = "isinstance() arg 2 must be a type or tuple of types (was: %s)";
@@ -516,4 +519,9 @@ public abstract class ErrorMessages {
     public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
+    public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
+    public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
+    public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";
+    public static final String CAPI_LOAD_ERROR = "Could not load C API from %s.";
+    public static final String NATIVE_ACCESS_NOT_ALLOWED = "Cannot run any C extensions because native access is not allowed.\n";
 }

@@ -9,6 +9,14 @@ package com.oracle.graal.python.runtime.formatting;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.NONE;
+import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.specified;
+
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.Locale.Category;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -30,11 +38,7 @@ public class InternalFormat {
      */
     private static Spec fromText(PythonCore core, String text) {
         Parser parser = new Parser(text);
-        try {
-            return parser.parse();
-        } catch (IllegalArgumentException e) {
-            throw core.raise(ValueError, "%m", e);
-        }
+        return parser.parse(core);
     }
 
     /**
@@ -46,7 +50,7 @@ public class InternalFormat {
     @TruffleBoundary
     public static Spec fromText(PythonCore core, Object text, String method) {
         if (text instanceof PBytes) {
-            return fromText(core, ((PBytes) text).toString());
+            return fromText(core, text.toString());
         } else if (text instanceof PString) {
             return fromText(core, ((PString) text).toString());
         } else if (text instanceof String) {
@@ -68,7 +72,7 @@ public class InternalFormat {
         /** The specification according to which we format any number supplied to the method. */
         protected final Spec spec;
         /** The (partial) result. */
-        protected FormattingBuffer result;
+        protected final FormattingBuffer result;
 
         /**
          * Signals the client's intention to make a PyBytes (or other byte-like) interpretation of
@@ -77,13 +81,17 @@ public class InternalFormat {
         protected boolean bytes;
 
         /** The start of the formatted data for padding purposes, &lt;={@link #start} */
-        protected int mark;
+        protected final int mark;
         /** The latest number we are working on floats at the end of the result, and starts here. */
         protected int start;
         /** If it contains no sign, this length is zero, and &gt;0 otherwise. */
         protected int lenSign;
         /** The length of the whole part (to left of the decimal point or exponent) */
         protected int lenWhole;
+        /** The actual "thousands" grouping used in the end (spec.grouping may be overridden) */
+        protected char actualGrouping;
+        /** The actual "thousands" group size used in the end */
+        protected int actualGroupSize;
 
         /**
          * Construct the formatter from a client-supplied buffer and a specification. Sets
@@ -102,17 +110,6 @@ public class InternalFormat {
         }
 
         /**
-         * Construct the formatter from a specification and initial buffer capacity. Sets
-         * {@link #mark} to the end of the buffer.
-         *
-         * @param spec parsed conversion specification
-         * @param width of buffer initially
-         */
-        public Formatter(PythonCore core, Spec spec, int width) {
-            this(core, new FormattingBuffer.StringFormattingBuffer(width), spec);
-        }
-
-        /**
          * Signals the client's intention to make a PyBytes (or other byte-like) interpretation of
          * {@link #result}, rather than a PyUnicode one. Only formatters that could produce
          * characters &gt;255 are affected by this (e.g. c-format). Idiom:
@@ -128,15 +125,6 @@ public class InternalFormat {
          */
         public void setBytes(boolean bytes) {
             this.bytes = bytes;
-        }
-
-        /**
-         * Whether initialised for a byte-like interpretation.
-         *
-         * @return bytes attribute
-         */
-        public boolean isBytes() {
-            return bytes;
         }
 
         /**
@@ -182,6 +170,8 @@ public class InternalFormat {
         public void setStart() {
             // The new value will float at the current end of the result buffer.
             start = result.length();
+            actualGrouping = spec.grouping;
+            actualGroupSize = spec.getGroupingSize();
             // If anything has been added since construction, reset all state.
             if (start > mark) {
                 // Clear the variable describing the latest number in result.
@@ -237,6 +227,34 @@ public class InternalFormat {
                     // Some length took us beyond the end of the result buffer. Pass.
                 }
                 return buf.toString();
+            }
+        }
+
+        protected static DecimalFormat getCurrentDecimalFormat() {
+            Locale currLocale = Locale.getDefault(Category.FORMAT);
+            NumberFormat numberFormat = NumberFormat.getInstance(currLocale);
+            return numberFormat instanceof DecimalFormat ? (DecimalFormat) numberFormat : null;
+        }
+
+        protected void setGroupingAndGroupSize(DecimalFormat format) {
+            if (format != null) {
+                boolean useGrouping = format.isGroupingUsed();
+                if (useGrouping) {
+                    DecimalFormatSymbols symbols = format.getDecimalFormatSymbols();
+                    actualGrouping = symbols.getGroupingSeparator();
+                    actualGroupSize = format.getGroupingSize();
+                    useGrouping = actualGroupSize > 0;
+                }
+                if (!useGrouping) {
+                    actualGrouping = NONE;
+                    actualGroupSize = -1;
+                }
+            }
+        }
+
+        protected void groupWholePartIfRequired() {
+            if (specified(actualGrouping)) {
+                groupDigits(actualGroupSize, actualGrouping);
             }
         }
 
@@ -425,9 +443,9 @@ public class InternalFormat {
             }
 
             // Check for special case
-            if (align == '=' && fill == '0' && spec.grouping) {
+            if (align == '=' && fill == '0' && specified(actualGrouping)) {
                 // We must extend the grouping separator into the padding
-                zeroPadAfterSignWithGroupingFixup(3, ',');
+                zeroPadAfterSignWithGroupingFixup(actualGroupSize, actualGrouping);
             }
         }
 
@@ -513,113 +531,6 @@ public class InternalFormat {
         }
 
         /**
-         * Convenience method returning a {ValueError} reporting that alternate form is not allowed
-         * in a format specifier for the named type.
-         *
-         * @param forType the type it was found applied to
-         * @return exception to throw
-         */
-        public static PException alternateFormNotAllowed(ParserErrorCallback errors, String forType) {
-            return alternateFormNotAllowed(errors, forType, '\0');
-        }
-
-        /**
-         * Convenience method returning a {ValueError} reporting that alternate form is not allowed
-         * in a format specifier for the named type and specified typoe code.
-         *
-         * @param forType the type it was found applied to
-         * @param code the formatting code (or '\0' not to mention one)
-         * @return exception to throw
-         */
-        public static PException alternateFormNotAllowed(ParserErrorCallback errors, String forType, char code) {
-            return notAllowed(errors, "Alternate form (#)", forType, code);
-        }
-
-        /**
-         * Convenience method returning a {ValueError} reporting that the given alignment flag is
-         * not allowed in a format specifier for the named type.
-         *
-         * @param align type of alignment
-         * @param forType the type it was found applied to
-         * @return exception to throw
-         */
-        public static PException alignmentNotAllowed(ParserErrorCallback errors, char align, String forType) {
-            return notAllowed(errors, "'" + align + "' alignment flag", forType, '\0');
-        }
-
-        /**
-         * Convenience method returning a {ValueError} reporting that specifying a sign is not
-         * allowed in a format specifier for the named type.
-         *
-         * @param forType the type it was found applied to
-         * @param code the formatting code (or '\0' not to mention one)
-         * @return exception to throw
-         */
-        public static PException signNotAllowed(ParserErrorCallback errors, String forType, char code) {
-            return notAllowed(errors, "Sign", forType, code);
-        }
-
-        /**
-         * Convenience method returning a {ValueError} reporting that specifying a precision is not
-         * allowed in a format specifier for the named type.
-         *
-         * @param forType the type it was found applied to
-         * @return exception to throw
-         */
-        public static PException precisionNotAllowed(PythonCore core, String forType) {
-            return notAllowed(core, "Precision", forType, '\0');
-        }
-
-        /**
-         * Convenience method returning a {ValueError} reporting that zero padding is not allowed in
-         * a format specifier for the named type.
-         *
-         * @param forType the type it was found applied to
-         * @return exception to throw
-         */
-        public static PException zeroPaddingNotAllowed(PythonCore core, String forType) {
-            return notAllowed(core, "Zero padding", forType, '\0');
-        }
-
-        /**
-         * Convenience method returning a {ValueError} reporting that some format specifier feature
-         * is not allowed for the named data type.
-         *
-         * @param outrage committed in the present case
-         * @param forType the data type (e.g. "integer") it where it is an outrage
-         * @return exception to throw
-         */
-        public static PException notAllowed(PythonCore core, String outrage, String forType) {
-            return notAllowed(core, outrage, forType, '\0');
-        }
-
-        /**
-         * Convenience method returning a {ValueError} reporting that some format specifier feature
-         * is not allowed for the named format code and data type. Produces a message like:
-         * <p>
-         * <code>outrage+" not allowed with "+forType+" format specifier '"+code+"'"</code>
-         * <p>
-         * <code>outrage+" not allowed in "+forType+" format specifier"</code>
-         *
-         * @param outrage committed in the present case
-         * @param forType the data type (e.g. "integer") it where it is an outrage
-         * @param code the formatting code for which it is an outrage (or '\0' not to mention one)
-         * @return exception to throw
-         */
-        public static PException notAllowed(ParserErrorCallback errors, String outrage, String forType, char code) {
-            // Try really hard to be like CPython
-            String codeAsString, withOrIn;
-            if (code == 0) {
-                withOrIn = "in ";
-                codeAsString = "";
-            } else {
-                withOrIn = "with ";
-                codeAsString = " '" + code + "'";
-            }
-            throw errors.raise(ValueError, ErrorMessages.NOT_ALLOWED_S_S_FORMAT_SPECIFIERS_S, outrage, withOrIn, forType, codeAsString);
-        }
-
-        /**
          * Convenience method returning a OverflowError reporting:
          * <p>
          * <code>"formatted "+type+" is too long (precision too large?)"</code>
@@ -630,7 +541,6 @@ public class InternalFormat {
         public PException precisionTooLarge(String type) {
             throw errors.raise(OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
         }
-
     }
 
     /**
@@ -683,8 +593,8 @@ public class InternalFormat {
         public final boolean alternate;
         /** Width to which to pad the result, or -1 if unspecified. */
         public final int width;
-        /** Insert the grouping separator (which in Python always indicates a group-size of 3). */
-        public final boolean grouping;
+        /** Insert the grouping separator. It may be dot or underscore for oct/hex/bin. */
+        public final char grouping;
         /** Precision decoded from the format, or -1 if unspecified. */
         public final int precision;
         /** Type key from the format, or U+FFFF if unspecified. */
@@ -703,7 +613,7 @@ public class InternalFormat {
          * @param c attribute
          * @return true only if the attribute is not equal to {@link #NONE}
          */
-        public static final boolean specified(char c) {
+        public static boolean specified(char c) {
             return c != NONE;
         }
 
@@ -713,7 +623,7 @@ public class InternalFormat {
          * @param value of attribute
          * @return true only if the attribute is >=0 (meaning that it has been specified).
          */
-        public static final boolean specified(int value) {
+        public static boolean specified(int value) {
             return value >= 0;
         }
 
@@ -734,7 +644,7 @@ public class InternalFormat {
          * @param type indicator character
          */
         public Spec(char fill, char align, char sign, boolean alternate, int width,
-                        boolean grouping, int precision, char type) {
+                        char grouping, int precision, char type) {
             this.fill = fill;
             this.align = align;
             this.sign = sign;
@@ -766,8 +676,8 @@ public class InternalFormat {
             if (specified(width)) {
                 buf.append(width);
             }
-            if (grouping) {
-                buf.append(',');
+            if (specified(grouping)) {
+                buf.append(grouping);
             }
             if (specified(precision)) {
                 buf.append('.').append(precision);
@@ -799,7 +709,7 @@ public class InternalFormat {
                             specified(sign) ? sign : other.sign, //
                             alternate || other.alternate, //
                             specified(width) ? width : other.width, //
-                            grouping || other.grouping, //
+                            specified(grouping) ? grouping : other.grouping, //
                             specified(precision) ? precision : other.precision, //
                             specified(type) ? type : other.type //
             );
@@ -809,13 +719,13 @@ public class InternalFormat {
          * Defaults applicable to most numeric types. Equivalent to " >"
          */
         public static final Spec NUMERIC = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED,
-                        false, Spec.UNSPECIFIED, Spec.NONE);
+                        NONE, Spec.UNSPECIFIED, Spec.NONE);
 
         /**
          * Defaults applicable to string types. Equivalent to " &lt;"
          */
         public static final Spec STRING = new Spec(' ', '<', Spec.NONE, false, Spec.UNSPECIFIED,
-                        false, Spec.UNSPECIFIED, Spec.NONE);
+                        NONE, Spec.UNSPECIFIED, Spec.NONE);
 
         /**
          * Constructor offering just precision and type.
@@ -828,7 +738,7 @@ public class InternalFormat {
          * @param type indicator character
          */
         public Spec(int precision, char type) {
-            this(' ', '>', Spec.NONE, false, UNSPECIFIED, false, precision, type);
+            this(' ', '>', Spec.NONE, false, UNSPECIFIED, NONE, precision, type);
         }
 
         /** The alignment from the parsed format specification, or default. */
@@ -851,19 +761,34 @@ public class InternalFormat {
             return specified(type) ? type : defaultType;
         }
 
+        public int getGroupingSize() {
+            if (!specified(grouping)) {
+                return -1;
+            }
+            switch (type) {
+                case 'b':
+                case 'o':
+                case 'x':
+                case 'X':
+                    assert grouping == '_';
+                    return 4;
+            }
+            return 3;
+        }
     }
 
     /**
-     * Parser for PEP-3101 field format specifications. This class provides a {@link #parse()}
-     * method that translates the format specification into an <code>Spec</code> object.
+     * Parser for PEP-3101 field format specifications. This class provides a
+     * {@link #parse(PythonCore)} method that translates the format specification into an
+     * <code>Spec</code> object.
      */
     private static class Parser {
 
-        private String spec;
+        private final String spec;
         private int ptr;
 
         /**
-         * Constructor simply holds the specification string ahead of the {@link #parse()}
+         * Constructor simply holds the specification string ahead of the {@link #parse(PythonCore)}
          * operation.
          *
          * @param spec format specifier to parse (e.g. "&lt;+12.3f")
@@ -886,11 +811,12 @@ public class InternalFormat {
          * This method is the equivalent of CPython's parse_internal_render_format_spec() in
          * ~/Objects/stringlib/formatter.h, but we deal with defaults another way.
          */
-        Spec parse() {
+        Spec parse(PythonCore core) {
 
             char fill = Spec.NONE, align = Spec.NONE;
             char sign = Spec.NONE, type = Spec.NONE;
-            boolean alternate = false, grouping = false;
+            boolean alternate = false;
+            char grouping = NONE;
             int width = Spec.UNSPECIFIED, precision = Spec.UNSPECIFIED;
 
             // Scan [[fill]align] ...
@@ -932,18 +858,38 @@ public class InternalFormat {
 
             // Scan [width]
             if (isDigit()) {
-                width = scanInteger();
+                try {
+                    width = scanInteger();
+                } catch (NumberFormatException ex) {
+                    // CPython seems to happily parse big ints and then it chokes on the allocation
+                    throw core.raise(ValueError, "width too big");
+                }
             }
 
-            // Scan [,][.precision][type]
-            grouping = scanPast(',');
+            // Scan [,|_][.precision][type]
+            if (scanPast(',')) {
+                grouping = ',';
+            }
+            if (scanPast('_')) {
+                if (specified(grouping)) {
+                    throw core.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                }
+                grouping = '_';
+                if (scanPast(',')) {
+                    throw core.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                }
+            }
 
             // Scan [.precision]
             if (scanPast('.')) {
                 if (isDigit()) {
-                    precision = scanInteger();
+                    try {
+                        precision = scanInteger();
+                    } catch (NumberFormatException ex) {
+                        throw core.raise(ValueError, "precision too big");
+                    }
                 } else {
-                    throw new IllegalArgumentException("Format specifier missing precision");
+                    throw core.raise(ValueError, "Format specifier missing precision");
                 }
             }
 
@@ -954,7 +900,39 @@ public class InternalFormat {
 
             // If we haven't reached the end, something is wrong
             if (ptr != spec.length()) {
-                throw new IllegalArgumentException("Invalid conversion specification");
+                throw core.raise(ValueError, "Invalid conversion specification");
+            }
+
+            // Some basic validation
+            if (specified(grouping)) {
+                boolean valid;
+                switch (type) {
+                    case 'd':
+                    case 'e':
+                    case 'f':
+                    case 'g':
+                    case 'E':
+                    case 'G':
+                    case '%':
+                    case 'F':
+                    case '\0':
+                    case NONE:
+                        // These are allowed. See PEP 378
+                        valid = true;
+                        break;
+                    case 'b':
+                    case 'o':
+                    case 'x':
+                    case 'X':
+                        // Only underscore allowed for those. See PEP 515
+                        valid = grouping == '_';
+                        break;
+                    default:
+                        valid = false;
+                }
+                if (!valid) {
+                    throw core.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_C_WITH_C, grouping, type);
+                }
             }
 
             // Create a specification
@@ -989,7 +967,7 @@ public class InternalFormat {
         }
 
         /** The current character is a digit (maybe a sign). Scan the integer, */
-        private int scanInteger() {
+        private int scanInteger() throws NumberFormatException {
             int p = ptr++;
             while (isDigit()) {
                 ptr++;

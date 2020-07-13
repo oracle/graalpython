@@ -82,6 +82,12 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     @Override
+    <F extends Formatter> F setupFormat(F f) {
+        f.setBytes(true);
+        return f;
+    }
+
+    @Override
     char pop() {
         try {
             return (char) formatBytes[index++];

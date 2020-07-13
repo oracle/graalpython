@@ -83,9 +83,10 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
         getDeleteGlobalNode().executeVoid(frame);
     }
 
-    @Specialization(guards = "hasLocalsDict(frame)")
+    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)")
     protected void readFromLocalsDict(VirtualFrame frame,
                     @Cached BranchProfile updatedStorage,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
                     @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);

@@ -30,6 +30,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
@@ -135,7 +136,8 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @ExportMessage
-    public String asPath(@Cached PRaiseNode raise,
+    public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
+                    @Cached PRaiseNode raise,
                     @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
         return newString(raise, toBytes.execute(getSequenceStorage()));
     }

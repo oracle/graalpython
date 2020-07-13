@@ -7,11 +7,14 @@
 package com.oracle.graal.python.runtime.formatting;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.specified;
 
 import java.math.BigInteger;
+import java.text.NumberFormat;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.formatting.FormattingBuffer.StringFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -32,6 +35,10 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      */
     public IntegerFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
         super(core, result, spec);
+    }
+
+    public IntegerFormatter(PythonCore core, Spec spec) {
+        super(core, new StringFormattingBuffer(32), spec);
     }
 
     /*
@@ -67,14 +74,19 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      */
     public IntegerFormatter format(BigInteger value) {
         try {
+            // Scratch all instance variables and start = result.length().
+            setStart();
+
             // Different process for each format type.
             switch (spec.type) {
                 case 'd':
                 case Spec.NONE:
-                case 'u':
-                case 'i':
                     // None format or d-format: decimal
                     format_d(value);
+                    break;
+                case 'u':
+                case 'i':
+                    format_i(value);
                     break;
 
                 case 'x':
@@ -98,24 +110,24 @@ public class IntegerFormatter extends InternalFormat.Formatter {
                     break;
 
                 case 'c':
+                case '%':
                     // Binary.
                     format_c(value);
                     break;
 
                 case 'n':
-                    // Locale-sensitive version of d-format should be here.
+                    // Locale-sensitive version of d-format
                     format_d(value);
+                    setGroupingAndGroupSize(getCurrentDecimalFormat());
                     break;
 
                 default:
                     // Should never get here, since this was checked in caller.
-                    throw unknownFormat(errors, spec.type, "long");
+                    throw unknownFormat(errors, spec.type, "integer");
             }
 
             // If required to, group the whole-part digits.
-            if (spec.grouping) {
-                groupDigits(3, ',');
-            }
+            groupWholePartIfRequired();
 
             return this;
 
@@ -123,6 +135,19 @@ public class IntegerFormatter extends InternalFormat.Formatter {
             // Most probably due to excessive precision.
             throw precisionTooLarge("long");
         }
+    }
+
+    /**
+     * This format specifier is not allowed in format, but allowed in printf-style formatting. This
+     * method is overridden in the {@link Traditional} formatter to delegate to
+     * {@link #format_d(BigInteger)}.
+     */
+    void format_i(@SuppressWarnings("unused") BigInteger value) {
+        throw unknownFormat(errors, spec.type, "integer");
+    }
+
+    void format_i(@SuppressWarnings("unused") int value) {
+        throw unknownFormat(errors, spec.type, "integer");
     }
 
     /**
@@ -141,6 +166,42 @@ public class IntegerFormatter extends InternalFormat.Formatter {
             // Positive value: deal with sign, base and magnitude.
             positiveSign(null);
             number = value.toString();
+        }
+        appendNumber(number);
+    }
+
+    /**
+     * Format the value as decimal (into {@link #result}) according to the current locale.
+     */
+    void format_n(BigInteger value) {
+        String number;
+        NumberFormat nf = NumberFormat.getNumberInstance();
+        if (value.signum() < 0) {
+            // Negative value: deal with sign and base, and convert magnitude.
+            negativeSign(null);
+            number = nf.format(value.negate());
+        } else {
+            // Positive value: deal with sign, base and magnitude.
+            positiveSign(null);
+            number = nf.format(value);
+        }
+        appendNumber(number);
+    }
+
+    /**
+     * Format the value as decimal (into {@link #result}) according to the current locale.
+     */
+    void format_n(int value) {
+        String number;
+        NumberFormat nf = NumberFormat.getNumberInstance();
+        if (value < 0) {
+            // Negative value: deal with sign and base, and convert magnitude.
+            negativeSign(null);
+            number = nf.format(-value);
+        } else {
+            // Positive value: deal with sign, base and magnitude.
+            positiveSign(null);
+            number = nf.format(value);
         }
         appendNumber(number);
     }
@@ -217,23 +278,14 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     }
 
     /**
-     * Format the value as a character (into {@link #result}).
-     *
-     * @param value to convert
+     * @see #format_c(int)
      */
-    void format_c(BigInteger value) {
-        // Limit is 256 if we're formatting for byte output, unicode range otherwise.
-        BigInteger limit = bytes ? LIMIT_BYTE : LIMIT_UNICODE;
-        if (value.signum() < 0 || value.compareTo(limit) >= 0) {
-            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(limit));
-        } else {
-            result.appendCodePoint(value.intValue());
-        }
+    void format_c(@SuppressWarnings("unused") BigInteger value) {
+        throw unknownFormat(errors, spec.type, "integer");
     }
 
     // Limits used in format_c(BigInteger)
     public static final BigInteger LIMIT_UNICODE = BigInteger.valueOf(0x110000);
-    private static final BigInteger LIMIT_BYTE = BigInteger.valueOf(256);
 
     /**
      * Format an integer according to the specification represented by this
@@ -254,10 +306,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
             switch (spec.type) {
                 case 'd':
                 case Spec.NONE:
-                case 'u':
-                case 'i':
                     // None format or d-format: decimal
                     format_d(value);
+                    break;
+                case 'u':
+                case 'i':
+                    format_i(value);
                     break;
 
                 case 'x':
@@ -287,8 +341,9 @@ public class IntegerFormatter extends InternalFormat.Formatter {
                     break;
 
                 case 'n':
-                    // Locale-sensitive version of d-format should be here.
+                    // Locale-sensitive version of d-format
                     format_d(value);
+                    setGroupingAndGroupSize(getCurrentDecimalFormat());
                     break;
 
                 default:
@@ -297,9 +352,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
             }
 
             // If required to, group the whole-part digits.
-            if (spec.grouping) {
-                groupDigits(3, ',');
-            }
+            groupWholePartIfRequired();
 
             return this;
         } catch (OutOfMemoryError eme) {
@@ -400,18 +453,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     }
 
     /**
-     * Format the value as a character (into {@link #result}).
-     *
-     * @param value to convert
+     * Format the value as a character (into {@link #result}). Note: 'c' format is not supported in
+     * format builtin, but supported in the printf-style formatting. This method is overridden by
+     * the {@link Traditional} subclass.
      */
-    void format_c(int value) {
-        // Limit is 256 if we're formatting for byte output, unicode range otherwise.
-        int limit = bytes ? 256 : LIMIT_UNICODE.intValue();
-        if (value < 0 || value >= limit) {
-            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, limit);
-        } else {
-            result.appendCodePoint(value);
-        }
+    void format_c(@SuppressWarnings("unused") int value) {
+        throw unknownFormat(errors, spec.type, "integer");
     }
 
     /**
@@ -426,7 +473,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     final void positiveSign(String base) {
         // Does the format specify a sign for positive values?
         char sign = spec.sign;
-        if (Spec.specified(sign) && sign != '-') {
+        if (specified(sign) && sign != '-') {
             append(sign);
             lenSign = 1;
         }
@@ -621,6 +668,16 @@ public class IntegerFormatter extends InternalFormat.Formatter {
             result.appendCodePoint(value);
         }
 
+        @Override
+        void format_i(BigInteger value) {
+            format_n(value);
+        }
+
+        @Override
+        void format_i(int value) {
+            format_n(value);
+        }
+
         /**
          * Append a string (number) to {@link #result}, but insert leading zeros first in order
          * that, on return, the whole-part length #lenWhole should be no less than the precision.
@@ -637,26 +694,5 @@ public class IntegerFormatter extends InternalFormat.Formatter {
             lenWhole = n;
             append(number);
         }
-
-        /**
-         * Append a string (number) to {@link #result}, but insert leading zeros first in order
-         * that, on return, the whole-part length #lenWhole should be no less than the precision.
-         * Octal numbers must begin with a zero if <code>spec.alternate==true</code>, so if the
-         * number passed in does not start with a zero, at least one will be inserted.
-         *
-         * @param number to append
-         */
-        void appendOctalNumber(String number) {
-            int n = number.length(), p = spec.getPrecision(0);
-            if (spec.alternate && number.charAt(0) != '0' && n >= p) {
-                p = n + 1;
-            }
-            for (; n < p; n++) {
-                result.append('0');
-            }
-            lenWhole = n;
-            append(number);
-        }
-
     }
 }
