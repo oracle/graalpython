@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.util.List;
 
@@ -58,14 +59,18 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -116,7 +121,9 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached("create()") ReadAttributeFromObjectNode readGetattr,
                         @Cached("createBinaryProfile()") ConditionProfile customGetAttr,
-                        @Cached("create()") CallNode callNode) {
+                        @Cached("create()") CallNode callNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Cached CastToJavaStringNode castToStringNode) {
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
@@ -125,7 +132,24 @@ public class ModuleBuiltins extends PythonBuiltins {
                 if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {
                     return callNode.execute(frame, getAttr, key);
                 } else {
-                    throw e;
+                    String moduleName;
+                    try {
+                        moduleName = castToStringNode.execute(readGetattr.execute(self, __NAME__));
+                    } catch (CannotCastException ce) {
+                        // we just don't have the module name
+                        moduleName = null;
+                    }
+                    if (moduleName != null) {
+                        Object moduleSpec = readGetattr.execute(self, __SPEC__);
+                        if (moduleSpec != PNone.NO_VALUE) {
+                            Object isInitializing = readGetattr.execute(moduleSpec, "_initializing");
+                            if (isInitializing != PNone.NO_VALUE && castToBooleanNode.executeBoolean(frame, isInitializing)) {
+                                throw raise(AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
+                            }
+                        }
+                        throw raise(AttributeError, ErrorMessages.MODULE_S_HAS_NO_ATTR_S, moduleName, key);
+                    }
+                    throw raise(AttributeError, ErrorMessages.MODULE_HAS_NO_ATTR_S, key);
                 }
             }
         }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,52 +37,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-def test_builtins():
-    import array
-    assert array.array.__module__ == "array" # builtin class
-    assert int.__module__ == "builtins" # builtin class
-    import sys
-    assert sys.getrecursionlimit.__module__ == "sys" # builtin module method
-
-def test_imported():
-    import code
-    assert code.InteractiveInterpreter.__module__ == "code" # class
-    assert code.InteractiveInterpreter.runsource.__module__ == "code" # function
-    assert code.InteractiveInterpreter().runsource.__module__ == "code" # method
-
-class TestClass():
-    def foo(self):
-        pass
-
-def test_user_class():
-    assert TestClass.__module__ == __name__
-    assert TestClass().__module__ == __name__
-    assert TestClass.foo.__module__ == __name__
-    assert TestClass().foo.__module__ == __name__
-    # test redefine:
-    TestClass.__module__ = "bar"
-    assert TestClass.__module__ == "bar"
-    t = TestClass()
-    t.__module__ = "baz"
-    assert t.__module__ == "baz"
-    
-def test_wrong_property():
-    import time
-    try:
-        time.no_existing_property
-    except AttributeError as ae:
-        assert str(ae) == "module 'time' has no attribute 'no_existing_property'"
-    else:
-        assert False
-        
-def test_wrong_property_in_moudule_without_name():
-    import time
-    del time.__name__
-    try:
-        time.no_existing_property
-    except AttributeError as ae:
-        assert str(ae) == "module has no attribute 'no_existing_property'"
-    else:
-        assert False
-        
+from . import source
+source.spam

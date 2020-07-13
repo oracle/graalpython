@@ -324,6 +324,9 @@ public abstract class ErrorMessages {
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_S = "%s() missing %d required %s argument%s: '%s'";
     public static final String MMAP_INDEX_OUT_OF_RANGE = "mmap index out of range";
+    public static final String MODULE_HAS_NO_ATTR_S = "module has no attribute '%s'";
+    public static final String MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = "partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)";
+    public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
