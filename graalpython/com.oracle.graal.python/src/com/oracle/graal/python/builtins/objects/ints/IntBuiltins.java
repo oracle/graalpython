@@ -144,21 +144,130 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(n) || isInteger(n)")
-        public int roundInt(int arg, Object n) {
+        @Specialization
+        public int roundIntNone(int arg, PNone n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(n) || isInteger(n)")
-        public long roundLong(long arg, Object n) {
+        @Specialization
+        public long roundLongNone(long arg, PNone n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(n) || isInteger(n)")
-        public PInt roundPInt(PInt arg, Object n) {
+        @Specialization
+        public PInt roundPIntNone(PInt arg, PNone n) {
             return factory().createInt(arg.getValue());
+        }
+
+        @Specialization
+        public Object roundLongInt(long arg, int n) {
+            if (n >= 0) {
+                return arg;
+            }
+            return makeInt(op(arg, n));
+        }
+
+        @Specialization
+        public Object roundPIntInt(PInt arg, int n) {
+            if (n >= 0) {
+                return arg;
+            }
+            return makeInt(op(arg.getValue(), n));
+        }
+
+        @Specialization
+        public Object roundLongLong(long arg, long n) {
+            if (n >= 0) {
+                return arg;
+            }
+            if (n < Integer.MIN_VALUE) {
+                return 0;
+            }
+            return makeInt(op(arg, (int) n));
+        }
+
+        @Specialization
+        public Object roundPIntLong(PInt arg, long n) {
+            if (n >= 0) {
+                return arg;
+            }
+            if (n < Integer.MIN_VALUE) {
+                return 0;
+            }
+            return makeInt(op(arg.getValue(), (int) n));
+        }
+
+        @Specialization
+        public Object roundPIntLong(long arg, PInt n) {
+            if (n.isZeroOrPositive()) {
+                return arg;
+            }
+            try {
+                return makeInt(op(arg, n.intValueExact()));
+            } catch (ArithmeticException e) {
+                // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
+                return 0;
+            }
+        }
+
+        @Specialization
+        public Object roundPIntPInt(PInt arg, PInt n) {
+            if (n.isZeroOrPositive()) {
+                return arg;
+            }
+            try {
+                return makeInt(op(arg.getValue(), n.intValueExact()));
+            } catch (ArithmeticException e) {
+                // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
+                return 0;
+            }
+        }
+
+        @Specialization(guards = {"!isInteger(n)"})
+        @SuppressWarnings("unused")
+        public Object roundPIntPInt(Object arg, Object n) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
+        }
+
+        private Object makeInt(BigDecimal d) {
+            try {
+                return d.intValueExact();
+            } catch (ArithmeticException e) {
+                // does not fit int, so try long
+            }
+            try {
+                return d.longValueExact();
+            } catch (ArithmeticException e) {
+                // does not fit long, try BigInteger
+            }
+            try {
+                return factory().createInt(d.toBigIntegerExact());
+            } catch (ArithmeticException e) {
+                // has non-zero fractional part, which should not happen
+                throw new IllegalStateException();
+            }
+        }
+
+        @TruffleBoundary
+        private static BigDecimal op(long arg, int n) {
+            try {
+                return new BigDecimal(arg).setScale(n, RoundingMode.HALF_EVEN);
+            } catch (ArithmeticException e) {
+                // -n exceeds max. number of base-10 digits in BigInteger
+                return BigDecimal.ZERO;
+            }
+        }
+
+        @TruffleBoundary
+        private static BigDecimal op(BigInteger arg, int n) {
+            try {
+                return new BigDecimal(arg).setScale(n, RoundingMode.HALF_EVEN);
+            } catch (ArithmeticException e) {
+                // -n exceeds max. number of base-10 digits in BigInteger
+                return BigDecimal.ZERO;
+            }
         }
     }
 

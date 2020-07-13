@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_long.LongTest.test__format__
 *graalpython.lib-python.3.test.test_long.LongTest.test_access_to_nonexistent_digit_0
 *graalpython.lib-python.3.test.test_long.LongTest.test_as_integer_ratio
 *graalpython.lib-python.3.test.test_long.LongTest.test_bit_length
@@ -17,12 +18,12 @@
 *graalpython.lib-python.3.test.test_long.LongTest.test_karatsuba
 *graalpython.lib-python.3.test.test_long.LongTest.test_logs
 *graalpython.lib-python.3.test.test_long.LongTest.test_long
-*graalpython.lib-python.3.test.test_long.LongTest.test_format
 *graalpython.lib-python.3.test.test_long.LongTest.test_lshift_of_zero
 *graalpython.lib-python.3.test.test_long.LongTest.test_mixed_compares
 *graalpython.lib-python.3.test.test_long.LongTest.test_mod_division
 *graalpython.lib-python.3.test.test_long.LongTest.test_nan_inf
 *graalpython.lib-python.3.test.test_long.LongTest.test_negative_shift_count
+*graalpython.lib-python.3.test.test_long.LongTest.test_round
 *graalpython.lib-python.3.test.test_long.LongTest.test_shift_bool
 *graalpython.lib-python.3.test.test_long.LongTest.test_small_ints
 *graalpython.lib-python.3.test.test_long.LongTest.test_to_bytes
