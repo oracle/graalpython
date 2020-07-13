@@ -3,6 +3,7 @@
 *graalpython.lib-python.3.test.test_long.LongTest.test_bit_length
 *graalpython.lib-python.3.test.test_long.LongTest.test_bitop_identities
 *graalpython.lib-python.3.test.test_long.LongTest.test_conversion
+*graalpython.lib-python.3.test.test_long.LongTest.test_correctly_rounded_true_division
 *graalpython.lib-python.3.test.test_long.LongTest.test_division
 *graalpython.lib-python.3.test.test_long.LongTest.test_float_conversion
 *graalpython.lib-python.3.test.test_long.LongTest.test_float_overflow

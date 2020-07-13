@@ -821,6 +821,7 @@ class LongTest(unittest.TestCase):
         self.assertEqual(expected, got, "Incorrectly rounded division {}/{}: "
                          "expected {}, got {}".format(a, b, expected, got))
 
+    @support.impl_detail("cpython specific", graalvm=False)
     @support.requires_IEEE_754
     def test_correctly_rounded_true_division(self):
         # more stringent tests than those above, checking that the
