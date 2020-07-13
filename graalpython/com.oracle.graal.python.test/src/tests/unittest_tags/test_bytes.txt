@@ -33,10 +33,12 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_from_tuple
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_getslice
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_iconcat
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_imod
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_iterator_length_hint
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_iterator_pickling
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_join
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_maketrans
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_mod
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_nosort
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_obsolete_write_lock
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_ord
@@ -82,9 +84,11 @@
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_from_ssize
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_from_tuple
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_getslice
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_imod
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_iterator_pickling
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_join
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_maketrans
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_mod
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_ord
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_pickling
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_repeat

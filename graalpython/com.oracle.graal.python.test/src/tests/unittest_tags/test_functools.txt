@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_functools.TestCachedProperty.test_cached
 *graalpython.lib-python.3.test.test_functools.TestCachedProperty.test_cached_attribute_name_differs_from_func_name
 *graalpython.lib-python.3.test.test_functools.TestCachedProperty.test_doc
+*graalpython.lib-python.3.test.test_functools.TestCachedProperty.test_immutable_dict
 *graalpython.lib-python.3.test.test_functools.TestCachedProperty.test_reuse_same_name
 *graalpython.lib-python.3.test.test_functools.TestCachedProperty.test_set_name_not_called
 *graalpython.lib-python.3.test.test_functools.TestCmpToKeyPy.test_bad_cmp
@@ -152,6 +153,7 @@
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_classmethod_register
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_compose_mro
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_false_meta
+*graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_invalid_registrations
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_method_register
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_mro
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_mro_conflicts
@@ -172,6 +174,10 @@
 *graalpython.lib-python.3.test.test_functools.TestUpdateWrapper.test_default_update
 *graalpython.lib-python.3.test.test_functools.TestUpdateWrapper.test_default_update_doc
 *graalpython.lib-python.3.test.test_functools.TestUpdateWrapper.test_missing_attributes
+*graalpython.lib-python.3.test.test_functools.TestUpdateWrapper.test_no_update
+*graalpython.lib-python.3.test.test_functools.TestUpdateWrapper.test_selective_update
 *graalpython.lib-python.3.test.test_functools.TestWraps.test_default_update
 *graalpython.lib-python.3.test.test_functools.TestWraps.test_default_update_doc
 *graalpython.lib-python.3.test.test_functools.TestWraps.test_missing_attributes
+*graalpython.lib-python.3.test.test_functools.TestWraps.test_no_update
+*graalpython.lib-python.3.test.test_functools.TestWraps.test_selective_update
