@@ -246,7 +246,7 @@ public class IntBuiltins extends PythonBuiltins {
                 return factory().createInt(d.toBigIntegerExact());
             } catch (ArithmeticException e) {
                 // has non-zero fractional part, which should not happen
-                throw new IllegalStateException();
+                throw CompilerDirectives.shouldNotReachHere("non-integer produced after rounding an integer", e);
             }
         }
 
