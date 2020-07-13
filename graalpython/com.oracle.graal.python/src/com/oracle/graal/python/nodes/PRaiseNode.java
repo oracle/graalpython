@@ -58,8 +58,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
@@ -113,7 +113,7 @@ public abstract class PRaiseNode extends Node {
         if (raisingNode.isAdoptable()) {
             throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
         } else {
-            throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode(), withJavaStacktrace);
+            throw PException.fromObject(exc, EncapsulatingNodeReference.getCurrent().get(), withJavaStacktrace);
         }
     }
 
