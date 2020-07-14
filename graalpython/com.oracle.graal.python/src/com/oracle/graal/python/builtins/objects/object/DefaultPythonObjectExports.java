@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Object.class)
 final class DefaultPythonObjectExports {
@@ -334,16 +336,26 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     public static Object lookupAndCallSpecialMethod(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Exclusive @Cached ConditionProfile hasMethodProfile) {
         Object method = plib.lookupSpecialMethod(receiver, methodName);
-        return methodLib.callUnboundMethod(method, state, receiver, arguments);
+        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
+            return methodLib.callUnboundMethod(method, state, receiver, arguments);
+        } else {
+            return PNone.NO_VALUE;
+        }
     }
 
     @ExportMessage
     public static Object lookupAndCallRegularMethod(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Exclusive @Cached ConditionProfile hasMethodProfile) {
         Object method = plib.lookupAttribute(receiver, methodName);
-        return methodLib.callFunction(method, state, arguments);
+        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
+            return methodLib.callFunction(method, state, arguments);
+        } else {
+            return PNone.NO_VALUE;
+        }
     }
 }
