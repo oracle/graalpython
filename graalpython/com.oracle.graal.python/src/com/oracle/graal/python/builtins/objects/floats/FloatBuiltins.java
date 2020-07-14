@@ -623,11 +623,21 @@ public final class FloatBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
         }
 
-        @Specialization
-        PTuple doGeneric(VirtualFrame frame, Object left, Object right,
+        @Specialization(guards = {"accepts(left)", "accepts(right)"})
+        PTuple doGenericFloat(VirtualFrame frame, Object left, Object right,
                         @Cached FloorDivNode floorDivNode,
                         @Cached ModNode modNode) {
             return factory().createTuple(new Object[]{floorDivNode.execute(frame, left, right), modNode.execute(frame, left, right)});
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        PNotImplemented doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        protected static boolean accepts(Object obj) {
+            return obj instanceof Double || obj instanceof Integer || obj instanceof Long || obj instanceof PInt;
         }
     }
 
