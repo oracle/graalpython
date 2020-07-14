@@ -645,15 +645,24 @@ class _DequeRevIter(object):
 
 
 class defaultdict(dict):
-    def __init__(self, default_factory, *args, **kwds):
+    def __init__(self, default_factory=None, *args, **kwds):
         dict.__init__(self, *args, **kwds)
-        self.default_factory = default_factory
+        if (default_factory is None or callable(default_factory)):
+            self.default_factory = default_factory
+        else:
+            raise TypeError("first argument must be callable or None")
 
     def __missing__(self, key):
         if self.default_factory is None:
-            raise KeyError((key,))
+            raise KeyError(key)
         self[key] = value = self.default_factory()
         return value
-    
+
     def __repr__(self):
-        return "%s(%r, %s)" % (type(self).__name__, self.default_factory, dict.__repr__(self))  
+        return "%s(%r, %s)" % (type(self).__name__, self.default_factory, dict.__repr__(self))
+
+    def copy(self):
+        cp = defaultdict(default_factory=self.default_factory)
+        for k,v in self.items():
+            cp[k] = v
+        return cp
