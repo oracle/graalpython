@@ -637,7 +637,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         protected static boolean accepts(Object obj) {
-            return obj instanceof Double || obj instanceof Integer || obj instanceof Long || obj instanceof PInt;
+            return obj instanceof Double || obj instanceof Integer || obj instanceof Long || obj instanceof PInt || obj instanceof PFloat;
         }
     }
 
