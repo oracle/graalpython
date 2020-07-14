@@ -136,7 +136,7 @@ try:
 except ImportError:
     ctypes = None
 from test.support import (run_doctest, run_unittest, cpython_only,
-                          check_impl_detail)
+                          check_impl_detail, impl_detail)
 
 
 def consts(t):
@@ -319,7 +319,7 @@ class CodeConstsTest(unittest.TestCase):
 
 class CodeWeakRefTest(unittest.TestCase):
 
-    @cpython_only
+    @impl_detail("refcounting", graalvm=False)
     def test_basic(self):
         # Create a code object in a clean environment so that we know we have
         # the only reference to it left.
