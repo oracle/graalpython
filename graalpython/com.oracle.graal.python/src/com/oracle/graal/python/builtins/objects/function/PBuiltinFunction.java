@@ -30,21 +30,28 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
@@ -160,5 +167,17 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @SuppressWarnings("static-method")
     public Object getLazyPythonClass() {
         return PythonBuiltinClassType.PBuiltinFunction;
+    }
+
+    @ExportMessage
+    public Object callUnboundMethod(ThreadState state, Object receiver, Object[] arguments,
+                    @Exclusive @Cached ConditionProfile hasStateProfile,
+                    @Exclusive @Cached CallNode call) {
+        VirtualFrame frame = null;
+        if (hasStateProfile.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        // TODO direct calls for arities
+        return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
     }
 }
