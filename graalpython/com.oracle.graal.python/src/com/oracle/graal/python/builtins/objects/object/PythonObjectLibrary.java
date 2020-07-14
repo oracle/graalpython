@@ -642,18 +642,14 @@ public abstract class PythonObjectLibrary extends Library {
         return callUnboundMethod(method, state, method, arguments);
     }
 
-    public Object callSpecialMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
-        Object method = lookupSpecialMethod(receiver, methodName);
-        // TODO
-        // Expects possible NO_VALUE and passes it through
-        return getAndCallMethod(receiver, state, method, arguments);
+    public Object lookupAndCallSpecialMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
-    public Object callRegularMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
-        Object boundMethod = lookupAttribute(receiver, methodName);
-        // Expects possible NO_VALUE and passes it through
-        // FIXME wrong specialization
-        return callFunction(boundMethod, state, arguments);
+    public Object lookupAndCallRegularMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
     /**

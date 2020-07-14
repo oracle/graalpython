@@ -1138,6 +1138,22 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    public Object lookupAndCallSpecialMethod(ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupSpecialMethod(this, methodName);
+        return methodLib.callUnboundMethod(method, state, this, arguments);
+    }
+
+    @ExportMessage
+    public Object lookupAndCallRegularMethod(ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttribute(this, methodName);
+        return methodLib.callFunction(method, state, arguments);
+    }
+
+    @ExportMessage
     public boolean canBePInt(@Shared("asPIntLookupAttr") @Cached LookupInheritedAttributeNode.Dynamic lookup) {
         return lookup.execute(this, __INDEX__) != PNone.NO_VALUE || lookup.execute(this, __INT__) != PNone.NO_VALUE;
     }

@@ -139,7 +139,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         static Object doGeneric(VirtualFrame frame, Object value,
                         @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
                         @CachedLibrary(limit = "4") PythonObjectLibrary plib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary methodLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {

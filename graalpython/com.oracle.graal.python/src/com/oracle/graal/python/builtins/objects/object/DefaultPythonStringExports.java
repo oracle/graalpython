@@ -56,6 +56,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -203,5 +204,21 @@ final class DefaultPythonStringExports {
     public static Object getAndCallMethodInternal(String receiver, ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
                     @Cached PythonAbstractObject.GetAndCallMethodNode getAndCallMethodNode) {
         return getAndCallMethodNode.execute(state, receiver, ignoreGetException, method, arguments);
+    }
+
+    @ExportMessage
+    public static Object lookupAndCallSpecialMethod(String receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupSpecialMethod(receiver, methodName);
+        return methodLib.callUnboundMethod(method, state, receiver, arguments);
+    }
+
+    @ExportMessage
+    public static Object lookupAndCallRegularMethod(String receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttribute(receiver, methodName);
+        return methodLib.callFunction(method, state, arguments);
     }
 }
