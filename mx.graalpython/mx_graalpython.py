@@ -1318,7 +1318,10 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
             # build_args=['-H:+RemoveSaturatedTypeFlows'],
-            build_args=['-H:+TruffleCheckBlackListedMethods'],
+            build_args=[
+                '-H:+TruffleCheckBlackListedMethods',
+                '-H:+DetectUserDirectoriesInImageHeap',
+            ],
             language='python',
         )
     ],
