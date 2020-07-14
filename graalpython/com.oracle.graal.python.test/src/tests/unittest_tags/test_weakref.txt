@@ -7,7 +7,6 @@
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_make_weak_valued_dict_repr
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_remove_closure
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_copy
-*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_deepcopy
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_copy
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_basic_ref
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_callback_gcs

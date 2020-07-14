@@ -332,6 +332,8 @@ def update_unittest_tags(args):
         # The following two try to read bytecode and fail randomly as our co_code is changing
         ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_bytecode'),
         ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_relative_imports_4'),
+        # Temporarily disabled due to object identity or race condition (GR-24863)
+        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_deepcopy'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_blacklist
