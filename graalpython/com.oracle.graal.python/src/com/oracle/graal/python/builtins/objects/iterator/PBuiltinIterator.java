@@ -48,6 +48,10 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
         return exhausted;
     }
 
+    public int getIndex() {
+        return index;
+    }
+
     @Override
     public String toString() {
         return "<iterator object at " + hashCode() + ">";

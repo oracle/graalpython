@@ -721,7 +721,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
-    abstract static class ReprNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         String repr(PComplex self) {
@@ -789,7 +789,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __NEG__, minNumOfPositionalArgs = 1)
-    abstract static class NegNode extends PythonBuiltinNode {
+    abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
         PComplex neg(PComplex self) {
             return factory().createComplex(-self.getReal(), -self.getImag());
@@ -798,7 +798,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __POS__, minNumOfPositionalArgs = 1)
-    abstract static class PosNode extends PythonBuiltinNode {
+    abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
         PComplex pos(PComplex self) {
             return factory().createComplex(self.getReal(), self.getImag());
@@ -807,7 +807,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
-    abstract static class GetNewArgsNode extends PythonBuiltinNode {
+    abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
         PTuple get(PComplex self) {
             return factory().createTuple(new Object[]{self.getReal(), self.getImag()});

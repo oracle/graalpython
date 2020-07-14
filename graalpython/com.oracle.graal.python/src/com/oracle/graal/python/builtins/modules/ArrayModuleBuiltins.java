@@ -39,7 +39,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -78,16 +78,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PArray arrayWithRangeInitializer(Object cls, String typeCode, PRange range) {
+        PArray arrayWithRangeInitializer(Object cls, String typeCode, PIntRange range) {
             if (!typeCode.equals("i")) {
                 typeError(typeCode, range);
             }
 
-            int[] intArray = new int[range.len()];
+            int[] intArray = new int[range.getIntLength()];
 
-            int start = range.getStart();
-            int stop = range.getStop();
-            int step = range.getStep();
+            int start = range.getIntStart();
+            int stop = range.getIntStop();
+            int step = range.getIntStep();
 
             int index = 0;
             for (int i = start; i < stop; i += step) {

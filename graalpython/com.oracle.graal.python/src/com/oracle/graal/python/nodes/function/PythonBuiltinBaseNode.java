@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -179,6 +181,10 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
 
     public final PException raise(PythonBuiltinClassType type, Exception e) {
         return getRaiseNode().raise(type, e);
+    }
+
+    public final PException raiseOverflow() {
+        return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {

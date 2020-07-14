@@ -30,7 +30,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -134,7 +134,7 @@ public final class PGenerator extends PythonBuiltinObject {
         this.closure = closure;
         this.finished = false;
         this.iterator = iterator;
-        this.isPRangeIterator = iterator instanceof PRangeIterator;
+        this.isPRangeIterator = iterator instanceof PIntRangeIterator;
     }
 
     public FrameDescriptor getFrameDescriptor() {

@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PEnumerate extends PythonBuiltinObject {
 
@@ -51,8 +52,8 @@ public final class PEnumerate extends PythonBuiltinObject {
         return iterator;
     }
 
-    public Object getAndIncrementIndex(PythonObjectFactory factory) {
-        if (bigIndex != null) {
+    public Object getAndIncrementIndex(PythonObjectFactory factory, ConditionProfile bigIntIndexProfile) {
+        if (bigIntIndexProfile.profile(bigIndex != null)) {
             PInt idx = bigIndex;
             bigIndex = factory.createInt(bigIndex.inc());
             return idx;
@@ -60,8 +61,8 @@ public final class PEnumerate extends PythonBuiltinObject {
         return index++;
     }
 
-    public Object getIndex() {
-        if (bigIndex != null) {
+    public Object getIndex(ConditionProfile bigIntIndexProfile) {
+        if (bigIntIndexProfile.profile(bigIndex != null)) {
             return bigIndex;
         }
         return index;
