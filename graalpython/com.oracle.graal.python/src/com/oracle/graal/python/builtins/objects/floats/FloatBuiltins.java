@@ -25,12 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
@@ -48,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
@@ -595,6 +597,37 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = __DIVMOD__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class DivModNode extends FloatBinaryBuiltinNode {
+        @Specialization
+        PTuple doDL(double left, long right) {
+            raiseDivisionByZero(right == 0);
+            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+        }
+
+        @Specialization
+        PTuple doDD(double left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+        }
+
+        @Specialization
+        PTuple doLD(long left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+        }
+
+        @Specialization
+        PTuple doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached FloorDivNode floorDivNode,
+                        @Cached ModNode modNode) {
+            return factory().createTuple(new Object[]{floorDivNode.execute(frame, left, right), modNode.execute(frame, left, right)});
         }
     }
 
