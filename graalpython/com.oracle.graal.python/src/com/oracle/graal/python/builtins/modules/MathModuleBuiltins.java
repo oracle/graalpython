@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -50,8 +51,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -2618,6 +2621,38 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private void raiseIfNegative(boolean condition) {
             if (condition) {
                 throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "isqrt() argument");
+            }
+        }
+    }
+
+    @Builtin(name = "prod", minNumOfPositionalArgs = 1, parameterNames = {"iterable"}, keywordOnlyNames = {"start"})
+    @GenerateNodeFactory
+    public abstract static class ProdNode extends PythonBuiltinNode {
+
+        @Child private GetIteratorNode iter = GetIteratorNode.create();
+        @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(__NEXT__);
+        @Child private LookupAndCallBinaryNode mul = BinaryArithmetic.Mul.create();
+        @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public Object doGenericNoStart(VirtualFrame frame, Object iterable, PNone start) {
+            return doGeneric(frame, iterable, 1);
+        }
+
+        @Specialization(guards = "!isNoValue(start)")
+        public Object doGeneric(VirtualFrame frame, Object iterable, Object start) {
+            Object iterator = iter.executeWith(frame, iterable);
+            Object value = start;
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.executeObject(frame, iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return value;
+                }
+                value = mul.executeObject(frame, value, nextValue);
             }
         }
     }
