@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.object;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -599,23 +600,49 @@ public abstract class PythonObjectLibrary extends Library {
         return lookupAttribute(receiver, name, true);
     }
 
+    /**
+     * Call a callable object.
+     */
     public Object callFunction(Object callable, ThreadState state, Object... arguments) {
         throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
     }
 
+    /**
+     * Call an unbound method or other unbound descriptor using given receiver. Will first call
+     * {@code __get__} to bind the descriptor, then call the bound object. There are optimized
+     * implementations for plain and builtin functions that avoid creating the intermediate bound
+     * object. Typically called on a result of {@link #lookupSpecialMethod}.
+     *
+     * @param method unbound method or descriptor object whose {@code __get__} hasn't been called
+     * @param state
+     * @param receiver self
+     * @param arguments
+     */
     public Object callUnboundMethod(Object method, ThreadState state, Object receiver, Object... arguments) {
         throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
     }
 
+    /**
+     * Like {@link #callUnboundMethod(Object, ThreadState, Object, Object...)}, but ignores possible
+     * python exception in the @{code __get__} call and returns {@link PNone#NO_VALUE} in that case.
+     */
     public Object callUnboundMethodIgnoreGetException(Object method, ThreadState state, Object self, Object... arguments) {
         return callUnboundMethod(method, state, method, arguments);
     }
 
+    /**
+     * Call a special method on an object. Returns {@link PNone#NO_VALUE} if no such method has been
+     * found.
+     */
     public Object lookupAndCallSpecialMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
+    /**
+     * Call a regular (not special) method on an object. Returns {@link PNone#NO_VALUE} if no such
+     * method has been found.
+     */
     public Object lookupAndCallRegularMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
