@@ -232,7 +232,7 @@ public class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        private boolean eqInt(PIntRange range, int len, int start, int step) {
+        private static boolean eqInt(PIntRange range, int len, int start, int step) {
             return eqInt(range.getIntLength(), range.getIntStart(), range.getIntStep(),
                             len, start, step);
         }
