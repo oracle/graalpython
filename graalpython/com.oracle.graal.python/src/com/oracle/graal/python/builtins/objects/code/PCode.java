@@ -496,64 +496,64 @@ public final class PCode extends PythonBuiltinObject {
     @Override
     @TruffleBoundary
     public String toString() {
-        String name = this.getName() == null ? "None" : this.getName();
-        String filename = this.getFilename() == null ? "None" : this.getFilename();
-        int firstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
-        return String.format("<code object %s, file \"%s\", line %d>", name, filename, firstLineNo);
+        String codeName = this.getName() == null ? "None" : this.getName();
+        String codeFilename = this.getFilename() == null ? "None" : this.getFilename();
+        int codeFirstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
+        return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
     }
 
     public Object co_name() {
-        String name = this.getName();
-        if (name != null) {
-            return name;
+        String codeName = this.getName();
+        if (codeName != null) {
+            return codeName;
         }
         return PNone.NONE;
     }
 
     public PBytes co_code(PythonObjectFactory factory) {
-        byte[] codestring = this.getCodestring();
-        if (codestring == null) {
-            codestring = new byte[0];
+        byte[] codeCodeString = this.getCodestring();
+        if (codeCodeString == null) {
+            codeCodeString = new byte[0];
         }
-        return factory.createBytes(codestring);
+        return factory.createBytes(codeCodeString);
     }
 
     public PTuple co_consts(PythonObjectFactory factory) {
-        Object[] constants = this.getConstants();
-        if (constants == null) {
-            constants = new Object[0];
+        Object[] codeConstants = this.getConstants();
+        if (codeConstants == null) {
+            codeConstants = new Object[0];
         }
-        return factory.createTuple(constants);
+        return factory.createTuple(codeConstants);
     }
 
     public PTuple co_names(PythonObjectFactory factory) {
-        Object[] names = this.getNames();
-        if (names == null) {
-            names = new Object[0];
+        Object[] codeNames = this.getNames();
+        if (codeNames == null) {
+            codeNames = new Object[0];
         }
-        return factory.createTuple(names);
+        return factory.createTuple(codeNames);
     }
 
     public PythonAbstractObject co_varnames(PythonObjectFactory factory) {
-        Object[] varNames = this.getVarnames();
-        if (varNames != null) {
-            return factory.createTuple(varNames);
+        Object[] codeVarNames = this.getVarnames();
+        if (codeVarNames != null) {
+            return factory.createTuple(codeVarNames);
         }
         return PNone.NONE;
     }
 
     public PythonAbstractObject co_freevars(PythonObjectFactory factory) {
-        Object[] freeVars = this.getFreeVars();
-        if (freeVars != null) {
-            return factory.createTuple(freeVars);
+        Object[] codeFreeVars = this.getFreeVars();
+        if (codeFreeVars != null) {
+            return factory.createTuple(codeFreeVars);
         }
         return PNone.NONE;
     }
 
     public PythonAbstractObject co_cellvars(PythonObjectFactory factory) {
-        Object[] cellVars = this.getCellVars();
-        if (cellVars != null) {
-            return factory.createTuple(cellVars);
+        Object[] codeCellVars = this.getCellVars();
+        if (codeCellVars != null) {
+            return factory.createTuple(codeCellVars);
         }
         return PNone.NONE;
     }
