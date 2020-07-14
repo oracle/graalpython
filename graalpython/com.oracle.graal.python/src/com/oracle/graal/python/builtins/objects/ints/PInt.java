@@ -82,9 +82,8 @@ public final class PInt extends PythonBuiltinObject {
         return value.equals(BigInteger.ONE);
     }
 
-    @TruffleBoundary(allowInlining = true)
     public boolean isZero() {
-        return value.equals(BigInteger.ZERO);
+        return value.signum() == 0;
     }
 
     @ExportMessage

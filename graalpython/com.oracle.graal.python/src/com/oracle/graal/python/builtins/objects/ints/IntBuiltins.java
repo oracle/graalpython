@@ -144,21 +144,140 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(n) || isInteger(n)")
-        public int roundInt(int arg, Object n) {
+        @Specialization
+        public int roundIntNone(int arg, PNone n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(n) || isInteger(n)")
-        public long roundLong(long arg, Object n) {
+        @Specialization
+        public long roundLongNone(long arg, PNone n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(n) || isInteger(n)")
-        public PInt roundPInt(PInt arg, Object n) {
+        @Specialization
+        public PInt roundPIntNone(PInt arg, PNone n) {
             return factory().createInt(arg.getValue());
+        }
+
+        @Specialization
+        public Object roundLongInt(long arg, int n) {
+            if (n >= 0) {
+                return arg;
+            }
+            return makeInt(op(arg, n));
+        }
+
+        @Specialization
+        public Object roundPIntInt(PInt arg, int n) {
+            if (n >= 0) {
+                return arg;
+            }
+            return makeInt(op(arg.getValue(), n));
+        }
+
+        @Specialization
+        public Object roundLongLong(long arg, long n) {
+            if (n >= 0) {
+                return arg;
+            }
+            if (n < Integer.MIN_VALUE) {
+                return 0;
+            }
+            return makeInt(op(arg, (int) n));
+        }
+
+        @Specialization
+        public Object roundPIntLong(PInt arg, long n) {
+            if (n >= 0) {
+                return arg;
+            }
+            if (n < Integer.MIN_VALUE) {
+                return 0;
+            }
+            return makeInt(op(arg.getValue(), (int) n));
+        }
+
+        @Specialization
+        public Object roundPIntLong(long arg, PInt n) {
+            if (n.isZeroOrPositive()) {
+                return arg;
+            }
+            try {
+                return makeInt(op(arg, n.intValueExact()));
+            } catch (ArithmeticException e) {
+                // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
+                return 0;
+            }
+        }
+
+        @Specialization
+        public Object roundPIntPInt(PInt arg, PInt n) {
+            if (n.isZeroOrPositive()) {
+                return arg;
+            }
+            try {
+                return makeInt(op(arg.getValue(), n.intValueExact()));
+            } catch (ArithmeticException e) {
+                // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
+                return 0;
+            }
+        }
+
+        @Specialization(guards = {"!isInteger(n)"})
+        @SuppressWarnings("unused")
+        public Object roundPIntPInt(Object arg, Object n) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
+        }
+
+        private Object makeInt(BigDecimal d) {
+            try {
+                return intValueExact(d);
+            } catch (ArithmeticException e) {
+                // does not fit int, so try long
+            }
+            try {
+                return longValueExact(d);
+            } catch (ArithmeticException e) {
+                // does not fit long, try BigInteger
+            }
+            try {
+                return factory().createInt(d.toBigIntegerExact());
+            } catch (ArithmeticException e) {
+                // has non-zero fractional part, which should not happen
+                throw CompilerDirectives.shouldNotReachHere("non-integer produced after rounding an integer", e);
+            }
+        }
+
+        @TruffleBoundary
+        private static int intValueExact(BigDecimal d) {
+            return d.intValueExact();
+        }
+
+        @TruffleBoundary
+        private static long longValueExact(BigDecimal d) {
+            return d.longValueExact();
+        }
+
+        @TruffleBoundary
+        private static BigDecimal op(long arg, int n) {
+            try {
+                return new BigDecimal(arg).setScale(n, RoundingMode.HALF_EVEN);
+            } catch (ArithmeticException e) {
+                // -n exceeds max. number of base-10 digits in BigInteger
+                return BigDecimal.ZERO;
+            }
+        }
+
+        @TruffleBoundary
+        private static BigDecimal op(BigInteger arg, int n) {
+            try {
+                return new BigDecimal(arg).setScale(n, RoundingMode.HALF_EVEN);
+            } catch (ArithmeticException e) {
+                // -n exceeds max. number of base-10 digits in BigInteger
+                return BigDecimal.ZERO;
+            }
         }
     }
 
@@ -704,7 +823,9 @@ public class IntBuiltins extends PythonBuiltins {
                     result = Math.multiplyExact(result, base);
                 }
                 exponent >>= 1;
-                base = Math.multiplyExact(base, base);
+                if (exponent != 0) {    // prevent overflow in last iteration
+                    base = Math.multiplyExact(base, base);
+                }
             }
             return result;
         }
@@ -1313,15 +1434,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doIPi(int left, PInt right) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
+        Object doIPi(int left, PInt right) {
+            return doHugeShift(PInt.longToBigInteger(left), right);
         }
 
         @Specialization
-        PInt doLPi(long left, PInt right) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
+        Object doLPi(long left, PInt right) {
+            return doHugeShift(PInt.longToBigInteger(left), right);
         }
 
         @Specialization
@@ -1331,15 +1450,20 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doPiL(PInt left, long right) {
+        Object doPiL(PInt left, long right) {
             raiseNegativeShiftCount(right < 0);
-            return factory().createInt(op(left.getValue(), (int) right));
+            int rightI = (int) right;
+            if (rightI == right) {
+                return factory().createInt(op(left.getValue(), rightI));
+            }
+            // right is >= 2**31, BigInteger's bitLength is at most 2**31-1
+            // therefore the result of shifting right is just the sign bit
+            return left.isNegative() ? -1 : 0;
         }
 
         @Specialization
-        PInt doPInt(PInt left, PInt right) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(left.getValue(), right.intValue()));
+        Object doPInt(PInt left, PInt right) {
+            return doHugeShift(left.getValue(), right);
         }
 
         private void raiseNegativeShiftCount(boolean cond) {
@@ -1354,8 +1478,19 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        private Object doHugeShift(BigInteger left, PInt right) {
+            raiseNegativeShiftCount(!right.isZeroOrPositive());
+            try {
+                return factory().createInt(op(left, right.intValueExact()));
+            } catch (ArithmeticException e) {
+                // right is >= 2**31, BigInteger's bitLength is at most 2**31-1
+                // therefore the result of shifting right is just the sign bit
+                return left.signum() < 0 ? -1 : 0;
+            }
+        }
+
         @TruffleBoundary
-        public static BigInteger op(BigInteger left, int right) {
+        private static BigInteger op(BigInteger left, int right) {
             return left.shiftRight(right);
         }
 
