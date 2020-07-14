@@ -525,8 +525,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object doObject(VirtualFrame frame, Object a, Object b,
-                        @Cached("create(__DIVMOD__, __RDIVMOD__)") LookupAndCallBinaryNode callDivmod) {
+                        @Cached("createDivmod()") LookupAndCallBinaryNode callDivmod) {
             return callDivmod.executeObject(frame, a, b);
+        }
+
+        protected static LookupAndCallBinaryNode createDivmod() {
+            return BinaryArithmetic.DivMod.create();
         }
 
     }
