@@ -104,7 +104,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -122,6 +122,8 @@ import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextWithoutFr
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -142,7 +144,6 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
@@ -414,7 +415,6 @@ public abstract class SequenceStorageNodes {
 
     abstract static class NormalizingNode extends PNodeWithContext {
 
-        protected static final String KEY_TYPE_ERROR_MESSAGE = "indices must be integers or slices, not %p";
         @Child private NormalizeIndexNode normalizeIndexNode;
         @Child private PythonObjectLibrary lib;
         @Child private LenNode lenNode;
@@ -525,10 +525,13 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected Object doSlice(SequenceStorage storage, PSlice slice,
                         @Cached LenNode lenNode,
-                        @Cached PythonObjectFactory factory) {
-            SliceInfo info = slice.computeIndices(lenNode.execute(storage));
+                        @Cached PythonObjectFactory factory,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLen) {
+            SliceInfo info = compute.execute(sliceCast.execute(slice), lenNode.execute(storage));
             if (factoryMethod != null) {
-                return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, info.length), factory);
+                return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, sliceLen.len(info)), factory);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
@@ -564,15 +567,15 @@ public abstract class SequenceStorageNodes {
         }
 
         public static GetItemNode createNotNormalized() {
-            return GetItemNodeGen.create(null, KEY_TYPE_ERROR_MESSAGE, null);
+            return GetItemNodeGen.create(null, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
         }
 
         public static GetItemNode create(NormalizeIndexNode normalizeIndexNode) {
-            return GetItemNodeGen.create(normalizeIndexNode, KEY_TYPE_ERROR_MESSAGE, null);
+            return GetItemNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
         }
 
         public static GetItemNode create() {
-            return GetItemNodeGen.create(NormalizeIndexNode.create(), KEY_TYPE_ERROR_MESSAGE, null);
+            return GetItemNodeGen.create(NormalizeIndexNode.create(), ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
         }
 
         public static GetItemNode createNotNormalized(String keyTypeErrorMessage) {
@@ -592,7 +595,7 @@ public abstract class SequenceStorageNodes {
         }
 
         public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
-            return GetItemNodeGen.create(normalizeIndexNode, KEY_TYPE_ERROR_MESSAGE, factoryMethod);
+            return GetItemNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, factoryMethod);
         }
 
     }
@@ -650,10 +653,13 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected Object doSlice(ContainerFactory factoryMethod, SequenceStorage storage, PSlice slice,
                         @Cached GetItemSliceNode getItemSliceNode,
-                        @Cached PythonObjectFactory factory) {
-            SliceInfo info = slice.computeIndices(storage.length());
+                        @Cached PythonObjectFactory factory,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLen) {
+            SliceInfo info = compute.execute(sliceCast.execute(slice), storage.length());
             if (factoryMethod != null) {
-                return factoryMethod.apply(getItemSliceNode.execute(storage, info.start, info.stop, info.step, info.length), factory);
+                return factoryMethod.apply(getItemSliceNode.execute(storage, info.start, info.stop, info.step, sliceLen.len(info)), factory);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
@@ -711,11 +717,6 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected int doInt(IntSequenceStorage storage, int idx) {
-            return storage.getIntItemNormalized(idx);
-        }
-
-        @Specialization
-        protected int doRange(RangeSequenceStorage storage, int idx) {
             return storage.getIntItemNormalized(idx);
         }
 
@@ -990,8 +991,10 @@ public abstract class SequenceStorageNodes {
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
-                        @Cached ListNodes.ConstructListNode constructListNode) {
-            SliceInfo info = slice.computeIndices(storage.length());
+                        @Cached ListNodes.ConstructListNode constructListNode,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute) {
+            SliceInfo info = compute.execute(sliceCast.execute(slice), storage.length());
             // We need to construct the list eagerly because if a SequenceStoreException occurs, we
             // must not use iterable again. It could have sice-effects.
             PList values = constructListNode.execute(iterable);
@@ -1131,8 +1134,10 @@ public abstract class SequenceStorageNodes {
         protected SequenceStorage doSliceSequence(SequenceStorage storage, PSlice slice, PSequence sequence,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
-                        @Cached LenNode lenNode) {
-            SliceInfo info = slice.computeIndices(lenNode.execute(storage));
+                        @Cached LenNode lenNode,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute) {
+            SliceInfo info = compute.execute(sliceCast.execute(slice), lenNode.execute(storage));
             try {
                 setItemSliceNode.execute(storage, info, sequence);
                 return storage;
@@ -1148,8 +1153,10 @@ public abstract class SequenceStorageNodes {
         protected SequenceStorage doSliceGeneric(SequenceStorage storage, PSlice slice, Object iterable,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
-                        @Cached ListNodes.ConstructListNode constructListNode) {
-            SliceInfo info = slice.computeIndices(storage.length());
+                        @Cached ListNodes.ConstructListNode constructListNode,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute) {
+            SliceInfo info = compute.execute(sliceCast.execute(slice), storage.length());
 
             // We need to construct the list eagerly because if a SequenceStoreException occurs, we
             // must not use iterable again. It could have sice-effects.
@@ -1364,10 +1371,12 @@ public abstract class SequenceStorageNodes {
                         @Cached EnsureCapacityNode ensureCapacity,
                         @Cached CopyNode copyNode,
                         @Cached CopyItemNode copyItemNode,
-                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode) {
+                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
+                        @Cached LenOfRangeNode sliceLen) {
             int length = selfLenNode.execute(store);
             int valueLen = otherLenNode.execute(sequence);
-            if (wrongLength.profile(sinfo.step != 1 && sinfo.length != valueLen)) {
+            int sliceLength = sliceLen.len(sinfo);
+            if (wrongLength.profile(sinfo.step != 1 && sliceLength != valueLen)) {
                 throw raiseNode.raise(ValueError, ErrorMessages.ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE, valueLen, length);
             }
             int start = sinfo.start;
@@ -1396,7 +1405,7 @@ public abstract class SequenceStorageNodes {
                 stop = length;
             }
 
-            int norig = sinfo.length;
+            int norig = sliceLength;
             int delta = valueLen - norig;
             int index;
 
@@ -1442,10 +1451,6 @@ public abstract class SequenceStorageNodes {
         void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence,
                         @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
             throw new SequenceStoreException(sequence.getIndicativeValue());
-        }
-
-        protected static boolean isValidReplacement(Class<? extends SequenceStorage> cachedClass, SequenceStorage s, SliceInfo info) {
-            return info.step == 1 || info.length == cachedClass.cast(s).length();
         }
 
         protected static boolean replacesWholeSequence(Class<? extends BasicSequenceStorage> cachedClass, BasicSequenceStorage s, SliceInfo info) {
@@ -3255,8 +3260,10 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected void doSlice(SequenceStorage storage, PSlice slice,
-                        @Cached LenNode lenNode) {
-            SliceInfo info = slice.computeIndices(lenNode.execute(storage));
+                        @Cached LenNode lenNode,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute) {
+            SliceInfo info = compute.execute(sliceCast.execute(slice), lenNode.execute(storage));
             try {
                 getGetItemSliceNode().execute(storage, info);
             } catch (SequenceStoreException e) {
@@ -3291,15 +3298,15 @@ public abstract class SequenceStorageNodes {
         }
 
         public static DeleteNode createNotNormalized() {
-            return DeleteNodeGen.create(null, KEY_TYPE_ERROR_MESSAGE);
+            return DeleteNodeGen.create(null, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
         }
 
         public static DeleteNode create(NormalizeIndexNode normalizeIndexNode) {
-            return DeleteNodeGen.create(normalizeIndexNode, KEY_TYPE_ERROR_MESSAGE);
+            return DeleteNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
         }
 
         public static DeleteNode create() {
-            return DeleteNodeGen.create(NormalizeIndexNode.create(), KEY_TYPE_ERROR_MESSAGE);
+            return DeleteNodeGen.create(NormalizeIndexNode.create(), ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
         }
 
         public static DeleteNode createNotNormalized(String keyTypeErrorMessage) {
@@ -3586,18 +3593,7 @@ public abstract class SequenceStorageNodes {
             return s.getInternalArray();
         }
 
-        @Specialization
-        static Object[] doRangeSequenceStorage(RangeSequenceStorage s) {
-            int length = s.length();
-            PRange range = s.getRange();
-            Object[] result = new Object[length];
-            for (int i = 0, cur = range.getStart(); i < result.length; i++, cur += range.getStep()) {
-                result[i] = cur;
-            }
-            return result;
-        }
-
-        @Specialization(replaces = {"doObjectSequenceStorage", "doTypedSequenceStorage", "doNativeObject", "doEmptySequenceStorage", "doRangeSequenceStorage"})
+        @Specialization(replaces = {"doObjectSequenceStorage", "doTypedSequenceStorage", "doNativeObject", "doEmptySequenceStorage"})
         static Object[] doGeneric(SequenceStorage s,
                         @Cached LenNode lenNode,
                         @Exclusive @Cached GetItemScalarNode getItemNode) {

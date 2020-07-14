@@ -516,10 +516,18 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.floorDiv(left, right);
         }
 
-        @Specialization
+        @Specialization(rewriteOn = ArithmeticException.class)
         long doLL(long left, long right) {
+            if (left == Long.MIN_VALUE && right == -1) {
+                throw new ArithmeticException();
+            }
             raiseDivisionByZero(right == 0);
             return Math.floorDiv(left, right);
+        }
+
+        @Specialization(replaces = "doLL")
+        PInt doLLOverflow(long left, long right) {
+            return doPiPi(factory().createInt(left), factory().createInt(right));
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)

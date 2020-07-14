@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -66,11 +65,6 @@ public abstract class SequenceNodes {
         int doPString(PString str,
                         @CachedLibrary("str") PythonObjectLibrary lib) {
             return lib.length(str);
-        }
-
-        @Specialization
-        int doPRange(PRange range) {
-            return range.len();
         }
 
         @Specialization(guards = {"!isPString(seq)", "!isPRange(seq)"})

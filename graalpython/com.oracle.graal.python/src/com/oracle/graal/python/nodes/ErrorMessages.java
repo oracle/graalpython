@@ -314,6 +314,7 @@ public abstract class ErrorMessages {
     public static final String LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = "local variable '%s' referenced before assignment";
     public static final String LOCALS_MUST_BE_MAPPING = "%s() locals must be a mapping or None, not %p";
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
+    public static final String LENGTH_SHOULD_NOT_BE_NEG = "length should not be negative";
     public static final String MALFORMED_STR_FOR_COMPLEX = "malformed string for complex() %s";
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";

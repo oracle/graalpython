@@ -27,8 +27,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
-import static com.oracle.graal.python.builtins.objects.range.PRange.getLenOfRange;
-import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
+import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
+import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
@@ -207,7 +207,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -3163,39 +3162,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice)
     @GenerateNodeFactory
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
-        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
-        @SuppressWarnings("unused")
-        Object sliceStop(Object cls, int first, PNone second, PNone third) {
-            return factory().createSlice(MISSING_INDEX, first, MISSING_INDEX);
-        }
-
-        @Specialization(guards = "isNoValue(third)")
-        Object sliceStart(@SuppressWarnings("unused") Object cls, int first, int second, @SuppressWarnings("unused") PNone third) {
-            return factory().createSlice(first, second, MISSING_INDEX);
-        }
-
-        @Specialization
-        Object slice(@SuppressWarnings("unused") Object cls, int first, int second, int third) {
-            return factory().createSlice(first, second, third);
-        }
-
-        @Specialization(guards = "isNoValue(third)")
-        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, @SuppressWarnings("unused") PNone third,
-                        @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, first, second, MISSING_INDEX);
-        }
 
         @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object slice(VirtualFrame frame, Object cls, Object first, PNone second, PNone third,
+        Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, MISSING_INDEX, first, MISSING_INDEX);
+            return sliceNode.execute(frame, PNone.NONE, first, PNone.NONE);
         }
 
-        @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
-        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+        @Specialization(guards = {"!isNoValue(second)", "isNoValue(third)"})
+        @SuppressWarnings("unused")
+        Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, start, stop, step);
+            return sliceNode.execute(frame, first, second, PNone.NONE);
+        }
+
+        @Specialization(guards = {"!isNoValue(second)", "!isNoValue(third)"})
+        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(frame, first, second, third);
         }
     }
 

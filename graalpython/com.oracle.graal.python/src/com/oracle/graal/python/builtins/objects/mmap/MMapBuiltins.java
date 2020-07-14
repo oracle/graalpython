@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -90,6 +91,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -271,17 +274,20 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doSlice(PMMap self, PSlice idx,
-                        @Cached("create()") ReadFromChannelNode readNode) {
+                        @Cached("create()") ReadFromChannelNode readNode,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLen) {
             try {
                 long len = self.getLength();
-                SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
+                SliceInfo info = compute.execute(sliceCast.execute(idx), PInt.intValueExact(len));
                 SeekableByteChannel channel = self.getChannel();
 
                 // save current position
                 long oldPos = PMMap.position(channel);
 
                 PMMap.position(channel, info.start);
-                ByteSequenceStorage s = readNode.execute(channel, info.length);
+                ByteSequenceStorage s = readNode.execute(channel, sliceLen.len(info));
 
                 // restore position
                 PMMap.position(channel, oldPos);
@@ -337,11 +343,14 @@ public class MMapBuiltins extends PythonBuiltins {
         PNone doSlice(PMMap self, PSlice idx, PIBytesLike val,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLen) {
 
             try {
                 long len = self.getLength();
-                SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
+                SliceInfo info = compute.execute(sliceCast.execute(idx), PInt.intValueExact(len));
                 SeekableByteChannel channel = self.getChannel();
 
                 if (invalidStepProfile.profile(info.step != 1)) {
@@ -352,7 +361,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long oldPos = PMMap.position(channel);
 
                 PMMap.position(channel, info.start);
-                writeNode.execute(channel, getStorageNode.execute(val), info.length);
+                writeNode.execute(channel, getStorageNode.execute(val), sliceLen.len(info));
 
                 // restore position
                 PMMap.position(channel, oldPos);

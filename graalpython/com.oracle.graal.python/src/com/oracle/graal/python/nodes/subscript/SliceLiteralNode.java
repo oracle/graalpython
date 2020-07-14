@@ -25,14 +25,20 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
+import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
+import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
@@ -41,72 +47,64 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CastToSliceComponentNodeGen;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CoerceToIntSliceFactory;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CoerceToObjectSliceFactory;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.ComputeIndicesFactory;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChild(value = "first", type = ExpressionNode.class)
 @NodeChild(value = "second", type = ExpressionNode.class)
 @NodeChild(value = "third", type = ExpressionNode.class)
-@TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
+@TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class SliceLiteralNode extends ExpressionNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-    @Child private CastToSliceComponentNode castStartNode;
-    @Child private CastToSliceComponentNode castStopNode;
-    @Child private CastToSliceComponentNode castStepNode;
 
     public abstract PSlice execute(VirtualFrame frame, Object start, Object stop, Object step);
 
     @Specialization
     public PSlice doInt(int start, int stop, int step) {
-        return factory.createSlice(start, stop, step);
+        return factory.createIntSlice(start, stop, step);
+    }
+
+    @Specialization(guards = "isNoValue(step)")
+    @SuppressWarnings("unused")
+    public PSlice doInt(int start, int stop, PNone step) {
+        return factory.createIntSlice(start, stop, 1, false, true);
     }
 
     @Specialization
-    public PSlice doInt(VirtualFrame frame, int start, int stop, PNone step) {
-        return factory.createSlice(start, stop, castStep(frame, step));
+    @SuppressWarnings("unused")
+    public PSlice doInt(PNone start, int stop, int step) {
+        return factory.createIntSlice(0, stop, step, true, false);
     }
 
-    @Fallback
-    public PSlice doGeneric(VirtualFrame frame, Object start, Object stop, Object step) {
-        return factory.createSlice(castStart(frame, start), castStop(frame, stop), castStep(frame, step));
+    @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
+    @SuppressWarnings("unused")
+    public Object sliceStop(int first, PNone second, PNone third) {
+        return factory.createIntSlice(0, first, 1, true, true);
     }
 
-    private int castStart(VirtualFrame frame, Object o) {
-        if (castStartNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStartNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
-        }
-        return castStartNode.execute(frame, o);
-    }
-
-    private int castStop(VirtualFrame frame, Object o) {
-        if (castStopNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStopNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
-        }
-        return castStopNode.execute(frame, o);
-    }
-
-    private int castStep(VirtualFrame frame, Object o) {
-        if (castStepNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStepNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, Integer.MAX_VALUE));
-        }
-        return castStepNode.execute(frame, o);
+    @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
+    public Object doGeneric(Object start, Object stop, Object step) {
+        return factory.createObjectSlice(start, stop, step);
     }
 
     public abstract PNode getFirst();
@@ -121,6 +119,189 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     public static SliceLiteralNode create() {
         return SliceLiteralNodeGen.create(null, null, null);
+    }
+
+    /**
+     * Coerce indices computation to lossy integer values
+     */
+    @GenerateNodeFactory
+    @GenerateUncached
+    public abstract static class ComputeIndices extends PNodeWithContext {
+
+        public abstract SliceInfo execute(PSlice slice, int i);
+
+        @Specialization(guards = "length >= 0")
+        SliceInfo doSliceInt(PIntSlice slice, int length) {
+            return slice.computeIndices(length);
+        }
+
+        @Specialization(guards = "length >= 0")
+        SliceInfo doSliceObject(PObjectSlice slice, int length,
+                        @Cached SliceExactCastToInt castStartNode,
+                        @Cached SliceExactCastToInt castStopNode,
+                        @Cached SliceExactCastToInt castStepNode) {
+            Object startIn = castStartNode.execute(slice.getStart());
+            Object stopIn = castStopNode.execute(slice.getStop());
+            Object stepIn = castStepNode.execute(slice.getStep());
+            return PObjectSlice.computeIndices(startIn, stopIn, stepIn, length);
+        }
+
+        @Specialization(guards = "length < 0")
+        SliceInfo doSliceInt(@SuppressWarnings("unused") PSlice slice, @SuppressWarnings("unused") int length,
+                        @Cached PRaiseNode raise) {
+            throw raise.raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+        }
+
+        public static ComputeIndices create() {
+            return ComputeIndicesFactory.create();
+        }
+    }
+
+    /**
+     * This is only applicable to slow path <i><b>internal</b></i> computations.
+     */
+    @GenerateNodeFactory
+    @GenerateUncached
+    public abstract static class CoerceToObjectSlice extends PNodeWithContext {
+
+        public abstract PObjectSlice execute(PSlice slice);
+
+        @Specialization
+        PObjectSlice doSliceInt(PIntSlice slice,
+                        @Cached SliceCastToToBigInt start,
+                        @Cached SliceCastToToBigInt stop,
+                        @Cached SliceCastToToBigInt step,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
+        }
+
+        protected static boolean isBigInt(PObjectSlice slice) {
+            return slice.getStart() instanceof BigInteger && slice.getStop() instanceof BigInteger && slice.getStep() instanceof BigInteger;
+        }
+
+        @Specialization(guards = "isBigInt(slice)")
+        PObjectSlice doSliceObject(PObjectSlice slice) {
+            return slice;
+        }
+
+        @Specialization
+        PObjectSlice doSliceObject(PObjectSlice slice,
+                        @Cached SliceCastToToBigInt start,
+                        @Cached SliceCastToToBigInt stop,
+                        @Cached SliceCastToToBigInt step,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
+        }
+
+        public static CoerceToObjectSlice create() {
+            return CoerceToObjectSliceFactory.create();
+        }
+    }
+
+    /**
+     * This is only applicable to slow path <i><b>internal</b></i> computations.
+     */
+    @GenerateNodeFactory
+    @GenerateUncached
+    public abstract static class CoerceToIntSlice extends PNodeWithContext {
+
+        public abstract PSlice execute(PSlice slice);
+
+        @Specialization
+        PSlice doSliceInt(PIntSlice slice) {
+            return slice;
+        }
+
+        @Specialization
+        PSlice doSliceObject(PObjectSlice slice,
+                        @Cached SliceLossyCastToInt start,
+                        @Cached SliceLossyCastToInt stop,
+                        @Cached SliceLossyCastToInt step,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
+        }
+
+        public static CoerceToIntSlice create() {
+            return CoerceToIntSliceFactory.create();
+        }
+    }
+
+    @GenerateNodeFactory
+    @GenerateUncached
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    public abstract static class SliceCastToToBigInt extends Node {
+
+        public abstract Object execute(Object x);
+
+        @Specialization
+        protected Object doNone(@SuppressWarnings("unused") PNone i) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPNone(i)")
+        protected Object doGeneric(Object i,
+                        @Cached BranchProfile exceptionProfile,
+                        @Cached PRaiseNode raise,
+                        @Cached CastToJavaBigIntegerNode cast) {
+            try {
+                return cast.execute(i);
+            } catch (PException e) {
+                exceptionProfile.enter();
+                throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+            }
+        }
+    }
+
+    @GenerateNodeFactory
+    @GenerateUncached
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    public abstract static class SliceExactCastToInt extends Node {
+
+        public abstract Object execute(Object x);
+
+        @Specialization
+        protected Object doNone(@SuppressWarnings("unused") PNone i) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPNone(i)", limit = "2")
+        protected Object doGeneric(Object i,
+                        @Cached BranchProfile exceptionProfile,
+                        @Cached PRaiseNode raise,
+                        @CachedLibrary("i") PythonObjectLibrary lib) {
+            if (lib.canBeIndex(i)) {
+                return lib.asSize(i);
+            }
+            exceptionProfile.enter();
+            throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+        }
+    }
+
+    @GenerateNodeFactory
+    @GenerateUncached
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    protected abstract static class SliceLossyCastToInt extends Node {
+
+        public abstract Object execute(Object x);
+
+        @Specialization
+        protected Object doNone(@SuppressWarnings("unused") PNone i) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPNone(i)", limit = "2")
+        protected Object doGeneric(Object i,
+                        @Cached BranchProfile exceptionProfile,
+                        @Cached PRaiseNode raise,
+                        @CachedLibrary("i") PythonObjectLibrary lib,
+                        @Cached CastToJavaIntLossyNode cast) {
+            if (lib.canBeIndex(i)) {
+                return cast.execute(lib.asIndex(i));
+            }
+            exceptionProfile.enter();
+            throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+
+        }
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
@@ -155,7 +336,8 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization
-        int doLong(long i, @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
+        int doLong(long i,
+                        @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return PInt.intValueExact(i);
             } catch (OverflowException e) {
@@ -165,7 +347,8 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization
-        int doPInt(PInt i, @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
+        int doPInt(PInt i,
+                        @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return i.intValueExact();
             } catch (ArithmeticException e) {
@@ -187,7 +370,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                     return overflowValue;
                 }
             } else {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+                throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
             }
         }
 

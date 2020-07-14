@@ -309,12 +309,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return expected.getMemberName().equals(actual);
         }
 
-        protected static Object getSliceComponent(int sliceComponent) {
-            if (sliceComponent == PSlice.MISSING_INDEX) {
-                return PNone.NONE;
-            }
-            return sliceComponent;
-        }
     }
 
     @GenerateUncached
@@ -817,19 +811,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(START, key)")
         static Object doStart(PSlice object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getSliceComponent(object.getStart()));
+            return toSulongNode.execute(object.getStart());
         }
 
         @Specialization(guards = "eq(STOP, key)")
         static Object doStop(PSlice object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getSliceComponent(object.getStop()));
+            return toSulongNode.execute(object.getStop());
         }
 
         @Specialization(guards = "eq(STEP, key)")
         static Object doStep(PSlice object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getSliceComponent(object.getStep()));
+            return toSulongNode.execute(object.getStep());
         }
 
         @Specialization(guards = "eq(IM_SELF, key)")

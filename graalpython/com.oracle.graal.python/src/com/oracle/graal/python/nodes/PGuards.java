@@ -353,6 +353,10 @@ public abstract class PGuards {
         return obj instanceof PythonAbstractObject;
     }
 
+    public static boolean canBeNumber(Object idx) {
+        return isBoolean(idx) || isInteger(idx) || isPInt(idx);
+    }
+
     public static boolean isPInt(Object obj) {
         return obj instanceof PInt;
     }

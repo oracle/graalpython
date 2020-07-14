@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
@@ -107,6 +108,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -2083,8 +2086,12 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public String doString(String primary, PSlice slice) {
-            SliceInfo info = slice.computeIndices(primary.length());
+        public String doString(String primary, PSlice slice,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLen) {
+            SliceInfo info = compute.execute(sliceCast.execute(slice), primary.length());
+            final int sliceLength = sliceLen.len(info);
             final int start = info.start;
             int stop = info.stop;
             int step = info.step;
@@ -2095,9 +2102,9 @@ public final class StringBuiltins extends PythonBuiltins {
             if (step == 1) {
                 return getSubString(primary, start, stop);
             } else {
-                char[] newChars = new char[info.length];
+                char[] newChars = new char[sliceLength];
                 int j = 0;
-                for (int i = start; j < info.length; i += step) {
+                for (int i = start; j < sliceLength; i += step) {
                     newChars[j++] = primary.charAt(i);
                 }
 
