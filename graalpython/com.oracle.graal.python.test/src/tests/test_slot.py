@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,45 @@ class TestSlots(unittest.TestCase):
             obj.world
         obj.world = "world"
         self.assertEqual(obj.world, "world")
+        
+    def test_dict_and_weakref_are_listed_in_slots(self):
+        class D: __slots__ = ['__dict__']
+        self.assertEqual(tuple(D.__slots__), ('__dict__',))
+        self.assertEqual(tuple(D().__slots__), ('__dict__',))
 
+        class WR: __slots__ = ['__weakref__']
+        self.assertEqual(tuple(WR.__slots__), ('__weakref__',))
+        self.assertEqual(tuple(WR().__slots__), ('__weakref__',))
 
+        class DWR: __slots__ = ['__dict__', '__weakref__']
+        self.assertEqual(tuple(DWR.__slots__), ('__dict__', '__weakref__',))
+        self.assertEqual(tuple(DWR().__slots__), ('__dict__', '__weakref__',))
+
+    def test_dict_if_slots(self):
+        class C: __slots__ = ['a']
+        self.assertEqual(tuple(C.__dict__['__slots__']), ('a',))
+        
+    def test_slots_are_not_sorted(self):
+        class C: __slots__ = ['b', 'a']
+        self.assertEqual(tuple(C.__slots__), ('b', 'a',))
+
+    def test_forbidden_slot_names(self):
+            raised = False
+            try:
+                class C: 
+                    __slots__ = ['__slots__']
+            except ValueError:
+                raised = True
+            assert raised
+            
+            raised = False
+            try:
+                class C: 
+                    v = 1
+                    __slots__ = ['v']
+            except ValueError:
+                raised = True
+            assert raised
+        
 if __name__ == "__main__":
     unittest.main()

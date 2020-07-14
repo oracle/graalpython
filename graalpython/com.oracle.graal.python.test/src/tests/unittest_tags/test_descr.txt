@@ -47,6 +47,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_rich_comparisons
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_rmul
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_and_no_get
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_class
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slices
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_descriptor
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_trash
