@@ -48,8 +48,12 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
@@ -64,6 +68,7 @@ import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -495,5 +500,81 @@ public final class PCode extends PythonBuiltinObject {
         String filename = this.getFilename() == null ? "None" : this.getFilename();
         int firstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
         return String.format("<code object %s, file \"%s\", line %d>", name, filename, firstLineNo);
+    }
+
+    public Object co_name() {
+        String name = this.getName();
+        if (name != null) {
+            return name;
+        }
+        return PNone.NONE;
+    }
+
+    public PBytes co_code(PythonObjectFactory factory) {
+        byte[] codestring = this.getCodestring();
+        if (codestring == null) {
+            codestring = new byte[0];
+        }
+        return factory.createBytes(codestring);
+    }
+
+    public PTuple co_consts(PythonObjectFactory factory) {
+        Object[] constants = this.getConstants();
+        if (constants == null) {
+            constants = new Object[0];
+        }
+        return factory.createTuple(constants);
+    }
+
+    public PTuple co_names(PythonObjectFactory factory) {
+        Object[] names = this.getNames();
+        if (names == null) {
+            names = new Object[0];
+        }
+        return factory.createTuple(names);
+    }
+
+    public PythonAbstractObject co_varnames(PythonObjectFactory factory) {
+        Object[] varNames = this.getVarnames();
+        if (varNames != null) {
+            return factory.createTuple(varNames);
+        }
+        return PNone.NONE;
+    }
+
+    public PythonAbstractObject co_freevars(PythonObjectFactory factory) {
+        Object[] freeVars = this.getFreeVars();
+        if (freeVars != null) {
+            return factory.createTuple(freeVars);
+        }
+        return PNone.NONE;
+    }
+
+    public PythonAbstractObject co_cellvars(PythonObjectFactory factory) {
+        Object[] cellVars = this.getCellVars();
+        if (cellVars != null) {
+            return factory.createTuple(cellVars);
+        }
+        return PNone.NONE;
+    }
+
+    public int co_argcount() {
+        return this.getArgcount();
+    }
+
+    public int co_posonlyargcount() {
+        return this.getPositionalOnlyArgCount();
+    }
+
+    public int co_kwonlyargcount() {
+        return this.getKwonlyargcount();
+    }
+
+    public int co_nlocals() {
+        return this.getNlocals();
+    }
+
+    public int co_flags() {
+        return this.getFlags();
     }
 }

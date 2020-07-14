@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.code;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
@@ -35,12 +36,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
 public class CodeBuiltins extends PythonBuiltins {
@@ -55,11 +59,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetFreeVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            Object[] freeVars = self.getFreeVars();
-            if (freeVars != null) {
-                return factory().createTuple(freeVars);
-            }
-            return PNone.NONE;
+            return self.co_freevars(factory());
         }
     }
 
@@ -68,11 +68,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetCellVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            Object[] cellVars = self.getCellVars();
-            if (cellVars != null) {
-                return factory().createTuple(cellVars);
-            }
-            return PNone.NONE;
+            return self.co_cellvars(factory());
         }
     }
 
@@ -104,11 +100,7 @@ public class CodeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         protected Object get(PCode self) {
-            String name = self.getName();
-            if (name != null) {
-                return name;
-            }
-            return PNone.NONE;
+            return self.co_name();
         }
     }
 
@@ -117,7 +109,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return self.getArgcount();
+            return self.co_argcount();
         }
     }
 
@@ -126,7 +118,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetPosOnlyArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return self.getPositionalOnlyArgCount();
+            return self.co_posonlyargcount();
         }
     }
 
@@ -135,7 +127,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetKnownlyArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return self.getKwonlyargcount();
+            return self.co_kwonlyargcount();
         }
     }
 
@@ -144,7 +136,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return self.getNlocals();
+            return self.co_nlocals();
         }
     }
 
@@ -162,7 +154,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetFlagsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return self.getFlags();
+            return self.co_flags();
         }
     }
 
@@ -171,11 +163,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            byte[] codestring = self.getCodestring();
-            if (codestring == null) {
-                codestring = new byte[0];
-            }
-            return factory().createBytes(codestring);
+            return self.co_code(factory());
         }
     }
 
@@ -184,11 +172,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetConstsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            Object[] constants = self.getConstants();
-            if (constants == null) {
-                constants = new Object[0];
-            }
-            return factory().createTuple(constants);
+            return self.co_consts(factory());
         }
     }
 
@@ -197,11 +181,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            Object[] names = self.getNames();
-            if (names == null) {
-                names = new Object[0];
-            }
-            return factory().createTuple(names);
+            return self.co_names(factory());
         }
     }
 
@@ -210,11 +190,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetVarNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            Object[] varNames = self.getVarnames();
-            if (varNames != null) {
-                return factory().createTuple(varNames);
-            }
-            return PNone.NONE;
+            return self.co_varnames(factory());
         }
     }
 
@@ -235,8 +211,36 @@ public class CodeBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CodeReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
         Object repr(PCode self) {
             return self.toString();
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CodeHashNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long hash(PCode self,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            long h, h0, h1, h2, h3, h4, h5, h6;
+            PythonObjectFactory factory = factory();
+
+            h0 = pol.hash(self.co_name());
+            h1 = pol.hash(self.co_code(factory));
+            h2 = pol.hash(self.co_consts(factory));
+            h3 = pol.hash(self.co_names(factory));
+            h4 = pol.hash(self.co_varnames(factory));
+            h5 = pol.hash(self.co_freevars(factory));
+            h6 = pol.hash(self.co_cellvars(factory));
+
+            h = h0 ^ h1 ^ h2 ^ h3 ^ h4 ^ h5 ^ h6 ^
+                            self.co_argcount() ^ self.co_posonlyargcount() ^ self.co_kwonlyargcount() ^
+                            self.co_nlocals() ^ self.co_flags();
+            if (h == -1) {
+                h = -2;
+            }
+            return h;
         }
     }
 }
