@@ -213,12 +213,6 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    public static Object getAndCallMethodInternal(Double receiver, ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
-                    @Cached PythonAbstractObject.GetAndCallMethodNode getAndCallMethodNode) {
-        return getAndCallMethodNode.execute(state, receiver, ignoreGetException, method, arguments);
-    }
-
-    @ExportMessage
     public static Object lookupAndCallSpecialMethod(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {

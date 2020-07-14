@@ -332,12 +332,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object getAndCallMethodInternal(Object receiver, ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
-                    @Cached PythonAbstractObject.GetAndCallMethodNode getAndCallMethodNode) {
-        return getAndCallMethodNode.execute(state, receiver, ignoreGetException, method, arguments);
-    }
-
-    @ExportMessage
     public static Object lookupAndCallSpecialMethod(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {

@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.object;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -198,12 +197,6 @@ final class DefaultPythonStringExports {
     public static Object lookupAttribute(String x, String name, boolean inheritedOnly,
                     @Exclusive @Cached LookupAttributeNode lookup) {
         return lookup.execute(x, name, inheritedOnly);
-    }
-
-    @ExportMessage
-    public static Object getAndCallMethodInternal(String receiver, ThreadState state, boolean ignoreGetException, Object method, Object[] arguments,
-                    @Cached PythonAbstractObject.GetAndCallMethodNode getAndCallMethodNode) {
-        return getAndCallMethodNode.execute(state, receiver, ignoreGetException, method, arguments);
     }
 
     @ExportMessage

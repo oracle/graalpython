@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.object;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -598,36 +597,6 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public Object lookupSpecialMethod(Object receiver, String name) {
         return lookupAttribute(receiver, name, true);
-    }
-
-    /**
-     * Calls an unbound method descriptor, typically obtained using {@link #lookupSpecialMethod}.
-     *
-     * @param receiver self
-     * @param method the function object or other descriptor
-     * @param arguments method arguments, not containing the receiver
-     * @return return value of the function
-     */
-    public final Object getAndCallMethod(Object receiver, ThreadState state, Object method, Object... arguments) {
-        return getAndCallMethodInternal(receiver, state, false, method, arguments);
-    }
-
-    /**
-     * Calls an unbound method descriptor, typically obtained using {@link #lookupSpecialMethod}.
-     * Ignores exceptions raised in {@code __get__} and returns {@link PNone#NO_VALUE} in that case.
-     *
-     * @param receiver self
-     * @param method the function object or other descriptor
-     * @param arguments method arguments, not containing the receiver
-     * @return return value of the function or {@link PNone#NO_VALUE}
-     */
-    public final Object getAndCallMethodIgnoreGetException(Object receiver, ThreadState state, Object method, Object... arguments) {
-        return getAndCallMethodInternal(receiver, state, true, method, arguments);
-    }
-
-    protected Object getAndCallMethodInternal(Object receiver, ThreadState state, boolean ignoreGetException, Object method, Object... arguments) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
     public Object callFunction(Object callable, ThreadState state, Object... arguments) {
