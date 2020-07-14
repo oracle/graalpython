@@ -46,15 +46,18 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -331,6 +334,17 @@ final class DefaultPythonObjectExports {
     static Object lookupAttribute(Object x, String name, boolean inheritedOnly,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
         return lookup.execute(x, name, inheritedOnly);
+    }
+
+    @ExportMessage
+    public static Object callFunction(Object receiver, ThreadState state, Object[] arguments,
+                    @Exclusive @Cached ConditionProfile hasStateProfile,
+                    @Exclusive @Cached CallNode callNode) {
+        VirtualFrame frame = null;
+        if (hasStateProfile.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return callNode.execute(frame, receiver, arguments);
     }
 
     @ExportMessage

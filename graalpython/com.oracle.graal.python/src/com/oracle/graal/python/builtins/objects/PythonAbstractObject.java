@@ -1023,7 +1023,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    // TODO interop
     public Object callFunction(ThreadState state, Object[] arguments,
                     @Exclusive @Cached ConditionProfile hasStateProfile,
                     @Exclusive @Cached CallNode callNode) {
