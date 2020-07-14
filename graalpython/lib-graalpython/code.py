@@ -41,10 +41,6 @@ def a_function(): pass
 codetype = type(a_function.__code__)
 
 
-def co_repr(self):
-    return '<code object %s, file "%s", line %d>' % (self.co_name, self.co_filename, self.co_firstlineno)
-
-
 def co_replace(self, **kwargs):
     import types
     return types.CodeType(
@@ -67,5 +63,4 @@ def co_replace(self, **kwargs):
     )
 
 
-codetype.__repr__ = co_repr
 codetype.replace = co_replace

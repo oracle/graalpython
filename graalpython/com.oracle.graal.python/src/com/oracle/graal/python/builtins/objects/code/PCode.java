@@ -487,4 +487,13 @@ public final class PCode extends PythonBuiltinObject {
     public boolean hasSourceLocation() {
         return readSourceLocation() != null;
     }
+
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        String name = this.getName() == null ? "None" : this.getName();
+        String filename = this.getFilename() == null ? "None" : this.getFilename();
+        int firstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
+        return String.format("<code object %s, file \"%s\", line %d>", name, filename, firstLineNo);
+    }
 }
