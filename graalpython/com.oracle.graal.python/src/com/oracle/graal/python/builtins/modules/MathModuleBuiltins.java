@@ -1858,7 +1858,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return value;
             }
             double result = Math.log1p(value);
-            checkMathDomainError(Double.isInfinite(result));
+            checkMathDomainError(!Double.isFinite(result));
             return result;
         }
     }
