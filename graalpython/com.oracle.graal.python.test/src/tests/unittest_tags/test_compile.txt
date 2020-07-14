@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_dead_blocks_do_not_generate_bytecode
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_duplicate_global_local
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_empty
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_exec_with_general_mapping_for_locals
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_float_literals
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_for_distinct_code_objects
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_indentation
@@ -15,6 +16,7 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_none_assignment
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_none_keyword_arg
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_other_newlines
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_path_like_objects
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_peephole_opt_unreachable_code_array_access_in_bounds
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_same_filename_used
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_sequence_unpacking_error

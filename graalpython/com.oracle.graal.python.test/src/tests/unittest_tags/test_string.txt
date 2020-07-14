@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_string.ModuleTest.test_override_convert_field
 *graalpython.lib-python.3.test.test_string.ModuleTest.test_override_format_field
 *graalpython.lib-python.3.test.test_string.ModuleTest.test_override_get_value
+*graalpython.lib-python.3.test.test_string.ModuleTest.test_override_parse
 *graalpython.lib-python.3.test.test_string.ModuleTest.test_vformat_recursion_limit
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_SafeTemplate
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_braced_override

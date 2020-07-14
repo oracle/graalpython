@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_disallowed_mutable_defaults
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_eq_order
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_default_default_factory_error
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_repr
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_helper_fields_exception
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_init_var_default_factory
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_init_var_preserve_type

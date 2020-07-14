@@ -33,6 +33,7 @@
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_typo_enter
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_typo_exit
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_body_exception_suppress
+*graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_callback
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_close
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_dont_reraise_RuntimeError
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_enter_context

@@ -3,6 +3,7 @@
 *graalpython.lib-python.3.test.test_funcattrs.FunctionDictsTest.test_delete___dict__
 *graalpython.lib-python.3.test.test_funcattrs.FunctionDictsTest.test_func_as_dict_key
 *graalpython.lib-python.3.test.test_funcattrs.FunctionDictsTest.test_setting_dict_to_valid
+*graalpython.lib-python.3.test.test_funcattrs.FunctionDictsTest.test_unassigned_dict
 *graalpython.lib-python.3.test.test_funcattrs.FunctionDocstringTest.test_delete_docstring
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test___closure__
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test___code__
