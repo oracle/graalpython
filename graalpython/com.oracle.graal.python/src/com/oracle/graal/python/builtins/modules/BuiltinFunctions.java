@@ -425,7 +425,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public String charFromInt(int arg) {
             if (arg >= 0 && arg <= 1114111) {
-                return Character.toString((char) arg);
+                return new String(Character.toChars(arg));
             } else {
                 throw raise(ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
             }
@@ -1508,16 +1508,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class OrdNode extends PythonBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         public int ord(String chr) {
-            if (chr.length() != 1) {
+            if (chr.codePointCount(0, chr.length()) != 1) {
                 throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", chr.length());
             }
-            return chr.charAt(0);
+            return chr.codePointAt(0);
         }
 
         @Specialization
-        public int ord(PString chr) {
-            return ord(chr.getValue());
+        public int ord(PString pchr,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            String chr;
+            try {
+                chr = castToJavaStringNode.execute(pchr);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            return ord(chr);
         }
 
         @Specialization
