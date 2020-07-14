@@ -319,6 +319,7 @@ class CodeConstsTest(unittest.TestCase):
 
 class CodeWeakRefTest(unittest.TestCase):
 
+    @cpython_only
     def test_basic(self):
         # Create a code object in a clean environment so that we know we have
         # the only reference to it left.

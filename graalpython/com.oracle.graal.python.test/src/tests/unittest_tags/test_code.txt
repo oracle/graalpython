@@ -7,3 +7,4 @@
 *graalpython.lib-python.3.test.test_code.CodeTest.test_constructor
 *graalpython.lib-python.3.test.test_code.CodeTest.test_newempty
 *graalpython.lib-python.3.test.test_code.CodeTest.test_replace
+*graalpython.lib-python.3.test.test_code.CodeWeakRefTest.test_basic
