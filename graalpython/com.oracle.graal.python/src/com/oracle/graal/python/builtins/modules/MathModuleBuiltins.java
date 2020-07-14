@@ -2548,4 +2548,77 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
     }
+
+    @Builtin(name = "isqrt", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class IsqrtNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object isqrtLong(long x) {
+            raiseIfNegative(x < 0);
+            return makeInt(op(PInt.longToBigInteger(x)));
+        }
+
+        @Specialization
+        Object isqrtPInt(PInt x) {
+            raiseIfNegative(x.isNegative());
+            return makeInt(op(x.getValue()));
+        }
+
+        @Specialization(guards = "!isInteger(x)")
+        Object doGeneral(VirtualFrame frame, Object x,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached IsqrtNode recursiveNode) {
+            return recursiveNode.execute(frame, lib.asIndexWithFrame(x, hasFrame, frame));
+        }
+
+        private Object makeInt(BigInteger i) {
+            try {
+                return PInt.intValueExact(i);
+            } catch (ArithmeticException e) {
+                // does not fit int, so try long
+            }
+            try {
+                return PInt.longValueExact(i);
+            } catch (ArithmeticException e) {
+                // does not fit long either, create PInt
+            }
+            return factory().createInt(i);
+        }
+
+        @TruffleBoundary
+        private BigInteger op(BigInteger x) {
+            // assumes x >= 0
+            if (x.equals(BigInteger.ZERO) || x.equals(BigInteger.ONE)) {
+                return x;
+            }
+            BigInteger start = BigInteger.ONE;
+            BigInteger end = x;
+            BigInteger result = BigInteger.ZERO;
+            BigInteger two = BigInteger.valueOf(2);
+            while (start.compareTo(end) <= 0) {
+                BigInteger mid = (start.add(end).divide(two));
+                int cmp = mid.multiply(mid).compareTo(x);
+                if (cmp == 0) {
+                    return mid;
+                }
+                if (cmp < 0) {
+                    start = mid.add(BigInteger.ONE);
+                    result = mid;
+                } else {
+                    end = mid.subtract(BigInteger.ONE);
+                }
+            }
+            return result;
+        }
+
+        private void raiseIfNegative(boolean condition) {
+            if (condition) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "isqrt() argument");
+            }
+        }
+    }
 }
