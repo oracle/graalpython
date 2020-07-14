@@ -70,6 +70,7 @@ public abstract class RangeNodes {
     public abstract static class CreateBigRangeNode extends Node {
         public abstract PBigRange execute(Object start, Object stop, Object step, PythonObjectFactory factory);
 
+        @TruffleBoundary
         private static void checkStepZero(BigInteger stepBI, PRaiseNode raise) {
             if (stepBI.compareTo(BigInteger.ZERO) == 0) {
                 throw raise.raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
@@ -197,7 +198,7 @@ public abstract class RangeNodes {
         }
 
         @Specialization
-        PBigRange doBigRange(PBigRange range, PythonObjectFactory factory) {
+        PBigRange doBigRange(PBigRange range, @SuppressWarnings("unused") PythonObjectFactory factory) {
             return range;
         }
 

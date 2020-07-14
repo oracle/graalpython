@@ -237,7 +237,7 @@ public class RangeBuiltins extends PythonBuiltins {
                             len, start, step);
         }
 
-        private boolean eqInt(int llen, int lstart, int lstep, int rlen, int rstart, int rstep) {
+        private static boolean eqInt(int llen, int lstart, int lstep, int rlen, int rstart, int rstep) {
             if (llen != rlen) {
                 return false;
             }
@@ -274,10 +274,6 @@ public class RangeBuiltins extends PythonBuiltins {
 
         protected boolean canBeIntRange(PBigRange range, PythonObjectLibrary pol) {
             return pol.canBeIndex(range.getPIntLength()) && pol.canBeIndex(range.getPIntStart()) && pol.canBeIndex(range.getPIntStep());
-        }
-
-        protected boolean canBeIntRange(Object len, Object start, Object step, PythonObjectLibrary pol) {
-            return pol.canBeIndex(len) && pol.canBeIndex(start) && pol.canBeIndex(step);
         }
 
         @Specialization
@@ -348,16 +344,15 @@ public class RangeBuiltins extends PythonBuiltins {
             return range;
         }
 
-        @Specialization(guards = "canBeNumber(idx)")
+        @Specialization(guards = "canBeInteger(idx)")
         Object doPRange(PIntRange primary, Object idx) {
             return primary.getIntItemNormalized(normalize.execute(idx, primary.getIntLength()));
         }
 
-        @Specialization(guards = "canBeNumber(idx)")
+        @Specialization(guards = "canBeInteger(idx)")
         Object doPRange(PBigRange self, Object idx,
                         @Cached CastToJavaBigIntegerNode toBigInt) {
-            BigInteger i = computeBigRangeItem(self, idx, toBigInt);
-            return factory().createInt(self.getBigIntItemNormalized(i));
+            return factory().createInt(self.getBigIntItemNormalized(computeBigRangeItem(self, idx, toBigInt)));
         }
 
         @TruffleBoundary
@@ -411,9 +406,7 @@ public class RangeBuiltins extends PythonBuiltins {
                 SliceInfo info = compute.execute(slice, range.getIntLength());
                 return createRange(info, rStart, rStep, lenOfRangeNode);
             } catch (PException pe) {
-                if (!profileError.profileException(pe, PythonBuiltinClassType.OverflowError)) {
-                    throw pe;
-                }
+                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
                 // pass
             } catch (CannotCastException | ArithmeticException e) {
                 // pass
@@ -440,9 +433,7 @@ public class RangeBuiltins extends PythonBuiltins {
                 SliceInfo info = compute.execute(slice, lib.asSize(range.getLength()));
                 return createRange(info, rStart, rStep, lenOfRangeNode);
             } catch (PException pe) {
-                if (!profileError.profileException(pe, PythonBuiltinClassType.OverflowError)) {
-                    throw pe;
-                }
+                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
                 // pass
             } catch (CannotCastException | ArithmeticException e) {
                 // pass
@@ -610,7 +601,7 @@ public class RangeBuiltins extends PythonBuiltins {
             return containsBigInt(self, other.getValue());
         }
 
-        @Specialization(guards = "!canBeNumber(elem) || !isBuiltinPInt(elem, isBuiltin)")
+        @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)")
         boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetIteratorExpressionNode.GetIteratorNode getIterator,
@@ -685,7 +676,7 @@ public class RangeBuiltins extends PythonBuiltins {
             throw raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
         }
 
-        @Specialization(guards = "canBeNumber(elem)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "canBeInteger(elem)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object doFastRangeGeneric(VirtualFrame frame, PIntRange self, Object elem,
                         @Cached ContainsNode containsNode,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
@@ -705,7 +696,7 @@ public class RangeBuiltins extends PythonBuiltins {
             throw raise(ValueError, ErrorMessages.IS_NOT_IN_RANGE, elem);
         }
 
-        @Specialization(guards = "canBeNumber(elem)")
+        @Specialization(guards = "canBeInteger(elem)")
         Object doLongRange(VirtualFrame frame, PBigRange self, Object elem,
                         @Cached ContainsNode containsNode,
                         @Cached CastToJavaBigIntegerNode castToBigInt) {
@@ -729,7 +720,7 @@ public class RangeBuiltins extends PythonBuiltins {
          * XXX: (mq) currently sys.maxsize in {@link SysModuleBuiltins#MAXSIZE} is
          * {@link Integer#MAX_VALUE}.
          */
-        @Specialization(guards = "!canBeNumber(elem)")
+        @Specialization(guards = "!canBeInteger(elem)")
         Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetIteratorExpressionNode.GetIteratorNode getIterator,
