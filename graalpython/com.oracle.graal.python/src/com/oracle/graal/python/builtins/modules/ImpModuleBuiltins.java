@@ -318,9 +318,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static final String CAPI_LOAD_ERROR = "Could not load C API from %s.\n";
-        private static final String HPY_LOAD_ERROR = "Could not load HPy C API from %s.\n";
-
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
             PythonContext context = getContext();
@@ -387,7 +384,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", new GraalHPyInitObject(context.getHPyContext()));
                 } catch (IOException | RuntimeException | InteropException e) {
                     logJavaException(e);
-                    throw raise(ImportError, wrapJavaException(e), HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                    throw raise(ImportError, wrapJavaException(e), ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
             }
             return context.getHPyContext();
