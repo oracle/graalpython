@@ -485,26 +485,39 @@ def _hpy_test_root():
     return os.path.join(_get_core_home(), "modules", "hpy", "test")
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None, env=None):
-    args = args or []
-    args = ["--experimental-options=true",
-            "--python.CatchAllExceptions=true"] + args
-    exclude = exclude or []
+def graalpytest(args):
+    parser = ArgumentParser(prog='mx graalpytest')
+    parser.add_argument('--python', type=str, action='store', default="", help='Run tests with custom Python binary.')
+    parser.add_argument('-v', "--verbose", action="store_true", help='Verbose output.')
+    parser.add_argument('-k', dest="filter", default=[], help='Test pattern.')
+    parser.add_argument('test', nargs="*", default=[], help='Test file to run (specify absolute or relative; e.g. "/path/to/test_file.py" or "cpyext/test_object.py") ')
+    args, unknown_args = parser.parse_known_args(args)
+
+    # ensure that the test distribution is up-to-date
+    mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+
+    testfiles = _list_graalpython_unittests(args.test)
+    # we assume that unknown args are polyglot arguments and just prepend them to the test driver
+    cmd_args = unknown_args + [_graalpytest_driver()]
+    if args.verbose:
+        cmd_args += ["-v"]
+    cmd_args += testfiles
+    if args.filter:
+        cmd_args += ["-k", args.filter]
+    if args.python:
+        return mx.run([args.python] + cmd_args, nonZeroIsFatal=True)
+    else:
+        return do_run_python(cmd_args)
+
+
+def _list_graalpython_unittests(paths=None, exclude=[]):
     paths = paths or [_graalpytest_root()]
-    if env is None:
-        env = os.environ.copy()
-
-    # list of excluded tests
-    if aot_compatible:
-        exclude += AOT_INCOMPATIBLE_TESTS
-
     def is_included(path):
         if path.endswith(".py"):
             basename = os.path.basename(path)
             return basename.startswith("test_") and basename not in exclude
         return False
 
-    # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = []
     for path in paths:
         if not os.path.exists(path):
@@ -519,6 +532,26 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
             for testfile in glob.glob(os.path.join(path, "test_*.py")):
                 if is_included(testfile):
                     testfiles.append(testfile)
+    return testfiles
+
+
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None, env=None):
+    # ensure that the test distribution is up-to-date
+    mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+
+    args = args or []
+    args = ["--experimental-options=true",
+            "--python.CatchAllExceptions=true"] + args
+    exclude = exclude or []
+    if env is None:
+        env = os.environ.copy()
+
+    # list of excluded tests
+    if aot_compatible:
+        exclude += AOT_INCOMPATIBLE_TESTS
+
+    # list all 1st-level tests and exclude the SVM-incompatible ones
+    testfiles = _list_graalpython_unittests(paths, exclude)
 
     args += [_graalpytest_driver(), "-v"]
 
@@ -1903,6 +1936,7 @@ mx.update_commands(SUITE, {
     'python-src-import': [import_python_sources, ''],
     'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
+    'graalpytest': [graalpytest, '[-h] [-v] [--python PYTHON] [-k TEST_PATTERN] [TESTS]'],
     'clean': [python_clean, ''],
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
 })

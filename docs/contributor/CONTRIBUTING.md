@@ -141,9 +141,7 @@ substituting TEST-PATTERN (and possibly the file glob on the third line) with
 the test you want to run. Note that you can insert `-d` to debug on the Java
 level or use `--inspect` to debug in the Chrome debugger.
 
-    mx [-d] python3 [--inspect] \
-        graalpython/com.oracle.graal.python.test/src/graalpytest.py \
-        graalpython/com.oracle.graal.python.test/src/tests/test_*.py \
+    mx [-d] graalpytest [--inspect] test_*.py \
         -k TEST-PATTERN
 
 To run the JUnit tests, you can use this command:
