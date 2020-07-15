@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.ibm.icu.lang.UCharacter;
+
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.text.Normalizer;
@@ -49,6 +52,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -60,6 +64,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -243,6 +248,54 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
             }
+        }
+    }
+
+    // unicodedata.name(char, defaultValue)
+    @Builtin(name = "name", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class NameNode extends PythonBuiltinNode {
+
+        @TruffleBoundary
+        protected Object getName(String chr, Object defaultValue) {
+            if (chr.codePointCount(0, chr.length()) != 1) {
+                throw raise(TypeError, ErrorMessages.ARG_MUST_BE_UNICODE, "name()", 1, chr);
+            }
+            int cp = Character.codePointAt(chr, 0);
+            if ((0xe000 <= cp && cp <= 0xf8ff) || (0xF0000 <= cp && cp <= 0xFFFFD) || (0x100000 <= cp && cp <= 0x10FFFD)) {
+                // do not populate names from private use areas
+                throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
+            }
+            String result = UCharacter.getName(cp);
+            if (result == null) {
+                if (defaultValue == PNone.NO_VALUE) {
+                    throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
+                }
+                return defaultValue;
+            }
+            return result;
+        }
+
+        @Specialization
+        public Object name(String chr, Object defaultValue) {
+            return getName(chr, defaultValue);
+        }
+
+        @Specialization
+        public Object name(PString pchr, Object defaultValue,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            String chr;
+            try {
+                chr = castToJavaStringNode.execute(pchr);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            return getName(chr, defaultValue);
+        }
+
+        @Fallback
+        public Object name(Object chr, @SuppressWarnings("unused") Object defaultValue) {
+            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_UNICODE, "name()", 1, chr);
         }
     }
 }
