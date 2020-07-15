@@ -119,6 +119,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import java.util.Arrays;
@@ -549,7 +550,7 @@ public abstract class TypeNodes {
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class GetBaseClassNode extends PNodeWithContext {
 
-        @Child private GetBestBaseClassNode getBestBaseNode;
+        @Child private GetBestBaseClassNode getBestBaseClassNode;
 
         public abstract PythonAbstractClass execute(VirtualFrame frame, Object obj);
 
@@ -595,25 +596,17 @@ public abstract class TypeNodes {
         }
 
         private GetBestBaseClassNode getBestBaseNode() {
-            if (getBestBaseNode == null) {
+            if (getBestBaseClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getBestBaseNode = insert(GetBestBaseClassNode.create());
+                getBestBaseClassNode = insert(GetBestBaseClassNode.create());
             }
-            return getBestBaseNode;
+            return getBestBaseClassNode;
         }
     }
 
     @ImportStatic(SpecialMethodNames.class)
-    abstract static class GetBestBaseClassNode extends PNodeWithContext {
+    abstract static class GetBestBaseClassNode extends TypeStructNodeNode {
 
-        @Child private GetBaseClassNode getBaseClassNode;
-        @Child private LookupAttributeInMRONode lookupNewNode;
-        @Child private LookupAndCallBinaryNode getDictNode;
-        @Child private GetDictStorageNode getDictStorageNode;
-        @Child private GetObjectArrayNode getObjectArrayNode;
-        @Child private HashingStorageLibrary hashingStorageLib;
-        @Child private PythonObjectLibrary objectLib;
-        @Child private PRaiseNode raiseNode;
         @Child private IsSubtypeNode isSubTypeNode;
 
         static GetBestBaseClassNode create() {
@@ -713,83 +706,6 @@ public abstract class TypeNodes {
             return hasDict(base) != hasDict(type);
         }
 
-        private Object getSlotsFromDict(VirtualFrame frame, Object type) {
-            Object dict = getDictNode().executeObject(frame, type, __DICT__);
-            if (dict != PNone.NO_VALUE) {
-                HashingStorage storage = getDictStorageNode().execute((PHashingCollection) dict);
-                return getHashingStorageLibrary().getItem(storage, __SLOTS__);
-            }
-            return null;
-        }
-
-        private boolean hasDict(Object obj) {
-            return getObjectLibrary().lookupAttribute(obj, __DICT__) != PNone.NO_VALUE;
-        }
-
-        private GetBaseClassNode getBaseClassNode() {
-            if (getBaseClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getBaseClassNode = insert(GetBaseClassNodeGen.create());
-            }
-            return getBaseClassNode;
-        }
-
-        private LookupAttributeInMRONode getLookupNewNode() {
-            if (lookupNewNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(__NEW__));
-            }
-            return lookupNewNode;
-        }
-
-        private LookupAndCallBinaryNode getDictNode() {
-            if (getDictNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDictNode = insert(LookupAndCallBinaryNode.create(__GETATTRIBUTE__));
-            }
-            return getDictNode;
-        }
-
-        private GetDictStorageNode getDictStorageNode() {
-            if (getDictStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDictStorageNode = insert(GetDictStorageNode.create());
-            }
-            return getDictStorageNode;
-        }
-
-        private HashingStorageLibrary getHashingStorageLibrary() {
-            if (hashingStorageLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hashingStorageLib = insert(HashingStorageLibrary.getFactory().createDispatched(4));
-            }
-            return hashingStorageLib;
-        }
-
-        private GetObjectArrayNode getObjectArrayNode() {
-            if (getObjectArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
-            }
-            return getObjectArrayNode;
-        }
-
-        private PythonObjectLibrary getObjectLibrary() {
-            if (objectLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectLib = insert(PythonObjectLibrary.getFactory().createDispatched(4));
-            }
-            return objectLib;
-        }
-
-        private PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-
         private IsSubtypeNode getIsSubTypeNode() {
             if (isSubTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -799,26 +715,241 @@ public abstract class TypeNodes {
         }
     }
 
-    @TruffleBoundary
-    public static boolean compareSortedSlots(Object aSlots, Object bSlots, GetObjectArrayNode getObjectArrayNode) {
-        Object[] aArray = getObjectArrayNode.execute(aSlots);
-        Object[] bArray = getObjectArrayNode.execute(bSlots);
-        if (bArray.length != aArray.length) {
-            return false;
+    public abstract static class CheckCompatibleForAssigmentNode extends TypeStructNodeNode {
+
+        public abstract boolean execute(VirtualFrame frame, Object oldBase, Object newBase);
+
+        @Specialization
+        boolean isCompatible(VirtualFrame frame, Object oldBase, PythonAbstractClass newBase,
+                        @Cached("create()") BranchProfile errorSlotsBranch) {
+            if (!compatibleForAssignment(frame, oldBase, newBase)) {
+                errorSlotsBranch.enter();
+                throw getRaiseNode().raise(TypeError, ErrorMessages.CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
+            }
+            return true;
         }
-        aArray = Arrays.copyOf(aArray, aArray.length);
-        bArray = Arrays.copyOf(bArray, bArray.length);
-        // what cpython does in same_slots_added() is a compare on a sorted slots list
-        // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
-        // NOT the same like the unsorted __slots__ attribute.
-        Arrays.sort(bArray);
-        Arrays.sort(aArray);
-        for (int i = 0; i < aArray.length; i++) {
-            if (!aArray[i].equals(bArray[i])) {
+
+        /**
+         * Aims to get as close as possible to typeobject.compatible_for_assignment().
+         */
+        private boolean compatibleForAssignment(VirtualFrame frame, Object oldB, Object newB) {
+            Object newBase = newB;
+            Object oldBase = oldB;
+
+            Object newParent = getBaseClassNode().execute(frame, newBase);
+            while (newParent != null && compatibleWithBase(frame, newBase, newParent)) {
+                newBase = newParent;
+                newParent = getBaseClassNode().execute(frame, newBase);
+            }
+
+            Object oldParent = getBaseClassNode().execute(frame, oldBase);
+            while (oldParent != null && compatibleWithBase(frame, oldBase, oldParent)) {
+                oldBase = oldParent;
+                oldParent = getBaseClassNode().execute(frame, oldBase);
+            }
+
+            if (newBase != oldBase && (newParent != oldParent || !compareSlotsFromDict(frame, newBase, oldBase))) {
                 return false;
             }
+            return true;
         }
-        return true;
+
+        /**
+         * Aims to get as close as possible to typeobject.compatible_with_tp_base().
+         */
+        private boolean compatibleWithBase(VirtualFrame frame, Object child, Object parent) {
+            if (PGuards.isNativeClass(child) && PGuards.isNativeClass(parent)) {
+                // TODO: call C function 'compatible_for_assignment'
+                return false;
+            }
+
+            // (child->tp_flags & Py_TPFLAGS_HAVE_GC) == (parent->tp_flags & Py_TPFLAGS_HAVE_GC)
+            if (PGuards.isNativeClass(child) != PGuards.isNativeClass(parent)) {
+                return false;
+            }
+
+            // instead of child->tp_dictoffset == parent->tp_dictoffset
+            if (hasDict(child) != hasDict(parent)) {
+                return false;
+            }
+
+            // instead of child->tp_basicsize == parent->tp_basicsize
+            // the assumption is made that a different "allocator" => different basic size, hm
+            Object childNewMethod = getLookupNewNode().execute(child);
+            Object parentNewMethod = getLookupNewNode().execute(parent);
+            if (childNewMethod != parentNewMethod) {
+                return false;
+            }
+
+            // instead of child->tp_itemsize == parent->tp_itemsize
+            Object childSlots = getSlotsFromDict(frame, child);
+            Object parentSlots = getSlotsFromDict(frame, parent);
+            if (childSlots == null && parentSlots == null) {
+                return true;
+            }
+            if (childSlots == null && parentSlots != null || childSlots != null && parentSlots == null) {
+                return false;
+            }
+            if (!compareSlots(parent, child, parentSlots, childSlots)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        private boolean compareSlotsFromDict(VirtualFrame frame, Object a, Object b) {
+            Object aSlots = getSlotsFromDict(frame, b);
+            Object bSlots = getSlotsFromDict(frame, a);
+            return compareSlots(a, b, aSlots, bSlots);
+        }
+
+        private boolean compareSlots(Object aType, Object bType, Object aSlotsArg, Object bSlotsArg) {
+            Object aSlots = aSlotsArg;
+            Object bSlots = bSlotsArg;
+
+            if (aSlots == null && bSlots == null) {
+                return true;
+            }
+
+            if (aSlots != null && bSlots != null) {
+                return compareSortedSlots(aSlots, bSlots, getObjectArrayNode());
+            }
+
+            aSlots = getLookupSlots().execute(aType);
+            bSlots = getLookupSlots().execute(bType);
+            int aSize = aSlots != PNone.NO_VALUE ? getObjectLibrary().length(aSlots) : 0;
+            int bSize = bSlots != PNone.NO_VALUE ? getObjectLibrary().length(bSlots) : 0;
+            return aSize == bSize;
+        }
+    }
+
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class TypeStructNodeNode extends PNodeWithContext {
+        @Child private GetBaseClassNode getBaseClassNode;
+        @Child private LookupAttributeInMRONode lookupSlotsNode;
+        @Child private LookupAttributeInMRONode lookupNewNode;
+        @Child private GetDictStorageNode getDictStorageNode;
+        @Child private LookupAndCallBinaryNode getDictNode;
+        @Child private HashingStorageLibrary hashingStorageLib;
+        @Child private PythonObjectLibrary objectLibrary;
+        @Child private GetObjectArrayNode getObjectArrayNode;
+        @Child private PRaiseNode raiseNode;
+        @Child private GetNameNode getTypeNameNode;
+
+        @TruffleBoundary
+        protected static boolean compareSortedSlots(Object aSlots, Object bSlots, GetObjectArrayNode getObjectArrayNode) {
+            Object[] aArray = getObjectArrayNode.execute(aSlots);
+            Object[] bArray = getObjectArrayNode.execute(bSlots);
+            if (bArray.length != aArray.length) {
+                return false;
+            }
+            aArray = Arrays.copyOf(aArray, aArray.length);
+            bArray = Arrays.copyOf(bArray, bArray.length);
+            // what cpython does in same_slots_added() is a compare on a sorted slots list
+            // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
+            // NOT the same like the unsorted __slots__ attribute.
+            Arrays.sort(bArray);
+            Arrays.sort(aArray);
+            for (int i = 0; i < aArray.length; i++) {
+                if (!aArray[i].equals(bArray[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        protected GetBaseClassNode getBaseClassNode() {
+            if (getBaseClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getBaseClassNode = insert(GetBaseClassNodeGen.create());
+            }
+            return getBaseClassNode;
+        }
+
+        protected String getTypeName(Object clazz) {
+            if (getTypeNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTypeNameNode = insert(TypeNodes.GetNameNode.create());
+            }
+            return getTypeNameNode.execute(clazz);
+        }
+
+        protected Object getSlotsFromDict(VirtualFrame frame, Object type) {
+            Object dict = getDictNode().executeObject(frame, type, __DICT__);
+            if (dict != PNone.NO_VALUE) {
+                HashingStorage storage = getDictStorageNode().execute((PHashingCollection) dict);
+                return getHashingStorageLibrary().getItem(storage, __SLOTS__);
+            }
+            return null;
+        }
+
+        protected boolean hasDict(Object obj) {
+            return getObjectLibrary().lookupAttribute(obj, __DICT__) != PNone.NO_VALUE;
+        }
+
+        protected GetObjectArrayNode getObjectArrayNode() {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode;
+        }
+
+        protected PythonObjectLibrary getObjectLibrary() {
+            if (objectLibrary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
+            }
+            return objectLibrary;
+        }
+
+        protected LookupAndCallBinaryNode getDictNode() {
+            if (getDictNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDictNode = insert(LookupAndCallBinaryNode.create(__GETATTRIBUTE__));
+            }
+            return getDictNode;
+        }
+
+        protected GetDictStorageNode getDictStorageNode() {
+            if (getDictStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDictStorageNode = insert(GetDictStorageNode.create());
+            }
+            return getDictStorageNode;
+        }
+
+        protected HashingStorageLibrary getHashingStorageLibrary() {
+            if (hashingStorageLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hashingStorageLib = insert(HashingStorageLibrary.getFactory().createDispatched(4));
+            }
+            return hashingStorageLib;
+        }
+
+        protected LookupAttributeInMRONode getLookupSlots() {
+            if (lookupSlotsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupSlotsNode = insert(LookupAttributeInMRONode.create(__SLOTS__));
+            }
+            return lookupSlotsNode;
+        }
+
+        protected LookupAttributeInMRONode getLookupNewNode() {
+            if (lookupNewNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(__NEW__));
+            }
+            return lookupNewNode;
+        }
+
+        protected PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
     }
 
     @GenerateUncached

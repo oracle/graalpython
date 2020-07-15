@@ -37,6 +37,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
 
 def test_base():
     A = type('A', (), {})
@@ -57,6 +64,8 @@ def test_base():
 
     assert C.__base__ == B
 
+    #-----------------------------------------------
+    
     class A(object):
         pass
 
@@ -71,6 +80,8 @@ def test_base():
     C = type('C', (B, int), {'spam': lambda self: 'spam%s' % self})
     assert C.__base__ == int
     
+    #-----------------------------------------------
+    
     class A (object): pass
 
     class BB (A): pass
@@ -84,7 +95,58 @@ def test_base():
 
     assert D.__base__ == C
 
+    #-----------------------------------------------
+    
+    class A: pass
 
+    class B: pass
+
+    class C(A): pass
+
+    C.__bases__ = (A, B)
+
+    assert C.__bases__ == (A, B)
+    assert A.__subclasses__() == [C]
+    assert B.__subclasses__() == [C]
+
+    #-----------------------------------------------
+    
+    class A: pass
+
+    class B: pass
+
+    class C(A, B): pass
+
+    C.__bases__ == (A, B)
+    A.__subclasses__() == [C]
+    B.__subclasses__() == [C]
+
+    raised = False
+    try:
+        C.__bases__ = (int,)
+    except TypeError:
+        raised = True
+    assert raised
+
+    assert C.__bases__ == (A, B)
+    assert A.__subclasses__() == [C]
+    assert B.__subclasses__() == [C]    
+
+    #-----------------------------------------------
+    
+#    class A: pass
+#
+#    class B: pass
+#
+#    class C: pass
+#
+#    raised = False
+#    try:
+#        C.__bases__ = (A, B)
+#    except TypeError:
+#        raised = True
+#    assert raised
+#    assert C.__bases__ == [object]
 
 def test_namespace_with_non_string_keys():
     class MyStr(str):

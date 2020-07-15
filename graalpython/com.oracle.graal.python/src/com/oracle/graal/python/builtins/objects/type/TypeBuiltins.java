@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.Arrays;
@@ -76,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -130,6 +128,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -553,22 +555,41 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object setBases(PythonClass cls, PTuple value,
+        Object setBases(VirtualFrame frame, PythonClass cls, PTuple value,
                         @Cached GetNameNode getName,
-                        @Cached GetObjectArrayNode getArray) {
+                        @Cached GetObjectArrayNode getArray,
+                        @Cached GetBaseClassNode getBase,
+                        @Cached GetBestBaseClassNode getBestBase,
+                        @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigment,
+                        @Cached IsSubtypeNode isSubtypeNode) {
 
             Object[] a = getArray.execute(value);
+            if (a.length == 0) {
+                throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P, cls);
+            }
             PythonAbstractClass[] baseClasses = new PythonAbstractClass[a.length];
             for (int i = 0; i < a.length; i++) {
                 if (a[i] instanceof PythonAbstractClass) {
+                    if (isSubtypeNode.execute(frame, a[i], cls)) {
+                        throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
+                    }
                     baseClasses[i] = (PythonAbstractClass) a[i];
                 } else {
                     throw raise(TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, getName.execute(cls), "__bases__", a[i]);
                 }
             }
 
-            throw raise(NotImplementedError);
-            // return PNone.NONE;
+            PythonAbstractClass newBestBase = getBestBase.execute(frame, baseClasses);
+            if (newBestBase == null) {
+                return null;
+            }
+
+            PythonAbstractClass oldBase = getBase.execute(frame, cls);
+            checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
+
+            cls.setSuperClass(baseClasses);
+
+            return PNone.NONE;
         }
 
         @Specialization(guards = "!isPTuple(value)")
