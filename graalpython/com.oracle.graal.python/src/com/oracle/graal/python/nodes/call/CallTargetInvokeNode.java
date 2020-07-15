@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,19 +97,20 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         return CallTargetInvokeNodeGen.create(callTarget, isBuiltin, isGenerator);
     }
 
-    public final Object execute(VirtualFrame frame, Object[] arguments) {
-        return execute(frame, null, null, arguments);
-    }
-
-    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
+    /**
+     * @param callee A PFunction if the callee is one, otherwise null. Used for generator functions
+     *            only.
+     */
+    public abstract Object execute(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments);
 
     @Specialization(guards = {"globals == null", "closure == null"})
-    protected Object doNoClosure(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
+    protected Object doNoClosure(VirtualFrame frame, PFunction callee, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
                     @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
+                    @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
         optionallySetClassBodySpecial(arguments, ct, classBodyProfile);
-
+        optionallySetGeneratorFunction(arguments, ct, generatorFunctionProfile, callee);
         // If the frame is 'null', we expect the execution state (i.e. caller info and exception
         // state) in the context. There are two common reasons for having a 'null' frame:
         // 1. This node is the first invoke node used via interop.
@@ -129,12 +130,13 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     }
 
     @Specialization(replaces = "doNoClosure")
-    protected Object doGeneric(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments,
+    protected Object doGeneric(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments,
                     @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
+                    @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doNoClosure(frame, null, null, arguments, classBodyProfile, context);
+        return doNoClosure(frame, callee, null, null, arguments, classBodyProfile, generatorFunctionProfile, context);
     }
 
     public final CallTarget getCallTarget() {

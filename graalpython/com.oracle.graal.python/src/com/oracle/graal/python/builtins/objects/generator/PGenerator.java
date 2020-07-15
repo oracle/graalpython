@@ -82,6 +82,10 @@ public final class PGenerator extends PythonBuiltinObject {
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, frameDescriptor);
         PArguments.setGeneratorFrame(arguments, generatorFrame);
         PArguments.setControlData(arguments, generatorArgs);
+        // The invoking node will set these two to the correct value only when the callee requests
+        // it, otherwise they stay at the initial value, which we must set to null here
+        PArguments.setException(arguments, null);
+        PArguments.setCallerFrameInfo(arguments, null);
         PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
         // set generator closure to the generator frame locals
         CompilerAsserts.partialEvaluationConstant(cellSlots);

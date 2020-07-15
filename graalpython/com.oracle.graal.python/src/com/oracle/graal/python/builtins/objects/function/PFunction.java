@@ -128,11 +128,7 @@ public class PFunction extends PythonObject {
     }
 
     public boolean isGeneratorFunction() {
-        return false;
-    }
-
-    public PGeneratorFunction asGeneratorFunction() {
-        return null;
+        return code.getRootCallTarget().getRootNode() instanceof GeneratorFunctionRootNode;
     }
 
     @Override

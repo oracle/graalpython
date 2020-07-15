@@ -117,9 +117,11 @@ public abstract class GenericInvokeNode extends InvokeNode {
         return executeInternal(null, callee, arguments);
     }
 
-    private Object doCall(Frame frame, RootCallTarget callTarget, Object[] arguments,
-                    PythonContext context, IndirectCallNode callNode, CallContext callContext, ConditionProfile isNullFrameProfile, ConditionProfile isClassBodyProfile) {
+    private Object doCall(Frame frame, PFunction callee, RootCallTarget callTarget, Object[] arguments,
+                    PythonContext context, IndirectCallNode callNode, CallContext callContext, ConditionProfile isNullFrameProfile,
+                    ConditionProfile isClassBodyProfile, ConditionProfile isGeneratorFunctionProfile) {
         optionallySetClassBodySpecial(arguments, callTarget, isClassBodyProfile);
+        optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         if (isNullFrameProfile.profile(frame == null)) {
             PFrame.Reference frameInfo = IndirectCalleeContext.enterIndirect(context, arguments);
             try {
@@ -140,11 +142,12 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
                     @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
+                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile);
+        return doCall(frame, callee, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
     }
 
     @Specialization
@@ -153,9 +156,10 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
                     @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
+                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile);
+        return doCall(frame, null, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
     }
 
     @Specialization
@@ -164,7 +168,8 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
                     @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
-        return doCall(frame, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile);
+                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
+        return doCall(frame, null, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
     }
 }

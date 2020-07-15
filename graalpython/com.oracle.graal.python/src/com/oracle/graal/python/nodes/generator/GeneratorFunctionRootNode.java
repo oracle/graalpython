@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -65,17 +66,15 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final FrameDescriptor frameDescriptor;
     private final GeneratorInfo generatorInfo;
     private final ExecutionCellSlots cellSlots;
-    private final String name;
-    private final String qualname;
+    private final String originalName;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, String qualname, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String originalName, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
                     Signature signature, GeneratorInfo generatorInfo) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
-        this.name = name;
-        this.qualname = qualname;
+        this.originalName = originalName;
         this.frameDescriptor = frameDescriptor;
         this.cellSlots = executionCellSlots;
         this.generatorInfo = generatorInfo;
@@ -88,7 +87,14 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
             callTargets = createYieldTargets(callTarget);
         }
         CompilerAsserts.partialEvaluationConstant(cellSlots);
-        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, generatorInfo, null);
+
+        Object[] arguments = frame.getArguments();
+
+        // This is passed from CallDispatch node
+        PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
+
+        return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), callTargets, frameDescriptor, arguments, PArguments.getClosure(frame), cellSlots,
+                        generatorInfo, null);
     }
 
     public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {
@@ -108,13 +114,13 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public String getName() {
-        return name;
+        return originalName;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<generator function " + qualname + ">";
+        return "<generator function root" + originalName + ">";
     }
 
     @Override

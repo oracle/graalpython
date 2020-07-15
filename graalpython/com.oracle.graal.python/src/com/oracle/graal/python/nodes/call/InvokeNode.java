@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -70,11 +71,19 @@ public abstract class InvokeNode extends Node implements IndirectCallNode {
         return callTarget;
     }
 
-    protected static final void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget, ConditionProfile isClassBodyProfile) {
+    protected static void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget, ConditionProfile isClassBodyProfile) {
         RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
         if (isClassBodyProfile.profile(rootNode instanceof ClassBodyRootNode)) {
             assert PArguments.getSpecialArgument(arguments) == null : "there cannot be a special argument in a class body";
             PArguments.setSpecialArgument(arguments, rootNode);
+        }
+    }
+
+    protected static void optionallySetGeneratorFunction(Object[] arguments, CallTarget callTarget, ConditionProfile isGeneratorFunctionProfile, PFunction callee) {
+        RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
+        if (isGeneratorFunctionProfile.profile(rootNode instanceof GeneratorFunctionRootNode)) {
+            assert callee != null : "generator function callee not passed to invoke node";
+            PArguments.setGeneratorFunction(arguments, callee);
         }
     }
 

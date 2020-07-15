@@ -32,7 +32,6 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -109,9 +108,6 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
             PArguments.setArgument(arguments, 0, iterator);
         }
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
-
-        // The generator doesn't capture the currently handled exception at creation time.
-        PArguments.setException(arguments, PException.NO_EXCEPTION);
 
         if (callTargets == null) {
             callTargets = GeneratorFunctionRootNode.createYieldTargets(callTarget);

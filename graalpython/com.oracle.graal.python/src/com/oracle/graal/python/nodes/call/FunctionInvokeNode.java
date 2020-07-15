@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -66,11 +67,14 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     @Child private DirectCallNode callNode;
     @Child private CallContext callContext;
 
+    // Needed only for generator functions, will be null for builtins
+    private final PFunction callee;
     private final PythonObject globals;
     private final PCell[] closure;
     protected final boolean isBuiltin;
 
-    protected FunctionInvokeNode(CallTarget callTarget, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
+    protected FunctionInvokeNode(PFunction callee, CallTarget callTarget, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
+        this.callee = callee;
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
         if (isBuiltin && forceSplitBuiltins()) {
             callNode.cloneCallTarget();
@@ -89,11 +93,13 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     @Specialization
     protected Object doDirect(VirtualFrame frame, Object[] arguments,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
+                    @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
+                    @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
         optionallySetClassBodySpecial(arguments, ct, isClassBodyProfile);
+        optionallySetGeneratorFunction(arguments, ct, isGeneratorFunctionProfile, callee);
         if (profileIsNullFrame(frame == null)) {
             PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
             try {
@@ -115,14 +121,14 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     public static FunctionInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return FunctionInvokeNodeGen.create(callTarget, callee.getGlobals(), callee.getClosure(), builtin, callee.isGeneratorFunction());
+        return FunctionInvokeNodeGen.create(callee, callTarget, callee.getGlobals(), callee.getClosure(), builtin, callTarget.getRootNode() instanceof GeneratorFunctionRootNode);
     }
 
     @TruffleBoundary
     public static FunctionInvokeNode create(PBuiltinFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return FunctionInvokeNodeGen.create(callTarget, null, null, builtin, false);
+        return FunctionInvokeNodeGen.create(null, callTarget, null, null, builtin, false);
     }
 
     /**
@@ -132,6 +138,6 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
      */
     @TruffleBoundary
     public static FunctionInvokeNode createBuiltinFunction(RootCallTarget callTarget) {
-        return FunctionInvokeNodeGen.create(callTarget, null, null, true, false);
+        return FunctionInvokeNodeGen.create(null, callTarget, null, null, true, false);
     }
 }
