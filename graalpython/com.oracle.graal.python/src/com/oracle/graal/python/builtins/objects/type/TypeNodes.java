@@ -1029,7 +1029,7 @@ public abstract class TypeNodes {
                 while (it.hasNext()) {
                     bases.append(", ").append(GetNameNode.doSlowPath(it.next()));
                 }
-                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION, bases);
+                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION, bases.toString());
             }
 
             return mro.toArray(new PythonAbstractClass[mro.size()]);

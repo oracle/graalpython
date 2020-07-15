@@ -120,7 +120,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
     public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
-    public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution order (MRO) for bases %p, %p";
+    public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s'";
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
