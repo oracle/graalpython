@@ -84,12 +84,12 @@ import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
@@ -139,7 +139,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object encode(Object str, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "unicode_escape_encode()", 1, "str", "%p", str);
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "unicode_escape_encode()", 1, "str", str);
         }
     }
 

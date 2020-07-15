@@ -103,7 +103,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             try {
                 name = castNameNode.execute(nameObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, 4, "str", nameObj);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "SemLock", 4, "str", nameObj);
             }
             if (unlink == 0) {
                 // CPython creates a named semaphore, and if unlink != 0 unlinks

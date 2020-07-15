@@ -59,7 +59,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_UNICODE = "%s argument %d must be a unicode character, not %p";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
-    public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %l";
+    public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %d";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
     public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
     public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
@@ -244,7 +244,7 @@ public abstract class ErrorMessages {
     public static final String ILLEGAL_ARG = "illegal argument";
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
-    public static final String ILLEGAL_SOCKET_ADDR_ARG = "s%: illegal sockaddr argument";
+    public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
     public static final String IMPORT_START_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
