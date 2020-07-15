@@ -319,26 +319,26 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    public static Object lookupAndCallSpecialMethod(Long receiver, ThreadState state, String methodName, Object[] arguments,
+    public static Object lookupAndCallSpecialMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
         Object method = plib.lookupSpecialMethod(receiver, methodName);
         if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
-            return methodLib.callUnboundMethod(method, state, receiver, arguments);
+            return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
         } else {
             return PNone.NO_VALUE;
         }
     }
 
     @ExportMessage
-    public static Object lookupAndCallRegularMethod(Long receiver, ThreadState state, String methodName, Object[] arguments,
+    public static Object lookupAndCallRegularMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
         Object method = plib.lookupAttribute(receiver, methodName);
         if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
-            return methodLib.callFunction(method, state, arguments);
+            return methodLib.callFunctionWithState(method, state, arguments);
         } else {
             return PNone.NO_VALUE;
         }

@@ -589,11 +589,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object comb(VirtualFrame frame, Object n, Object k,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached CombNode recursiveNode) {
-            Object nValue = lib.asIndexWithFrame(n, hasFrame, frame);
-            Object kValue = lib.asIndexWithFrame(k, hasFrame, frame);
+            Object nValue = lib.asIndexWithFrame(n, frame);
+            Object kValue = lib.asIndexWithFrame(k, frame);
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
@@ -665,11 +664,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(k)")
         Object perm(VirtualFrame frame, Object n, Object k,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached PermNode recursiveNode) {
-            Object nValue = lib.asIndexWithFrame(n, hasFrame, frame);
-            Object kValue = lib.asIndexWithFrame(k, hasFrame, frame);
+            Object nValue = lib.asIndexWithFrame(n, frame);
+            Object kValue = lib.asIndexWithFrame(k, frame);
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
@@ -1433,11 +1431,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
         Object gcd(VirtualFrame frame, Object x, Object y,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create()") GcdNode recursiveNode) {
-            Object xValue = lib.asIndexWithFrame(x, hasFrame, frame);
-            Object yValue = lib.asIndexWithFrame(y, hasFrame, frame);
+            Object xValue = lib.asIndexWithFrame(x, frame);
+            Object yValue = lib.asIndexWithFrame(y, frame);
             return recursiveNode.execute(frame, xValue, yValue);
         }
 

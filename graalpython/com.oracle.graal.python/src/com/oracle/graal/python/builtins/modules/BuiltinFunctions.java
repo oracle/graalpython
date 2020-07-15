@@ -311,14 +311,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
-                        @Cached ConditionProfile hasFrame,
                         @Cached ConditionProfile isMinLong,
                         @Cached IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isPInt) {
-            Object index = lib.asIndexWithFrame(x, hasFrame, frame);
+            Object index = lib.asIndexWithFrame(x, frame);
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
@@ -467,9 +466,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         long hash(VirtualFrame frame, Object object,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.hashWithFrame(object, profile, frame);
+            return lib.hashWithFrame(object, frame);
         }
     }
 
@@ -1314,9 +1312,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public int len(VirtualFrame frame, Object obj,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lengthWithFrame(obj, hasFrame, frame);
+            return lib.lengthWithFrame(obj, frame);
         }
     }
 

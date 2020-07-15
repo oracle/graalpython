@@ -178,7 +178,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     @ExportMessage
-    public Object callUnboundMethod(ThreadState state, Object receiver, Object[] arguments,
+    public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Exclusive @Cached ConditionProfile hasStateProfile,
                     @Exclusive @Cached CallUnboundMethodNode call) {
         VirtualFrame frame = null;

@@ -248,8 +248,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #hashWithState(Object, ThreadState)
      */
-    public final long hashWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
+    public final long hashWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return hashWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return hash(receiver);
@@ -371,6 +371,9 @@ public abstract class PythonObjectLibrary extends Library {
     // used.
     @Child private DefaultNodes defaultNodes;
 
+    // Profiling a frame is needed in many calls so it's separate from the above
+    @CompilationFinal private ConditionProfile hasFrameProfile;
+
     private DefaultNodes getDefaultNodes() {
         if (isAdoptable()) {
             if (defaultNodes == null) {
@@ -380,6 +383,18 @@ public abstract class PythonObjectLibrary extends Library {
             return defaultNodes;
         } else {
             return DefaultNodes.getUncached();
+        }
+    }
+
+    private boolean profileHasFrame(VirtualFrame frame) {
+        if (isAdoptable()) {
+            if (hasFrameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasFrameProfile = ConditionProfile.create();
+            }
+            return hasFrameProfile.profile(frame != null);
+        } else {
+            return frame != null;
         }
     }
 
@@ -445,8 +460,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #equalsWithState
      */
-    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, ConditionProfile hasFrame, VirtualFrame frame) {
-        if (hasFrame.profile(frame != null)) {
+    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return equalsWithState(receiver, other, otherLibrary, PArguments.getThreadState(frame));
         } else {
             return equals(receiver, other, otherLibrary);
@@ -501,8 +516,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public Object asIndexWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
+    public Object asIndexWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return asIndexWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return asIndex(receiver);
@@ -603,7 +618,18 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Call a callable object.
      */
-    public Object callFunction(Object callable, ThreadState state, Object... arguments) {
+    public final Object callFunction(Object callable, VirtualFrame frame, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return callFunctionWithState(callable, state, arguments);
+    }
+
+    /**
+     * Call a callable object.
+     */
+    public Object callFunctionWithState(Object callable, ThreadState state, Object... arguments) {
         throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
     }
 
@@ -614,27 +640,59 @@ public abstract class PythonObjectLibrary extends Library {
      * object. Typically called on a result of {@link #lookupSpecialMethod}.
      *
      * @param method unbound method or descriptor object whose {@code __get__} hasn't been called
-     * @param state
      * @param receiver self
-     * @param arguments
      */
-    public Object callUnboundMethod(Object method, ThreadState state, Object receiver, Object... arguments) {
+    public final Object callUnboundMethod(Object method, VirtualFrame frame, Object receiver, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return callUnboundMethodWithState(method, state, receiver, arguments);
+    }
+
+    /**
+     * @see #callUnboundMethod(Object, VirtualFrame, Object, Object...)
+     */
+    public Object callUnboundMethodWithState(Object method, ThreadState state, Object receiver, Object... arguments) {
         throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
     }
 
     /**
-     * Like {@link #callUnboundMethod(Object, ThreadState, Object, Object...)}, but ignores possible
-     * python exception in the @{code __get__} call and returns {@link PNone#NO_VALUE} in that case.
+     * Like {@link #callUnboundMethod(Object, VirtualFrame, Object, Object...)}, but ignores
+     * possible python exception in the @{code __get__} call and returns {@link PNone#NO_VALUE} in
+     * that case.
      */
-    public Object callUnboundMethodIgnoreGetException(Object method, ThreadState state, Object self, Object... arguments) {
-        return callUnboundMethod(method, state, method, arguments);
+    public final Object callUnboundMethodIgnoreGetException(Object method, VirtualFrame frame, Object self, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return callUnboundMethodIgnoreGetExceptionWithState(method, state, self, arguments);
+    }
+
+    /**
+     * @see #callUnboundMethodIgnoreGetException(Object, VirtualFrame, Object, Object...)
+     */
+    public Object callUnboundMethodIgnoreGetExceptionWithState(Object method, ThreadState state, Object self, Object... arguments) {
+        return callUnboundMethodWithState(method, state, method, arguments);
     }
 
     /**
      * Call a special method on an object. Returns {@link PNone#NO_VALUE} if no such method has been
      * found.
      */
-    public Object lookupAndCallSpecialMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
+    public final Object lookupAndCallSpecialMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return lookupAndCallSpecialMethodWithState(receiver, state, methodName, arguments);
+    }
+
+    /**
+     * @see #lookupAndCallSpecialMethod(Object, VirtualFrame, String, Object...)
+     */
+    public Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
@@ -643,7 +701,18 @@ public abstract class PythonObjectLibrary extends Library {
      * Call a regular (not special) method on an object. Returns {@link PNone#NO_VALUE} if no such
      * method has been found.
      */
-    public Object lookupAndCallRegularMethod(Object receiver, ThreadState state, String methodName, Object... arguments) {
+    public final Object lookupAndCallRegularMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return lookupAndCallRegularMethodWithState(receiver, state, methodName, arguments);
+    }
+
+    /**
+     * @see #lookupAndCallRegularMethod(Object, VirtualFrame, String, Object...)
+     */
+    public Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
@@ -862,8 +931,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public int lengthWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
+    public int lengthWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return lengthWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return length(receiver);

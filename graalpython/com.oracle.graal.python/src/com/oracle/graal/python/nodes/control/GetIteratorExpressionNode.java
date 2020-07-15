@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -146,8 +145,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
             Object iterMethod = iterMethodProfile.profile(plib.lookupSpecialMethod(value, __ITER__));
             if (iterMethod != PNone.NONE) {
                 if (iterMethod != PNone.NO_VALUE) {
-                    // TODO frame may be null
-                    Object iterObj = methodLib.callUnboundMethodIgnoreGetException(iterMethod, PArguments.getThreadState(frame), value);
+                    Object iterObj = methodLib.callUnboundMethodIgnoreGetException(iterMethod, frame, value);
                     if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
                         return iterObj;
                     } else {

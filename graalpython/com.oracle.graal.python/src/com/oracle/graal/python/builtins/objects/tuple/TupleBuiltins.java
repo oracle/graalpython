@@ -89,7 +89,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public class TupleBuiltins extends PythonBuiltins {
@@ -588,7 +587,6 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         public long computeHash(VirtualFrame frame, PTuple self,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
@@ -599,7 +597,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, tupleStore, i);
-                long tmp = lib.hashWithFrame(item, hasFrame, frame);
+                long tmp = lib.hashWithFrame(item, frame);
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }

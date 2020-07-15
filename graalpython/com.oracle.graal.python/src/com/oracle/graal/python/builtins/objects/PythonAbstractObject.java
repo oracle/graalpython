@@ -1023,7 +1023,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object callFunction(ThreadState state, Object[] arguments,
+    public Object callFunctionWithState(ThreadState state, Object[] arguments,
                     @Exclusive @Cached ConditionProfile hasStateProfile,
                     @Exclusive @Cached CallNode callNode) {
         VirtualFrame frame = null;
@@ -1034,13 +1034,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object callUnboundMethod(ThreadState state, Object receiver, Object[] arguments,
+    public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Exclusive @Cached CallUnboundMethodNode call) {
         return call.execute(state, this, false, receiver, arguments);
     }
 
     @ExportMessage
-    public Object callUnboundMethodIgnoreGetException(ThreadState state, Object receiver, Object[] arguments,
+    public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Exclusive @Cached CallUnboundMethodNode call) {
         return call.execute(state, this, true, receiver, arguments);
     }
@@ -1077,19 +1077,29 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object lookupAndCallSpecialMethod(ThreadState state, String methodName, Object[] arguments,
+    public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
         Object method = plib.lookupSpecialMethod(this, methodName);
-        return methodLib.callUnboundMethod(method, state, this, arguments);
+        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
+            return methodLib.callUnboundMethodWithState(method, state, this, arguments);
+        } else {
+            return PNone.NO_VALUE;
+        }
     }
 
     @ExportMessage
-    public Object lookupAndCallRegularMethod(ThreadState state, String methodName, Object[] arguments,
+    public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
         Object method = plib.lookupAttribute(this, methodName);
-        return methodLib.callFunction(method, state, arguments);
+        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
+            return methodLib.callFunctionWithState(method, state, arguments);
+        } else {
+            return PNone.NO_VALUE;
+        }
     }
 
     @ExportMessage
