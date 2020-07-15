@@ -50,3 +50,16 @@ class BuiltinTest(unittest.TestCase):
     def test_ascii(self):
         self.assertEqual(ascii(1), "1")
         self.assertEqual(ascii("錦蛇 \t \0 a \x03"), "'\\u9326\\u86c7 \\t \\x00 a \\x03'")
+
+    def test_chr(self):
+        self.assertEqual(chr(32), ' ')
+        self.assertEqual(chr(97), 'a')
+        self.assertEqual(chr(0xfff), '\u0fff')
+        self.assertEqual(chr(0xf0000), '\U000f0000')
+        
+    def test_ord(self):
+        self.assertEqual(ord(' '), 32)
+        self.assertEqual(ord('a'), 97)
+        self.assertEqual(ord('\u0fff'), 0xfff)
+        self.assertEqual(ord('\U000f0000'), 0xf0000)
+        
