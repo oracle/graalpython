@@ -267,6 +267,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
         Object send(VirtualFrame frame, PGenerator self, Object value,
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
             checkResumable(this, self);
+            if (!self.isStarted() && value != PNone.NONE) {
+                throw raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
+            }
             return resumeGeneratorNode.execute(frame, self, value);
         }
     }
