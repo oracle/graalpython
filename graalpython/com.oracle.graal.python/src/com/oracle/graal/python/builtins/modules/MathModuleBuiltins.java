@@ -43,14 +43,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -2684,6 +2687,60 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 }
                 value = mul.executeObject(frame, value, nextValue);
             }
+        }
+    }
+
+    @Builtin(name = "dist", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"p", "q"})
+    @GenerateNodeFactory
+    public abstract static class DistNode extends PythonBuiltinNode {
+
+        @Child private TupleNodes.ConstructTupleNode tupleCtor = TupleNodes.ConstructTupleNode.create();
+        @Child private SequenceNodes.GetObjectArrayNode getObjectArray = SequenceNodes.GetObjectArrayNode.create();
+
+        @Specialization
+        public double doGeneric(VirtualFrame frame, Object p, Object q,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+            // adapted from CPython math_dist_impl and vector_norm
+            Object[] ps = getObjectArray.execute(tupleCtor.execute(frame, p));
+            Object[] qs = getObjectArray.execute(tupleCtor.execute(frame, q));
+            int len = ps.length;
+            if (len != qs.length) {
+                throw raise(ValueError, ErrorMessages.BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS);
+            }
+            double[] diffs = new double[len];
+            double max = 0.0;
+            boolean foundNan = false;
+            for (int i = 0; i < len; ++i) {
+                double a = lib.asJavaDoubleWithState(ps[i], PArguments.getThreadState(frame));
+                double b = lib.asJavaDoubleWithState(qs[i], PArguments.getThreadState(frame));
+                double x = Math.abs(a - b);
+                diffs[i] = x;
+                foundNan |= Double.isNaN(x);
+                if (x > max) {
+                    max = x;
+                }
+            }
+            if (Double.isInfinite(max)) {
+                return max;
+            }
+            if (foundNan) {
+                return Double.NaN;
+            }
+            if (max == 0.0 || len <= 1) {
+                return max;
+            }
+
+            double csum = 1.0;
+            double frac = 0.0;
+            for (int i = 0; i < len; ++i) {
+                double x = diffs[i];
+                x /= max;
+                x = x * x;
+                double oldcsum = csum;
+                csum += x;
+                frac += (oldcsum - csum) + x;
+            }
+            return max * Math.sqrt(csum - 1.0 + frac);
         }
     }
 }

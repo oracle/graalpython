@@ -125,5 +125,9 @@ public abstract class SequenceNodes {
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
             return toArrayNode.execute(getSequenceStorageNode.execute(seq));
         }
+
+        public static GetObjectArrayNode create() {
+            return SequenceNodesFactory.GetObjectArrayNodeGen.create();
+        }
     }
 }

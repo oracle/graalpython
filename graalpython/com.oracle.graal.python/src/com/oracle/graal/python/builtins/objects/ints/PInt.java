@@ -246,10 +246,22 @@ public final class PInt extends PythonBuiltinObject {
     public double asJavaDouble(
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
-                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
+                    @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached PRaiseNode raise) {
         if (hasIndexFunc.profile(lib.canBeIndex(this))) {
             return castToDouble.execute(lib.asIndex(this));
+        }
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
+    }
+
+    @ExportMessage
+    public double asJavaDoubleWithState(ThreadState threadState,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached CastToJavaDoubleNode castToDouble,
+                    @Exclusive @Cached ConditionProfile hasIndexFunc,
+                    @Exclusive @Cached PRaiseNode raise) {
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            return castToDouble.execute(lib.asIndexWithState(this, threadState));
         }
         throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
     }

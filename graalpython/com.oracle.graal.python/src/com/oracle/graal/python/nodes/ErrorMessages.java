@@ -86,6 +86,7 @@ public abstract class ErrorMessages {
     public static final String BASES_MUST_BE_TYPES = "bases must be types";
     public static final String BASES_ITEM_CAUSES_INHERITANCE_CYCLE = "a __bases__ item causes an inheritance cycle";
     public static final String BOOL_SHOULD_RETURN_BOOL = "__bool__ should return bool, returned %p";
+    public static final String BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS = "both points must have the same number of dimensions";
     public static final String BUFFER_INDICES_MUST_BE_INTS = "buffer indices must be integers, not %p";
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
