@@ -1458,7 +1458,7 @@ def python_coverage(args):
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
                 # run all our tests in the dev-home, so that lcov has consistent paths
                 # TODO tests with virtualenv won't pick this up
-                env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
+                env['PYTHONPATH'] = f"{os.path.join(_dev_pythonhome(), 'lib-python/3')}:{os.path.join(_dev_pythonhome(), 'lib-graalpython')}"
                 if kwds.pop("tagged", False):
                     run_tagged_unittests(executable, env=env)
                 else:
