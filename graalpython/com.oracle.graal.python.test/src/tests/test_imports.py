@@ -154,3 +154,13 @@ def test_import_package_all() :
         assert hasattr(package1, expected_sym), "'package1' does not have attribute '%s'" % expected_sym
         cnt += 1
     assert package1.exported.__testname__ == "package1.exported", "expected 'test_import_package_all' but was '%s'" % str(package1.exported.__testname__)
+
+def test_circular_import():
+    if sys.version_info.minor >= 8:
+        # the message was chaged in CPython 3.8
+        try:
+            import circularimport.source
+        except AttributeError as ae:
+            assert str(ae) == "partially initialized module 'circularimport.source' has no attribute 'spam' (most likely due to a circular import)"
+        else:
+            assert False
