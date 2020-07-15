@@ -235,8 +235,8 @@ public class PFunction extends PythonObject {
 
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                                    @Exclusive @Cached ConditionProfile hasStateProfile,
-                                    @Exclusive @Cached CallNode call) {
+                    @Exclusive @Cached ConditionProfile hasStateProfile,
+                    @Exclusive @Cached CallNode call) {
         VirtualFrame frame = null;
         if (hasStateProfile.profile(state != null)) {
             frame = PArguments.frameForCall(state);

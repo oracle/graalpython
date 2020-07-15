@@ -694,7 +694,8 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Call a special method on an object. Raises {@code AttributeError} if no such method was found.
+     * Call a special method on an object. Raises {@code AttributeError} if no such method was
+     * found.
      */
     public final Object lookupAndCallSpecialMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
         ThreadState state = null;
@@ -713,7 +714,8 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Call a regular (not special) method on an object. Raises {@code AttributeError} if no such method was found.
+     * Call a regular (not special) method on an object. Raises {@code AttributeError} if no such
+     * method was found.
      */
     public final Object lookupAndCallRegularMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
         ThreadState state = null;
