@@ -48,8 +48,12 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
@@ -64,6 +68,7 @@ import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -486,5 +491,90 @@ public final class PCode extends PythonBuiltinObject {
     @ExportMessage
     public boolean hasSourceLocation() {
         return readSourceLocation() != null;
+    }
+
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        String codeName = this.getName() == null ? "None" : this.getName();
+        String codeFilename = this.getFilename() == null ? "None" : this.getFilename();
+        int codeFirstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
+        return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
+    }
+
+    public Object co_name() {
+        String codeName = this.getName();
+        if (codeName != null) {
+            return codeName;
+        }
+        return PNone.NONE;
+    }
+
+    public PBytes co_code(PythonObjectFactory factory) {
+        byte[] codeCodeString = this.getCodestring();
+        if (codeCodeString == null) {
+            codeCodeString = new byte[0];
+        }
+        return factory.createBytes(codeCodeString);
+    }
+
+    public PTuple co_consts(PythonObjectFactory factory) {
+        Object[] codeConstants = this.getConstants();
+        if (codeConstants == null) {
+            codeConstants = new Object[0];
+        }
+        return factory.createTuple(codeConstants);
+    }
+
+    public PTuple co_names(PythonObjectFactory factory) {
+        Object[] codeNames = this.getNames();
+        if (codeNames == null) {
+            codeNames = new Object[0];
+        }
+        return factory.createTuple(codeNames);
+    }
+
+    public PythonAbstractObject co_varnames(PythonObjectFactory factory) {
+        Object[] codeVarNames = this.getVarnames();
+        if (codeVarNames != null) {
+            return factory.createTuple(codeVarNames);
+        }
+        return PNone.NONE;
+    }
+
+    public PythonAbstractObject co_freevars(PythonObjectFactory factory) {
+        Object[] codeFreeVars = this.getFreeVars();
+        if (codeFreeVars != null) {
+            return factory.createTuple(codeFreeVars);
+        }
+        return PNone.NONE;
+    }
+
+    public PythonAbstractObject co_cellvars(PythonObjectFactory factory) {
+        Object[] codeCellVars = this.getCellVars();
+        if (codeCellVars != null) {
+            return factory.createTuple(codeCellVars);
+        }
+        return PNone.NONE;
+    }
+
+    public int co_argcount() {
+        return this.getArgcount();
+    }
+
+    public int co_posonlyargcount() {
+        return this.getPositionalOnlyArgCount();
+    }
+
+    public int co_kwonlyargcount() {
+        return this.getKwonlyargcount();
+    }
+
+    public int co_nlocals() {
+        return this.getNlocals();
+    }
+
+    public int co_flags() {
+        return this.getFlags();
     }
 }

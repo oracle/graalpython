@@ -1790,6 +1790,7 @@ class MappingTestCase(TestBase):
         # copying should not result in a crash.
         self.check_threaded_weak_dict_copy(weakref.WeakKeyDictionary, False)
 
+    @support.impl_detail("refcounting", graalvm=False)
     def test_threaded_weak_key_dict_deepcopy(self):
         # Issue #35615: Weakref keys or values getting GC'ed during dict
         # copying should not result in a crash.
