@@ -183,18 +183,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                     break;
                 case "-debug-perf":
-                    if (wantsExperimental) {
-                        subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
-                        subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
-                        subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
-                        subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
-                        subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
-                        subprocessArgs.add("Dgraal.TraceTruffleTransferToInterpreter=true");
-                        subprocessArgs.add("Dgraal.TraceTruffleAssumptions=true");
-                        inputArgs.remove("-debug-perf");
-                    } else {
-                        unrecognized.add(arg);
-                    }
+                    unrecognized.add("--engine.TraceCompilation");
+                    unrecognized.add("--engine.TraceCompilationDetails");
+                    unrecognized.add("--engine.TraceInlining");
+                    unrecognized.add("--engine.TraceSplitting");
+                    unrecognized.add("--engine.TraceCompilationPolymorphism");
+                    unrecognized.add("--engine.TraceAssumptions");
+                    unrecognized.add("--engine.TraceTransferToInterpreter");
+                    unrecognized.add("--engine.TracePerformanceWarnings=all");
+                    unrecognized.add("--engine.CompilationFailureAction=Print");
+                    inputArgs.remove("-debug-perf");
                     break;
                 case "-multi-context":
                     if (wantsExperimental) {
@@ -206,20 +204,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-dump":
                     if (wantsExperimental) {
                         subprocessArgs.add("Dgraal.Dump=");
-                        subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
-                        subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
-                        subprocessArgs.add("Dgraal.TraceTruffleTransferToInterpreter=true");
-                        subprocessArgs.add("Dgraal.TruffleBackgroundCompilation=false");
+                        inputArgs.add("--engine.BackgroundCompilation=false");
                         inputArgs.remove("-dump");
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-compile-truffle-immediately":
-                    if (wantsExperimental) {
-                        subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
-                        subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
-                        inputArgs.remove("-compile-truffle-immediately");
                     } else {
                         unrecognized.add(arg);
                     }
