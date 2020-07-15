@@ -49,6 +49,7 @@ import _sysconfig
 __dir__ = __file__.rpartition("/")[0]
 cflags_warnings = ["-Wno-int-to-pointer-cast", "-Wno-int-conversion", "-Wno-incompatible-pointer-types-discards-qualifiers", "-Wno-pointer-type-mismatch", "-Wno-braced-scalar-init"]
 libpython_name = "libpython"
+libhpy_name = "libhpy"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
@@ -356,7 +357,7 @@ def build_libpython(capi_home):
     module = Extension(libpython_name,
                        sources=files,
                        extra_compile_args=cflags_warnings,
-    )
+                       )
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
     setup(
         script_name='setup' + libpython_name,
@@ -364,6 +365,25 @@ def build_libpython(capi_home):
         name=libpython_name,
         version='1.0',
         description="Graal Python's C API",
+        ext_modules=[module],
+    )
+
+
+def build_libhpy(capi_home):
+    src_dir = os.path.join(__dir__, "hpy")
+    files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
+    module = Extension(libhpy_name,
+                       sources=files,
+                       define_macros=[("HPY_UNIVERSAL_ABI", None)],
+                       extra_compile_args=cflags_warnings,
+    )
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
+    setup(
+        script_name='setup' + libhpy_name,
+        script_args=args,
+        name=libhpy_name,
+        version='1.0',
+        description="Graal Python's HPy C API",
         ext_modules=[module],
     )
 
@@ -399,6 +419,7 @@ def build(capi_home):
         distutils.command.build_ext.build_ext.build_extensions = build_extensions
 
     try:
+        build_libhpy(capi_home)
         build_libpython(capi_home)
         build_builtin_exts(capi_home)
     finally:

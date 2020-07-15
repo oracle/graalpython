@@ -86,7 +86,6 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFun
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -101,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
@@ -159,9 +157,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectAlloc;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
@@ -522,7 +522,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
-            return nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
+            return nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
         }
 
         @Specialization(guards = "isDecoratedManagedFunction(callable)")
@@ -534,7 +534,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
-            Object managedCallable = nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
+            Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
             RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, null);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
@@ -1148,134 +1148,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic({PGuards.class, CApiGuards.class})
-    abstract static class ConvertPIntToPrimitiveNode extends Node {
-
-        @Child private PRaiseNativeNode raiseNativeNode;
-
-        public abstract Object execute(VirtualFrame frame, Object o, int signed, long targetTypeSize);
-
-        public final long executeLong(VirtualFrame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(frame, o, signed, targetTypeSize));
-        }
-
-        public final int executeInt(VirtualFrame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(frame, o, signed, targetTypeSize));
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
-        static long doPrimitiveNativeWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return nativeWrapper.getInt();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "fitsInInt64(nativeWrapper)"})
-        static long doPrimitiveNativeWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return nativeWrapper.getLong();
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        static long doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return obj;
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        static long doInt8(int obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            if (signed != 0) {
-                return obj;
-            } else {
-                return obj & 0xFFFFFFFFL;
-            }
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        long doIntOther(VirtualFrame frame, @SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
-            return raiseUnsupportedSize(frame, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        long doLong4(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return raiseTooLarge(frame, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        static long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return obj;
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        static PythonNativeVoidPtr doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return obj;
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        long doPInt(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
-            return raiseUnsupportedSize(frame, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        long doPInt4(VirtualFrame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            try {
-                if (signed != 0) {
-                    return obj.intValueExact();
-                } else if (obj.bitCount() <= 32) {
-                    return obj.intValue();
-                }
-            } catch (ArithmeticException e) {
-                // fall through
-            }
-            return raiseTooLarge(frame, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        long doPInt8(VirtualFrame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            try {
-                if (signed != 0) {
-                    return obj.longValueExact();
-                } else if (obj.bitCount() <= 64) {
-                    return obj.longValue();
-                }
-            } catch (ArithmeticException e) {
-                // fall through
-            }
-            return raiseTooLarge(frame, targetTypeSize);
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        long doPInt(VirtualFrame frame, @SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
-            return raiseUnsupportedSize(frame, targetTypeSize);
-        }
-
-        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)", "!isInteger(obj)", "!isPInt(obj)"})
-        static Object doGeneric(Object obj, int signed, long targetTypeSize,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
-        }
-
-        private int raiseTooLarge(VirtualFrame frame, long targetTypeSize) {
-            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        private Integer raiseUnsupportedSize(VirtualFrame frame, long targetTypeSize) {
-            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        private PRaiseNativeNode ensureRaiseNativeNode() {
-            if (raiseNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNativeNode = insert(PRaiseNativeNodeGen.create());
-            }
-            return raiseNativeNode;
-        }
-
-        static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
-            return nativeWrapper.isBool() || nativeWrapper.isByte() || nativeWrapper.isInt();
-        }
-
-        static boolean fitsInInt64(PrimitiveNativeWrapper nativeWrapper) {
-            return nativeWrapper.isIntLike() || nativeWrapper.isBool();
-        }
-    }
-
     @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
@@ -1732,7 +1604,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         protected abstract RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode);
 
         @TruffleBoundary
-        protected static RootCallTarget createCallTarget(RootNode n) {
+        public static RootCallTarget createCallTarget(RootNode n) {
             return Truffle.getRuntime().createCallTarget(n);
         }
 

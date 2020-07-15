@@ -57,10 +57,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyInitObject;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -98,6 +101,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -112,6 +116,9 @@ import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
+
+    static final String HPY_SUFFIX = ".hpy.so";
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ImpModuleBuiltinsFactory.getFactories();
@@ -221,6 +228,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) {
+            // we always need to load the CPython C API (even for HPy modules)
             ensureCapiWasLoaded();
             PythonContext context = getContext();
             Env env = context.getEnv();
@@ -236,34 +244,77 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
             }
-            TruffleObject pyinitFunc;
-            try {
-                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, "PyInit_" + basename);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                logJavaException(e);
-                throw raise(ImportError, wrapJavaException(e), ErrorMessages.NO_FUNCTION_FOUND, "PyInit_", basename, path);
-            }
-            try {
-                Object nativeResult = interop.execute(pyinitFunc);
-                getCheckResultNode().execute("PyInit_" + basename, nativeResult);
 
-                Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
-                if (!(result instanceof PythonModule)) {
-                    // PyModuleDef_Init(pyModuleDef)
-                    // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                    throw raise(NotImplementedError, "multi-phase init of extension module %s", name);
-                } else {
-                    ((PythonObject) result).setAttribute(__FILE__, path);
-                    // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-                    PDict sysModules = context.getSysModules();
-                    getSetItemNode().execute(null, sysModules, name, result);
-                    return result;
+            // Now, try to detect the C extension's API by looking for the appropriate init
+            // functions.
+            String hpyInitFuncName = "HPyInit_" + basename;
+            String initFuncName = "PyInit_" + basename;
+            try {
+                if (interop.isMemberExisting(sulongLibrary, hpyInitFuncName)) {
+                    return initHPyModule(sulongLibrary, hpyInitFuncName, name, path, interop);
                 }
+                return initCApiModule(sulongLibrary, initFuncName, name, path, interop);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 logJavaException(e);
-                throw raise(ImportError, wrapJavaException(e), ErrorMessages.CANNOT_INITIALIZE_WITH, "PyInit_", path, basename);
+                throw raise(ImportError, wrapJavaException(e), ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
+            }
+        }
+
+        @TruffleBoundary
+        private Object initHPyModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
+                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException {
+            PythonContext context = getContext();
+            GraalHPyContext hpyContext = ensureHPyWasLoaded(context);
+
+            TruffleObject pyinitFunc;
+            try {
+                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+            }
+            Object nativeResult = interop.execute(pyinitFunc, hpyContext);
+            getCheckResultNode().execute(initFuncName, nativeResult);
+
+            Object result = HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
+            if (!(result instanceof PythonModule)) {
+                // PyModuleDef_Init(pyModuleDef)
+                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+                throw raise(NotImplementedError, "multi-phase init of extension module %s", name);
+            } else {
+                ((PythonObject) result).setAttribute(__FILE__, path);
+                // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+                PDict sysModules = context.getSysModules();
+                getSetItemNode().execute(null, sysModules, name, result);
+                return result;
+            }
+        }
+
+        @TruffleBoundary
+        private Object initCApiModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
+                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException {
+            PythonContext context = getContext();
+            TruffleObject pyinitFunc;
+            try {
+                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+            }
+            Object nativeResult = interop.execute(pyinitFunc);
+            getCheckResultNode().execute(initFuncName, nativeResult);
+
+            Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
+            if (!(result instanceof PythonModule)) {
+                // PyModuleDef_Init(pyModuleDef)
+                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+                throw raise(NotImplementedError, "multi-phase init of extension module %s", path);
+            } else {
+                ((PythonObject) result).setAttribute(__FILE__, path);
+                // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+                PDict sysModules = context.getSysModules();
+                getSetItemNode().execute(null, sysModules, name, result);
+                return result;
             }
         }
 
@@ -303,14 +354,40 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capi);
 
                     // initialization needs to be finished already but load memoryview
-                    // implementation
-                    // immediately
+                    // implementation immediately
                     callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
                 } catch (RuntimeException e) {
                     logJavaException(e);
                     throw raise(ImportError, wrapJavaException(e), ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
             }
+        }
+
+        @TruffleBoundary
+        private GraalHPyContext ensureHPyWasLoaded(PythonContext context) {
+            if (!context.hasHPyContext()) {
+                Env env = context.getEnv();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+
+                String libPythonName = "libhpy" + ExtensionSuffixesNode.getSoAbi(context);
+                TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
+                TruffleFile capiFile = homePath.resolve(libPythonName);
+                try {
+                    SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
+                    if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
+                        capiSrcBuilder.internal(true);
+                    }
+                    Object hpyLibrary = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
+                    context.createHPyContext(hpyLibrary);
+
+                    InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
+                    interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", new GraalHPyInitObject(context.getHPyContext()));
+                } catch (IOException | RuntimeException | InteropException e) {
+                    logJavaException(e);
+                    throw raise(ImportError, wrapJavaException(e), ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                }
+            }
+            return context.getHPyContext();
         }
 
         private static void logJavaException(Exception e) {
@@ -488,7 +565,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         Object run(
                         @CachedContext(PythonLanguage.class) PythonContext ctxt) {
             String soAbi = getSoAbi(ctxt);
-            return factory().createList(new Object[]{soAbi, ".so", ".dylib", ".su"});
+            return factory().createList(new Object[]{soAbi, HPY_SUFFIX, ".so", ".dylib", ".su"});
         }
 
         @TruffleBoundary
@@ -496,9 +573,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
             // sys.implementation.cache_tag
-            String cacheTag = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "cache_tag");
+            String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");
             // sys.implementation._multiarch
-            String multiArch = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "_multiarch");
+            String multiArch = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "_multiarch");
 
             Env env = ctxt.getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(GraalPythonModuleBuiltins.LLVM_LANGUAGE);

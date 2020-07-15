@@ -46,11 +46,11 @@ import com.oracle.truffle.api.library.LibraryFactory;
 
 @GenerateLibrary
 public abstract class PythonNativeWrapperLibrary extends Library {
-    public abstract Object getDelegate(PythonNativeWrapper wrapper);
+    public abstract Object getDelegate(Object wrapper);
 
-    public abstract Object getNativePointer(PythonNativeWrapper wrapper);
+    public abstract Object getNativePointer(Object wrapper);
 
-    public abstract boolean isNative(PythonNativeWrapper wrapper);
+    public abstract boolean isNative(Object wrapper);
 
     static final LibraryFactory<PythonNativeWrapperLibrary> FACTORY = LibraryFactory.resolve(PythonNativeWrapperLibrary.class);
 

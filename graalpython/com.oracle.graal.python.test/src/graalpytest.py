@@ -38,10 +38,15 @@
 # SOFTWARE.
 
 #!/usr/bin/env mx python
+import os
+from os.path import dirname, join
+import os.path as ospath
 import _io
 import sys
 import time
 import _thread
+import collections
+import tempfile
 
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
@@ -51,7 +56,199 @@ FAIL = '\033[91m'
 ENDC = '\033[0m'
 BOLD = '\033[1m'
 
+_fixture_scopes = {"session": {}, "module": {}, "function": {}}
+_fixture_marks = []
+_itertools_module = None
+_request_class = collections.namedtuple("request", "param config")
+_loaded_conftest = {}
+_created_tmp_dirs = []
+
+class RequestConfig:
+    def getoption(self, name):
+        return False
+
+
+class Fixture:
+    def __init__(self, fun, **kwargs):
+        self.fun = fun
+        co = fun.__code__
+        self.requests_context = "request" in co.co_varnames[:co.co_argcount]
+        self.params = kwargs.get("params", [])
+        self._values = None
+
+    def eval(self, test_class_instance):
+        values = []
+        if self.params:
+            for param in self.params:
+                values.extend(self._call_fixture_func(test_class_instance, _request_class(param=param, config=RequestConfig())))
+        else:
+            values.extend(self._call_fixture_func(test_class_instance, _request_class(param=None, config=RequestConfig())))
+        self._values = values
+        return values
+
+    def _call_fixture_func(self, test_class_instance, request):
+        co = self.fun.__code__
+        fixture_args = []
+        start = 1 if self.requests_context else 0
+        has_self = False
+        if co.co_argcount > start:
+            arg_names = co.co_varnames[start:co.co_argcount]
+            has_self = arg_names and arg_names[0] == "self"
+            if has_self:
+                arg_names = arg_names[1:]
+            fixture_args = get_fixture_values(test_class_instance, arg_names)
+        results = []
+        fixed_args = ((test_class_instance, ) if has_self else tuple()) + ((request, ) if self.requests_context else tuple())
+        if fixture_args:
+            for arg_vec in fixture_args:
+                args = fixed_args + arg_vec
+                results.append(self.fun(*args))
+        else:
+            results.append(self.fun(*fixed_args))
+        return results
+
+    def values(self):
+        return self._values
+
+    def name(self):
+        return self.fun.__name__
+
+
+class GraalPyTempdir:
+    def __init__(self, path):
+        assert isinstance(path, str)
+        self._path = path
+
+    def __fspath__(self):
+        return self._path
+
+    def __str__(self):
+        return self._path
+
+    def join(self, *args):
+        res = ospath.join(self._path, *args)
+        return GraalPyTempdir(res)
+
+    def write(self, data, mode='w', ensure=False):
+        with open(self._path, mode) as f:
+            f.write(data)
+
+
+def eval_fixture(name, test_class_instance):
+    """
+    Evaluate a fixtures with default scope (=function).
+    """
+    # TODO remove special handling
+    if name == "tmpdir":
+        tmp_dir = tempfile.mkdtemp()
+        global _created_tmp_dirs
+        _created_tmp_dirs.append(tmp_dir)
+        return [GraalPyTempdir(tmp_dir)]
+
+    fixture = _fixture_scopes["function"].get(name)
+    if fixture:
+        assert name == fixture.name()
+        return fixture.eval(test_class_instance)
+    raise ValueError("unknown fixture " + name)
+
+
+def eval_scope(scope):
+    """
+    Evaluate fixtures in the given scope.
+    """
+    for name, f in _fixture_scopes[scope].items():
+        assert name == f.name()
+        f.eval(None)
+
+
+def is_existing_fixture(name):
+    """
+    Search in all scopes if there is a fixture with the given name.
+    """
+    for scope in _fixture_scopes.values():
+        if scope.get(name):
+            return True
+    return False
+
+
+def get_fixture_values(test_class_instance, names):
+    """
+    Computes a list of argument vectors for the given fixture names.
+    It's a list because of parameterized fixtures that cause a cartesian product of all fixture values.
+    """
+    result_vector = []
+    for fixture_name in names:
+        for scope_name, scope in _fixture_scopes.items():
+            # fixtures in higher scope are already eval'd
+            if scope_name == "session" or scope_name == "module":
+                fixture = scope.get(fixture_name)
+                if fixture:
+                    # evaluate fixtures on demand (could be that we loaded it after the e.g. the session was started)
+                    fvals = fixture.values()
+                    if not fvals:
+                        fvals = fixture.eval(None)
+                    result_vector.append(fvals)
+                    # will break only the inner loop
+                    break
+            elif scope_name == "function":
+                result_vector.append(eval_fixture(fixture_name, test_class_instance))
+                # will break only the inner loop
+                break
+            else:
+                raise ValueError("unknown scope {}".format(scope_name))
+    global _itertools_module
+    if not _itertools_module:
+        import itertools as _itertools_module
+    return list(_itertools_module.product(*result_vector))
+
+_skipped_marker = object()
+
+class Mark:
+    @staticmethod
+    def usefixtures(*args):
+        global _fixture_marks
+        _fixture_marks += args
+        def decorator(obj):
+            return obj
+        return decorator
+
+    @staticmethod
+    def xfail(obj):
+        def foo(self):
+            pass
+        foo.__name__ = obj.__name__
+        return foo
+
+def _pytest_fixture_maker(*args, **kwargs):
+    def _fixture_decorator(fun):
+        scope = kwargs.get("scope", "function")
+        fixture = Fixture(fun, **kwargs)
+        _fixture_scopes[scope][fixture.name()] = fixture
+        return fun
+
+    if len(args) == 1 and callable(args[0]):
+        return _fixture_decorator(args[0])
+    return _fixture_decorator
+
+_pytest_module = type(os)("pytest")
+_pytest_module.mark = Mark()
+_pytest_module.fixture = _pytest_fixture_maker
+_pytest_module.raises = lambda x: TestCase.assertRaisesRegex(x, None)
+sys.modules["pytest"] = _pytest_module
+
 verbose = False
+
+
+def _cleanup_tempdirs():
+    import shutil
+    # remove all created temp dirs
+    global _created_tmp_dirs, verbose
+    if verbose:
+        print("Cleaning temp dirs: {!r}".format(_created_tmp_dirs))
+    for tmp_dir in _created_tmp_dirs:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    _created_tmp_dirs = []
+
 
 print_lock = _thread.RLock()
 class ThreadPool():
@@ -116,6 +313,7 @@ class TestCase(object):
         self.exceptions = []
         self.passed = 0
         self.failed = 0
+        self.skipped_n = 0
 
     def get_useful_frame(self, tb):
         from traceback import extract_tb
@@ -132,8 +330,24 @@ class TestCase(object):
         if verbose:
             with print_lock:
                 print(u"\n\t\u21B3 ", func.__name__, " ", end="", flush=True)
+
+        if func.__code__ is Mark.xfail(func).__code__:
+            return _skipped_marker
+
+        # insert fixture params
+        co = func.__code__
+        fixture_args = []
+        if co.co_argcount > 0:
+            arg_names = co.co_varnames[:co.co_argcount]
+            if arg_names and arg_names[0] == "self":
+                arg_names = arg_names[1:]
+            fixture_args = get_fixture_values(self, arg_names)
+
+        get_fixture_values(self, _fixture_marks)
+
         try:
-            func()
+            for arg_vec in fixture_args:
+                func(*arg_vec)
         except BaseException as e:
             if isinstance(e, SkipTest):
                 print("Skipped: %s" % e)
@@ -155,6 +369,7 @@ class TestCase(object):
         else:
             return True
 
+
     def run_test(self, func):
         if "test_main" in str(func):
             pass
@@ -166,7 +381,10 @@ class TestCase(object):
                 r = self.run_safely(func)
                 end = time.monotonic() - start
                 with print_lock:
-                    self.success(end) if r else self.failure(end)
+                    if r is _skipped_marker:
+                        self.skipped()
+                    else:
+                        self.success(end) if r else self.failure(end)
             ThreadPool.start(do_run)
 
     def success(self, time):
@@ -181,6 +399,10 @@ class TestCase(object):
         if verbose:
             print("[%.3fs]" % time, end=" ")
         print(fail_msg, end="", flush=True)
+
+    def skipped(self):
+        self.skipped_n += 1
+        print("s ", end="", flush=True)
 
     def assertIsInstance(self, value, cls):
         assert isinstance(value, cls), "Expected %r to be instance of %r" % (value, cls)
@@ -277,6 +499,9 @@ class TestCase(object):
             return self
 
         def __exit__(self, exc_type, exc, traceback):
+            self.type = exc_type
+            self.value = exc
+            self.tb = traceback
             import re
             if not exc_type:
                 assert False, "expected '%r' to be raised" % self.exc_type
@@ -324,10 +549,11 @@ class TestCase(object):
 class TestRunner(object):
 
     def __init__(self, paths):
-        self.testfiles = TestRunner.find_testfiles(paths)
+        self.testfiles = TestRunner.find_testfiles(paths[:])
         self.exceptions = []
         self.passed = 0
         self.failed = 0
+        self.skipped_n = 0
 
     @staticmethod
     def find_testfiles(paths):
@@ -343,47 +569,73 @@ class TestRunner(object):
                     pass
         return testfiles
 
+    @staticmethod
+    def find_conftest(test_module_path):
+        test_module_dir = dirname(test_module_path)
+        if "conftest.py" in os.listdir(test_module_dir):
+            return join(test_module_dir, "conftest.py")
+        return None
+
+    @staticmethod
+    def load_module(path):
+        name = path.rpartition("/")[2].partition(".")[0].replace('.py', '')
+        directory = path.rpartition("/")[0]
+        pkg = []
+        while directory and any(f.endswith("__init__.py") for f in os.listdir(directory)):
+            directory, slash, postfix = directory.rpartition("/")
+            pkg.insert(0, postfix)
+        if pkg:
+            sys.path.insert(0, directory)
+            try:
+                test_module = __import__(".".join(pkg + [name]))
+                for p in pkg[1:]:
+                    test_module = getattr(test_module, p)
+                test_module = getattr(test_module, name)
+            except BaseException as e:
+                _, _, tb = sys.exc_info()
+                try:
+                    from traceback import extract_tb
+                    filename, line, func, text = extract_tb(tb)[-1]
+                    self.exceptions.append(
+                        ("In test '%s': Exception occurred in %s:%d" % (path, filename, line), e)
+                    )
+                except BaseException:
+                    self.exceptions.append((path, e))
+            else:
+                return test_module
+            finally:
+                sys.path.pop(0)
+        else:
+            test_module = type(sys)(name, path)
+            try:
+                with _io.FileIO(path, "r") as f:
+                    test_module.__file__ = path
+                    exec(compile(f.readall(), path, "exec"), test_module.__dict__)
+            except BaseException as e:
+                self.exceptions.append((path, e))
+            else:
+                return test_module
+
     def test_modules(self):
         for testfile in self.testfiles:
-            name = testfile.rpartition("/")[2].partition(".")[0].replace('.py', '')
-            directory = testfile.rpartition("/")[0]
-            pkg = []
-            while any(f.endswith("__init__.py") for f in os.listdir(directory)):
-                directory, slash, postfix = directory.rpartition("/")
-                pkg.insert(0, postfix)
-            if pkg:
-                sys.path.insert(0, directory)
-                try:
-                    test_module = __import__(".".join(pkg + [name]))
-                    for p in pkg[1:]:
-                        test_module = getattr(test_module, p)
-                    test_module = getattr(test_module, name)
-                except BaseException as e:
-                    _, _, tb = sys.exc_info()
-                    try:
-                        from traceback import extract_tb
-                        filename, line, func, text = extract_tb(tb)[-1]
-                        self.exceptions.append(
-                            ("In test '%s': Exception occurred in %s:%d" % (testfile, filename, line), e)
-                        )
-                    except BaseException:
-                        self.exceptions.append((testfile, e))
-                else:
-                    yield test_module
-                sys.path.pop(0)
-            else:
-                test_module = type(sys)(name, testfile)
-                try:
-                    with _io.FileIO(testfile, "r") as f:
-                        test_module.__file__ = testfile
-                        exec(compile(f.readall(), testfile, "exec"), test_module.__dict__)
-                except BaseException as e:
-                    self.exceptions.append((testfile, e))
-                else:
-                    yield test_module
+            yield TestRunner.load_module(testfile)
+
+    def load_conftest(self, testfile):
+        TestRunner.load_module(testfile)
 
     def run(self):
+        # eval session scope
+        eval_scope("session")
+
         for module in self.test_modules():
+            # eval module scope
+            eval_scope("module")
+
+            # load conftest if exists
+            conftest = TestRunner.find_conftest(module.__file__)
+            if conftest and not conftest in _loaded_conftest:
+                self.load_conftest(conftest)
+
             if verbose:
                 print(u"\n\u25B9 ", module.__name__, end="")
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
@@ -396,10 +648,11 @@ class TestRunner(object):
                 self.exceptions += testcase.exceptions
                 self.passed += testcase.passed
                 self.failed += testcase.failed
+                self.skipped_n += testcase.skipped_n
             if verbose:
                 print()
         ThreadPool.shutdown()
-        print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
+        print("\n\nRan %d tests (%d passes, %d failures, %d skipped)" % (self.passed + self.failed, self.passed, self.failed, self.skipped_n))
         for e in self.exceptions:
             msg, exc = e
             print(msg)
@@ -413,6 +666,7 @@ class TestRunner(object):
                 print(exc)
 
         if self.exceptions or self.failed:
+            _cleanup_tempdirs()
             os._exit(1)
 
 
@@ -468,4 +722,7 @@ if __name__ == "__main__":
     for pth in python_paths:
         sys.path.append(pth)
 
-    TestRunner(paths).run()
+    try:
+        TestRunner(paths).run()
+    finally:
+        _cleanup_tempdirs()

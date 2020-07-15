@@ -106,7 +106,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
         // code path, we don't speculate that either of those objects is
         // constant anymore, so any caching on them won't happen anyway
         PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return lib.getDelegate(this) == lib.getDelegate((PyLongDigitsWrapper) obj);
+        return lib.getDelegate(this) == lib.getDelegate(obj);
     }
 
     @ExportMessage
