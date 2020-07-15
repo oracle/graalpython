@@ -478,7 +478,7 @@ def _graalpytest_driver():
 
 
 def _graalpytest_root():
-    return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
+    return os.path.join(mx.dependency("com.oracle.graal.python.test").get_output_root(), "bin", "tests")
 
 
 def _hpy_test_root():
