@@ -64,7 +64,8 @@ public enum BinaryArithmetic {
     Or(SpecialMethodNames.__OR__, "|"),
     Xor(SpecialMethodNames.__XOR__, "^"),
     MatMul(SpecialMethodNames.__MATMUL__, "@"),
-    Pow(SpecialMethodNames.__POW__, "**");
+    Pow(SpecialMethodNames.__POW__, "**"),
+    DivMod(SpecialMethodNames.__DIVMOD__, "divmod");
 
     private final String methodName;
     private final String reverseMethodName;

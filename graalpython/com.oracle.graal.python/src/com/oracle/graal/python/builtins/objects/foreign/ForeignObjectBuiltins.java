@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
@@ -50,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
@@ -412,6 +414,22 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class RFloorDivNode extends ForeignBinaryNode {
         RFloorDivNode() {
             super(BinaryArithmetic.FloorDiv.create(), true);
+        }
+    }
+
+    @Builtin(name = __DIVMOD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class DivModNode extends ForeignBinaryNode {
+        DivModNode() {
+            super(BinaryArithmetic.DivMod.create(), false);
+        }
+    }
+
+    @Builtin(name = __RDIVMOD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RDivModNode extends ForeignBinaryNode {
+        RDivModNode() {
+            super(BinaryArithmetic.DivMod.create(), true);
         }
     }
 

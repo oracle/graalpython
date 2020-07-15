@@ -609,6 +609,41 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = SpecialMethodNames.__RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = SpecialMethodNames.__DIVMOD__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class DivModNode extends IntBinaryBuiltinNode {
+        @Specialization
+        PTuple doLL(int left, int right) {
+            raiseDivisionByZero(right == 0);
+            return factory().createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
+        }
+
+        @Specialization
+        PTuple doLL(long left, long right) {
+            raiseDivisionByZero(right == 0);
+            return factory().createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
+        }
+
+        @Specialization(guards = {"accepts(left)", "accepts(right)"})
+        PTuple doGenericInt(VirtualFrame frame, Object left, Object right,
+                        @Cached FloorDivNode floorDivNode,
+                        @Cached ModNode modNode) {
+            return factory().createTuple(new Object[]{floorDivNode.execute(frame, left, right), modNode.execute(frame, left, right)});
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        PNotImplemented doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        protected static boolean accepts(Object obj) {
+            return obj instanceof Integer || obj instanceof Long || obj instanceof PInt;
+        }
+    }
+
     @Builtin(name = SpecialMethodNames.__MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory

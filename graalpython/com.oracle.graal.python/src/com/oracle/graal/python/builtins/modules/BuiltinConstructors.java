@@ -71,6 +71,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -2329,6 +2331,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     pythonClass.setAttribute(key, value);
                 } else {
                     pythonClass.setAttribute(key, value);
+                }
+            }
+
+            // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
+            // not
+            Object hashMethod = nslib.getItem(namespace.getDictStorage(), __HASH__);
+            if (hashMethod == null) {
+                Object eqMethod = nslib.getItem(namespace.getDictStorage(), __EQ__);
+                if (eqMethod != null) {
+                    pythonClass.setAttribute(__HASH__, PNone.NONE);
                 }
             }
 

@@ -1,8 +1,12 @@
 *graalpython.lib-python.3.test.test_class.ClassTests.testBadTypeReturned
+*graalpython.lib-python.3.test.test_class.ClassTests.testBinaryOps
 *graalpython.lib-python.3.test.test_class.ClassTests.testForExceptionsRaisedInInstanceGetattr2
 *graalpython.lib-python.3.test.test_class.ClassTests.testGetSetAndDel
+*graalpython.lib-python.3.test.test_class.ClassTests.testHashStuff
 *graalpython.lib-python.3.test.test_class.ClassTests.testInit
+*graalpython.lib-python.3.test.test_class.ClassTests.testListAndDictOps
 *graalpython.lib-python.3.test.test_class.ClassTests.testMisc
 *graalpython.lib-python.3.test.test_class.ClassTests.testSFBug532646
+*graalpython.lib-python.3.test.test_class.ClassTests.testSetattrNonStringName
 *graalpython.lib-python.3.test.test_class.ClassTests.testSetattrWrapperNameIntern
 *graalpython.lib-python.3.test.test_class.ClassTests.testUnaryOps

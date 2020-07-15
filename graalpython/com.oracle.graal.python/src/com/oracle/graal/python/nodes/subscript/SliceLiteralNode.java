@@ -104,7 +104,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     private int castStep(VirtualFrame frame, Object o) {
         if (castStepNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStepNode = insert(CastToSliceComponentNode.create(1, Integer.MAX_VALUE));
+            castStepNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, Integer.MAX_VALUE));
         }
         return castStepNode.execute(frame, o);
     }

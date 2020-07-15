@@ -524,12 +524,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public PTuple doObject(VirtualFrame frame, Object a, Object b,
-                        @Cached("FloorDiv.create()") LookupAndCallBinaryNode floordivNode,
-                        @Cached("Mod.create()") LookupAndCallBinaryNode modNode) {
-            Object div = floordivNode.executeObject(frame, a, b);
-            Object mod = modNode.executeObject(frame, a, b);
-            return factory().createTuple(new Object[]{div, mod});
+        public Object doObject(VirtualFrame frame, Object a, Object b,
+                        @Cached("createDivmod()") LookupAndCallBinaryNode callDivmod) {
+            return callDivmod.executeObject(frame, a, b);
+        }
+
+        protected static LookupAndCallBinaryNode createDivmod() {
+            return BinaryArithmetic.DivMod.create();
         }
 
     }
