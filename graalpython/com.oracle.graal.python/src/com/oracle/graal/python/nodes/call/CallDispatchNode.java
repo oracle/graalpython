@@ -115,7 +115,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments);
+        return invoke.execute(frame, callee, callee.getGlobals(), callee.getClosure(), arguments);
     }
 
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
@@ -129,7 +129,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callBuiltinFunctionCachedCt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, null, null, arguments);
+        return invoke.execute(frame, null, null, null, arguments);
     }
 
     @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCode", "callFunctionCachedCt"})

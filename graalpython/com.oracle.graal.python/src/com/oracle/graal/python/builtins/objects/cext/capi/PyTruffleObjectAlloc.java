@@ -44,7 +44,6 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -123,11 +122,6 @@ public class PyTruffleObjectAlloc implements TruffleObject {
             return 0;
         }
         return -2;
-    }
-
-    static CallTargetInvokeNode createInvokeNode(ContextReference<PythonContext> contextRef) {
-        CApiContext cApiContext = contextRef.get().getCApiContext();
-        return CallTargetInvokeNode.create(cApiContext.getTriggerAsyncActionsCallTarget(), null, false, false);
     }
 
     static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {

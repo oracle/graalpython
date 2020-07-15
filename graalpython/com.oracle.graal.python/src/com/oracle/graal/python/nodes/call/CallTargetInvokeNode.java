@@ -65,12 +65,9 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     @Child private DirectCallNode callNode;
     @Child private CallContext callContext;
-    // Needed only for generator functions, will be null for builtins and other callables that
-    // cannot be generator functions
-    private final PFunction callee;
     protected final boolean isBuiltin;
 
-    protected CallTargetInvokeNode(CallTarget callTarget, PFunction callee, boolean isBuiltin, boolean isGenerator) {
+    protected CallTargetInvokeNode(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
         if (isBuiltin) {
             callNode.cloneCallTarget();
@@ -78,7 +75,6 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         if (isGenerator && shouldInlineGenerators()) {
             this.callNode.forceInlining();
         }
-        this.callee = callee;
         this.callContext = CallContext.create();
         this.isBuiltin = isBuiltin;
     }
@@ -87,28 +83,28 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     public static CallTargetInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, callee, builtin, callee.isGeneratorFunction());
+        return CallTargetInvokeNodeGen.create(callTarget, builtin, callee.isGeneratorFunction());
     }
 
     @TruffleBoundary
     public static CallTargetInvokeNode create(PBuiltinFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, null, builtin, false);
+        return CallTargetInvokeNodeGen.create(callTarget, builtin, false);
     }
 
-    public static CallTargetInvokeNode create(CallTarget callTarget, PFunction callee, boolean isBuiltin, boolean isGenerator) {
-        return CallTargetInvokeNodeGen.create(callTarget, callee, isBuiltin, isGenerator);
+    public static CallTargetInvokeNode create(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
+        return CallTargetInvokeNodeGen.create(callTarget, isBuiltin, isGenerator);
     }
 
-    public final Object execute(VirtualFrame frame, Object[] arguments) {
-        return execute(frame, null, null, arguments);
-    }
-
-    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
+    /**
+     * @param callee A PFunction if the callee is one, otherwise null. Used for generator functions
+     *            only.
+     */
+    public abstract Object execute(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments);
 
     @Specialization(guards = {"globals == null", "closure == null"})
-    protected Object doNoClosure(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
+    protected Object doNoClosure(VirtualFrame frame, PFunction callee, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
                     @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
                     @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
@@ -134,13 +130,13 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     }
 
     @Specialization(replaces = "doNoClosure")
-    protected Object doGeneric(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments,
+    protected Object doGeneric(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments,
                     @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
                     @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doNoClosure(frame, null, null, arguments, classBodyProfile, generatorFunctionProfile, context);
+        return doNoClosure(frame, callee, null, null, arguments, classBodyProfile, generatorFunctionProfile, context);
     }
 
     public final CallTarget getCallTarget() {

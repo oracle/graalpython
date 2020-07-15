@@ -153,7 +153,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
             try {
-                return call.execute(frame, null, null, arguments);
+                return call.execute(frame, null, null, null, arguments);
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
@@ -183,7 +183,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
-            return CallTargetInvokeNode.create(target, null, false, true);
+            return CallTargetInvokeNode.create(target, false, true);
         }
 
         protected static boolean sameCallTarget(RootCallTarget target1, CallTarget target2) {
