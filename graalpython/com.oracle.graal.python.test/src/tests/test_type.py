@@ -42,34 +42,48 @@ def test_base():
     A = type('A', (), {})
     assert A.__base__ == object
 
-    # class B:
-    #     def ham(self):
-    #         return 'ham%d' % self
-    #
-    # class A(object):
-    #     pass
-    #
-    # class B(dict):
-    #     pass
-    #
-    # class C(A, B):
-    #     pass
-    #
-    # assert C.__base__ == B
-    #
-    # class A(object):
-    #     pass
-    #
-    # class B(object):
-    #     pass
-    #
-    # class C(A, B):
-    #     pass
-    #
-    # assert C.__base__ == A
-    #
-    # C = type('C', (B, int), {'spam': lambda self: 'spam%s' % self})
-    # assert C.__base__ == int
+    class B:
+        def ham(self):
+            return 'ham%d' % self
+
+    class A(object):
+        pass
+
+    class B(dict):
+        pass
+
+    class C(A, B):
+        pass
+
+    assert C.__base__ == B
+
+    class A(object):
+        pass
+
+    class B(object):
+        pass
+
+    class C(A, B):
+        pass
+
+    assert C.__base__ == A
+
+    C = type('C', (B, int), {'spam': lambda self: 'spam%s' % self})
+    assert C.__base__ == int
+    
+    class A (object): pass
+
+    class BB (A): pass
+
+    class B(BB): pass
+
+    class C (A): 
+        __slots__ = ['a']
+
+    class D (B, C): pass
+
+    assert D.__base__ == C
+
 
 
 def test_namespace_with_non_string_keys():
