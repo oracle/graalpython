@@ -122,23 +122,29 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double doL(long value) {
-            return count(value);
+            return op(value);
         }
 
         @Specialization
         public double doD(double value) {
-            return count(value);
+            return op(value);
         }
 
         @Specialization
         public double doPI(PInt value) {
-            return count(value.doubleValueWithOverflow(getRaiseNode()));
+            return op(value.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization(guards = "!isNumber(value)", limit = "1")
         public double doGeneral(Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
-            return count(lib.asJavaDouble(value));
+            return op(lib.asJavaDouble(value));
+        }
+
+        private double op(double arg) {
+            double res = count(arg);
+            checkMathDomainError(Double.isNaN(res) && !Double.isNaN(arg));
+            return res;
         }
     }
 
