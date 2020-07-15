@@ -133,6 +133,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         if (!ImageInfo.inImageBuildtimeCode()) {
             mod.setAttribute("home", language.getHome());
         }
+        mod.setAttribute("in_image_buildtime", ImageInfo.inImageBuildtimeCode());
+        mod.setAttribute("in_image", ImageInfo.inImageCode());
         String coreHome = context.getCoreHome();
         String stdlibHome = context.getStdlibHome();
         String capiHome = context.getCAPIHome();

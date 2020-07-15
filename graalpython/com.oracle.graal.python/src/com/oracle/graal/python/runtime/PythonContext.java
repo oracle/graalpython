@@ -536,22 +536,25 @@ public final class PythonContext {
                     }
                 } catch (SecurityException | IOException e) {
                 }
-            } else {
-                TruffleFile f = newEnv.getInternalTruffleFile(stdLibHome);
-                if (!f.isAbsolute()) {
-                    try {
-                        // we need to get absolute path due to the caching code, where the filepath
-                        // is the key for caching.
-                        stdLibHome = f.getCanonicalFile().getPath();
-                    } catch (IOException e) {
-                        // if the file does not exists, then it fails during reading.
-                    }
-                }
             }
 
             if (capiHome.isEmpty()) {
                 capiHome = coreHome;
             }
+        }
+
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // use relative paths at buildtime to avoid freezing buildsystem paths
+            TruffleFile base = newEnv.getInternalTruffleFile(basePrefix).getAbsoluteFile();
+            newEnv.setCurrentWorkingDirectory(base);
+            basePrefix = ".";
+            sysPrefix = base.relativize(newEnv.getInternalTruffleFile(sysPrefix)).getPath();
+            if (sysPrefix.isEmpty()) {
+                sysPrefix = ".";
+            }
+            coreHome = base.relativize(newEnv.getInternalTruffleFile(coreHome)).getPath();
+            stdLibHome = base.relativize(newEnv.getInternalTruffleFile(stdLibHome)).getPath();
+            capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
         }
 
         PythonCore.writeInfo(() -> MessageFormat.format("Updated locations:" +

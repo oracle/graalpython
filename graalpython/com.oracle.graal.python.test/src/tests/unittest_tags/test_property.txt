@@ -1,3 +1,13 @@
+*graalpython.lib-python.3.test.test_property.PropertySubclassTests.test_docstring_copy
+*graalpython.lib-python.3.test.test_property.PropertySubclassTests.test_property_new_getter_new_docstring
+*graalpython.lib-python.3.test.test_property.PropertySubclassTests.test_property_setter_copies_getter_docstring
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property___isabstractmethod__descriptor
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property_builtin_doc_writable
 *graalpython.lib-python.3.test.test_property.PropertyTests.test_property_decorator_baseclass
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property_decorator_baseclass_doc
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property_decorator_doc
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property_decorator_doc_writable
 *graalpython.lib-python.3.test.test_property.PropertyTests.test_property_decorator_subclass
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property_decorator_subclass_doc
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property_getter_doc_override
 *graalpython.lib-python.3.test.test_property.PropertyTests.test_refleaks_in___init__

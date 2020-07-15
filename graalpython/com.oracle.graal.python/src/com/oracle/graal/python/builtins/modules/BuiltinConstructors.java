@@ -2341,19 +2341,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // have slots
 
                 // Make it into a list
-                SequenceStorage slotList;
+                SequenceStorage slotsStorage;
+                Object slotsObject;
                 if (slots instanceof String) {
-                    slotList = factory().createList(new Object[]{slots}).getSequenceStorage();
+                    slotsObject = factory().createList(new Object[]{slots});
+                    slotsStorage = ((PList) slotsObject).getSequenceStorage();
+                } else if (slots instanceof PTuple) {
+                    slotsObject = slots;
+                    slotsStorage = ((PTuple) slots).getSequenceStorage();
+                } else if (slots instanceof PList) {
+                    slotsObject = slots;
+                    slotsStorage = ((PList) slots).getSequenceStorage();
                 } else {
-                    slotList = getCastToListNode().execute(frame, slots).getSequenceStorage();
+                    slotsObject = getCastToListNode().execute(frame, slots);
+                    slotsStorage = ((PList) slotsObject).getSequenceStorage();
                 }
-                int slotlen = getListLenNode().execute(slotList);
+                int slotlen = getListLenNode().execute(slotsStorage);
                 // TODO: tfel - check if slots are allowed. They are not if the base class is var
                 // sized
 
                 for (int i = 0; i < slotlen; i++) {
                     String slotName;
-                    Object element = getSlotItemNode().execute(frame, slotList, i);
+                    Object element = getSlotItemNode().execute(frame, slotsStorage, i);
                     // Check valid slot name
                     if (element instanceof String) {
                         slotName = (String) element;
@@ -2378,12 +2387,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PythonContext context = getContextRef().get();
                 Object state = ForeignCallContext.enter(frame, context, this);
                 try {
-                    PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace, nslib);
-                    pythonClass.setAttribute(__SLOTS__, newSlots);
+                    pythonClass.setAttribute(__SLOTS__, slotsObject);
                     if (basesArray.length > 1) {
                         // TODO: tfel - check if secondary bases provide weakref or dict when we
                         // don't already have one
                     }
+
+                    // checks for some name errors too
+                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, false, namespace, nslib);
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {

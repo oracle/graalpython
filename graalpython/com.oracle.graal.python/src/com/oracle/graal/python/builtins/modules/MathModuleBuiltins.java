@@ -1944,9 +1944,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PInt fabs(PInt value) {
-            BigInteger xabs = value.abs();
-            return factory().createInt(xabs);
+        public double fabs(PInt value) {
+            return Math.abs(value.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization

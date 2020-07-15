@@ -99,6 +99,12 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         Object repr(GetSetDescriptor descr) {
             return String.format("<attribute '%s' of '%s' objects>", descr.getName(), GetNameNode.doSlowPath(descr.getType()));
         }
+
+        @Specialization
+        @TruffleBoundary
+        Object repr(HiddenKeyDescriptor descr) {
+            return String.format("<attribute '%s' of '%s' objects>", descr.getKey(), GetNameNode.doSlowPath(descr.getType()));
+        }
     }
 
     abstract static class DescriptorCheckNode extends PNodeWithContext {

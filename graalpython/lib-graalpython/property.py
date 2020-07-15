@@ -38,6 +38,11 @@
 # SOFTWARE.
 
 
+def _f(): pass
+FunctionType = type(_f)
+descriptor = type(FunctionType.__code__)
+
+
 class property(object):
     """
     property(fget=None, fset=None, fdel=None, doc=None) -> property attribute
@@ -72,6 +77,15 @@ class property(object):
         self.fset = fset
         self.fdel = fdel
         self.doc = doc
+        self.getter_doc = False
+        if self.doc is None and fget:
+            gdoc = getattr(fget, "__doc__")
+            if gdoc:
+                if type(self) is property:
+                    self.doc = gdoc
+                else:
+                    self.__doc__ = gdoc
+                self.getter_doc = True
         self.name = name
         self._owner = None
 
@@ -117,4 +131,26 @@ class property(object):
         _fget = fget if fget is not None else self.fget
         _fset = fset if fset is not None else self.fset
         _fdel = fdel if fdel is not None else self.fdel
-        return type(self)(fget=_fget, fset=_fset, fdel=_fdel, doc=self.doc, name=self.name)
+        _doc = None if (self.getter_doc and _fget) else self.doc
+        return type(self)(fget=_fget, fset=_fset, fdel=_fdel, doc=_doc, name=self.name)
+
+
+def isabstract(self):
+    return (bool(getattr(self.fget, "__isabstractmethod__", False)) or
+            bool(getattr(self.fset, "__isabstractmethod__", False)) or
+            bool(getattr(self.fdel, "__isabstractmethod__", False)))
+
+
+property.__isabstractmethod__ = descriptor(fget=isabstract, name="__isabstractmethod__", owner=property)
+
+
+def get_doc(self):
+    return self.doc
+
+
+def set_doc(self, value):
+    self.doc = value
+    self.getter_doc = False
+
+
+property.__doc__ = descriptor(fget=get_doc, fset=set_doc, name="__doc__", owner=property)

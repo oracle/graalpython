@@ -60,7 +60,12 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -68,10 +73,13 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.Get
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -106,6 +114,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.Arrays;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonObject)
 public class ObjectBuiltins extends PythonBuiltins {
@@ -118,9 +127,17 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __CLASS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBinaryBuiltinNode {
-        @Child private LookupAttributeInMRONode lookupSlotsInSelf;
-        @Child private LookupAttributeInMRONode lookupSlotsInOther;
+
+        @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private TypeNodes.GetNameNode getTypeNameNode;
+
+        @Child private LookupAttributeInMRONode lookupNewNode;
+        @Child private GetSuperClassNode getBaseClassNode;
+        @Child private GetDictStorageNode getDictStorageNode;
+        @Child private LookupAndCallBinaryNode getDictNode;
+        @Child private HashingStorageLibrary hashingStorageLib;
+        @Child private PythonObjectLibrary objectLibrary;
+        @Child private GetObjectArrayNode getObjectArrayNode;
 
         private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
 
@@ -141,9 +158,8 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone setClass(PythonObject self, PythonAbstractClass value,
+        PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib2,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch) {
@@ -156,32 +172,202 @@ public class ObjectBuiltins extends PythonBuiltins {
                 errorSelfBranch.enter();
                 throw raise(TypeError, ERROR_MESSAGE);
             }
-            Object selfSlots = getLookupSlotsInSelf().execute(lazyClass);
-            if (selfSlots != PNone.NO_VALUE) {
-                Object otherSlots = getLookupSlotsInOther().execute(value);
-                if (otherSlots == PNone.NO_VALUE || !lib2.equals(selfSlots, otherSlots, lib2)) {
-                    errorSlotsBranch.enter();
-                    throw raise(TypeError, ErrorMessages.CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(value), getTypeName(lazyClass));
-                }
+
+            if (!compatibleForAssignment(frame, lazyClass, value)) {
+                errorSlotsBranch.enter();
+                throw raise(TypeError, ErrorMessages.CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(value), getTypeName(lazyClass));
             }
             lib1.setLazyPythonClass(self, value);
             return PNone.NONE;
         }
 
-        private LookupAttributeInMRONode getLookupSlotsInSelf() {
-            if (lookupSlotsInSelf == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSlotsInSelf = insert(LookupAttributeInMRONode.create(__SLOTS__));
+        /**
+         * Attempt to get as close as possible to typeobject.compatible_for_assignment()
+         */
+        private boolean compatibleForAssignment(VirtualFrame frame, Object self, PythonAbstractClass other) {
+            Object newBase = other;
+            Object oldBase = self;
+
+            // TODO getBaseClassNode tends to fail with "get bestBase case not yet implemented"
+            Object newParent = getSuperClassNode().execute(newBase);
+            while (newParent != null && compatibleWithBase(frame, newBase, newParent)) {
+                newBase = newParent;
+                newParent = getSuperClassNode().execute(newBase);
             }
-            return lookupSlotsInSelf;
+
+            Object oldParent = getSuperClassNode().execute(oldBase);
+            while (oldParent != null && compatibleWithBase(frame, oldBase, oldParent)) {
+                oldBase = oldParent;
+                oldParent = getSuperClassNode().execute(oldBase);
+            }
+
+            if (newBase != oldBase && (newParent != oldParent || !compareSlotsFromDict(frame, newBase, oldBase))) {
+                return false;
+            }
+            return true;
         }
 
-        private LookupAttributeInMRONode getLookupSlotsInOther() {
-            if (lookupSlotsInOther == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSlotsInOther = insert(LookupAttributeInMRONode.create(__SLOTS__));
+        /**
+         * Attempt to get as close as possible to typeobject.compatible_with_tp_base().
+         */
+        private boolean compatibleWithBase(VirtualFrame frame, Object child, Object parent) {
+            if (PGuards.isNativeClass(child) && PGuards.isNativeClass(parent)) {
+                // TODO: call C function 'compatible_for_assignment'
+                return false;
             }
-            return lookupSlotsInOther;
+
+            // (child->tp_flags & Py_TPFLAGS_HAVE_GC) == (parent->tp_flags & Py_TPFLAGS_HAVE_GC)
+            if (PGuards.isNativeClass(child) != PGuards.isNativeClass(parent)) {
+                return false;
+            }
+
+            // instead of child->tp_dictoffset == parent->tp_dictoffset
+            if (hasDict(child) != hasDict(parent)) {
+                return false;
+            }
+
+            // instead of child->tp_basicsize == parent->tp_basicsize
+            // the assumption is made that a different "allocator" => different basic size, hm
+            Object childNewMethod = getLookupNewNode().execute(child);
+            Object parentNewMethod = getLookupNewNode().execute(parent);
+            if (childNewMethod != parentNewMethod) {
+                return false;
+            }
+
+            // instead of child->tp_itemsize == parent->tp_itemsize
+            Object childSlots = getSlotsFromDict(frame, child);
+            Object parentSlots = getSlotsFromDict(frame, parent);
+            if (childSlots == null && parentSlots == null) {
+                return true;
+            }
+            if (childSlots == null && parentSlots != null || childSlots != null && parentSlots == null) {
+                return false;
+            }
+            if (!compareSlots(parent, child, parentSlots, childSlots)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        private boolean compareSlotsFromDict(VirtualFrame frame, Object a, Object b) {
+            Object aSlots = getSlotsFromDict(frame, b);
+            Object bSlots = getSlotsFromDict(frame, a);
+            return compareSlots(a, b, aSlots, bSlots);
+        }
+
+        @TruffleBoundary
+        private boolean compareSlots(Object aType, Object bType, Object aSlotsArg, Object bSlotsArg) {
+            Object aSlots = aSlotsArg;
+            Object bSlots = bSlotsArg;
+
+            if (aSlots == null && bSlots == null) {
+                return true;
+            }
+
+            if (aSlots != null && bSlots != null) {
+                Object[] aArray = getObjectArrayNode().execute(aSlots);
+                Object[] bArray = getObjectArrayNode().execute(bSlots);
+                if (bArray.length != aArray.length) {
+                    return false;
+                }
+                aArray = Arrays.copyOf(aArray, aArray.length);
+                bArray = Arrays.copyOf(bArray, bArray.length);
+                // what cpython does in same_slots_added() is a compare on a sorted slots list
+                // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
+                // NOT the same like the unsorted __slots__ attribute.
+                Arrays.sort(bArray);
+                Arrays.sort(aArray);
+                for (int i = 0; i < aArray.length; i++) {
+                    if (!aArray[i].equals(bArray[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            aSlots = getLookupSlots().execute(aType);
+            bSlots = getLookupSlots().execute(bType);
+            int aSize = aSlots != PNone.NO_VALUE ? getObjectLibrary().length(aSlots) : 0;
+            int bSize = bSlots != PNone.NO_VALUE ? getObjectLibrary().length(bSlots) : 0;
+            return aSize == bSize;
+        }
+
+        private Object getSlotsFromDict(VirtualFrame frame, Object type) {
+            Object dict = getDictNode().executeObject(frame, type, __DICT__);
+            if (dict != PNone.NO_VALUE) {
+                HashingStorage storage = getDictStorageNode().execute((PHashingCollection) dict);
+                return getHashingStorageLibrary().getItem(storage, __SLOTS__);
+            }
+            return null;
+        }
+
+        private boolean hasDict(Object obj) {
+            return getObjectLibrary().lookupAttribute(obj, __DICT__) != PNone.NO_VALUE;
+        }
+
+        private GetObjectArrayNode getObjectArrayNode() {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode;
+        }
+
+        private PythonObjectLibrary getObjectLibrary() {
+            if (objectLibrary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
+            }
+            return objectLibrary;
+        }
+
+        private LookupAndCallBinaryNode getDictNode() {
+            if (getDictNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDictNode = insert(LookupAndCallBinaryNode.create(__GETATTRIBUTE__));
+            }
+            return getDictNode;
+        }
+
+        private GetDictStorageNode getDictStorageNode() {
+            if (getDictStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDictStorageNode = insert(GetDictStorageNode.create());
+            }
+            return getDictStorageNode;
+        }
+
+        private HashingStorageLibrary getHashingStorageLibrary() {
+            if (hashingStorageLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hashingStorageLib = insert(HashingStorageLibrary.getFactory().createDispatched(4));
+            }
+            return hashingStorageLib;
+        }
+
+        private LookupAttributeInMRONode getLookupSlots() {
+            if (lookupSlotsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupSlotsNode = insert(LookupAttributeInMRONode.create(__SLOTS__));
+            }
+            return lookupSlotsNode;
+        }
+
+        private GetSuperClassNode getSuperClassNode() {
+            if (getBaseClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getBaseClassNode = insert(GetSuperClassNodeGen.create());
+            }
+            return getBaseClassNode;
+        }
+
+        private LookupAttributeInMRONode getLookupNewNode() {
+            if (lookupNewNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(__NEW__));
+            }
+            return lookupNewNode;
         }
 
         @Specialization(guards = "!isPythonObject(self)")
