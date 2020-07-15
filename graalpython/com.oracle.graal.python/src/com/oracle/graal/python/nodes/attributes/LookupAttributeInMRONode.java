@@ -268,7 +268,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO"})
     protected Object lookup(Object klass,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-        return lookupSlow(klass, key, getMroNode, readAttrNode, skipPythonClasses);
+        return lookupSlow(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);
     }
 
     protected GetMroStorageNode ensureGetMroNode() {
