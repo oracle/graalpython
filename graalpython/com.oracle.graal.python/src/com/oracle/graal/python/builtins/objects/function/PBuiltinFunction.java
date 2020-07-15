@@ -38,6 +38,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -46,10 +50,14 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -172,12 +180,46 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @ExportMessage
     public Object callUnboundMethod(ThreadState state, Object receiver, Object[] arguments,
                     @Exclusive @Cached ConditionProfile hasStateProfile,
-                    @Exclusive @Cached CallNode call) {
+                    @Exclusive @Cached CallUnboundMethodNode call) {
         VirtualFrame frame = null;
         if (hasStateProfile.profile(state != null)) {
             frame = PArguments.frameForCall(state);
         }
-        // TODO direct calls for arities
-        return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
+        return call.execute(frame, this, receiver, arguments);
+    }
+
+    @GenerateUncached
+    public abstract static class CallUnboundMethodNode extends Node {
+        public abstract Object execute(Frame frame, PBuiltinFunction method, Object receiver, Object[] arguments);
+
+        @Specialization(guards = "arguments.length == 0")
+        static Object unary(VirtualFrame frame, PBuiltinFunction method, Object receiver, @SuppressWarnings("unused") Object[] arguments,
+                        @Cached CallUnaryMethodNode callNode) {
+            return callNode.executeObject(frame, method, receiver);
+        }
+
+        @Specialization(guards = "arguments.length == 1")
+        static Object binary(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
+                        @Cached CallBinaryMethodNode callNode) {
+            return callNode.executeObject(frame, method, receiver, arguments[0]);
+        }
+
+        @Specialization(guards = "arguments.length == 2")
+        static Object ternary(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
+                        @Cached CallTernaryMethodNode callNode) {
+            return callNode.execute(frame, method, receiver, arguments[0], arguments[1]);
+        }
+
+        @Specialization(guards = "arguments.length == 3")
+        static Object quaternary(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
+                        @Cached CallQuaternaryMethodNode callNode) {
+            return callNode.execute(frame, method, receiver, arguments[0], arguments[1], arguments[2]);
+        }
+
+        @Specialization(replaces = {"unary", "binary", "ternary", "quaternary"})
+        static Object generic(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, method, PositionalArgumentsNode.prependArgument(receiver, arguments));
+        }
     }
 }
