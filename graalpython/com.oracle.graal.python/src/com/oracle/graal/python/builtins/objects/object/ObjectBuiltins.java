@@ -74,8 +74,8 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -115,7 +115,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.Arrays;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonObject)
 public class ObjectBuiltins extends PythonBuiltins {
@@ -133,7 +132,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private TypeNodes.GetNameNode getTypeNameNode;
 
         @Child private LookupAttributeInMRONode lookupNewNode;
-        @Child private GetSuperClassNode getBaseClassNode;
+        @Child private GetBaseClassNode getBaseClassNode;
         @Child private GetDictStorageNode getDictStorageNode;
         @Child private LookupAndCallBinaryNode getDictNode;
         @Child private HashingStorageLibrary hashingStorageLib;
@@ -189,17 +188,16 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object newBase = other;
             Object oldBase = self;
 
-            // TODO getBaseClassNode tends to fail with "get bestBase case not yet implemented"
-            Object newParent = getSuperClassNode().execute(newBase);
+            Object newParent = getBaseClassNode().execute(frame, newBase);
             while (newParent != null && compatibleWithBase(frame, newBase, newParent)) {
                 newBase = newParent;
-                newParent = getSuperClassNode().execute(newBase);
+                newParent = getBaseClassNode().execute(frame, newBase);
             }
 
-            Object oldParent = getSuperClassNode().execute(oldBase);
+            Object oldParent = getBaseClassNode().execute(frame, oldBase);
             while (oldParent != null && compatibleWithBase(frame, oldBase, oldParent)) {
                 oldBase = oldParent;
-                oldParent = getSuperClassNode().execute(oldBase);
+                oldParent = getBaseClassNode().execute(frame, oldBase);
             }
 
             if (newBase != oldBase && (newParent != oldParent || !compareSlotsFromDict(frame, newBase, oldBase))) {
@@ -257,7 +255,6 @@ public class ObjectBuiltins extends PythonBuiltins {
             return compareSlots(a, b, aSlots, bSlots);
         }
 
-        @TruffleBoundary
         private boolean compareSlots(Object aType, Object bType, Object aSlotsArg, Object bSlotsArg) {
             Object aSlots = aSlotsArg;
             Object bSlots = bSlotsArg;
@@ -267,24 +264,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             }
 
             if (aSlots != null && bSlots != null) {
-                Object[] aArray = getObjectArrayNode().execute(aSlots);
-                Object[] bArray = getObjectArrayNode().execute(bSlots);
-                if (bArray.length != aArray.length) {
-                    return false;
-                }
-                aArray = Arrays.copyOf(aArray, aArray.length);
-                bArray = Arrays.copyOf(bArray, bArray.length);
-                // what cpython does in same_slots_added() is a compare on a sorted slots list
-                // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
-                // NOT the same like the unsorted __slots__ attribute.
-                Arrays.sort(bArray);
-                Arrays.sort(aArray);
-                for (int i = 0; i < aArray.length; i++) {
-                    if (!aArray[i].equals(bArray[i])) {
-                        return false;
-                    }
-                }
-                return true;
+                return TypeNodes.compareSortedSlots(aSlots, bSlots, getObjectArrayNode());
             }
 
             aSlots = getLookupSlots().execute(aType);
@@ -355,10 +335,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupSlotsNode;
         }
 
-        private GetSuperClassNode getSuperClassNode() {
+        private GetBaseClassNode getBaseClassNode() {
             if (getBaseClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getBaseClassNode = insert(GetSuperClassNodeGen.create());
+                getBaseClassNode = insert(GetBaseClassNodeGen.create());
             }
             return getBaseClassNode;
         }

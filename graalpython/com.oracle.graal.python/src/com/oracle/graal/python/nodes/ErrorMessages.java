@@ -83,6 +83,7 @@ public abstract class ErrorMessages {
     public static final String BAD_OPERAND_FOR = "bad operand type for %s%s: '%p'";
     public static final String BAD_TYPECODE = "bad typecode (must be i, d, b, B, or l)";
     public static final String BASE_OUT_OF_RANGE_FOR_INT = "base is out of range for int()";
+    public static final String BASES_MUST_BE_TYPES = "bases must be types";
     public static final String BOOL_SHOULD_RETURN_BOOL = "__bool__ should return bool, returned %p";
     public static final String BUFFER_INDICES_MUST_BE_INTS = "buffer indices must be integers, not %p";
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
@@ -327,6 +328,7 @@ public abstract class ErrorMessages {
     public static final String MODULE_HAS_NO_ATTR_S = "module has no attribute '%s'";
     public static final String MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = "partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)";
     public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
+    public static final String MULTIPLE_BASES_LAYOUT_CONFLICT = "multiple bases have instance lay-out conflict";
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";

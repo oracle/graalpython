@@ -589,9 +589,9 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BaseNode extends PythonBuiltinNode {
         @Specialization
-        static Object base(Object self,
+        static Object base(VirtualFrame frame, Object self,
                         @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
-            Object baseClass = getBaseClassNode.execute(self);
+            Object baseClass = getBaseClassNode.execute(frame, self);
             return baseClass != null ? baseClass : PNone.NONE;
         }
     }
