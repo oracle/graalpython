@@ -199,13 +199,8 @@ final class DefaultPythonIntegerExports {
         }
 
         @Specialization
-        static boolean iI(Integer receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
-                return other.compareTo((int) receiver) == 0;
-            } else {
-                return oLib.equalsInternal(other, receiver, threadState) == 1;
-            }
+        static boolean iI(Integer receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState) {
+            return other.compareTo((int) receiver) == 0;
         }
 
         @Specialization
@@ -225,8 +220,7 @@ final class DefaultPythonIntegerExports {
         }
 
         @Specialization(replaces = {"ib", "ii", "il", "iI", "id", "iF"})
-        static boolean iO(Integer receiver, Object other, PythonObjectLibrary oLib, ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+        static boolean iO(Integer receiver, Object other, PythonObjectLibrary oLib, ThreadState threadState) {
             if (other instanceof Boolean) {
                 return ib(receiver, (boolean) other, oLib, threadState);
             } else if (other instanceof Integer) {
@@ -234,7 +228,7 @@ final class DefaultPythonIntegerExports {
             } else if (other instanceof Long) {
                 return il(receiver, (long) other, oLib, threadState);
             } else if (other instanceof PInt) {
-                return iI(receiver, (PInt) other, oLib, threadState, isBuiltin);
+                return iI(receiver, (PInt) other, oLib, threadState);
             } else if (other instanceof Double) {
                 return id(receiver, (double) other, oLib, threadState);
             } else {
