@@ -1457,6 +1457,7 @@ def python_coverage(args):
                 env = os.environ.copy()
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
                 # run all our tests in the dev-home, so that lcov has consistent paths
+                # TODO tests with virtualenv won't pick this up
                 env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
                 if kwds.pop("tagged", False):
                     run_tagged_unittests(executable, env=env)
@@ -1500,7 +1501,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
 
         # merge all generated lcov files
         for f in os.listdir(SUITE.dir):
-            if f.endswith(".lcov"):
+            if f.endswith(".lcov") and os.path.getsize(f):
                 cmdargs += ["-a", f]
 
         mx.run(cmdargs)
