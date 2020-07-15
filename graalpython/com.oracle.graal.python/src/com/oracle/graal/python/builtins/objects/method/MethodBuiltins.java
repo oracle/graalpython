@@ -133,9 +133,9 @@ public class MethodBuiltins extends PythonBuiltins {
         Object reprMethod(VirtualFrame frame, PMethod self,
                         @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameAttrNode,
-                        @Cached("create()") GetNameNode getTypeNameNode) {
+                        @Cached GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return strFormat("<built-in method %s of %s object at 0x%x>", getNameAttrNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
+            return strFormat("<bound method %s of %s object at 0x%x>", getNameAttrNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -149,7 +149,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
 
         protected static GetAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
+            return GetAttributeNode.create(SpecialAttributeNames.__QUALNAME__, null);
         }
     }
 

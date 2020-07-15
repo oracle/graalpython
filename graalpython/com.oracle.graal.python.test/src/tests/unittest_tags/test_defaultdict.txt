@@ -1,3 +1,10 @@
+*graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_basic
+*graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_callable_arg
+*graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_copy
 *graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_deep_copy
+*graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_keyerror_without_factory
+*graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_missing
 *graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_pickling
+*graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_print
+*graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_repr
 *graalpython.lib-python.3.test.test_defaultdict.TestDefaultDict.test_shallow_copy
