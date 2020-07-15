@@ -982,25 +982,30 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object lookupAttribute(String name, boolean inheritedOnly,
+    public Object lookupAttribute(String name, boolean inheritedOnly, boolean strict,
                     @Exclusive @Cached LookupAttributeNode lookup) {
-        return lookup.execute(this, name, inheritedOnly);
+        return lookup.execute(this, name, inheritedOnly, strict);
     }
 
     @GenerateUncached
     public abstract static class LookupAttributeNode extends Node {
-        public abstract Object execute(Object receiver, String name, boolean inheritedOnly);
+        public abstract Object execute(Object receiver, String name, boolean inheritedOnly, boolean strict);
 
         @Specialization
-        public static Object lookupAttributeImpl(Object receiver, String name, boolean inheritedOnly,
+        public static Object lookupAttributeImpl(Object receiver, String name, boolean inheritedOnly, boolean strict,
                         @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Cached ConditionProfile isInheritedOnlyProfile,
                         @Cached ConditionProfile noValueProfile,
                         @Cached CallNode callNode,
                         @Cached IsBuiltinClassProfile isAttrErrorProfile1,
-                        @Cached IsBuiltinClassProfile isAttrErrorProfile2) {
+                        @Cached IsBuiltinClassProfile isAttrErrorProfile2,
+                        @Cached PRaiseNode raiseNode) {
             if (isInheritedOnlyProfile.profile(inheritedOnly)) {
-                return lookup.execute(receiver, name);
+                Object result = lookup.execute(receiver, name);
+                if (strict && result == PNone.NO_VALUE) {
+                    throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+                }
+                return result;
             } else {
                 Object getAttrFunc = lookup.execute(receiver, __GETATTRIBUTE__);
                 try {
@@ -1010,13 +1015,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         pe.expect(AttributeError, isAttrErrorProfile1);
                         getAttrFunc = lookup.execute(receiver, __GETATTR__);
                         if (noValueProfile.profile(getAttrFunc == PNone.NO_VALUE)) {
-                            return PNone.NO_VALUE;
+                            if (strict) {
+                                throw pe;
+                            } else {
+                                return PNone.NO_VALUE;
+                            }
                         }
                         return callNode.execute(getAttrFunc, receiver, name);
                     }
                 } catch (PException pe) {
                     pe.expect(AttributeError, isAttrErrorProfile2);
-                    return PNone.NO_VALUE;
+                    if (strict) {
+                        throw pe;
+                    } else {
+                        return PNone.NO_VALUE;
+                    }
                 }
             }
         }
@@ -1079,27 +1092,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
-        Object method = plib.lookupSpecialMethod(this, methodName);
-        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
-            return methodLib.callUnboundMethodWithState(method, state, this, arguments);
-        } else {
-            return PNone.NO_VALUE;
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupSpecialMethodStrict(this, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, this, arguments);
     }
 
     @ExportMessage
     public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
-        Object method = plib.lookupAttribute(this, methodName);
-        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
-            return methodLib.callFunctionWithState(method, state, arguments);
-        } else {
-            return PNone.NO_VALUE;
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrict(this, methodName);
+        return methodLib.callFunctionWithState(method, state, arguments);
     }
 
     @ExportMessage

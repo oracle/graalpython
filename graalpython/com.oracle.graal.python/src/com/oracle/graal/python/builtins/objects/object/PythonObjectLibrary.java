@@ -591,7 +591,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @param name attribute name
      * @param inheritedOnly determines whether the lookup should start on the class or on the object
      */
-    public Object lookupAttribute(Object receiver, String name, boolean inheritedOnly) {
+    public Object lookupAttribute(Object receiver, String name, boolean inheritedOnly, boolean strict) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
@@ -600,7 +600,15 @@ public abstract class PythonObjectLibrary extends Library {
      * @see #lookupAttribute
      */
     public final Object lookupAttribute(Object receiver, String name) {
-        return lookupAttribute(receiver, name, false);
+        return lookupAttribute(receiver, name, false, false);
+    }
+
+    /**
+     * Like {@link #lookupAttribute(Object, String)}, but throws {@code AttributeError} when the
+     * attribute is not found
+     */
+    public final Object lookupAttributeStrict(Object receiver, String name) {
+        return lookupAttribute(receiver, name, false, true);
     }
 
     /**
@@ -611,8 +619,16 @@ public abstract class PythonObjectLibrary extends Library {
      * @param name method name
      * @return unbound method descriptor
      */
-    public Object lookupSpecialMethod(Object receiver, String name) {
-        return lookupAttribute(receiver, name, true);
+    public final Object lookupSpecialMethod(Object receiver, String name) {
+        return lookupAttribute(receiver, name, true, false);
+    }
+
+    /**
+     * Like {@link #lookupSpecialMethod(Object, String)}, but throws {@code AttributeError} when the
+     * method is not found
+     */
+    public final Object lookupSpecialMethodStrict(Object receiver, String name) {
+        return lookupAttribute(receiver, name, true, true);
     }
 
     /**
@@ -678,8 +694,7 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Call a special method on an object. Returns {@link PNone#NO_VALUE} if no such method has been
-     * found.
+     * Call a special method on an object. Raises {@code AttributeError} if no such method was found.
      */
     public final Object lookupAndCallSpecialMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
         ThreadState state = null;
@@ -698,8 +713,7 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Call a regular (not special) method on an object. Returns {@link PNone#NO_VALUE} if no such
-     * method has been found.
+     * Call a regular (not special) method on an object. Raises {@code AttributeError} if no such method was found.
      */
     public final Object lookupAndCallRegularMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
         ThreadState state = null;

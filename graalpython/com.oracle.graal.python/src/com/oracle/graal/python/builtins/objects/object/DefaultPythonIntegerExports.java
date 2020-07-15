@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -59,7 +58,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Integer.class)
 final class DefaultPythonIntegerExports {
@@ -282,34 +280,24 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    public static Object lookupAttribute(Integer x, String name, boolean inheritedOnly,
+    public static Object lookupAttribute(Integer x, String name, boolean inheritedOnly, boolean strict,
                     @Exclusive @Cached LookupAttributeNode lookup) {
-        return lookup.execute(x, name, inheritedOnly);
+        return lookup.execute(x, name, inheritedOnly, strict);
     }
 
     @ExportMessage
     public static Object lookupAndCallSpecialMethodWithState(Integer receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
-        Object method = plib.lookupSpecialMethod(receiver, methodName);
-        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
-            return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
-        } else {
-            return PNone.NO_VALUE;
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupSpecialMethodStrict(receiver, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
     }
 
     @ExportMessage
     public static Object lookupAndCallRegularMethodWithState(Integer receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("hasMethodProfile") @Cached ConditionProfile hasMethodProfile) {
-        Object method = plib.lookupAttribute(receiver, methodName);
-        if (hasMethodProfile.profile(method != PNone.NO_VALUE)) {
-            return methodLib.callFunctionWithState(method, state, arguments);
-        } else {
-            return PNone.NO_VALUE;
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrict(receiver, methodName);
+        return methodLib.callFunctionWithState(method, state, arguments);
     }
 }
