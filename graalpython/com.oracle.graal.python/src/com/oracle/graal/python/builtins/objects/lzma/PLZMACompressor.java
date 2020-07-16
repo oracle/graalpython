@@ -45,15 +45,15 @@ import java.io.ByteArrayOutputStream;
 import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PLZMACompressor extends PythonObject {
 
     private FinishableOutputStream lzmaStream;
     private ByteArrayOutputStream bos;
 
-    public PLZMACompressor(Object clazz, DynamicObject storage, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        super(clazz, storage);
+    public PLZMACompressor(Object clazz, Shape instanceShape, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        super(clazz, instanceShape);
         this.lzmaStream = lzmaStream;
         this.bos = bos;
     }

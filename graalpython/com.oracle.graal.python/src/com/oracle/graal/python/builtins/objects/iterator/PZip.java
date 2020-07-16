@@ -29,15 +29,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PZip extends PythonBuiltinObject {
 
     private final Object[] iterators;
 
-    public PZip(Object clazz, DynamicObject storage, Object[] iterators) {
-        super(clazz, storage);
+    public PZip(Object clazz, Shape instanceShape, Object[] iterators) {
+        super(clazz, instanceShape);
         this.iterators = iterators;
     }
 

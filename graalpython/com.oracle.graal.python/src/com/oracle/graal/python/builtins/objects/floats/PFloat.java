@@ -39,7 +39,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
@@ -47,8 +47,8 @@ public class PFloat extends PythonBuiltinObject {
 
     protected final double value;
 
-    public PFloat(Object clazz, DynamicObject storage, double value) {
-        super(clazz, storage);
+    public PFloat(Object clazz, Shape instanceShape, double value) {
+        super(clazz, instanceShape);
         this.value = value;
     }
 
@@ -78,11 +78,11 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     public static PFloat create(double value) {
-        return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.newInstance(), value);
+        return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.getInstanceShape(), value);
     }
 
-    public static PFloat create(Object cls, DynamicObject storage, double value) {
-        return new PFloat(cls, storage, value);
+    public static PFloat create(Object cls, Shape instanceShape, double value) {
+        return new PFloat(cls, instanceShape, value);
     }
 
     @TruffleBoundary

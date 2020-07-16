@@ -59,7 +59,7 @@ public final class PTraceback extends PythonBuiltinObject {
     }
 
     public PTraceback(PFrame frame, int lineno, int lasti, PTraceback next) {
-        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape());
         this.frame = frame;
         this.lineno = lineno;
         this.lasti = lasti;
@@ -67,7 +67,7 @@ public final class PTraceback extends PythonBuiltinObject {
     }
 
     public PTraceback(LazyTraceback lazyTraceback) {
-        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.newInstance());
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape());
         this.lazyTraceback = lazyTraceback;
         this.frameInfo = lazyTraceback.getFrameInfo();
         this.frame = lazyTraceback.getFrame();

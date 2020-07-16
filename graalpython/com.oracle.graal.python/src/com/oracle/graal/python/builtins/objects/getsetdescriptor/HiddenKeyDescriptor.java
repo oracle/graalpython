@@ -48,7 +48,7 @@ public final class HiddenKeyDescriptor extends PythonBuiltinObject {
     private final Object type;
 
     public HiddenKeyDescriptor(HiddenPythonKey key, Object type) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
+        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape());
         this.key = key;
         this.type = type;
     }

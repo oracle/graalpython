@@ -42,14 +42,14 @@ package com.oracle.graal.python.builtins.objects.map;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PMap extends PythonBuiltinObject {
     @CompilationFinal private Object function;
     @CompilationFinal(dimensions = 1) private Object[] iterators;
 
-    public PMap(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PMap(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
     public Object getFunction() {

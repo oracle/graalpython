@@ -69,7 +69,7 @@ public class PFunction extends PythonObject {
 
     public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.newInstance());
+        super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape());
         this.name = name;
         this.qualname = qualname;
         assert code != null;

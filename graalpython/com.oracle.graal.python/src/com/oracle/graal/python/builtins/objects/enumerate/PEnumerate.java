@@ -28,7 +28,7 @@ package com.oracle.graal.python.builtins.objects.enumerate;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PEnumerate extends PythonBuiltinObject {
@@ -37,13 +37,13 @@ public final class PEnumerate extends PythonBuiltinObject {
     private long index;
     private PInt bigIndex = null;
 
-    public PEnumerate(Object clazz, DynamicObject storage, Object iterator, PInt start) {
-        this(clazz, storage, iterator, -1);
+    public PEnumerate(Object clazz, Shape instanceShape, Object iterator, PInt start) {
+        this(clazz, instanceShape, iterator, -1);
         this.bigIndex = start;
     }
 
-    public PEnumerate(Object clazz, DynamicObject storage, Object iterator, long start) {
-        super(clazz, storage);
+    public PEnumerate(Object clazz, Shape instanceShape, Object iterator, long start) {
+        super(clazz, instanceShape);
         this.iterator = iterator;
         this.index = start;
     }

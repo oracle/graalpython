@@ -32,19 +32,19 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PArray extends PMutableSequence {
 
     private SequenceStorage store;
 
-    public PArray(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PArray(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
-    public PArray(Object clazz, DynamicObject storage, SequenceStorage store) {
-        super(clazz, storage);
+    public PArray(Object clazz, Shape instanceShape, SequenceStorage store) {
+        super(clazz, instanceShape);
         this.store = store;
     }
 

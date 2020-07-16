@@ -232,7 +232,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, ConditionProfile sizeProfile, PythonObjectLibrary lib, ContainedInNode contained) {
-            if (sizeProfile.profile(self.size() <= lib.length(other))) {
+            if (sizeProfile.profile(self.getWrappedDict().size() <= lib.length(other))) {
                 return !contained.execute(frame, self, other);
             } else {
                 return !contained.execute(frame, other, self);

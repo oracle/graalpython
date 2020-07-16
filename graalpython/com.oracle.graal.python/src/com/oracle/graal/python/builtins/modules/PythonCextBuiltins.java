@@ -1597,7 +1597,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
 
         public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
-            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.newInstance());
+            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.getInstanceShape());
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
         }
 

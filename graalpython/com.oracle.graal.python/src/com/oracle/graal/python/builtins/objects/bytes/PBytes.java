@@ -46,20 +46,20 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
-    public PBytes(Object cls, DynamicObject storage, byte[] bytes) {
-        super(cls, storage);
+    public PBytes(Object cls, Shape instanceShape, byte[] bytes) {
+        super(cls, instanceShape);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PBytes(Object cls, DynamicObject storage, SequenceStorage store) {
-        super(cls, storage);
+    public PBytes(Object cls, Shape instanceShape, SequenceStorage store) {
+        super(cls, instanceShape);
         setSequenceStorage(store);
     }
 

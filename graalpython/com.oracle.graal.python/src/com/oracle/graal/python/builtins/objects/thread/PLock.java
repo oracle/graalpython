@@ -44,14 +44,14 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PLock extends AbstractPythonLock {
     private final Semaphore semaphore;
 
     @TruffleBoundary
-    public PLock(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PLock(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
         semaphore = new Semaphore(1);
     }
 

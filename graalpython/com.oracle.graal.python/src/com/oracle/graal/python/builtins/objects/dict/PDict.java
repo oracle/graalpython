@@ -35,28 +35,28 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PDict extends PHashingCollection {
 
     private HashingStorage dictStorage;
 
     public PDict() {
-        this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.newInstance());
+        this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape());
     }
 
-    public PDict(Object cls, DynamicObject storage, HashingStorage dictStorage) {
-        super(cls, storage);
+    public PDict(Object cls, Shape instanceShape, HashingStorage dictStorage) {
+        super(cls, instanceShape);
         this.dictStorage = dictStorage;
     }
 
-    public PDict(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PDict(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
         this.dictStorage = new EmptyStorage();
     }
 
-    public PDict(Object cls, DynamicObject storage, PKeyword[] keywords) {
-        super(cls, storage);
+    public PDict(Object cls, Shape instanceShape, PKeyword[] keywords) {
+        super(cls, instanceShape);
         this.dictStorage = (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage();
     }
 

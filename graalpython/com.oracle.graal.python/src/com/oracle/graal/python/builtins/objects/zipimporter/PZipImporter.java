@@ -39,7 +39,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PZipImporter extends PythonBuiltinObject {
     /**
@@ -114,8 +114,8 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(Object cls, DynamicObject storage, PDict zipDirectoryCache, String separator) {
-        super(cls, storage);
+    public PZipImporter(Object cls, Shape instanceShape, PDict zipDirectoryCache, String separator) {
+        super(cls, instanceShape);
         this.archive = null;
         this.prefix = null;
         this.separator = separator;

@@ -45,7 +45,7 @@ import java.math.BigInteger;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PBigRangeIterator extends PBuiltinIterator {
     private final PInt start;
@@ -54,8 +54,8 @@ public final class PBigRangeIterator extends PBuiltinIterator {
 
     private BigInteger longIndex;
 
-    public PBigRangeIterator(Object clazz, DynamicObject storage, PInt start, PInt step, PInt len) {
-        super(clazz, storage);
+    public PBigRangeIterator(Object clazz, Shape instanceShape, PInt start, PInt step, PInt len) {
+        super(clazz, instanceShape);
         this.start = start;
         this.step = step;
         this.len = len;

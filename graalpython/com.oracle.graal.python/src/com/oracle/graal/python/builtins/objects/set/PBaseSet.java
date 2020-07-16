@@ -29,19 +29,19 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PBaseSet extends PHashingCollection {
 
     private HashingStorage set;
 
-    public PBaseSet(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PBaseSet(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
         this.set = EconomicMapStorage.create();
     }
 
-    public PBaseSet(Object clazz, DynamicObject storage, HashingStorage set) {
-        super(clazz, storage);
+    public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {
+        super(clazz, instanceShape);
         this.set = set;
     }
 

@@ -46,7 +46,7 @@ import java.lang.ref.WeakReference;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PReferenceType extends PythonBuiltinObject {
     public static class WeakRefStorage extends WeakReference<Object> {
@@ -72,8 +72,8 @@ public class PReferenceType extends PythonBuiltinObject {
     private long hash = -1;
 
     @TruffleBoundary
-    public PReferenceType(Object cls, DynamicObject storage, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
-        super(cls, storage);
+    public PReferenceType(Object cls, Shape instanceShape, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
+        super(cls, instanceShape);
         this.store = new WeakRefStorage(this, pythonObject, callback, queue);
     }
 

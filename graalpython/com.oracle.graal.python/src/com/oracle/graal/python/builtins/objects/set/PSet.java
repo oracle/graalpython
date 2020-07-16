@@ -26,15 +26,15 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PSet extends PBaseSet {
 
-    public PSet(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PSet(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
-    public PSet(Object clazz, DynamicObject storage, HashingStorage store) {
-        super(clazz, storage, store);
+    public PSet(Object clazz, Shape instanceShape, HashingStorage store) {
+        super(clazz, instanceShape, store);
     }
 }

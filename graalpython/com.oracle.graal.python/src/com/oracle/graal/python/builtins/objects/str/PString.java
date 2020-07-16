@@ -53,7 +53,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -61,8 +61,8 @@ public final class PString extends PImmutableSequence {
 
     private CharSequence value;
 
-    public PString(Object clazz, DynamicObject storage, CharSequence value) {
-        super(clazz, storage);
+    public PString(Object clazz, Shape instanceShape, CharSequence value) {
+        super(clazz, instanceShape);
         this.value = value;
     }
 

@@ -41,15 +41,15 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PBuffer extends PythonBuiltinObject {
 
     private final Object delegate;
     private final boolean readOnly;
 
-    public PBuffer(Object cls, DynamicObject storage, Object iterable, boolean readOnly) {
-        super(cls, storage);
+    public PBuffer(Object cls, Shape instanceShape, Object iterable, boolean readOnly) {
+        super(cls, instanceShape);
         this.delegate = iterable;
         this.readOnly = readOnly;
     }

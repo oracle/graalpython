@@ -33,7 +33,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 // Corresponds to PyCFunction, but that name is just confusing
 @ExportLibrary(PythonObjectLibrary.class)
@@ -42,8 +42,8 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     private final PBuiltinFunction function;
     private final Object self;
 
-    public PBuiltinMethod(Object clazz, DynamicObject storage, Object self, PBuiltinFunction function) {
-        super(clazz, storage);
+    public PBuiltinMethod(Object clazz, Shape instanceShape, Object self, PBuiltinFunction function) {
+        super(clazz, instanceShape);
         this.self = self;
         this.function = function;
     }

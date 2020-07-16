@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
@@ -137,7 +138,6 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -153,7 +153,6 @@ import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.truffle.api.object.Shape;
 
 @GenerateUncached
@@ -171,34 +170,12 @@ public abstract class PythonObjectFactory extends Node {
 
     protected abstract AllocationReporter executeTrace(Object o, long size);
 
-    protected abstract DynamicObject executeMakeStorage(Object o, boolean flag);
+    protected abstract Shape executeGetShape(Object o, boolean flag);
 
-    @Specialization(guards = "cls == cachedCls", limit = "getCallSiteInlineCacheMaxDepth()")
-    static final DynamicObject makeStorageCachedType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") boolean flag,
-                    @Cached("cls") PythonBuiltinClassType cachedCls) {
-        return cachedCls.newInstance();
-    }
-
-    protected static final Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
-    }
-
-    @Specialization(guards = "cls == cachedCls", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "makeStorageCachedType", assumptions = "singleContextAssumption()")
-    static final DynamicObject makeStorageCachedClass(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") boolean flag,
-                    @Cached("cls") Object cachedCls,
+    @Specialization
+    static final Shape getShape(Object o, @SuppressWarnings("unused") boolean flag,
                     @Cached TypeNodes.GetInstanceShape getShapeNode) {
-        return getShapeNode.execute(cachedCls).newInstance();
-    }
-
-    @Specialization(replaces = "makeStorageCachedClass")
-    static final DynamicObject makeStorageGeneric(Object o, @SuppressWarnings("unused") boolean flag,
-                    @Cached TypeNodes.GetInstanceShape getShapeNode) {
-        return newInstance(getShapeNode.execute(o));
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static final DynamicObject newInstance(Shape shape) {
-        return shape.newInstance();
+        return getShapeNode.execute(o);
     }
 
     @Specialization
@@ -217,8 +194,8 @@ public abstract class PythonObjectFactory extends Node {
         return contextRef.get().getEnv().lookup(AllocationReporter.class);
     }
 
-    public final DynamicObject makeStorage(Object cls) {
-        return executeMakeStorage(cls, true);
+    public final Shape getShape(Object cls) {
+        return executeGetShape(cls, true);
     }
 
     public final <T> T trace(T allocatedObject) {
@@ -235,15 +212,15 @@ public abstract class PythonObjectFactory extends Node {
      * shape had been cached, due to the additional shape lookup.
      */
     public PythonObject createPythonObject(Object cls) {
-        return createPythonObject(cls, makeStorage(cls));
+        return createPythonObject(cls, getShape(cls));
     }
 
     /**
      * Creates a Python object with the given shape. Python object shapes store the class in the
-     * ObjectType.
+     * shape if possible.
      */
-    public PythonObject createPythonObject(Object klass, DynamicObject storage) {
-        return trace(new PythonObject(klass, storage));
+    public PythonObject createPythonObject(Object klass, Shape instanceShape) {
+        return trace(new PythonObject(klass, instanceShape));
     }
 
     public PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj) {
@@ -251,7 +228,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public SuperObject createSuperObject(Object self) {
-        return trace(new SuperObject(self, makeStorage(self)));
+        return trace(new SuperObject(self, getShape(self)));
     }
 
     /*
@@ -278,7 +255,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PInt createInt(Object cls, BigInteger value) {
-        return trace(new PInt(cls, makeStorage(cls), value));
+        return trace(new PInt(cls, getShape(cls), value));
     }
 
     public PFloat createFloat(double value) {
@@ -286,7 +263,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PFloat createFloat(Object cls, double value) {
-        return trace(new PFloat(cls, makeStorage(cls), value));
+        return trace(new PFloat(cls, getShape(cls), value));
     }
 
     public PString createString(String string) {
@@ -294,7 +271,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PString createString(Object cls, String string) {
-        return trace(new PString(cls, makeStorage(cls), string));
+        return trace(new PString(cls, getShape(cls), string));
     }
 
     public PString createString(CharSequence string) {
@@ -302,7 +279,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PString createString(Object cls, CharSequence string) {
-        return trace(new PString(cls, makeStorage(cls), string));
+        return trace(new PString(cls, getShape(cls), string));
     }
 
     public PBytes createBytes(byte[] array) {
@@ -310,7 +287,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBytes createBytes(Object cls, byte[] array) {
-        return trace(new PBytes(cls, makeStorage(cls), array));
+        return trace(new PBytes(cls, getShape(cls), array));
     }
 
     public PBytes createBytes(SequenceStorage storage) {
@@ -318,7 +295,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBytes createBytes(Object cls, SequenceStorage storage) {
-        return trace(new PBytes(cls, makeStorage(cls), storage));
+        return trace(new PBytes(cls, getShape(cls), storage));
     }
 
     public final PTuple createEmptyTuple() {
@@ -338,15 +315,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTuple createTuple(Object cls, Object[] objects) {
-        return trace(new PTuple(cls, makeStorage(cls), objects));
+        return trace(new PTuple(cls, getShape(cls), objects));
     }
 
     public final PTuple createTuple(Object cls, SequenceStorage store) {
-        return trace(new PTuple(cls, makeStorage(cls), store));
+        return trace(new PTuple(cls, getShape(cls), store));
     }
 
     public final PComplex createComplex(Object cls, double real, double imag) {
-        return trace(new PComplex(cls, makeStorage(cls), real, imag));
+        return trace(new PComplex(cls, getShape(cls), real, imag));
     }
 
     public final PComplex createComplex(double real, double imag) {
@@ -382,7 +359,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PRandom createRandom(Object cls) {
-        return trace(new PRandom(cls, makeStorage(cls)));
+        return trace(new PRandom(cls, getShape(cls)));
     }
 
     /*
@@ -394,19 +371,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PythonModule createPythonModule(Object cls) {
-        return trace(new PythonModule(cls, makeStorage(cls)));
+        return trace(new PythonModule(cls, getShape(cls)));
     }
 
     public PythonClass createPythonClass(Object metaclass, String name, PythonAbstractClass[] bases) {
-        return trace(new PythonClass(metaclass, makeStorage(metaclass), name, bases));
+        return trace(new PythonClass(metaclass, getShape(metaclass), name, bases));
     }
 
     public PMemoryView createMemoryView(Object cls, Object value) {
-        return trace(new PMemoryView(cls, makeStorage(cls), value));
+        return trace(new PMemoryView(cls, getShape(cls), value));
     }
 
     public final PMethod createMethod(Object cls, Object self, Object function) {
-        return trace(new PMethod(cls, makeStorage(cls), self, function));
+        return trace(new PMethod(cls, getShape(cls), self, function));
     }
 
     public final PMethod createMethod(Object self, Object function) {
@@ -418,7 +395,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object cls, Object self, PBuiltinFunction function) {
-        return trace(new PBuiltinMethod(cls, makeStorage(cls), self, function));
+        return trace(new PBuiltinMethod(cls, getShape(cls), self, function));
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function) {
@@ -462,19 +439,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PDecoratedMethod createClassmethod(Object cls) {
-        return trace(new PDecoratedMethod(cls, makeStorage(cls)));
+        return trace(new PDecoratedMethod(cls, getShape(cls)));
     }
 
     public PDecoratedMethod createClassmethodFromCallableObj(Object callable) {
-        return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PClassmethod.newInstance(), callable));
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PClassmethod.getInstanceShape(), callable));
     }
 
     public PDecoratedMethod createStaticmethod(Object cls) {
-        return trace(new PDecoratedMethod(cls, makeStorage(cls)));
+        return trace(new PDecoratedMethod(cls, getShape(cls)));
     }
 
     public PDecoratedMethod createStaticmethodFromCallableObj(Object callable) {
-        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.newInstance(), callable));
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(), callable));
     }
 
     /*
@@ -490,11 +467,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PList createList(SequenceStorage storage, ListLiteralNode origin) {
-        return trace(new PList(PythonBuiltinClassType.PList, PythonBuiltinClassType.PList.newInstance(), storage, origin));
+        return trace(new PList(PythonBuiltinClassType.PList, PythonBuiltinClassType.PList.getInstanceShape(), storage, origin));
     }
 
     public PList createList(Object cls, SequenceStorage storage) {
-        return trace(new PList(cls, makeStorage(cls), storage));
+        return trace(new PList(cls, getShape(cls), storage));
     }
 
     public PList createList(Object cls) {
@@ -506,27 +483,27 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PList createList(Object cls, Object[] array) {
-        return trace(new PList(cls, makeStorage(cls), SequenceStorageFactory.createStorage(array)));
+        return trace(new PList(cls, getShape(cls), SequenceStorageFactory.createStorage(array)));
     }
 
     public PSet createSet(Object cls) {
-        return trace(new PSet(cls, makeStorage(cls)));
+        return trace(new PSet(cls, getShape(cls)));
     }
 
     public PSet createSet(PythonClass cls, HashingStorage storage) {
-        return trace(new PSet(cls, makeStorage(cls), storage));
+        return trace(new PSet(cls, getShape(cls), storage));
     }
 
     public PSet createSet(HashingStorage storage) {
-        return trace(new PSet(PythonBuiltinClassType.PSet, PythonBuiltinClassType.PSet.newInstance(), storage));
+        return trace(new PSet(PythonBuiltinClassType.PSet, PythonBuiltinClassType.PSet.getInstanceShape(), storage));
     }
 
     public PFrozenSet createFrozenSet(Object cls) {
-        return trace(new PFrozenSet(cls, makeStorage(cls)));
+        return trace(new PFrozenSet(cls, getShape(cls)));
     }
 
     public PFrozenSet createFrozenSet(Object cls, HashingStorage storage) {
-        return trace(new PFrozenSet(cls, makeStorage(cls), storage));
+        return trace(new PFrozenSet(cls, getShape(cls), storage));
     }
 
     public PFrozenSet createFrozenSet(HashingStorage storage) {
@@ -538,11 +515,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PDict createDict(PKeyword[] keywords) {
-        return trace(new PDict(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.newInstance(), keywords));
+        return trace(new PDict(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(), keywords));
     }
 
     public PDict createDict(Object cls) {
-        return trace(new PDict(cls, makeStorage(cls)));
+        return trace(new PDict(cls, getShape(cls)));
     }
 
     public PDict createDict(EconomicMap<? extends Object, Object> map) {
@@ -566,19 +543,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PDict createDict(HashingStorage storage) {
-        return trace(new PDict(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.newInstance(), storage));
+        return trace(new PDict(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(), storage));
     }
 
     public PDictView createDictKeysView(PHashingCollection dict) {
-        return trace(new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.newInstance(), dict));
+        return trace(new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(), dict));
     }
 
     public PDictView createDictValuesView(PHashingCollection dict) {
-        return trace(new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.newInstance(), dict));
+        return trace(new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.getInstanceShape(), dict));
     }
 
     public PDictView createDictItemsView(PHashingCollection dict) {
-        return trace(new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.newInstance(), dict));
+        return trace(new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.getInstanceShape(), dict));
     }
 
     /*
@@ -591,23 +568,23 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, PythonBuiltinClassType.PMappingproxy.newInstance(), new DynamicObjectStorage(object.getStorage())));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, PythonBuiltinClassType.PMappingproxy.getInstanceShape(), new DynamicObjectStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(HashingStorage storage) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, PythonBuiltinClassType.PMappingproxy.newInstance(), storage));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, PythonBuiltinClassType.PMappingproxy.getInstanceShape(), storage));
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, makeStorage(cls), new DynamicObjectStorage(object.getStorage())));
+        return trace(new PMappingproxy(cls, getShape(cls), new DynamicObjectStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(Object cls, HashingStorage storage) {
-        return trace(new PMappingproxy(cls, makeStorage(cls), storage));
+        return trace(new PMappingproxy(cls, getShape(cls), storage));
     }
 
     public PReferenceType createReferenceType(Object cls, Object object, Object callback, ReferenceQueue<Object> queue) {
-        return trace(new PReferenceType(cls, makeStorage(cls), object, callback, queue));
+        return trace(new PReferenceType(cls, getShape(cls), object, callback, queue));
     }
 
     public PReferenceType createReferenceType(Object object, Object callback, ReferenceQueue<Object> queue) {
@@ -643,16 +620,16 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBaseException createBaseException(Object cls, PTuple args) {
-        return trace(new PBaseException(cls, makeStorage(cls), args));
+        return trace(new PBaseException(cls, getShape(cls), args));
     }
 
     public PBaseException createBaseException(Object cls, String format, Object[] args) {
         assert format != null;
-        return trace(new PBaseException(cls, makeStorage(cls), format, args));
+        return trace(new PBaseException(cls, getShape(cls), format, args));
     }
 
     public PBaseException createBaseException(Object cls) {
-        return trace(new PBaseException(cls, makeStorage(cls)));
+        return trace(new PBaseException(cls, getShape(cls)));
     }
 
     /*
@@ -660,31 +637,31 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PArray createArray(Object cls, byte[] array) {
-        return trace(new PArray(cls, makeStorage(cls), new ByteSequenceStorage(array)));
+        return trace(new PArray(cls, getShape(cls), new ByteSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, int[] array) {
-        return trace(new PArray(cls, makeStorage(cls), new IntSequenceStorage(array)));
+        return trace(new PArray(cls, getShape(cls), new IntSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, double[] array) {
-        return trace(new PArray(cls, makeStorage(cls), new DoubleSequenceStorage(array)));
+        return trace(new PArray(cls, getShape(cls), new DoubleSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, char[] array) {
-        return trace(new PArray(cls, makeStorage(cls), new CharSequenceStorage(array)));
+        return trace(new PArray(cls, getShape(cls), new CharSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, long[] array) {
-        return trace(new PArray(cls, makeStorage(cls), new LongSequenceStorage(array)));
+        return trace(new PArray(cls, getShape(cls), new LongSequenceStorage(array)));
     }
 
     public PArray createArray(Object cls, SequenceStorage store) {
-        return trace(new PArray(cls, makeStorage(cls), store));
+        return trace(new PArray(cls, getShape(cls), store));
     }
 
     public PByteArray createByteArray(Object cls, byte[] array) {
-        return trace(new PByteArray(cls, makeStorage(cls), array));
+        return trace(new PByteArray(cls, getShape(cls), array));
     }
 
     public PByteArray createByteArray(SequenceStorage storage) {
@@ -692,35 +669,35 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PByteArray createByteArray(Object cls, SequenceStorage storage) {
-        return trace(new PByteArray(cls, makeStorage(cls), storage));
+        return trace(new PByteArray(cls, getShape(cls), storage));
     }
 
     public PArray createArray(byte[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.newInstance(), new ByteSequenceStorage(array)));
+        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(), new ByteSequenceStorage(array)));
     }
 
     public PArray createArray(int[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.newInstance(), new IntSequenceStorage(array)));
+        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(), new IntSequenceStorage(array)));
     }
 
     public PArray createArray(double[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.newInstance(), new DoubleSequenceStorage(array)));
+        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(), new DoubleSequenceStorage(array)));
     }
 
     public PArray createArray(char[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.newInstance(), new CharSequenceStorage(array)));
+        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(), new CharSequenceStorage(array)));
     }
 
     public PArray createArray(long[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.newInstance(), new LongSequenceStorage(array)));
+        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(), new LongSequenceStorage(array)));
     }
 
     public PArray createArray(SequenceStorage store) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.newInstance(), store));
+        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(), store));
     }
 
     public PByteArray createByteArray(byte[] array) {
-        return trace(new PByteArray(PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PByteArray.newInstance(), array));
+        return trace(new PByteArray(PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PByteArray.getInstanceShape(), array));
     }
 
     /*
@@ -728,31 +705,31 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PStringIterator createStringIterator(String str) {
-        return trace(new PStringIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), str));
+        return trace(new PStringIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), str));
     }
 
     public PStringReverseIterator createStringReverseIterator(Object cls, String str) {
-        return trace(new PStringReverseIterator(cls, makeStorage(cls), str));
+        return trace(new PStringReverseIterator(cls, getShape(cls), str));
     }
 
     public PIntegerSequenceIterator createIntegerSequenceIterator(IntSequenceStorage storage) {
-        return trace(new PIntegerSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), storage));
+        return trace(new PIntegerSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage));
     }
 
     public PLongSequenceIterator createLongSequenceIterator(LongSequenceStorage storage) {
-        return trace(new PLongSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), storage));
+        return trace(new PLongSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage));
     }
 
     public PDoubleSequenceIterator createDoubleSequenceIterator(DoubleSequenceStorage storage) {
-        return trace(new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), storage));
+        return trace(new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage));
     }
 
     public PSequenceIterator createSequenceIterator(Object sequence) {
-        return trace(new PSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), sequence));
+        return trace(new PSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), sequence));
     }
 
     public PSequenceReverseIterator createSequenceReverseIterator(Object cls, Object sequence, int lengthHint) {
-        return trace(new PSequenceReverseIterator(cls, makeStorage(cls), sequence, lengthHint));
+        return trace(new PSequenceReverseIterator(cls, getShape(cls), sequence, lengthHint));
     }
 
     public PIntRangeIterator createIntRangeIterator(PIntRange fastRange) {
@@ -760,11 +737,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PIntRangeIterator createIntRangeIterator(int start, int step, int len) {
-        return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, step, len));
+        return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), start, step, len));
     }
 
     public PBigRangeIterator createBigRangeIterator(PInt start, PInt step, PInt len) {
-        return trace(new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, step, len));
+        return trace(new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), start, step, len));
     }
 
     public PBigRangeIterator createBigRangeIterator(PBigRange longRange) {
@@ -776,77 +753,77 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PArrayIterator createArrayIterator(PArray array) {
-        return trace(new PArrayIterator(PythonBuiltinClassType.PArrayIterator, PythonBuiltinClassType.PArrayIterator.newInstance(), array));
+        return trace(new PArrayIterator(PythonBuiltinClassType.PArrayIterator, PythonBuiltinClassType.PArrayIterator.getInstanceShape(), array));
     }
 
     public PBaseSetIterator createBaseSetIterator(PBaseSet set, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), set, iterator, hashingStorage, initialSize));
+        return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), set, iterator, hashingStorage, initialSize));
     }
 
     public PDictItemIterator createDictItemIterator(HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictItemIterator(PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictItemIterator.newInstance(), iterator, hashingStorage, initialSize));
+        return trace(new PDictItemIterator(PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictItemIterator.getInstanceShape(), iterator, hashingStorage, initialSize));
     }
 
     public PDictItemIterator createDictReverseItemIterator(HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictItemIterator(PythonBuiltinClassType.PDictReverseItemIterator, PythonBuiltinClassType.PDictReverseItemIterator.newInstance(), iterator, hashingStorage,
+        return trace(new PDictItemIterator(PythonBuiltinClassType.PDictReverseItemIterator, PythonBuiltinClassType.PDictReverseItemIterator.getInstanceShape(), iterator, hashingStorage,
                         initialSize));
     }
 
     public PDictKeyIterator createDictKeyIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.newInstance(), iterator, hashingStorage, initialSize));
+        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.getInstanceShape(), iterator, hashingStorage, initialSize));
     }
 
     public PDictKeyIterator createDictReverseKeyIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictReverseKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator.newInstance(), iterator, hashingStorage, initialSize));
+        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictReverseKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator.getInstanceShape(), iterator, hashingStorage, initialSize));
     }
 
     public PDictValueIterator createDictValueIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.newInstance(), iterator, hashingStorage, initialSize));
+        return trace(new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.getInstanceShape(), iterator, hashingStorage, initialSize));
     }
 
     public PDictValueIterator createDictReverseValueIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictValueIterator(PythonBuiltinClassType.PDictReverseValueIterator, PythonBuiltinClassType.PDictReverseValueIterator.newInstance(), iterator, hashingStorage,
+        return trace(new PDictValueIterator(PythonBuiltinClassType.PDictReverseValueIterator, PythonBuiltinClassType.PDictReverseValueIterator.getInstanceShape(), iterator, hashingStorage,
                         initialSize));
     }
 
     public Object createSentinelIterator(Object callable, Object sentinel) {
-        return trace(new PSentinelIterator(PythonBuiltinClassType.PSentinelIterator, PythonBuiltinClassType.PSentinelIterator.newInstance(), callable, sentinel));
+        return trace(new PSentinelIterator(PythonBuiltinClassType.PSentinelIterator, PythonBuiltinClassType.PSentinelIterator.getInstanceShape(), callable, sentinel));
     }
 
     public PEnumerate createEnumerate(Object cls, Object iterator, long start) {
-        return trace(new PEnumerate(cls, makeStorage(cls), iterator, start));
+        return trace(new PEnumerate(cls, getShape(cls), iterator, start));
     }
 
     public PEnumerate createEnumerate(Object cls, Object iterator, PInt start) {
-        return trace(new PEnumerate(cls, makeStorage(cls), iterator, start));
+        return trace(new PEnumerate(cls, getShape(cls), iterator, start));
     }
 
     public PMap createMap(Object cls) {
-        return trace(new PMap(cls, makeStorage(cls)));
+        return trace(new PMap(cls, getShape(cls)));
     }
 
     public PZip createZip(Object cls, Object[] iterables) {
-        return trace(new PZip(cls, makeStorage(cls), iterables));
+        return trace(new PZip(cls, getShape(cls), iterables));
     }
 
     public PForeignArrayIterator createForeignArrayIterator(Object iterable) {
-        return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, PythonBuiltinClassType.PForeignArrayIterator.newInstance(), iterable));
+        return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, PythonBuiltinClassType.PForeignArrayIterator.getInstanceShape(), iterable));
     }
 
     public PBuffer createBuffer(Object cls, Object iterable, boolean readonly) {
-        return trace(new PBuffer(cls, makeStorage(cls), iterable, readonly));
+        return trace(new PBuffer(cls, getShape(cls), iterable, readonly));
     }
 
     public PBuffer createBuffer(Object iterable, boolean readonly) {
-        return trace(new PBuffer(PythonBuiltinClassType.PBuffer, PythonBuiltinClassType.PBuffer.newInstance(), iterable, readonly));
+        return trace(new PBuffer(PythonBuiltinClassType.PBuffer, PythonBuiltinClassType.PBuffer.getInstanceShape(), iterable, readonly));
     }
 
     public PCode createCode(RootCallTarget ct) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.newInstance(), ct));
+        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(), ct));
     }
 
     public PCode createCode(RootCallTarget ct, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.newInstance(), ct, codestring, flags, firstlineno, lnotab));
+        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(), ct, codestring, flags, firstlineno, lnotab));
     }
 
     public PCode createCode(Object cls, RootCallTarget callTarget, Signature signature,
@@ -855,7 +832,7 @@ public abstract class PythonObjectFactory extends Node {
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
-        return trace(new PCode(cls, makeStorage(cls), callTarget, signature,
+        return trace(new PCode(cls, getShape(cls), callTarget, signature,
                         nlocals, stacksize, flags,
                         codestring, constants, names,
                         varnames, freevars, cellvars,
@@ -863,7 +840,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, String separator) {
-        return trace(new PZipImporter(cls, makeStorage(cls), zipDirectoryCache, separator));
+        return trace(new PZipImporter(cls, getShape(cls), zipDirectoryCache, separator));
     }
 
     /*
@@ -871,15 +848,15 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PSocket createSocket(int family, int type, int proto) {
-        return trace(new PSocket(PythonBuiltinClassType.PSocket, PythonBuiltinClassType.PSocket.newInstance(), family, type, proto));
+        return trace(new PSocket(PythonBuiltinClassType.PSocket, PythonBuiltinClassType.PSocket.getInstanceShape(), family, type, proto));
     }
 
     public PSocket createSocket(Object cls, int family, int type, int proto) {
-        return trace(new PSocket(cls, makeStorage(cls), family, type, proto));
+        return trace(new PSocket(cls, getShape(cls), family, type, proto));
     }
 
     public PSocket createSocket(Object cls, int family, int type, int proto, int fileno) {
-        return trace(new PSocket(cls, makeStorage(cls), family, type, proto, fileno));
+        return trace(new PSocket(cls, getShape(cls), family, type, proto, fileno));
     }
 
     /*
@@ -891,7 +868,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PLock createLock(Object cls) {
-        return trace(new PLock(cls, makeStorage(cls)));
+        return trace(new PLock(cls, getShape(cls)));
     }
 
     public PRLock createRLock() {
@@ -899,46 +876,46 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PRLock createRLock(Object cls) {
-        return trace(new PRLock(cls, makeStorage(cls)));
+        return trace(new PRLock(cls, getShape(cls)));
     }
 
     public PThread createPythonThread(Thread thread) {
-        return trace(new PThread(PythonBuiltinClassType.PThread, PythonBuiltinClassType.PThread.newInstance(), thread));
+        return trace(new PThread(PythonBuiltinClassType.PThread, PythonBuiltinClassType.PThread.getInstanceShape(), thread));
     }
 
     public PThread createPythonThread(Object cls, Thread thread) {
-        return trace(new PThread(cls, makeStorage(cls), thread));
+        return trace(new PThread(cls, getShape(cls), thread));
     }
 
     public PSemLock createSemLock(Object cls, String name, int kind, Semaphore sharedSemaphore) {
-        return trace(new PSemLock(cls, makeStorage(cls), name, kind, sharedSemaphore));
+        return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
     public PScandirIterator createScandirIterator(Object cls, String path, DirectoryStream<TruffleFile> next) {
-        return trace(new PScandirIterator(cls, makeStorage(cls), path, next));
+        return trace(new PScandirIterator(cls, getShape(cls), path, next));
     }
 
     public PDirEntry createDirEntry(String name, TruffleFile file) {
-        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.newInstance(), name, file));
+        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(), name, file));
     }
 
     public Object createDirEntry(Object cls, String name, TruffleFile file) {
-        return trace(new PDirEntry(cls, makeStorage(cls), name, file));
+        return trace(new PDirEntry(cls, getShape(cls), name, file));
     }
 
     public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {
-        return trace(new PMMap(PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMMap.newInstance(), channel, length, offset));
+        return trace(new PMMap(PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMMap.getInstanceShape(), channel, length, offset));
     }
 
     public PMMap createMMap(Object clazz, SeekableByteChannel channel, long length, long offset) {
-        return trace(new PMMap(clazz, makeStorage(clazz), channel, length, offset));
+        return trace(new PMMap(clazz, getShape(clazz), channel, length, offset));
     }
 
     public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        return trace(new PLZMACompressor(clazz, makeStorage(clazz), lzmaStream, bos));
+        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
     }
 
     public PLZMADecompressor createLZMADecompressor(Object clazz, int format, int memlimit) {
-        return trace(new PLZMADecompressor(clazz, makeStorage(clazz), format, memlimit));
+        return trace(new PLZMADecompressor(clazz, getShape(clazz), format, memlimit));
     }
 }

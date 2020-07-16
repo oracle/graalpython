@@ -163,6 +163,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.utilities.TriState;
@@ -170,12 +172,22 @@ import com.oracle.truffle.api.utilities.TriState;
 @ImportStatic(SpecialMethodNames.class)
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
-public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
+public abstract class PythonAbstractObject extends DynamicObject implements TruffleObject, Comparable<Object> {
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
 
     public static final Assumption singleContextAssumption() {
         return PythonLanguage.getCurrent().singleContextAssumption;
+    }
+
+    protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
+
+    protected PythonAbstractObject(Shape shape) {
+        super(shape);
+    }
+
+    protected PythonAbstractObject() {
+        super(ABSTRACT_SHAPE);
     }
 
     public final DynamicObjectNativeWrapper getNativeWrapper() {

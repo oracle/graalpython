@@ -54,8 +54,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
@@ -76,8 +74,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    protected PythonManagedClass(Object typeClass, DynamicObject storage, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
-        super(typeClass, storage);
+    protected PythonManagedClass(Object typeClass, Shape classShape, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
+        super(typeClass, classShape);
         this.name = getBaseName(name);
         this.qualName = name;
 
@@ -341,8 +339,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         @Specialization(replaces = "getConstant")
         static PHashingCollection getDict(PythonManagedClass self,
-                        @CachedLibrary("self.storage") DynamicObjectLibrary dylib) {
-            return (PHashingCollection) dylib.getOrDefault(self.storage, DICT, null);
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            return (PHashingCollection) dylib.getOrDefault(self, DICT, null);
         }
     }
 }

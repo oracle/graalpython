@@ -46,16 +46,16 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PythonModule extends PythonObject {
-    public PythonModule(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PythonModule(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
     private PythonModule(String moduleName) {
-        super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.newInstance());
+        super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.getInstanceShape());
         setAttribute(__NAME__, moduleName);
         setAttribute(__DOC__, PNone.NONE);
         setAttribute(__PACKAGE__, PNone.NONE);
@@ -112,8 +112,8 @@ public final class PythonModule extends PythonObject {
 
         @Specialization(replaces = "getConstant")
         static PHashingCollection getDict(PythonModule self,
-                        @CachedLibrary("self.storage") DynamicObjectLibrary dylib) {
-            return (PHashingCollection) dylib.getOrDefault(self.storage, DICT, null);
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            return (PHashingCollection) dylib.getOrDefault(self, DICT, null);
         }
     }
 }

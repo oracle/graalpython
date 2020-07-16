@@ -28,7 +28,7 @@ package com.oracle.graal.python.builtins.objects.complex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PComplex extends PythonBuiltinObject {
     /* Prime multiplier used in string and various other hashes in CPython. */
@@ -37,14 +37,14 @@ public final class PComplex extends PythonBuiltinObject {
     private final double real;
     private final double imag;
 
-    public PComplex(Object clazz, DynamicObject storage, double real, double imaginary) {
-        super(clazz, storage);
+    public PComplex(Object clazz, Shape instanceShape, double real, double imaginary) {
+        super(clazz, instanceShape);
         this.real = real;
         this.imag = imaginary;
     }
 
     public PComplex(double real, double imaginary) {
-        this(PythonBuiltinClassType.PComplex, PythonBuiltinClassType.PComplex.newInstance(), real, imaginary);
+        this(PythonBuiltinClassType.PComplex, PythonBuiltinClassType.PComplex.getInstanceShape(), real, imaginary);
     }
 
     @Override

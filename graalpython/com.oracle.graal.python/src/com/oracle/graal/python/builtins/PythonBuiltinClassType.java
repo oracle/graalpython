@@ -50,7 +50,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -272,11 +271,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
 
     public final Shape getInstanceShape() {
         return instanceShape;
-    }
-
-    public final DynamicObject newInstance() {
-        CompilerAsserts.partialEvaluationConstant(instanceShape);
-        return instanceShape.newInstance();
     }
 
     public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);

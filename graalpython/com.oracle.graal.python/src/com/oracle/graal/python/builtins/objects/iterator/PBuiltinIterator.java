@@ -26,7 +26,7 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 /**
  * This is the base class for all builtin iterator types that cannot be subclassed from Python code.
@@ -36,8 +36,8 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
     private boolean exhausted = false;
     public int index = 0;
 
-    public PBuiltinIterator(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PBuiltinIterator(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
     public void setExhausted() {
