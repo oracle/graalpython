@@ -138,6 +138,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -172,6 +173,10 @@ import com.oracle.truffle.api.utilities.TriState;
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
+
+    public static final Assumption singleContextAssumption() {
+        return PythonLanguage.getCurrent().singleContextAssumption;
+    }
 
     public final DynamicObjectNativeWrapper getNativeWrapper() {
         return nativeWrapper;

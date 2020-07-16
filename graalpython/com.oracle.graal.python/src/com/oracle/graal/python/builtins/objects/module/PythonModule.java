@@ -31,15 +31,23 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
+import java.lang.ref.WeakReference;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 public final class PythonModule extends PythonObject {
     public PythonModule(Object clazz, DynamicObject storage) {
@@ -74,4 +82,38 @@ public final class PythonModule extends PythonObject {
         return "<module '" + this.getAttribute(__NAME__) + "'>";
     }
 
+    @ExportMessage
+    static class GetDict {
+        static final WeakReference<Object> weak(Object self) {
+            return new WeakReference<>(self);
+        }
+
+        static final boolean compare(Object a, Object b) {
+            return a == b;
+        }
+
+        protected static boolean dictExists(Object dict) {
+            return dict instanceof PHashingCollection;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"compare(self, cachedModule.get())", "dict.get() != null"}, assumptions = "singleContextAssumption()", limit = "1")
+        static PHashingCollection getConstant(PythonModule self,
+                        @Cached("weak(self)") WeakReference<Object> cachedModule,
+                        @Cached("weak(self.getAttribute(DICT))") WeakReference<Object> dict) {
+            // module.__dict__ is a read-only attribute
+            Object d = dict.get();
+            if (d != null) {
+                return (PHashingCollection) d;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("a type.__dict__ was collected before the type");
+            }
+        }
+
+        @Specialization(replaces = "getConstant")
+        static PHashingCollection getDict(PythonModule self,
+                        @CachedLibrary("self.storage") DynamicObjectLibrary dylib) {
+            return (PHashingCollection) dylib.getOrDefault(self.storage, DICT, null);
+        }
+    }
 }

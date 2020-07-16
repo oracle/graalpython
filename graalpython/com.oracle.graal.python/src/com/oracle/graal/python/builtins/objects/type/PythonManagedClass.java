@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -35,6 +36,7 @@ import java.util.WeakHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -45,9 +47,16 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
@@ -302,4 +311,38 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
+    @ExportMessage
+    static class GetDict {
+        static final WeakReference<Object> weak(Object self) {
+            return new WeakReference<>(self);
+        }
+
+        static final boolean compare(Object a, Object b) {
+            return a == b;
+        }
+
+        protected static boolean dictExists(Object dict) {
+            return dict instanceof PHashingCollection;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"compare(self, cachedManagedClass.get())", "dictExists(dict.get())"}, assumptions = "singleContextAssumption()", limit = "1")
+        static PHashingCollection getConstant(PythonManagedClass self,
+                        @Cached("weak(self)") WeakReference<Object> cachedManagedClass,
+                        @Cached("weak(self.getAttribute(DICT))") WeakReference<Object> dict) {
+            // type.__dict__ is a read-only attribute
+            Object d = dict.get();
+            if (d != null) {
+                return (PHashingCollection) d;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("a type.__dict__ was collected before the type");
+            }
+        }
+
+        @Specialization(replaces = "getConstant")
+        static PHashingCollection getDict(PythonManagedClass self,
+                        @CachedLibrary("self.storage") DynamicObjectLibrary dylib) {
+            return (PHashingCollection) dylib.getOrDefault(self.storage, DICT, null);
+        }
+    }
 }
