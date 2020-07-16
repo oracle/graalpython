@@ -94,8 +94,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         int offset = derivedMroLen - baseMroLen;
         if (offset >= 0) {
             // we can only do this for classes where all MRO entries have only a
-            // single base
-            assert GetBaseClassesNodeGen.getUncached().execute(derivedMroAry[offset]).length == 1;
+            // single or no base
+            assert GetBaseClassesNodeGen.getUncached().execute(derivedMroAry[offset]).length <= 1;
             return isSameType(isSameTypeNode, derivedMroAry[offset], base);
         } else {
             return false;
