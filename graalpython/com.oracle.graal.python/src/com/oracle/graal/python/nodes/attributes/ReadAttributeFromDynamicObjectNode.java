@@ -131,7 +131,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "deprecation"})
     @Specialization(guards = {
                     "dynamicObject.getShape() == cachedShape",
                     "!layoutAssumption.isValid()"
@@ -145,6 +145,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return nextNode.execute(dynamicObject, key);
     }
 
+    @SuppressWarnings("deprecation")
     @TruffleBoundary
     @Specialization(replaces = {"readDirect", "readDirectFinal", "updateShapeAndRead"})
     protected static Object readIndirect(DynamicObject dynamicObject, Object key) {

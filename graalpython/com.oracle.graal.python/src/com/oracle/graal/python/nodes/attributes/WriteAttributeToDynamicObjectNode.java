@@ -76,7 +76,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return cachedKey == key;
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "deprecation"})
     @Specialization(guards = {
                     "dynamicObject.getShape() == cachedShape",
                     "!layoutAssumption.isValid()"
@@ -148,6 +148,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return true;
     }
 
+    @SuppressWarnings("deprecation")
     @TruffleBoundary
     @Specialization(replaces = {"doDirect", "defineDirect", "updateShapeAndWrite"})
     protected static boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {

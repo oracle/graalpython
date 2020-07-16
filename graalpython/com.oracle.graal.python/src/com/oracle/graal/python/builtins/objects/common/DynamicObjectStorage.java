@@ -90,6 +90,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     protected final DynamicObject store;
     private final MroSequenceStorage mro;
 
+    @SuppressWarnings("deprecation")
     public DynamicObjectStorage() {
         this(LAYOUT.newInstance(EMPTY_SHAPE), null);
     }
@@ -361,6 +362,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     @ExportMessage
     @TruffleBoundary
@@ -370,6 +372,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         return this;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     @ExportMessage
     @TruffleBoundary
