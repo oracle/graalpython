@@ -570,6 +570,13 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
         return PyErr_NoMemory();
     }
     Py_TYPE(op) = tp;
+    /* TOOD(fa): properly set HEAPTYPE flag */
+    /*
+    if (PyType_GetFlags(tp) & Py_TPFLAGS_HEAPTYPE) {
+        Py_INCREF(tp);
+    }
+    */
+    Py_INCREF(tp);
     _Py_NewReference(op);
     return op;
 }
