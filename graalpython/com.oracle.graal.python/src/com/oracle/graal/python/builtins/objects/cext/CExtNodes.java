@@ -3054,7 +3054,7 @@ public abstract class CExtNodes {
             assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
             Assumption handleValidAssumption = nativeWrapper.getHandleValidAssumption();
             if (hasHandleValidAssumptionProfile.profile(handleValidAssumption != null)) {
-                invalidate(handleValidAssumption);
+                PythonNativeWrapper.invalidateAssumption(handleValidAssumption);
             }
         }
 
@@ -3073,11 +3073,6 @@ public abstract class CExtNodes {
         static void doOther(@SuppressWarnings("unused") Object delegate, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper) {
             assert !isPrimitiveNativeWrapper(nativeWrapper);
             // ignore
-        }
-
-        @TruffleBoundary
-        private static void invalidate(Assumption assumption) {
-            assumption.invalidate("releasing handle for native wrapper");
         }
 
         static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {
