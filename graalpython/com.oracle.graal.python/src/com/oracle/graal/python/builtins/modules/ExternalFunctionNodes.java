@@ -402,6 +402,7 @@ public abstract class ExternalFunctionNodes {
 
         protected abstract Object[] prepareCArguments(VirtualFrame frame);
 
+        @SuppressWarnings("unused")
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             // default: do nothing
         }
@@ -491,6 +492,7 @@ public abstract class ExternalFunctionNodes {
             return new Object[]{self, createArgsTupleNode.execute(factory, args), factory.createDict(kwargs)};
         }
 
+        @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             PTuple varargsTuple = (PTuple) cArguments[1];
             ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
@@ -535,6 +537,7 @@ public abstract class ExternalFunctionNodes {
             return new Object[]{self, createArgsTupleNode.execute(factory, args)};
         }
 
+        @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             PTuple varargsTuple = (PTuple) cArguments[1];
             ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
