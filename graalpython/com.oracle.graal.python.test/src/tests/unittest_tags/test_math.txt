@@ -23,6 +23,7 @@
 *graalpython.lib-python.3.test.test_math.MathTests.testCos
 *graalpython.lib-python.3.test.test_math.MathTests.testCosh
 *graalpython.lib-python.3.test.test_math.MathTests.testDegrees
+*graalpython.lib-python.3.test.test_math.MathTests.testDist
 *graalpython.lib-python.3.test.test_math.MathTests.testExp
 *graalpython.lib-python.3.test.test_math.MathTests.testFabs
 *graalpython.lib-python.3.test.test_math.MathTests.testFactorial
@@ -37,6 +38,7 @@
 *graalpython.lib-python.3.test.test_math.MathTests.testIsfinite
 *graalpython.lib-python.3.test.test_math.MathTests.testIsinf
 *graalpython.lib-python.3.test.test_math.MathTests.testIsnan
+*graalpython.lib-python.3.test.test_math.MathTests.testIsqrt
 *graalpython.lib-python.3.test.test_math.MathTests.testLdexp
 *graalpython.lib-python.3.test.test_math.MathTests.testLog
 *graalpython.lib-python.3.test.test_math.MathTests.testLog10
@@ -56,5 +58,9 @@
 *graalpython.lib-python.3.test.test_math.MathTests.testTanhSign
 *graalpython.lib-python.3.test.test_math.MathTests.test_exceptions
 *graalpython.lib-python.3.test.test_math.MathTests.test_inf_constant
+*graalpython.lib-python.3.test.test_math.MathTests.test_mtestfile
 *graalpython.lib-python.3.test.test_math.MathTests.test_nan_constant
+*graalpython.lib-python.3.test.test_math.MathTests.test_prod
+*graalpython.lib-python.3.test.test_math.MathTests.test_testfile
 *graalpython.lib-python.3.test.test_math.MathTests.test_trunc
+*graalpython.lib-python.3.test.test_math.TestMain.test_main
