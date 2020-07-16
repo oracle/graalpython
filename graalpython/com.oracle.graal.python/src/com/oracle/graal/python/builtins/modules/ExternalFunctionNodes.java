@@ -45,10 +45,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.TraverseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
@@ -56,19 +54,18 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaStealingNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetElementType;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -88,8 +85,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -107,14 +102,12 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ExternalFunctionNodes {
 
@@ -204,7 +197,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
-        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -264,8 +256,6 @@ public abstract class ExternalFunctionNodes {
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
                 ForeignCallContext.exit(frame, ctx, state);
-
-                ensureReleaseNativeWrapperNode().execute(cArguments);
             }
         }
 
@@ -279,14 +269,6 @@ public abstract class ExternalFunctionNodes {
                 raiseNode = insert(PRaiseNode.create());
             }
             return raiseNode;
-        }
-
-        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
-            if (releaseNativeWrapperNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseNativeWrapperNode;
         }
 
         private PythonContext getContext() {
@@ -321,57 +303,21 @@ public abstract class ExternalFunctionNodes {
      */
     abstract static class ReleaseNativeWrapperNode extends Node {
 
-        public abstract void execute(Object[] nativeArguments);
+        public abstract void execute(Object pythonObject, PythonNativeWrapper nativeWrapper);
 
-        @Specialization(guards = {"nativeArguments.length == cachedLength", "nativeArguments.length < 8"}, limit = "1")
-        @ExplodeLoop
-        static void doCachedLength(Object[] nativeArguments,
-                        @Cached("nativeArguments.length") int cachedLength,
-                        @Cached(value = "createClassProfiles(cachedLength)", dimensions = 1) ValueProfile[] classProfiles,
-                        @CachedLibrary(limit = "nativeArguments.length") PythonNativeWrapperLibrary lib,
-                        @Cached("createTraverseNodes(cachedLength)") TraverseNativeWrapperNode[] traverseNativeWrapperNodes,
+        @Specialization
+        static void doPythonObjectWithWrapper(PythonObject pythonObject, PythonNativeWrapper nativeWrapper,
+                        @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
                         @Cached SubRefCntNode subRefCntNode) {
 
-            for (int i = 0; i < cachedLength; i++) {
-                doCheck(classProfiles[i].profile(nativeArguments[i]), subRefCntNode, lib, traverseNativeWrapperNodes[i]);
+            // in the cached case, refCntNode acts as a branch profile
+            if (subRefCntNode.dec(nativeWrapper) == 0) {
+                traverseNativeWrapperNode.execute(pythonObject);
             }
         }
 
-        @Specialization(replaces = "doCachedLength")
-        static void doGeneric(Object[] nativeArguments,
-                        @Cached("createClassProfile()") ValueProfile classProfile,
-                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
-                        @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
-                        @Cached SubRefCntNode freeNode) {
-
-            for (int i = 0; i < nativeArguments.length; i++) {
-                doCheck(classProfile.profile(nativeArguments[i]), freeNode, lib, traverseNativeWrapperNode);
-            }
-        }
-
-        private static void doCheck(Object argument, SubRefCntNode refCntNode, PythonNativeWrapperLibrary lib, TraverseNativeWrapperNode traverseNativeWrapperNode) {
-            if (CApiGuards.isNativeWrapper(argument)) {
-                // in the cached case, refCntNode acts as a branch profile
-                if (refCntNode.dec(argument) == 0) {
-                    traverseNativeWrapperNode.execute(lib.getDelegate((PythonNativeWrapper) argument));
-                }
-            }
-        }
-
-        static ValueProfile[] createClassProfiles(int length) {
-            ValueProfile[] classProfiles = new ValueProfile[length];
-            for (int i = 0; i < classProfiles.length; i++) {
-                classProfiles[i] = ValueProfile.createClassProfile();
-            }
-            return classProfiles;
-        }
-
-        static TraverseNativeWrapperNode[] createTraverseNodes(int length) {
-            TraverseNativeWrapperNode[] nodes = new TraverseNativeWrapperNode[length];
-            for (int i = 0; i < nodes.length; i++) {
-                nodes[i] = TraverseNativeWrapperNodeGen.create();
-            }
-            return nodes;
+        static boolean hasNativeWrapper(PythonObject object) {
+            return CApiGuards.isNativeWrapper(object.getNativeWrapper());
         }
     }
 
@@ -385,26 +331,19 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization
         static void doTuple(PTuple tuple,
-                        @Cached GetElementType getElementTypeNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached ReleaseNativeWrapperNode releaseNativeWrapperNode) {
+                        @Cached SubRefCntNode subRefCntNode) {
 
-            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
-            ListStorageType storageType = getElementTypeNode.execute(sequenceStorage);
-            if (storageType == ListStorageType.Generic || storageType == ListStorageType.List || storageType == ListStorageType.Tuple) {
-                Object[] values = toArrayNode.execute(sequenceStorage);
-                Object[] wrappers = new Object[values.length];
-                for (int i = 0; i < values.length; i++) {
-                    Object value = values[i];
-                    if (value instanceof PythonAbstractObject) {
-                        DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) value).getNativeWrapper();
-                        // only traverse if refCnt != 0; this will break the cycle
-                        if (nativeWrapper != null) {
-                            wrappers[i] = nativeWrapper.getRefCount() != 0 ? nativeWrapper : null;
-                        }
+            Object[] values = toArrayNode.execute(tuple.getSequenceStorage());
+            for (int i = 0; i < values.length; i++) {
+                Object value = values[i];
+                if (value instanceof PythonObject) {
+                    DynamicObjectNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
+                    // only traverse if refCnt != 0; this will break the cycle
+                    if (nativeWrapper != null) {
+                        subRefCntNode.dec(nativeWrapper);
                     }
                 }
-                releaseNativeWrapperNode.execute(wrappers);
             }
         }
 
@@ -412,7 +351,6 @@ public abstract class ExternalFunctionNodes {
         static void doOther(@SuppressWarnings("unused") Object other) {
             // do nothing
         }
-
     }
 
     abstract static class MethodDescriptorRoot extends PRootNode {
@@ -447,7 +385,12 @@ public abstract class ExternalFunctionNodes {
             CalleeContext.enter(frame, customLocalsProfile);
             try {
                 if (externalInvokeNode != null) {
-                    return externalInvokeNode.execute(frame, name, callable, prepareCArguments(frame), 0);
+                    Object[] cArguments = prepareCArguments(frame);
+                    try {
+                        return externalInvokeNode.execute(frame, name, callable, cArguments, 0);
+                    } finally {
+                        postprocessCArguments(frame, cArguments);
+                    }
                 } else {
                     assert externalInvokeNode == null;
                     return invokeNode.execute(frame, callable, preparePArguments(frame), PArguments.getKeywordArguments(frame));
@@ -458,6 +401,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         protected abstract Object[] prepareCArguments(VirtualFrame frame);
+
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            // default: do nothing
+        }
 
         protected Object[] preparePArguments(VirtualFrame frame) {
             Object[] variableArguments = PArguments.getVariableArguments(frame);
@@ -522,6 +469,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         public MethKeywordsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
@@ -543,9 +491,22 @@ public abstract class ExternalFunctionNodes {
             return new Object[]{self, createArgsTupleNode.execute(factory, args), factory.createDict(kwargs)};
         }
 
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            PTuple varargsTuple = (PTuple) cArguments[1];
+            ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
+        }
+
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+
+        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
+            if (releaseNativeWrapperNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseNativeWrapperNode;
         }
     }
 
@@ -554,6 +515,7 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         public MethVarargsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
@@ -573,9 +535,22 @@ public abstract class ExternalFunctionNodes {
             return new Object[]{self, createArgsTupleNode.execute(factory, args)};
         }
 
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            PTuple varargsTuple = (PTuple) cArguments[1];
+            ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
+        }
+
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+
+        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
+            if (releaseNativeWrapperNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseNativeWrapperNode;
         }
     }
 
