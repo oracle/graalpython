@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.module;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
@@ -88,26 +87,26 @@ public class ModuleBuiltins extends PythonBuiltins {
         return ModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"self", "name", "doc"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
         @Specialization
-        public PNone module(PythonModule self, String name, Object path,
+        public PNone module(PythonModule self, String name, Object doc,
                         @Cached WriteAttributeToObjectNode writeName,
                         @Cached WriteAttributeToObjectNode writeDoc,
                         @Cached WriteAttributeToObjectNode writePackage,
                         @Cached WriteAttributeToObjectNode writeLoader,
-                        @Cached WriteAttributeToObjectNode writeSpec,
-                        @Cached WriteAttributeToObjectNode writeFile) {
+                        @Cached WriteAttributeToObjectNode writeSpec) {
             writeName.execute(self, __NAME__, name);
-            writeDoc.execute(self, __DOC__, PNone.NONE);
+            if (doc != PNone.NO_VALUE) {
+                writeDoc.execute(self, __DOC__, doc);
+            } else {
+                writeDoc.execute(self, __DOC__, PNone.NONE);
+            }
             writePackage.execute(self, __PACKAGE__, PNone.NONE);
             writeLoader.execute(self, __LOADER__, PNone.NONE);
             writeSpec.execute(self, __SPEC__, PNone.NONE);
-            if (path != PNone.NO_VALUE) {
-                writeFile.execute(self, __FILE__, path);
-            }
             return PNone.NONE;
         }
     }
