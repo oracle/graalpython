@@ -153,6 +153,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Force to automatically import site.py module.") //
+    public static final OptionKey<Boolean> ForceImportSite = new OptionKey<>(false);
+
     @Option(category = OptionCategory.EXPERT, help = "Minimal size of string, when lazy strings are used. Default 20") //
     public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
 

@@ -96,6 +96,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
@@ -375,12 +376,23 @@ public final class PythonContext {
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            importSiteIfForced();
+        }
     }
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
         setupRuntimeInformation(true);
         core.postInitialize();
+        importSiteIfForced();
+    }
+
+    private void importSiteIfForced() {
+        if (getOption(PythonOptions.ForceImportSite)) {
+            CallTarget site = env.parsePublic(Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build());
+            site.call();
+        }
     }
 
     /**

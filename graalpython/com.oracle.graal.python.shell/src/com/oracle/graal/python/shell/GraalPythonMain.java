@@ -175,7 +175,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-debug-java":
                     if (wantsExperimental) {
                         if (!isAOT()) {
-                            subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
+                            subprocessArgs.add("agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y");
                             inputArgs.remove("-debug-java");
                         }
                     } else {
@@ -401,6 +401,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
+        if (!noSite) {
+            contextBuilder.option("python.ForceImportSite", "true");
+        }
         contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
         contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
 
@@ -423,9 +426,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                 }
-            }
-            if (!noSite) {
-                evalInternal(context, "import site\n");
             }
             if (!quietFlag && stdinIsInteractive) {
                 System.err.println("Please note: This Python implementation is in the very early stages, " +
@@ -823,7 +823,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             cmd.add("-cp");
             cmd.add(ManagementFactory.getRuntimeMXBean().getClassPath());
             for (String subProcArg : subProcessDefs) {
-                assert subProcArg.startsWith("D") || subProcArg.startsWith("X");
+                assert subProcArg.startsWith("D") || subProcArg.startsWith("agent");
                 cmd.add("-" + subProcArg);
             }
             cmd.add(GraalPythonMain.class.getName());
