@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -49,15 +51,26 @@ import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToBorrowedRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaStealingNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -67,6 +80,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -79,18 +93,21 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ExternalFunctionNodes {
 
@@ -180,7 +197,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
-        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -240,8 +256,6 @@ public abstract class ExternalFunctionNodes {
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
                 ForeignCallContext.exit(frame, ctx, state);
-
-                ensureReleaseNativeWrapperNode().execute(cArguments);
             }
         }
 
@@ -255,14 +269,6 @@ public abstract class ExternalFunctionNodes {
                 raiseNode = insert(PRaiseNode.create());
             }
             return raiseNode;
-        }
-
-        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
-            if (releaseNativeWrapperNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseNativeWrapperNode;
         }
 
         private PythonContext getContext() {
@@ -297,43 +303,53 @@ public abstract class ExternalFunctionNodes {
      */
     abstract static class ReleaseNativeWrapperNode extends Node {
 
-        public abstract void execute(Object[] nativeArguments);
+        public abstract void execute(Object pythonObject, PythonNativeWrapper nativeWrapper);
 
-        @Specialization(guards = {"nativeArguments.length == cachedLength", "nativeArguments.length < 8"}, limit = "1")
-        @ExplodeLoop
-        static void doCachedLength(Object[] nativeArguments,
-                        @Cached("nativeArguments.length") int cachedLength,
-                        @Cached(value = "createClassProfiles(cachedLength)", dimensions = 1) ValueProfile[] classProfiles,
+        @Specialization
+        static void doPythonObjectWithWrapper(PythonObject pythonObject, PythonNativeWrapper nativeWrapper,
+                        @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
                         @Cached SubRefCntNode subRefCntNode) {
 
-            for (int i = 0; i < cachedLength; i++) {
-                doCheck(classProfiles[i].profile(nativeArguments[i]), subRefCntNode);
+            // in the cached case, refCntNode acts as a branch profile
+            if (subRefCntNode.dec(nativeWrapper) == 0) {
+                traverseNativeWrapperNode.execute(pythonObject);
             }
         }
 
-        @Specialization(replaces = "doCachedLength")
-        static void doGeneric(Object[] nativeArguments,
-                        @Cached("createClassProfile()") ValueProfile classProfile,
-                        @Cached SubRefCntNode freeNode) {
+        static boolean hasNativeWrapper(PythonObject object) {
+            return CApiGuards.isNativeWrapper(object.getNativeWrapper());
+        }
+    }
 
-            for (int i = 0; i < nativeArguments.length; i++) {
-                doCheck(classProfile.profile(nativeArguments[i]), freeNode);
+    /**
+     * Traverses the items of a tuple and applies {@link ReleaseNativeWrapperNode} on the items if
+     * the tuple is up to be released.
+     */
+    abstract static class TraverseNativeWrapperNode extends Node {
+
+        public abstract void execute(Object containerObject);
+
+        @Specialization
+        static void doTuple(PTuple tuple,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached SubRefCntNode subRefCntNode) {
+
+            Object[] values = toArrayNode.execute(tuple.getSequenceStorage());
+            for (int i = 0; i < values.length; i++) {
+                Object value = values[i];
+                if (value instanceof PythonObject) {
+                    DynamicObjectNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
+                    // only traverse if refCnt != 0; this will break the cycle
+                    if (nativeWrapper != null) {
+                        subRefCntNode.dec(nativeWrapper);
+                    }
+                }
             }
         }
 
-        private static void doCheck(Object argument, SubRefCntNode refCntNode) {
-            if (CApiGuards.isNativeWrapper(argument)) {
-                // in the cached case, refCntNode acts as a branch profile
-                refCntNode.dec(argument);
-            }
-        }
-
-        static ValueProfile[] createClassProfiles(int length) {
-            ValueProfile[] classProfiles = new ValueProfile[length];
-            for (int i = 0; i < classProfiles.length; i++) {
-                classProfiles[i] = ValueProfile.createClassProfile();
-            }
-            return classProfiles;
+        @Fallback
+        static void doOther(@SuppressWarnings("unused") Object other) {
+            // do nothing
         }
     }
 
@@ -369,7 +385,12 @@ public abstract class ExternalFunctionNodes {
             CalleeContext.enter(frame, customLocalsProfile);
             try {
                 if (externalInvokeNode != null) {
-                    return externalInvokeNode.execute(frame, name, callable, prepareCArguments(frame), 0);
+                    Object[] cArguments = prepareCArguments(frame);
+                    try {
+                        return externalInvokeNode.execute(frame, name, callable, cArguments, 0);
+                    } finally {
+                        postprocessCArguments(frame, cArguments);
+                    }
                 } else {
                     assert externalInvokeNode == null;
                     return invokeNode.execute(frame, callable, preparePArguments(frame), PArguments.getKeywordArguments(frame));
@@ -380,6 +401,11 @@ public abstract class ExternalFunctionNodes {
         }
 
         protected abstract Object[] prepareCArguments(VirtualFrame frame);
+
+        @SuppressWarnings("unused")
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            // default: do nothing
+        }
 
         protected Object[] preparePArguments(VirtualFrame frame) {
             Object[] variableArguments = PArguments.getVariableArguments(frame);
@@ -443,6 +469,8 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
+        @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         public MethKeywordsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
@@ -453,6 +481,7 @@ public abstract class ExternalFunctionNodes {
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+            this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
         }
 
         @Override
@@ -460,12 +489,26 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelfNode.execute(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            return new Object[]{self, factory.createTuple(args), factory.createDict(kwargs)};
+            return new Object[]{self, createArgsTupleNode.execute(factory, args), factory.createDict(kwargs)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            PTuple varargsTuple = (PTuple) cArguments[1];
+            ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
         }
 
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+
+        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
+            if (releaseNativeWrapperNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseNativeWrapperNode;
         }
     }
 
@@ -473,6 +516,8 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
+        @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         public MethVarargsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
@@ -482,18 +527,33 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable, convertArgsToSulongNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelfNode.execute(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
-            return new Object[]{self, factory.createTuple(args)};
+            return new Object[]{self, createArgsTupleNode.execute(factory, args)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            PTuple varargsTuple = (PTuple) cArguments[1];
+            ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
         }
 
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+
+        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
+            if (releaseNativeWrapperNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseNativeWrapperNode;
         }
     }
 
@@ -934,4 +994,117 @@ public abstract class ExternalFunctionNodes {
             return SIGNATURE;
         }
     }
+
+    /**
+     * We need to inflate all primitives in order to avoid memory leaks. Explanation: Primitives
+     * would currently be wrapped into a PrimitiveNativeWrapper. If any of those will receive a
+     * toNative message, the managed code will be the only owner of those wrappers. But we will
+     * never be able to reach the wrapper from the arguments if they are just primitive. So, we
+     * inflate the primitives and we can then traverse the tuple and reach the wrappers of its
+     * arguments after the call returned.
+     */
+    abstract static class CreateArgsTupleNode extends Node {
+        public abstract PTuple execute(PythonObjectFactory factory, Object[] args);
+
+        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 16"})
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+        static PTuple doCachedLen(PythonObjectFactory factory, Object[] args,
+                        @Cached("args.length") int cachedLen,
+                        @Cached("createToBorrowedRefNodes(args.length)") ToBorrowedRefNode[] toBorrowedRefNodes,
+                        @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
+
+            for (int i = 0; i < cachedLen; i++) {
+                args[i] = prepareReference(args[i], factory, materializePrimitiveNodes[i], toBorrowedRefNodes[i]);
+            }
+            return factory.createTuple(args);
+        }
+
+        @Specialization(replaces = "doCachedLen")
+        static PTuple doGeneric(PythonObjectFactory factory, Object[] args,
+                        @Cached ToBorrowedRefNode toNewRefNode,
+                        @Cached MaterializePrimitiveNode materializePrimitiveNode) {
+
+            for (int i = 0; i < args.length; i++) {
+                args[i] = prepareReference(args[i], factory, materializePrimitiveNode, toNewRefNode);
+            }
+            return factory.createTuple(args);
+        }
+
+        private static Object prepareReference(Object arg, PythonObjectFactory factory, MaterializePrimitiveNode materializePrimitiveNode, ToBorrowedRefNode toNewRefNode) {
+            Object result = materializePrimitiveNode.execute(factory, arg);
+
+            // Tuples are actually stealing the reference of their items. That's why we need to
+            // increase the reference count by 1 at this point. However, it could be that the
+            // object does not have a native wrapper yet. We use ToNewRefNode to ensure that the
+            // object has a native wrapper or to increase the reference count by 1 if a native
+            // wrapper already exists.
+            toNewRefNode.execute(result);
+            return result;
+        }
+
+        static ToBorrowedRefNode[] createToBorrowedRefNodes(int length) {
+            ToBorrowedRefNode[] newRefNodes = new ToBorrowedRefNode[length];
+            for (int i = 0; i < length; i++) {
+                newRefNodes[i] = ToBorrowedRefNodeGen.create();
+            }
+            return newRefNodes;
+        }
+
+        static MaterializePrimitiveNode[] createMaterializeNodes(int length) {
+            MaterializePrimitiveNode[] materializePrimitiveNodes = new MaterializePrimitiveNode[length];
+            for (int i = 0; i < length; i++) {
+                materializePrimitiveNodes[i] = MaterializePrimitiveNodeGen.create();
+            }
+            return materializePrimitiveNodes;
+        }
+    }
+
+    /**
+     * Special helper nodes that materializes any primitive that would leak the wrapper if the
+     * reference is owned by managed code only.
+     */
+    @ImportStatic(CApiGuards.class)
+    @TypeSystemReference(PythonTypes.class)
+    abstract static class MaterializePrimitiveNode extends Node {
+
+        public abstract Object execute(PythonObjectFactory factory, Object object);
+
+        // NOTE: Booleans don't need to be materialized because they are singletons.
+
+        @Specialization(guards = "!isSmallInteger(i)")
+        static PInt doInteger(PythonObjectFactory factory, int i) {
+            return factory.createInt(i);
+        }
+
+        @Specialization(guards = "!isSmallLong(l)", replaces = "doInteger")
+        static PInt doLong(PythonObjectFactory factory, long l) {
+            return factory.createInt(l);
+        }
+
+        @Specialization
+        static PFloat doDouble(PythonObjectFactory factory, double d) {
+            return factory.createFloat(d);
+        }
+
+        @Specialization
+        static PString doString(PythonObjectFactory factory, String s) {
+            return factory.createString(s);
+        }
+
+        @Specialization(guards = "!needsMaterialization(object)")
+        static Object doObject(@SuppressWarnings("unused") PythonObjectFactory factory, Object object) {
+            return object;
+        }
+
+        static boolean needsMaterialization(Object object) {
+            if (object instanceof Integer) {
+                return !CApiGuards.isSmallInteger((Integer) object);
+            }
+            if (object instanceof Long) {
+                return !CApiGuards.isSmallLong((Long) object);
+            }
+            return PGuards.isDouble(object) || object instanceof String;
+        }
+    }
+
 }

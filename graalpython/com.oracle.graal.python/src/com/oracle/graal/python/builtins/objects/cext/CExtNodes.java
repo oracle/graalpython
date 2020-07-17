@@ -139,7 +139,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -2990,14 +2989,14 @@ public abstract class CExtNodes {
     public abstract static class SubRefCntNode extends PNodeWithContext {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
 
-        public final Object dec(Object object) {
+        public final long dec(Object object) {
             return execute(object, 1);
         }
 
-        public abstract Object execute(Object object, long value);
+        public abstract long execute(Object object, long value);
 
         @Specialization
-        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value,
+        static long doNativeWrapper(PythonNativeWrapper nativeWrapper, long value,
                         @Cached FreeNode freeNode,
                         @Cached BranchProfile negativeProfile) {
             long refCount = nativeWrapper.getRefCount() - value;
@@ -3009,11 +3008,11 @@ public abstract class CExtNodes {
                 negativeProfile.enter();
                 LOGGER.severe(() -> "native wrapper has negative ref count: " + nativeWrapper);
             }
-            return nativeWrapper;
+            return refCount;
         }
 
         @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
-        static Object doNativeObject(Object object, long value,
+        static long doNativeObject(Object object, long value,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {
@@ -3024,8 +3023,9 @@ public abstract class CExtNodes {
                 if (context.getOption(PythonOptions.TraceNativeMemory) && newRefcnt < 0) {
                     LOGGER.severe(() -> "object has negative ref count: " + CApiContext.asHex(object));
                 }
+                return newRefcnt;
             }
-            return object;
+            return 1;
         }
     }
 
@@ -3053,7 +3053,7 @@ public abstract class CExtNodes {
             assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
             Assumption handleValidAssumption = nativeWrapper.getHandleValidAssumption();
             if (hasHandleValidAssumptionProfile.profile(handleValidAssumption != null)) {
-                invalidate(handleValidAssumption);
+                PythonNativeWrapper.invalidateAssumption(handleValidAssumption);
             }
         }
 
@@ -3072,11 +3072,6 @@ public abstract class CExtNodes {
         static void doOther(@SuppressWarnings("unused") Object delegate, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper) {
             assert !isPrimitiveNativeWrapper(nativeWrapper);
             // ignore
-        }
-
-        @TruffleBoundary
-        private static void invalidate(Assumption assumption) {
-            assumption.invalidate("releasing handle for native wrapper");
         }
 
         static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {

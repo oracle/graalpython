@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -186,7 +187,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         // The null check is important because it might be that we actually never got a to-native
         // message but still modified the reference count.
         if (hasHandleValidAssumptionProfile.profile(nativeWrapper != null && nativeWrapper.getHandleValidAssumption() != null)) {
-            nativeWrapper.getHandleValidAssumption().invalidate("releasing handle for native wrapper");
+            PythonNativeWrapper.invalidateAssumption(nativeWrapper.getHandleValidAssumption());
         }
         nativeWrapper = null;
     }
