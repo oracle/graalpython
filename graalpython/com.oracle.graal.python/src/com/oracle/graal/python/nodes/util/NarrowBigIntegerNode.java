@@ -64,7 +64,7 @@ public abstract class NarrowBigIntegerNode extends PNodeWithContext {
         return PInt.intValue(x);
     }
 
-    @Specialization(guards = {"fitsIntoLong(x)", "!fitsIntoInt(x)"})
+    @Specialization(guards = "fitsIntoLongButNotInt(x)")
     long narrowToLong(BigInteger x) {
         return PInt.longValue(x);
     }
@@ -78,6 +78,12 @@ public abstract class NarrowBigIntegerNode extends PNodeWithContext {
     @TruffleBoundary
     static boolean fitsIntoInt(BigInteger x) {
         return x.bitLength() <= 31;
+    }
+
+    @TruffleBoundary
+    static boolean fitsIntoLongButNotInt(BigInteger x) {
+        int bitLen = x.bitLength();
+        return bitLen > 31 && bitLen <= 63;
     }
 
     @TruffleBoundary
