@@ -2695,14 +2695,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DistNode extends PythonBuiltinNode {
 
-        @Child private TupleNodes.ConstructTupleNode tupleCtor = TupleNodes.ConstructTupleNode.create();
-        @Child private SequenceNodes.GetObjectArrayNode getObjectArray = SequenceNodes.GetObjectArrayNode.create();
-        private final LoopConditionProfile loopProfile1 = LoopConditionProfile.createCountingProfile();
-        private final LoopConditionProfile loopProfile2 = LoopConditionProfile.createCountingProfile();
-
         @Specialization
         public double doGeneric(VirtualFrame frame, Object p, Object q,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached TupleNodes.ConstructTupleNode tupleCtor,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArray,
+                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile1,
+                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile2,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile trivialProfile) {
             // adapted from CPython math_dist_impl and vector_norm
             Object[] ps = getObjectArray.execute(tupleCtor.execute(frame, p));
             Object[] qs = getObjectArray.execute(tupleCtor.execute(frame, q));
@@ -2724,13 +2726,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     max = x;
                 }
             }
-            if (Double.isInfinite(max)) {
+            if (infProfile.profile(Double.isInfinite(max))) {
                 return max;
             }
-            if (foundNan) {
+            if (nanProfile.profile(foundNan)) {
                 return Double.NaN;
             }
-            if (max == 0.0 || len <= 1) {
+            if (trivialProfile.profile(max == 0.0 || len <= 1)) {
                 return max;
             }
 
