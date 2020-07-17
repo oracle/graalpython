@@ -80,6 +80,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
@@ -2696,6 +2697,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Child private TupleNodes.ConstructTupleNode tupleCtor = TupleNodes.ConstructTupleNode.create();
         @Child private SequenceNodes.GetObjectArrayNode getObjectArray = SequenceNodes.GetObjectArrayNode.create();
+        private final LoopConditionProfile loopProfile1 = LoopConditionProfile.createCountingProfile();
+        private final LoopConditionProfile loopProfile2 = LoopConditionProfile.createCountingProfile();
 
         @Specialization
         public double doGeneric(VirtualFrame frame, Object p, Object q,
@@ -2710,7 +2713,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
             double[] diffs = new double[len];
             double max = 0.0;
             boolean foundNan = false;
-            for (int i = 0; i < len; ++i) {
+            loopProfile1.profileCounted(len);
+            for (int i = 0; loopProfile1.inject(i < len); ++i) {
                 double a = lib.asJavaDoubleWithState(ps[i], PArguments.getThreadState(frame));
                 double b = lib.asJavaDoubleWithState(qs[i], PArguments.getThreadState(frame));
                 double x = Math.abs(a - b);
@@ -2732,7 +2736,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
             double csum = 1.0;
             double frac = 0.0;
-            for (int i = 0; i < len; ++i) {
+            loopProfile2.profileCounted(len);
+            for (int i = 0; loopProfile2.inject(i < len); ++i) {
                 double x = diffs[i];
                 x /= max;
                 x = x * x;
