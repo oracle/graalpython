@@ -430,7 +430,7 @@ public abstract class CExtParseArgumentsNode {
                         // TODO(fa) we could use CStringWrapper to do the copying lazily
                         writeOutVarNode.writePointer(varargs, state.outIndex, asCharPointerNode.execute(arg));
                         state = state.incrementOutIndex();
-                        writeOutVarNode.writeInt32(varargs, state.outIndex, stringLenNode.execute(arg));
+                        writeOutVarNode.writeInt64(varargs, state.outIndex, (long) stringLenNode.execute(arg));
                     } else {
                         throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_GOT_P, z ? "str or None" : "str", arg);
                     }
