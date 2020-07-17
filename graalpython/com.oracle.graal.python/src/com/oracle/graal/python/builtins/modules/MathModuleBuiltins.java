@@ -2626,7 +2626,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private BigInteger op(BigInteger x) {
+        private static BigInteger op(BigInteger x) {
             // assumes x >= 0
             if (x.equals(BigInteger.ZERO) || x.equals(BigInteger.ONE)) {
                 return x;
