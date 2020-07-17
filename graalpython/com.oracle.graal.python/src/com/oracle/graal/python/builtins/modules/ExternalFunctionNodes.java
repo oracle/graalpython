@@ -51,10 +51,10 @@ import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaStealingNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToBorrowedRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaStealingNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -1010,18 +1010,18 @@ public abstract class ExternalFunctionNodes {
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
         static PTuple doCachedLen(PythonObjectFactory factory, Object[] args,
                         @Cached("args.length") int cachedLen,
-                        @Cached("createToNewRefNodes(args.length)") ToNewRefNode[] toNewRefNodes,
+                        @Cached("createToBorrowedRefNodes(args.length)") ToBorrowedRefNode[] toBorrowedRefNodes,
                         @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
 
             for (int i = 0; i < cachedLen; i++) {
-                args[i] = prepareReference(args[i], factory, materializePrimitiveNodes[i], toNewRefNodes[i]);
+                args[i] = prepareReference(args[i], factory, materializePrimitiveNodes[i], toBorrowedRefNodes[i]);
             }
             return factory.createTuple(args);
         }
 
         @Specialization(replaces = "doCachedLen")
         static PTuple doGeneric(PythonObjectFactory factory, Object[] args,
-                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached ToBorrowedRefNode toNewRefNode,
                         @Cached MaterializePrimitiveNode materializePrimitiveNode) {
 
             for (int i = 0; i < args.length; i++) {
@@ -1030,7 +1030,7 @@ public abstract class ExternalFunctionNodes {
             return factory.createTuple(args);
         }
 
-        private static Object prepareReference(Object arg, PythonObjectFactory factory, MaterializePrimitiveNode materializePrimitiveNode, ToNewRefNode toNewRefNode) {
+        private static Object prepareReference(Object arg, PythonObjectFactory factory, MaterializePrimitiveNode materializePrimitiveNode, ToBorrowedRefNode toNewRefNode) {
             Object result = materializePrimitiveNode.execute(factory, arg);
 
             // Tuples are actually stealing the reference of their items. That's why we need to
@@ -1042,10 +1042,10 @@ public abstract class ExternalFunctionNodes {
             return result;
         }
 
-        static ToNewRefNode[] createToNewRefNodes(int length) {
-            ToNewRefNode[] newRefNodes = new ToNewRefNode[length];
+        static ToBorrowedRefNode[] createToBorrowedRefNodes(int length) {
+            ToBorrowedRefNode[] newRefNodes = new ToBorrowedRefNode[length];
             for (int i = 0; i < length; i++) {
-                newRefNodes[i] = ToNewRefNodeGen.create();
+                newRefNodes[i] = ToBorrowedRefNodeGen.create();
             }
             return newRefNodes;
         }
