@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -2599,15 +2600,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsqrtNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object isqrtLong(long x) {
+        Object isqrtLong(long x,
+                        @Cached NarrowBigIntegerNode makeInt) {
             raiseIfNegative(x < 0);
-            return makeInt(op(PInt.longToBigInteger(x)));
+            return makeInt.execute(op(PInt.longToBigInteger(x)));
         }
 
         @Specialization
-        Object isqrtPInt(PInt x) {
+        Object isqrtPInt(PInt x,
+                        @Cached NarrowBigIntegerNode makeInt) {
             raiseIfNegative(x.isNegative());
-            return makeInt(op(x.getValue()));
+            return makeInt.execute(op(x.getValue()));
         }
 
         @Specialization(guards = "!isInteger(x)")
@@ -2616,20 +2619,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached IsqrtNode recursiveNode) {
             return recursiveNode.execute(frame, lib.asIndexWithFrame(x, hasFrame, frame));
-        }
-
-        private Object makeInt(BigInteger i) {
-            try {
-                return PInt.intValueExact(i);
-            } catch (ArithmeticException e) {
-                // does not fit int, so try long
-            }
-            try {
-                return PInt.longValueExact(i);
-            } catch (ArithmeticException e) {
-                // does not fit long either, create PInt
-            }
-            return factory().createInt(i);
         }
 
         @TruffleBoundary

@@ -348,7 +348,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static int intValue(BigInteger value) {
+    public static int intValue(BigInteger value) {
         return value.intValue();
     }
 
