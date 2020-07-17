@@ -1463,6 +1463,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final double TWO_POW_P28 = 0x1.0p28;
         private static final double LN_2 = 6.93147180559945286227e-01;
 
+        private final ConditionProfile largeProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile smallProfile = ConditionProfile.createBinaryProfile();
+
         @Specialization
         @TruffleBoundary
         @Override
@@ -1482,10 +1485,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Override
         public double count(double value) {
             checkMathDomainError(value < 1);
-            if (value >= TWO_POW_P28) {
+            if (largeProfile.profile(value >= TWO_POW_P28)) {
                 return Math.log(value) + LN_2;
             }
-            if (value <= 2.0) {
+            if (smallProfile.profile(value <= 2.0)) {
                 double t = value - 1.0;
                 return Math.log1p(t + Math.sqrt(2.0 * t + t * t));
             }
@@ -1584,15 +1587,18 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private static final double TWO_POW_M28 = 0x1.0p-28;
 
+        private final ConditionProfile closeToZeroProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile lessThanHalfProfile = ConditionProfile.createBinaryProfile();
+
         @Override
         public double count(double value) {
             double abs = Math.abs(value);
             checkMathDomainError(abs >= 1.0);
-            if (abs < TWO_POW_M28) {
+            if (closeToZeroProfile.profile(abs < TWO_POW_M28)) {
                 return value;
             }
             double t;
-            if (abs < 0.5) {
+            if (lessThanHalfProfile.profile(abs < 0.5)) {
                 t = abs + abs;
                 t = 0.5 * Math.log1p(t + t * abs / (1.0 - abs));
             } else {
