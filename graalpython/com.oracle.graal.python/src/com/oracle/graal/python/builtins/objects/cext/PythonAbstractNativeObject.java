@@ -75,6 +75,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -291,14 +292,31 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     boolean isIdentical(Object other, InteropLibrary otherInterop,
-                    @CachedLibrary("this.object") InteropLibrary lib) {
-        return lib.isIdentical(object, other, otherInterop);
+                    @Cached("createClassProfile()") ValueProfile otherProfile,
+                    @CachedLibrary(limit = "1") InteropLibrary thisLib,
+                    @CachedLibrary("this.object") InteropLibrary objLib,
+                    @CachedLibrary(limit = "1") InteropLibrary otherObjLib) {
+        Object profiled = otherProfile.profile(other);
+        if (profiled instanceof PythonAbstractNativeObject) {
+            return objLib.isIdentical(object, ((PythonAbstractNativeObject) profiled).object, otherObjLib);
+        }
+        return otherInterop.isIdentical(profiled, this, thisLib);
     }
 
     @ExportMessage
-    TriState isIdenticalOrUndefined(Object other,
-                    @CachedLibrary(limit = "3") InteropLibrary lib) {
-        return TriState.valueOf(lib.isIdentical(object, other, lib));
+    @SuppressWarnings("unused")
+    static final class IsIdenticalOrUndefined {
+        @Specialization
+        static TriState doPythonAbstractNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
+                        @CachedLibrary("receiver.object") InteropLibrary objLib,
+                        @CachedLibrary(limit = "1") InteropLibrary otherObjectLib) {
+            return TriState.valueOf(objLib.isIdentical(receiver.object, other.object, otherObjectLib));
+        }
+
+        @Fallback
+        static TriState doOther(PythonAbstractNativeObject receiver, Object other) {
+            return TriState.UNDEFINED;
+        }
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
