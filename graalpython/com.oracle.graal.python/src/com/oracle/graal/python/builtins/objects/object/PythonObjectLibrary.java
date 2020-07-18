@@ -62,10 +62,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
-import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
+import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -808,10 +808,10 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Checks whether the receiver is a Python mapping. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
+     * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
+     * of CPython's {@code PyCheck_Mapping}. Note that such object does not have to conform to the
+     * definition of mapping as described in
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>.
      *
      * <br>
      * See {@link #isMappingType(Object)}
@@ -846,21 +846,14 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Checks whether the receiver is a Python mapping type. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
+     * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
+     * of CPython's {@code PyCheck_Mapping}. Note that such object does not have to conform to the
+     * definition of mapping as described in
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>.
      *
      * <br>
-     * Specifically the default implementation checks whether the receiver
-     * {@link #isSequenceType(Object)} and for the implementation of the following special methods:
-     * <b>
-     * <ul>
-     * <li>keys</li>
-     * <li>items</li>
-     * <li>values</li>
-     * </ul>
-     * </b>
+     * Specifically the default implementation checks whether the receiver has the {@code __items__}
+     * special method.
      *
      * @param receiver the receiver Object
      * @return True if a mapping type
