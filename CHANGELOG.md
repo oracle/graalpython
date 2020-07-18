@@ -3,13 +3,22 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
-## Version 20.2
+## Version 20.2.0
 
 * Escaping Unicode characters using the character names in strings like "\N{GREEK CAPITAL LETTER DELTA}".
 * When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
 * Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now. 
 * Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.
 * Command option -B works
+* Implement better reference counting for native extensions to fix memory leaks
+* Fix a warning in pandas about size of datetime objects
+* Make many more CPython unittests pass for core types
+* Support parse requests with arguments for embedding Python to light up GraalVM Insight support
+* Support basic tox usage when forcing virtualenv to use venv
+* No longer support iterables as arrays in interop
+* Add initial support for HPy native extensions
+* Support magic encoding comments in Python files
+* Improve chaining of exception tracebacks - the tracebacks should now be much closer to CPython and more helpful
 
 ## Version 20.1.0
 

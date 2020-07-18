@@ -213,6 +213,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @SuppressWarnings("deprecation")
         @Specialization(guards = "!isNoValue(value)")
         Object getModule(PBuiltinMethod self, Object value) {
             CompilerDirectives.transferToInterpreter();

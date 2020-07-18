@@ -82,6 +82,7 @@ public class PythonObject extends PythonAbstractObject {
             PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(self.storage, cls);
         }
 
+        @SuppressWarnings("deprecation")
         @Specialization
         public static void setMultiContext(PythonObject self, Object cls) {
             self.storedPythonClass = cls;
@@ -138,17 +139,20 @@ public class PythonObject extends PythonAbstractObject {
         return storage;
     }
 
+    @SuppressWarnings("deprecation")
     @TruffleBoundary
     public final Object getAttribute(Object key) {
         return getStorage().get(key, PNone.NO_VALUE);
     }
 
+    @SuppressWarnings("deprecation")
     @TruffleBoundary
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
         getStorage().define(name, value);
     }
 
+    @SuppressWarnings("deprecation")
     @TruffleBoundary
     public List<String> getAttributeNames() {
         ArrayList<String> keyList = new ArrayList<>();
