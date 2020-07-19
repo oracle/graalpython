@@ -48,10 +48,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,17 +68,26 @@ import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
@@ -85,6 +96,30 @@ public class ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class ModuleReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object repr(PythonModule self,
+                           @CachedLibrary(limit = "1") InteropLibrary lib,
+                           @CachedContext(PythonLanguage.class) PythonContext context) {
+            // PyObject_CallMethod(interp->importlib, "_module_repr", "O", m);
+            PythonModule builtins = context.getCore().getBuiltins();
+            try {
+                Object __import__ = lib.readMember(builtins, "__import__");
+                Object module_repr = importFrom( __import__, "importlib._bootstrap", "_module_repr", lib);
+                return lib.execute(module_repr, self);
+            } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                return self.toString();
+            }
+        }
+
+        private Object importFrom(Object importBuiltinFunction, String moduleName, String from, InteropLibrary lib) throws UnsupportedTypeException, ArityException, UnsupportedMessageException, UnknownIdentifierException {
+            Object _bootstrap = lib.execute(importBuiltinFunction, moduleName, PNone.NONE, PNone.NONE, factory().createList(new Object[]{from}));
+            return lib.readMember(_bootstrap, from);
+        }
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"self", "name", "doc"})
