@@ -219,9 +219,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
      * are treated differently to other containers in some interop messages.
      */
     private static boolean isAbstractMapping(Object receiver, PythonObjectLibrary lib) {
-        return lib.isSequence(receiver) && lib.lookupAttribute(receiver, KEYS, true) != PNone.NO_VALUE && //
-                        lib.lookupAttribute(receiver, ITEMS, true) != PNone.NO_VALUE && //
-                        lib.lookupAttribute(receiver, VALUES, true) != PNone.NO_VALUE;
+        return lib.isSequence(receiver) && lib.lookupAttribute(receiver, KEYS) != PNone.NO_VALUE && //
+                        lib.lookupAttribute(receiver, ITEMS) != PNone.NO_VALUE && //
+                        lib.lookupAttribute(receiver, VALUES) != PNone.NO_VALUE;
     }
 
     private boolean isAbstractMapping(PythonObjectLibrary thisLib) {
