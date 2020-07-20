@@ -65,10 +65,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.Library;
-import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
+import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -612,8 +612,8 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Looks up a method object on the receiver's type that can be called with one of the
-     * getAndCallMethod methods.
+     * Looks up an unbound method object on the receiver's type that can be called with
+     * {@link #callUnboundMethod}
      * 
      * @param receiver self
      * @param name method name
