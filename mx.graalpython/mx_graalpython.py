@@ -520,14 +520,14 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments
         basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-        jacoco_basedir = f"{basedir}-jacoco"
+        jacoco_basedir = "%s-jacoco" % basedir
         shutil.rmtree(jacoco_basedir, ignore_errors=True)
         shutil.copytree(basedir, jacoco_basedir, symlinks=True)
         launcher_path = os.path.join(jacoco_basedir, 'bin', 'graalpython')
         with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
             lines = launcher.readlines()
         assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
-        lines.insert(-1, f'jvm_args+=({agent_args})\n')
+        lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
         with open(launcher_path, 'w') as launcher:
             launcher.writelines(lines)
         # jacoco only dumps the data on exit, and when we run all our unittests
