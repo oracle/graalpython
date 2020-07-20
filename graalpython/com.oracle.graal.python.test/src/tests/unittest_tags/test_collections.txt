@@ -35,6 +35,7 @@
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_defaults
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_factory
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_factory_doc_attr
+*graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_field_doc
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_field_doc_reuse
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_instance
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_keyword_only_arguments

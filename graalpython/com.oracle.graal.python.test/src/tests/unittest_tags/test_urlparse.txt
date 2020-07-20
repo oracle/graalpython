@@ -27,10 +27,12 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_qs
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_qsl
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_quote_errors
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_quote_from_bytes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_result_pairs
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_telurl_params
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_unparse_parse
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urldefrag
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlencode_quote_via
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlencode_sequences
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urljoins
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_usingsys

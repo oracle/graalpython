@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_bytearray_extend_error
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_bytearray_translate
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_callable
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_chr
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_cmp
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_compile_async_generator
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_compile_top_level_await
@@ -30,6 +31,7 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_pow
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_repr
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_round_large
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_setattr
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_type
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_bad_iterable

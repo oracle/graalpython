@@ -71,11 +71,14 @@
 *graalpython.lib-python.3.test.test_decimal.PyExplicitConstructionTest.test_from_legacy_strings
 *graalpython.lib-python.3.test.test_decimal.PyExplicitConstructionTest.test_unicode_digits
 *graalpython.lib-python.3.test.test_decimal.PyFormatTest.test_decimal_from_float_argument_type
+*graalpython.lib-python.3.test.test_decimal.PyFormatTest.test_formatting
+*graalpython.lib-python.3.test.test_decimal.PyFormatTest.test_n_format
 *graalpython.lib-python.3.test.test_decimal.PyFormatTest.test_wide_char_separator_decimal_point
 *graalpython.lib-python.3.test.test_decimal.PyImplicitConstructionTest.test_implicit_from_Decimal
 *graalpython.lib-python.3.test.test_decimal.PyImplicitConstructionTest.test_implicit_from_None
 *graalpython.lib-python.3.test.test_decimal.PyImplicitConstructionTest.test_implicit_from_float
 *graalpython.lib-python.3.test.test_decimal.PyImplicitConstructionTest.test_implicit_from_string
+*graalpython.lib-python.3.test.test_decimal.PyImplicitConstructionTest.test_rop
 *graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_abc
 *graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_create_decimal_from_float
 *graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_exception_hierarchy

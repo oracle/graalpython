@@ -9,11 +9,13 @@
 *graalpython.lib-python.3.test.test_wsgiref.HeaderTests.testRequireList
 *graalpython.lib-python.3.test.test_wsgiref.IntegrationTests.test_interrupted_write
 *graalpython.lib-python.3.test.test_wsgiref.IntegrationTests.test_request_length
+*graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testAppURIs
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testCrossDefaults
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testDefaults
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testFileWrapper
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testGuessScheme
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testHopByHop
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testNormalizedShifts
+*graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testReqURIs
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.testSimpleShifts
 *graalpython.lib-python.3.test.test_wsgiref.UtilityTests.test_filewrapper_getitem_deprecation

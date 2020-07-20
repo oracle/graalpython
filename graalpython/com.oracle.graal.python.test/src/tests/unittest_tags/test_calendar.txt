@@ -43,6 +43,7 @@
 *graalpython.lib-python.3.test.test_calendar.OutputTestCase.test_prmonth
 *graalpython.lib-python.3.test.test_calendar.OutputTestCase.test_prweek
 *graalpython.lib-python.3.test.test_calendar.OutputTestCase.test_pryear
+*graalpython.lib-python.3.test.test_calendar.OutputTestCase.test_yeardatescalendar
 *graalpython.lib-python.3.test.test_calendar.OutputTestCase.test_yeardayscalendar
 *graalpython.lib-python.3.test.test_calendar.SundayTestCase.test_april
 *graalpython.lib-python.3.test.test_calendar.SundayTestCase.test_december

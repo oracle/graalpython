@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_weakset.TestWeakSet.test_eq
 *graalpython.lib-python.3.test.test_weakset.TestWeakSet.test_gc
 *graalpython.lib-python.3.test.test_weakset.TestWeakSet.test_gt
+*graalpython.lib-python.3.test.test_weakset.TestWeakSet.test_hash
 *graalpython.lib-python.3.test.test_weakset.TestWeakSet.test_init
 *graalpython.lib-python.3.test.test_weakset.TestWeakSet.test_ior
 *graalpython.lib-python.3.test.test_weakset.TestWeakSet.test_isdisjoint

@@ -1,7 +1,9 @@
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_descriptor_errors_propagate
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_dont_clear_dict
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_missing_getattr
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_module_getattr
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_module_getattr_errors
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_module_getattr_tricky
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_no_docstring
+*graalpython.lib-python.3.test.test_module.ModuleTests.test_uninitialized_missing_getattr
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_weakref

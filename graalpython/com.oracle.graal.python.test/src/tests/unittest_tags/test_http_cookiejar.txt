@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_domain_match
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_domain_mirror
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_domain_return_ok
+*graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_escape_path
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_expires
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_is_HDN
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_missing_final_slash
@@ -62,4 +63,7 @@
 *graalpython.lib-python.3.test.test_http_cookiejar.LWPCookieTests.test_netscape_example_1
 *graalpython.lib-python.3.test.test_http_cookiejar.LWPCookieTests.test_netscape_example_2
 *graalpython.lib-python.3.test.test_http_cookiejar.LWPCookieTests.test_netscape_misc
+*graalpython.lib-python.3.test.test_http_cookiejar.LWPCookieTests.test_rejection
 *graalpython.lib-python.3.test.test_http_cookiejar.LWPCookieTests.test_session_cookies
+*graalpython.lib-python.3.test.test_http_cookiejar.LWPCookieTests.test_url_encoding
+*graalpython.lib-python.3.test.test_http_cookiejar.TestMain.test_main
