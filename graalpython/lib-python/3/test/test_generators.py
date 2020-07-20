@@ -46,6 +46,7 @@ class SignalAndYieldFromTest(unittest.TestCase):
 
 class FinalizationTest(unittest.TestCase):
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_frame_resurrect(self):
         # A generator frame can be resurrected by a generator's finalization.
         def gen():
@@ -65,6 +66,7 @@ class FinalizationTest(unittest.TestCase):
         del frame
         support.gc_collect()
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_refcycle(self):
         # A generator caught in a refcycle gets finalized anyway.
         old_garbage = gc.garbage[:]

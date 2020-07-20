@@ -110,6 +110,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -197,6 +198,29 @@ public class TypeBuiltins extends PythonBuiltins {
         Object doit(Object object,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "mro", "type", object);
+        }
+    }
+
+    @Builtin(name = __INIT__, takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonVarargsBuiltinNode {
+        @Child private SplitArgsNode splitArgsNode;
+
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (splitArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                splitArgsNode = insert(SplitArgsNode.create());
+            }
+            return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
+        }
+
+        @Specialization
+        Object init(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] kwds) {
+            if (arguments.length != 1 && arguments.length != 3) {
+                throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type.__init__()", 1, 3);
+            }
+            return PNone.NONE;
         }
     }
 
@@ -358,25 +382,19 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
                 Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
                 if (isSubType(newInstanceKlass, self)) {
-                    if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
-                        // do not call init if we are creating a new instance of type and we are
-                        // passing keywords or more than one argument see:
-                        // https://github.com/python/cpython/blob/2102c789035ccacbac4362589402ac68baa2cd29/Objects/typeobject.c#L3538
-                    } else {
-                        Object initMethod = lookupInit.execute(frame, newInstanceKlass, newInstance);
-                        if (initMethod != PNone.NO_VALUE) {
-                            Object[] initArgs;
-                            if (doCreateArgs) {
-                                initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
-                            } else {
-                                // XXX: (tfel) is this valid? I think it should be fine...
-                                arguments[0] = newInstance;
-                                initArgs = arguments;
-                            }
-                            Object initResult = dispatchInit.execute(frame, initMethod, initArgs, keywords);
-                            if (initResult != PNone.NONE && initResult != PNone.NO_VALUE) {
-                                throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
-                            }
+                    Object initMethod = lookupInit.execute(frame, newInstanceKlass, newInstance);
+                    if (initMethod != PNone.NO_VALUE) {
+                        Object[] initArgs;
+                        if (doCreateArgs) {
+                            initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
+                        } else {
+                            // XXX: (tfel) is this valid? I think it should be fine...
+                            arguments[0] = newInstance;
+                            initArgs = arguments;
+                        }
+                        Object initResult = dispatchInit.execute(frame, initMethod, initArgs, keywords);
+                        if (initResult != PNone.NONE && initResult != PNone.NO_VALUE) {
+                            throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
                         }
                     }
                 }

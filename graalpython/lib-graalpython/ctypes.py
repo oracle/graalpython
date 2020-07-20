@@ -52,7 +52,12 @@ class CDLL(object):
     Calling the functions releases the Python GIL during the call and
     reacquires it afterwards.
     """
-    pass
+    def __init__(self, name, mode=0, handle=None,
+                 use_errno=False,
+                 use_last_error=False):
+        # TODO
+        pass
+
 
 
 # Dummy classes:
@@ -132,7 +137,8 @@ class py_object(_SimpleCData):
 
 
 class _CFuncPtr():
-    pass
+    def __init__(self, value):
+        self.value = value
 
 
 _c_functype_cache = {}
@@ -173,7 +179,8 @@ def CFUNCTYPE(restype, *argtypes, **kw):
 
 
 class _Pointer():
-    pass
+    def __init__(self, value):
+        self.value = value
 
 
 def POINTER(basetype):
