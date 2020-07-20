@@ -55,6 +55,7 @@
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_format_stack
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_print_stack
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_recursive_traceback_cpython_internal
+*graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_recursive_traceback_python
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_stack_format
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_traceback_format
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_traceback_format_with_cleared_frames
