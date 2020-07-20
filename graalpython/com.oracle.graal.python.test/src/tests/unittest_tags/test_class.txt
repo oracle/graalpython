@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_class.ClassTests.testBadTypeReturned
 *graalpython.lib-python.3.test.test_class.ClassTests.testBinaryOps
 *graalpython.lib-python.3.test.test_class.ClassTests.testConstructorErrorMessages
+*graalpython.lib-python.3.test.test_class.ClassTests.testDel
 *graalpython.lib-python.3.test.test_class.ClassTests.testForExceptionsRaisedInInstanceGetattr2
 *graalpython.lib-python.3.test.test_class.ClassTests.testGetSetAndDel
 *graalpython.lib-python.3.test.test_class.ClassTests.testHashStuff
