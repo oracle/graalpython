@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -38,6 +39,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -46,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -106,7 +107,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
+            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)", limit = "3")
@@ -115,12 +116,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static int hashCode(Object self) {
-            return self.hashCode();
+            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
         }
 
         @TruffleBoundary

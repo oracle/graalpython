@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -135,12 +136,7 @@ public class MethodBuiltins extends PythonBuiltins {
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameAttrNode,
                         @Cached GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return strFormat("<bound method %s of %s object at 0x%x>", getNameAttrNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static int hashCode(PMethod self) {
-            return self.hashCode();
+            return strFormat("<bound method %s of %s object at 0x%x>", getNameAttrNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
         }
 
         @TruffleBoundary

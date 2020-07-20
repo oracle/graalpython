@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_class.ClassTests.testDel
 *graalpython.lib-python.3.test.test_class.ClassTests.testForExceptionsRaisedInInstanceGetattr2
 *graalpython.lib-python.3.test.test_class.ClassTests.testGetSetAndDel
+*graalpython.lib-python.3.test.test_class.ClassTests.testHashComparisonOfMethods
 *graalpython.lib-python.3.test.test_class.ClassTests.testHashStuff
 *graalpython.lib-python.3.test.test_class.ClassTests.testInit
 *graalpython.lib-python.3.test.test_class.ClassTests.testListAndDictOps
