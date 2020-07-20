@@ -51,6 +51,7 @@
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_format_exception_only_bad__str__
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_nocaret
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_print_exception
+*graalpython.lib-python.3.test.test_traceback.TracebackCases.test_print_traceback_at_exit
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_format_stack
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_print_stack
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_recursive_traceback_cpython_internal

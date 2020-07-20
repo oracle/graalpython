@@ -175,6 +175,7 @@ class TracebackCases(unittest.TestCase):
         do_test("x=0\n# coding: GBK\n", "h\xe9 ho", 'utf-8', 5)
 
     @support.requires_type_collecting
+    @support.impl_detail("finalization", graalvm=False)
     def test_print_traceback_at_exit(self):
         # Issue #22599: Ensure that it is possible to use the traceback module
         # to display an exception at Python exit
