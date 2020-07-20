@@ -346,8 +346,11 @@ class TestCase(object):
         get_fixture_values(self, _fixture_marks)
 
         try:
-            for arg_vec in fixture_args:
-                func(*arg_vec)
+            if fixture_args:
+                for arg_vec in fixture_args:
+                    func(*arg_vec)
+            else:
+                func()                
         except BaseException as e:
             if isinstance(e, SkipTest):
                 print("Skipped: %s" % e)
