@@ -1450,15 +1450,12 @@ def python_coverage(args):
                     "--experimental-options",
                     "--coverage",
                     "--coverage.TrackInternal",
-                    "--coverage.FilterFile=%s/lib-*python/*.%s" % (prefix, pattern),
+                    "--coverage.FilterFile=*/lib-*/*.%s" % pattern,
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=%s" % outfile,
                 ]
                 env = os.environ.copy()
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
-                # run all our tests in the dev-home, so that lcov has consistent paths
-                # TODO tests with virtualenv won't pick this up
-                env['PYTHONPATH'] = f"{os.path.join(_dev_pythonhome(), 'lib-python/3')}:{os.path.join(_dev_pythonhome(), 'lib-graalpython')}"
                 if kwds.pop("tagged", False):
                     run_tagged_unittests(executable, env=env)
                 else:
@@ -1499,9 +1496,16 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     f.name
                 ])
 
+        home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'jre/languages/python')
         # merge all generated lcov files
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov") and os.path.getsize(f):
+                # Normalize lib-graalpython path
+                with open(f) as lcov_file:
+                    lcov = lcov_file.read()
+                lcov = lcov.replace(home_launcher, prefix)
+                with open(f, 'w') as lcov_file:
+                    lcov_file.write(lcov)
                 cmdargs += ["-a", f]
 
         mx.run(cmdargs)
