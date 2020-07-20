@@ -132,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -177,12 +178,17 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
         Object doit(Object klass,
-                        @Cached("create()") TypeNodes.GetMroNode getMroNode) {
-            return factory().createTuple(getMroNode.execute(klass));
+                        @Cached("create()") TypeNodes.GetMroNode getMroNode,
+                        @Cached TypeNodes.GetMroStorageNode getMroStorageNode) {
+            if (klass instanceof PythonManagedClass && !getMroStorageNode.execute(klass).isInitialized()) {
+                return PNone.NONE;
+            }
+            PythonAbstractClass[] mro = getMroNode.execute(klass);
+            return factory().createTuple(mro);
         }
     }
 
-    @Builtin(name = "mro", minNumOfPositionalArgs = 1)
+    @Builtin(name = MRO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization(guards = "lib.isLazyPythonClass(klass)")
@@ -196,7 +202,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!lib.isLazyPythonClass(object)")
         Object doit(Object object,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "mro", "type", object);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, MRO, "type", object);
         }
     }
 

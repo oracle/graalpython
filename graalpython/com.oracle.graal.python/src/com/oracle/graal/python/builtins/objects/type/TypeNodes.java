@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
@@ -90,15 +91,18 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -232,7 +236,11 @@ public abstract class TypeNodes {
         public abstract MroSequenceStorage execute(Object obj);
 
         @Specialization
-        static MroSequenceStorage doPythonClass(PythonManagedClass obj) {
+        static MroSequenceStorage doPythonClass(PythonManagedClass obj,
+                        @Cached("createBinaryProfile()") ConditionProfile notInitialized) {
+            if (!notInitialized.profile(obj.getMethodResolutionOrder().isInitialized())) {
+                obj.getMethodResolutionOrder().setInternalArrayObject(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
+            }
             return obj.getMethodResolutionOrder();
         }
 
@@ -277,7 +285,7 @@ public abstract class TypeNodes {
         @TruffleBoundary
         static MroSequenceStorage doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
-                return ((PythonManagedClass) obj).getMethodResolutionOrder();
+                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached());
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
@@ -1085,13 +1093,28 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static PythonAbstractClass[] doSlowPath(PythonAbstractClass cls) {
-            return computeMethodResolutionOrder(cls);
+            return doSlowPath(cls, true);
         }
 
-        private static PythonAbstractClass[] computeMethodResolutionOrder(PythonAbstractClass cls) {
+        @TruffleBoundary
+        public static PythonAbstractClass[] doSlowPath(PythonAbstractClass cls, boolean invokeMro) {
+            return computeMethodResolutionOrder(cls, invokeMro);
+        }
+
+        private static PythonAbstractClass[] computeMethodResolutionOrder(PythonAbstractClass cls, boolean invokeMro) {
             CompilerAsserts.neverPartOfCompilation();
 
             PythonAbstractClass[] currentMRO = null;
+
+            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(cls);
+            if (invokeMro) {
+                if (type instanceof LazyPythonClass) {
+                    PythonAbstractClass[] typeMRO = getMRO((LazyPythonClass) type, cls);
+                    if (typeMRO != null) {
+                        return typeMRO;
+                    }
+                }
+            }
 
             PythonAbstractClass[] baseClasses = GetBaseClassesNodeGen.getUncached().execute(cls);
             if (baseClasses.length == 0) {
@@ -1119,6 +1142,40 @@ public abstract class TypeNodes {
                 currentMRO = mergeMROs(toMerge, mro);
             }
             return currentMRO;
+        }
+
+        private static PythonAbstractClass[] getMRO(LazyPythonClass type, PythonAbstractClass cls) {
+            if (type instanceof PythonClass) {
+                Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, MRO);
+                if (mroMeth instanceof PFunction) {
+                    Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
+                    if (mroObj instanceof PSequence) {
+                        return mroCheck(cls, ((PSequence) mroObj).getSequenceStorage().getInternalArray());
+                    }
+                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, cls);
+                }
+            }
+            return null;
+        }
+
+        private static PythonAbstractClass[] mroCheck(LazyPythonClass cls, Object[] mro) {
+            List<PythonAbstractClass> resultMro = new ArrayList<>(mro.length);
+            for (int i = 0; i < mro.length; i++) {
+                Object object = mro[i];
+                if (object == null) {
+                    continue;
+                }
+                if (!PythonObjectLibrary.getUncached().isLazyPythonClass(object)) {
+                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.S_RETURNED_NON_CLASS, "mro()", object);
+                }
+                if (!IsSubtypeNode.getUncached().execute(cls, object)) {
+                    // XXX typeobject.c/mro_check() does !PyType_IsSubtype(solid, solid_base(base))
+                    // could reuse GetBestBaseClassNode.solidBase(), but need frame for that
+                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT, "mro()", object);
+                }
+                resultMro.add((PythonAbstractClass) object);
+            }
+            return resultMro.toArray(new PythonAbstractClass[resultMro.size()]);
         }
 
         private static PythonAbstractClass[] mergeMROs(MROMergeState[] toMerge, List<PythonAbstractClass> mro) {

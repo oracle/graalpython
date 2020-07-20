@@ -65,7 +65,7 @@ def test_base():
     assert C.__base__ == B
 
     #-----------------------------------------------
-    
+
     class A(object):
         pass
 
@@ -79,9 +79,9 @@ def test_base():
 
     C = type('C', (B, int), {'spam': lambda self: 'spam%s' % self})
     assert C.__base__ == int
-    
+
     #-----------------------------------------------
-    
+
     class A (object): pass
 
     class BB (A): pass
@@ -96,7 +96,7 @@ def test_base():
     assert D.__base__ == C
 
     #-----------------------------------------------
-    
+
     class A: pass
 
     class B: pass
@@ -110,7 +110,7 @@ def test_base():
     assert B.__subclasses__() == [C]
 
     #-----------------------------------------------
-    
+
     class A: pass
 
     class B: pass
@@ -133,7 +133,7 @@ def test_base():
     assert B.__subclasses__() == [C]    
 
     #-----------------------------------------------
-    
+
 #    class A: pass
 #
 #    class B: pass
@@ -155,5 +155,16 @@ def test_namespace_with_non_string_keys():
     A = type('A', (), {
         MyStr("x"): 42
     })
-    assert A.x == 42
     assert any(type(k) == MyStr for k in A.__dict__.keys())
+
+def test_mro():
+    class M(type):
+        def mro(cls):
+            assert type.mro(cls) == [cls, A, B, object]
+            return [cls, B, A, object]
+
+    class A: pass
+    class B: pass
+    class C(A, B, metaclass = M): pass
+
+    assert C.__mro__ == (C, B, A, object)

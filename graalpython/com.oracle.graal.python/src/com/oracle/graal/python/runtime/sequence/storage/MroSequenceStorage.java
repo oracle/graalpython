@@ -73,6 +73,8 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] values;
 
+    @CompilationFinal private boolean initialized = false;
+
     @TruffleBoundary
     public MroSequenceStorage(String className, PythonAbstractClass[] elements) {
         this.className = className;
@@ -256,6 +258,14 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         this.values = classArray;
         this.length = classArray.length;
         this.capacity = classArray.length;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    public boolean setInitialized() {
+        return initialized = true;
     }
 
     @Override
