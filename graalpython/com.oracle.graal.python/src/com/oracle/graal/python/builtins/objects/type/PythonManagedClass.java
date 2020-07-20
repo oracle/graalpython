@@ -25,10 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -52,9 +48,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 
-public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
-    private final String className;
+public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
 
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
 
@@ -63,6 +59,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
     private final Shape instanceShape;
     private final FlagsContainer flags;
+    private String name;
+    private String qualName;
 
     /** {@code true} if the MRO contains a native class. */
     private final boolean needsNativeAllocation;
@@ -71,7 +69,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @TruffleBoundary
     protected PythonManagedClass(Object typeClass, DynamicObject storage, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
         super(typeClass, storage);
-        this.className = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
 
@@ -88,9 +85,10 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         this.methodResolutionOrder.setInitialized();
         this.needsNativeAllocation = computeNeedsNativeAllocation();
 
-        setAttribute(__NAME__, getBaseName(name));
-        setAttribute(__QUALNAME__, className);
+        this.name = getBaseName(name);
+        this.qualName = name;
         setAttribute(__DOC__, PNone.NONE);
+
         if (instanceShape != null) {
             this.instanceShape = instanceShape;
         } else {
@@ -140,8 +138,20 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return methodResolutionOrder;
     }
 
+    public String getQualName() {
+        return qualName;
+    }
+
+    public void setQualName(String qualName) {
+        this.qualName = qualName;
+    }
+
     public String getName() {
-        return className;
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     private boolean computeNeedsNativeAllocation() {
@@ -228,7 +238,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("<class '%s'>", className);
+        return String.format("<class '%s'>", qualName);
     }
 
     public PythonAbstractClass[] getBaseClasses() {

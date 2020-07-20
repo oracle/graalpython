@@ -103,20 +103,21 @@ public class ModuleBuiltins extends PythonBuiltins {
     public abstract static class ModuleReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object repr(PythonModule self,
-                           @CachedLibrary(limit = "1") InteropLibrary lib,
-                           @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             // PyObject_CallMethod(interp->importlib, "_module_repr", "O", m);
             PythonModule builtins = context.getCore().getBuiltins();
             try {
                 Object __import__ = lib.readMember(builtins, "__import__");
-                Object module_repr = importFrom( __import__, "importlib._bootstrap", "_module_repr", lib);
+                Object module_repr = importFrom(__import__, "importlib._bootstrap", "_module_repr", lib);
                 return lib.execute(module_repr, self);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 return self.toString();
             }
         }
 
-        private Object importFrom(Object importBuiltinFunction, String moduleName, String from, InteropLibrary lib) throws UnsupportedTypeException, ArityException, UnsupportedMessageException, UnknownIdentifierException {
+        private Object importFrom(Object importBuiltinFunction, String moduleName, String from, InteropLibrary lib)
+                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException, UnknownIdentifierException {
             Object _bootstrap = lib.execute(importBuiltinFunction, moduleName, PNone.NONE, PNone.NONE, factory().createList(new Object[]{from}));
             return lib.readMember(_bootstrap, from);
         }

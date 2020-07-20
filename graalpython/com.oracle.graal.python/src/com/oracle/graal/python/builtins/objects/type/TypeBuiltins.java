@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
@@ -79,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -820,9 +822,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode getName) {
-            return getName.execute(cls, __NAME__);
+        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getName();
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -836,9 +837,28 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object setName(PythonClass cls, String value) {
+            if (containsNullCharacter(value)) {
+                throw raise(PythonBuiltinClassType.ValueError, "type name must not contain null characters");
+            }
+            cls.setName(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)", "isBuiltinString(value, profile)"}, limit = "1")
+        Object setName(PythonClass cls, PString value,
+                        @Cached.Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
+            if (containsNullCharacter(value)) {
+                throw raise(PythonBuiltinClassType.ValueError, "type name must not contain null characters");
+            }
+            cls.setName(value.getValue());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)", "!isBuiltinString(value, profile)"}, limit = "1")
         Object setName(PythonClass cls, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, __NAME__, value);
+                        @Cached.Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
+            throw raise(PythonBuiltinClassType.TypeError, "can only assign string to %p.__name__, not '%p'", cls, value);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -928,13 +948,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
+            return cls.getQualName();
         }
 
         @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode getName) {
-            return getName.execute(cls, __QUALNAME__);
+        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getQualName();
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -943,9 +962,22 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object setName(PythonClass cls, String value) {
+            cls.setQualName(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)", "isBuiltinString(value, profile)"}, limit = "1")
+        Object setName(PythonClass cls, PString value,
+                        @Cached.Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
+            cls.setQualName(value.getValue());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)", "!isBuiltinString(value, profile)"}, limit = "1")
         Object setName(PythonClass cls, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, __QUALNAME__, value);
+                        @Cached.Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
+            throw raise(PythonBuiltinClassType.TypeError, "can only assign string to %p.__qualname__, not '%p'", cls, value);
         }
 
         @Specialization(guards = "isNoValue(value)")

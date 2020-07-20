@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import com.oracle.truffle.api.CompilerDirectives;
+
 public final class StringUtils {
     public enum StripKind {
         LEFT,
@@ -198,5 +200,14 @@ public final class StringUtils {
         }
 
         return str.substring(i, j);
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public static boolean containsNullCharacter(String value) {
+        return value.indexOf(0) > 0;
+    }
+
+    public static boolean containsNullCharacter(PString value) {
+        return containsNullCharacter(value.getValue());
     }
 }
