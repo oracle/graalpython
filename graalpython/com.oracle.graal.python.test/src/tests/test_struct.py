@@ -140,3 +140,8 @@ def test_pack_unpack():
             _bytes = struct.pack(_fmt, val)
             _res = struct.unpack(_fmt, _bytes)[0]
             assert _res == res, "({}), {} != {}".format(_fmt, _res, res)
+
+
+def test_pack_nan():
+    import math
+    assert struct.pack('<d', math.nan) == b'\x00\x00\x00\x00\x00\x00\xf8\x7f'
