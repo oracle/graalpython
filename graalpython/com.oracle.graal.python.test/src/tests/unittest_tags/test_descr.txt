@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_abstractmethods
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_altmro
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_assign_slice
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_binary_operator_override
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_bpo25750
@@ -36,6 +37,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_multiple_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mutable_bases
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mutable_bases_catch_mro_conflict
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mutable_bases_with_failing_mro
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_mutable_names
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_newslots
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_not_implemented
