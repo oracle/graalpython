@@ -476,7 +476,7 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Coerces the receiver into an index just like {@code PyNumber_AsIndex}.
+     * Coerces the receiver into an index just like {@code PyNumber_Index}.
      *
      * Return a Python int from the receiver. Raise TypeError if the result is not an int or if the
      * object cannot be interpreted as an index.

@@ -38,40 +38,85 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.iterator;
+
+import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
-/**
- * Casts a Python integer to a Java int, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * isn't possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
+public final class PBigRangeIterator extends PBuiltinIterator {
+    private final PInt start;
+    private final PInt step;
+    private final PInt len;
 
-    public static CastToJavaIntLossyNode create() {
-        return CastToJavaIntLossyNodeGen.create();
+    private BigInteger longIndex;
+
+    public PBigRangeIterator(Object clazz, DynamicObject storage, PInt start, PInt step, PInt len) {
+        super(clazz, storage);
+        this.start = start;
+        this.step = step;
+        this.len = len;
+
+        this.longIndex = BigInteger.ZERO;
     }
 
-    public static CastToJavaIntLossyNode getUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
+    @TruffleBoundary
+    public BigInteger getLength() {
+        return this.len.subtract(this.longIndex);
     }
 
-    @Specialization
-    protected int toInt(long x) {
-        int i = (int) x;
-        return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+    @TruffleBoundary
+    public BigInteger nextBigInt() {
+        BigInteger nextVal = start.add(longIndex.multiply(step.getValue()));
+        this.longIndex = longIndex.add(BigInteger.ONE);
+        return nextVal;
     }
 
-    @Specialization
-    protected int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (ArithmeticException e) {
-            // return min or max int
-        }
-        return !x.isNegative() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    @TruffleBoundary
+    public boolean hasNextBigInt() {
+        return longIndex.compareTo(len.getValue()) < 0;
+    }
+
+    public BigInteger next() {
+        return nextBigInt();
+    }
+
+    public boolean hasNext() {
+        return hasNextBigInt();
+    }
+
+    public PInt getStart() {
+        return start;
+    }
+
+    public PInt getLen() {
+        return len;
+    }
+
+    public PInt getStep() {
+        return step;
+    }
+
+    public PInt getReduceStart() {
+        return start;
+    }
+
+    public PInt getReduceStop(PythonObjectFactory factory) {
+        return factory.createInt(start.add(len.multiply(step)));
+    }
+
+    public PInt getReduceStep() {
+        return step;
+    }
+
+    public PInt getLongIndex(PythonObjectFactory factory) {
+        return factory.createInt(longIndex);
+    }
+
+    public void setLongIndex(BigInteger idx) {
+        this.longIndex = idx;
     }
 }

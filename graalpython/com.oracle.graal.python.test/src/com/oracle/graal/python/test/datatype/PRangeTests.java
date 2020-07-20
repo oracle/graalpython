@@ -28,6 +28,7 @@ package com.oracle.graal.python.test.datatype;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 import static org.junit.Assert.assertEquals;
 
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,7 +68,7 @@ public class PRangeTests {
 
     @Test
     public void loopWithOnlyStop() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.getUncached().createRange(10);
+        PRange range = PythonObjectFactory.getUncached().createIntRange(10);
         int index = 0;
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
         GetIteratorNode getIter = GetIteratorNode.create();
@@ -91,7 +92,7 @@ public class PRangeTests {
 
     @Test
     public void loopWithStep() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.getUncached().createRange(0, 10, 2);
+        PRange range = PythonObjectFactory.getUncached().createIntRange(0, 10, 2, 5);
         int index = 0;
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
         GetIteratorNode getIter = GetIteratorNode.create();
@@ -115,8 +116,8 @@ public class PRangeTests {
 
     @Test
     public void getItem() {
-        PRange range = PythonObjectFactory.getUncached().createRange(10);
-        assertEquals(3, range.getItemNormalized(3));
+        PIntRange range = PythonObjectFactory.getUncached().createIntRange(10);
+        assertEquals(3, range.getIntItemNormalized(3));
     }
 
     @Test

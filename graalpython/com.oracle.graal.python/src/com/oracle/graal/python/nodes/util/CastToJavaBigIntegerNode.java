@@ -40,38 +40,70 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
+import java.math.BigInteger;
+
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
-/**
- * Casts a Python integer to a Java int, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * isn't possible, the node will throw a {@link CannotCastException}.
- */
+@TypeSystemReference(PythonArithmeticTypes.class)
 @GenerateUncached
-public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
+@ImportStatic(MathGuards.class)
+public abstract class CastToJavaBigIntegerNode extends Node {
+    public abstract BigInteger execute(boolean x);
 
-    public static CastToJavaIntLossyNode create() {
-        return CastToJavaIntLossyNodeGen.create();
-    }
+    public abstract BigInteger execute(int x);
 
-    public static CastToJavaIntLossyNode getUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
+    public abstract BigInteger execute(long x);
+
+    public abstract BigInteger execute(Object x);
+
+    @Specialization
+    @TruffleBoundary
+    protected BigInteger fromBoolean(boolean x) {
+        return x ? BigInteger.ONE : BigInteger.ZERO;
     }
 
     @Specialization
-    protected int toInt(long x) {
-        int i = (int) x;
-        return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+    @TruffleBoundary
+    protected BigInteger fromInt(int x) {
+        return BigInteger.valueOf(x);
     }
 
     @Specialization
-    protected int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (ArithmeticException e) {
-            // return min or max int
+    @TruffleBoundary
+    protected BigInteger fromLong(long x) {
+        return BigInteger.valueOf(x);
+    }
+
+    @Specialization
+    protected BigInteger fromPInt(PInt x) {
+        return x.getValue();
+    }
+
+    @Specialization
+    protected BigInteger generic(Object x,
+                    @Cached PRaiseNode raise,
+                    @Cached CastToJavaBigIntegerNode rec,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary pol) {
+        if (pol.canBeIndex(x)) {
+            return rec.execute(pol.asPInt(x));
         }
-        return !x.isNegative() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+        CompilerDirectives.transferToInterpreter();
+        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, pol.getLazyPythonClass(x));
     }
 }

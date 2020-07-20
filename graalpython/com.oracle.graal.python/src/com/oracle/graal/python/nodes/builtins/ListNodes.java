@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -177,7 +178,7 @@ public abstract class ListNodes {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IndexNode extends PNodeWithContext {
         @Child private PRaiseNode raise;
-        private static final String DEFAULT_ERROR_MSG = "list indices must be integers or slices, not %p";
+        private static final String DEFAULT_ERROR_MSG = "list " + ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES;
         @Child LookupAndCallUnaryNode getIndexNode;
         private final CheckType checkType;
         private final String errorMessage;

@@ -38,40 +38,81 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.range;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-/**
- * Casts a Python integer to a Java int, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * isn't possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
+@ExportLibrary(PythonObjectLibrary.class)
+public final class PIntRange extends PRange {
 
-    public static CastToJavaIntLossyNode create() {
-        return CastToJavaIntLossyNodeGen.create();
+    private final int start;
+    private final int stop;
+    private final int step;
+    private final int length;
+
+    public PIntRange(int start, int stop, int step, int length) {
+        this.start = start;
+        this.stop = stop;
+        this.step = step;
+
+        this.length = length;
     }
 
-    public static CastToJavaIntLossyNode getUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
+    @Override
+    public Object getStart() {
+        return getIntStart();
     }
 
-    @Specialization
-    protected int toInt(long x) {
-        int i = (int) x;
-        return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+    @Override
+    public Object getStep() {
+        return getIntStep();
     }
 
-    @Specialization
-    protected int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (ArithmeticException e) {
-            // return min or max int
-        }
-        return !x.isNegative() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    @Override
+    public Object getStop() {
+        return getIntStop();
+    }
+
+    @Override
+    public Object getLength() {
+        return getIntLength();
+    }
+
+    public int getIntStart() {
+        return start;
+    }
+
+    public int getIntStep() {
+        return step;
+    }
+
+    public int getIntStop() {
+        return stop;
+    }
+
+    public int getIntLength() {
+        return length;
+    }
+
+    public int getIntItemNormalized(int index) {
+        assert index < length;
+        return index * step + start;
+    }
+
+    @Override
+    protected boolean withStep() {
+        return step != 1;
+    }
+
+    @ExportMessage
+    public int length() {
+        return length;
+    }
+
+    @ExportMessage
+    public boolean isTrue() {
+        return length != 0;
     }
 }

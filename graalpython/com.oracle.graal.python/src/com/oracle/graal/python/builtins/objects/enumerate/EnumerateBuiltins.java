@@ -46,6 +46,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEnumerate)
 public final class EnumerateBuiltins extends PythonBuiltins {
@@ -61,8 +62,11 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doNext(VirtualFrame frame, PEnumerate self,
+                        @Cached ConditionProfile bigIntIndexProfile,
                         @Cached("create()") GetNextNode next) {
-            return factory().createTuple((new Object[]{self.getAndIncrementIndex(factory()), next.execute(frame, self.getIterator())}));
+            Object index = self.getAndIncrementIndex(factory(), bigIntIndexProfile);
+            Object nextValue = next.execute(frame, self.getIterator());
+            return factory().createTuple((new Object[]{index, nextValue}));
         }
     }
 
@@ -81,8 +85,11 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
         public Object reduce(PEnumerate self,
+                        @Cached ConditionProfile bigIntIndexProfile,
                         @CachedLibrary("self") PythonObjectLibrary pol) {
-            PTuple contents = factory().createTuple(new Object[]{self.getIterator(), self.getIndex()});
+            Object iterator = self.getIterator();
+            Object index = self.getIndex(bigIntIndexProfile);
+            PTuple contents = factory().createTuple(new Object[]{iterator, index});
             return factory().createTuple(new Object[]{pol.getLazyPythonClass(self), contents});
         }
     }

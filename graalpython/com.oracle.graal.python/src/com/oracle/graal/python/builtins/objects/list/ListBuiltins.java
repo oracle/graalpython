@@ -69,13 +69,13 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -209,13 +209,13 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "range.getStep() > 0")
-        PNone listRange(PList list, PRange range) {
+        @Specialization(guards = "range.getIntStep() > 0")
+        PNone listRange(PList list, PIntRange range) {
             clearStorage(list);
-            int start = range.getStart();
-            int stop = range.getStop();
-            int step = range.getStep();
-            int len = range.len();
+            int start = range.getIntStart();
+            int stop = range.getIntStop();
+            int step = range.getIntStep();
+            int len = range.getIntLength();
             int[] ary = new int[len];
             int idx = 0;
             for (int i = start; i < stop; i += step) {
@@ -236,7 +236,7 @@ public class ListBuiltins extends PythonBuiltins {
             Object iterObj = getIteratorNode.executeWith(frame, iterable);
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
-            PRangeIterator range = (PRangeIterator) iterable.getIterator();
+            PIntRangeIterator range = (PIntRangeIterator) iterable.getIterator();
             final int estimatedMaxLen = range.getLength();
             int realLen = 0;
             if (estimatedMaxLen > 0) {

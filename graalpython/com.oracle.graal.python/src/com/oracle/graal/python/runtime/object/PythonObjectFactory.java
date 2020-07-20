@@ -73,12 +73,12 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescri
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
@@ -99,14 +99,16 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
-import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.range.PBigRange;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.reversed.PSequenceReverseIterator;
 import com.oracle.graal.python.builtins.objects.reversed.PStringReverseIterator;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
+import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
@@ -351,24 +353,32 @@ public abstract class PythonObjectFactory extends Node {
         return createComplex(PythonBuiltinClassType.PComplex, real, imag);
     }
 
-    public PRange createRange(int stop) {
-        return trace(new PRange(stop));
+    public PIntRange createIntRange(int stop) {
+        return trace(new PIntRange(0, stop, 1, stop));
     }
 
-    public PRange createRange(int start, int stop) {
-        return trace(new PRange(start, stop));
+    public PIntRange createIntRange(int start, int stop, int step, int len) {
+        return trace(new PIntRange(start, stop, step, len));
     }
 
-    public PRange createRange(int start, int stop, int step) {
-        return trace(new PRange(start, stop, step));
+    public PBigRange createBigRange(BigInteger start, BigInteger stop, BigInteger step, BigInteger len) {
+        return createBigRange(createInt(start), createInt(stop), createInt(step), createInt(len));
     }
 
-    public PRange createRange(PRangeIterator rangeIterator) {
-        return createRange(rangeIterator.getReduceStart(), rangeIterator.getReduceStop(), rangeIterator.getReduceStep());
+    public PBigRange createBigRange(PInt start, PInt stop, PInt step, PInt len) {
+        return trace(new PBigRange(start, stop, step, len));
     }
 
-    public PSlice createSlice(int start, int stop, int step) {
-        return trace(new PSlice(start, stop, step));
+    public PIntSlice createIntSlice(int start, int stop, int step) {
+        return trace(new PIntSlice(start, stop, step));
+    }
+
+    public PIntSlice createIntSlice(int start, int stop, int step, boolean isStartNone, boolean isStepNone) {
+        return trace(new PIntSlice(start, stop, step, isStartNone, isStepNone));
+    }
+
+    public PObjectSlice createObjectSlice(Object start, Object stop, Object step) {
+        return trace(new PObjectSlice(start, stop, step));
     }
 
     public PRandom createRandom(Object cls) {
@@ -745,8 +755,24 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSequenceReverseIterator(cls, makeStorage(cls), sequence, lengthHint));
     }
 
-    public PIntegerIterator createRangeIterator(int start, int stop, int step) {
-        return trace(new PRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, stop, step));
+    public PIntRangeIterator createIntRangeIterator(PIntRange fastRange) {
+        return createIntRangeIterator(fastRange.getIntStart(), fastRange.getIntStep(), fastRange.getIntLength());
+    }
+
+    public PIntRangeIterator createIntRangeIterator(int start, int step, int len) {
+        return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, step, len));
+    }
+
+    public PBigRangeIterator createBigRangeIterator(PInt start, PInt step, PInt len) {
+        return trace(new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.newInstance(), start, step, len));
+    }
+
+    public PBigRangeIterator createBigRangeIterator(PBigRange longRange) {
+        return createBigRangeIterator(longRange.getPIntStart(), longRange.getPIntStep(), longRange.getPIntLength());
+    }
+
+    public PBigRangeIterator createBigRangeIterator(BigInteger start, BigInteger step, BigInteger len) {
+        return createBigRangeIterator(createInt(start), createInt(step), createInt(len));
     }
 
     public PArrayIterator createArrayIterator(PArray array) {

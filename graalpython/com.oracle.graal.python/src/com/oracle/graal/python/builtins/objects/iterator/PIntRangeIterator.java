@@ -38,40 +38,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.object.DynamicObject;
 
-/**
- * Casts a Python integer to a Java int, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * isn't possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
+public final class PIntRangeIterator extends PIntegerIterator {
+    private final int start;
+    private final int step;
+    private final int len;
 
-    public static CastToJavaIntLossyNode create() {
-        return CastToJavaIntLossyNodeGen.create();
+    public PIntRangeIterator(Object clazz, DynamicObject storage, int start, int step, int len) {
+        super(clazz, storage);
+        this.start = start;
+        this.step = step;
+        this.len = len;
     }
 
-    public static CastToJavaIntLossyNode getUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
+    public int getLength() {
+        return this.len - this.index;
     }
 
-    @Specialization
-    protected int toInt(long x) {
-        int i = (int) x;
-        return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+    public int nextInt() {
+        return start + (index++) * step;
     }
 
-    @Specialization
-    protected int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (ArithmeticException e) {
-            // return min or max int
-        }
-        return !x.isNegative() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    public boolean hasNextInt() {
+        return index < len;
+    }
+
+    @Override
+    public int next() {
+        return nextInt();
+    }
+
+    @Override
+    public boolean hasNext() {
+        return hasNextInt();
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public int getLen() {
+        return len;
+    }
+
+    public int getStep() {
+        return step;
+    }
+
+    public int getReduceStart() {
+        return start;
+    }
+
+    public int getReduceStop() {
+        return start + len * step;
+    }
+
+    public int getReduceStep() {
+        return step;
     }
 }

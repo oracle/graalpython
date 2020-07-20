@@ -27,8 +27,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
-import static com.oracle.graal.python.builtins.objects.range.PRange.getLenOfRange;
-import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
+import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
+import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
@@ -59,7 +59,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
@@ -143,7 +145,9 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.range.PBigRange;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
@@ -203,7 +207,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -219,6 +222,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -835,16 +839,31 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
-        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PRange range) {
-            int lstart = range.getStart();
-            int lstop = range.getStop();
-            int lstep = range.getStep();
-            // TODO: handle long range creation
-            int ulen = getLenOfRange(lstart, lstop, lstep);
+        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PIntRange range,
+                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+            int lstart = range.getIntStart();
+            int lstop = range.getIntStop();
+            int lstep = range.getIntStep();
+            int ulen = lenOfRangeNode.len(lstart, lstop, lstep);
             int new_stop = lstart - lstep;
             int new_start = new_stop + ulen * lstep;
 
-            return factory().createRangeIterator(new_start, new_stop, -lstep);
+            return factory().createIntRangeIterator(new_start, -lstep, ulen);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range,
+                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+            BigInteger lstart = range.getBigIntegerStart();
+            BigInteger lstop = range.getBigIntegerStop();
+            BigInteger lstep = range.getBigIntegerStep();
+            BigInteger ulen = (BigInteger) lenOfRangeNode.execute(lstart, lstop, lstep);
+
+            BigInteger new_stop = lstart.subtract(lstep);
+            BigInteger new_start = new_stop.add(ulen.multiply(lstep));
+
+            return factory().createBigRangeIterator(new_start, lstep.negate(), ulen);
         }
 
         @Specialization
@@ -1739,127 +1758,130 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // range(start, stop[, step])
     @Builtin(name = RANGE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PRange)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ReportPolymorphism
     public abstract static class RangeNode extends PythonQuaternaryBuiltinNode {
-
-        @Specialization(guards = "caseStop(start,step)")
-        public PSequence rangeStop(Object cls, int stop, Object start, Object step) {
-            return factory().createRange(stop);
+        // stop
+        @Specialization(guards = "isStop(start, stop, step)")
+        Object doIntStop(Object cls, int stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
+            return doInt(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
         }
 
-        @Specialization(guards = "caseStop(start,step)")
-        public PSequence rangeStop(Object cls, long stop, Object start, Object step) {
-            return factory().createRange(((Long) stop).intValue());
+        @Specialization(guards = "isStop(start, stop, step)")
+        Object doPintStop(Object cls, PInt stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+            return doPint(cls, factory().createInt(0), stop, factory().createInt(1), stepZeroProfile, lenOfRangeNode);
         }
 
-        @Specialization(guards = "caseStop(start,step)")
-        public PSequence rangeStop(Object cls, PInt stop, Object start, Object step) {
-            return factory().createRange(stop.intValue());
+        @Specialization(guards = "isStop(start, stop, step)")
+        Object doGenericStop(Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return doGeneric(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode, pol, lib);
         }
 
-        @Specialization(guards = "caseStartStop(step)")
-        public PSequence rangeStartStop(Object cls, int start, int stop, Object step) {
-            return factory().createRange(start, stop);
+        // start stop
+        @Specialization(guards = "isStartStop(start, stop, step)")
+        Object doIntStartStop(Object cls, int start, int stop, @SuppressWarnings("unused") PNone step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
+            return doInt(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
         }
 
-        @Specialization(guards = "caseStartStop(step)")
-        public PSequence rangeStartStop(Object cls, int start, long stop, Object step) {
-            return factory().createRange(start, ((Long) stop).intValue());
+        @Specialization(guards = "isStartStop(start, stop, step)")
+        Object doPintStartStop(Object cls, PInt start, PInt stop, @SuppressWarnings("unused") PNone step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+            return doPint(cls, start, stop, factory().createInt(1), stepZeroProfile, lenOfRangeNode);
         }
 
-        @Specialization(guards = "caseStartStop(step)")
-        public PSequence rangeStartStop(Object cls, long start, int stop, Object step) {
-            return factory().createRange(((Long) start).intValue(), stop);
+        @Specialization(guards = "isStartStop(start, stop, step)")
+        Object doGenericStartStop(Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return doGeneric(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode, pol, lib);
         }
 
-        @Specialization(guards = "caseStartStop(stop,start,step)")
-        public PSequence rangeStartStop(Object cls, long start, long stop, Object step) {
-            return factory().createRange(((Long) start).intValue(), ((Long) stop).intValue());
+        // start stop step
+        @Specialization
+        Object doInt(@SuppressWarnings("unused") Object cls, int start, int stop, int step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
+            if (stepZeroProfile.profile(step == 0)) {
+                throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+            }
+            try {
+                int len = lenOfRangeNode.len(start, stop, step);
+                return factory().createIntRange(start, stop, step, len);
+            } catch (ArithmeticException e) {
+                exceptionProfile.enter();
+                return createBigRangeNode.execute(start, stop, step, factory());
+            }
         }
 
         @Specialization
-        public PSequence rangeStartStopStep(Object cls, int start, int stop, int step) {
-            return factory().createRange(start, stop, step);
+        Object doPint(@SuppressWarnings("unused") Object cls, PInt start, PInt stop, PInt step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+            if (stepZeroProfile.profile(step.isZero())) {
+                throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+            }
+            BigInteger len = (BigInteger) lenOfRangeNode.execute(start, stop, step);
+            return factory().createBigRange(start, stop, step, factory().createInt(len));
         }
 
-        @Specialization
-        public PSequence rangeStartStopStep(Object cls, long start, long stop, long step) {
-            return factory().createRange((int) start, ((Long) stop).intValue(), ((Long) step).intValue());
-        }
+        @Specialization(guards = "isStartStopStep(start, stop, step)")
+        Object doGeneric(@SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
+            if (canBeInt(start, stop, step, lib)) {
+                return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
+            } else if (canBePint(start, stop, step, pol)) {
+                return createBigRangeNode.execute(start, stop, step, factory());
+            } else {
+                Object lstart = pol.asIndex(start);
+                Object lstop = pol.asIndex(stop);
+                Object lstep = pol.asIndex(step);
 
-        @TruffleBoundary
-        @Specialization(guards = "isNumber(stop)")
-        public PSequence rangeStartStopStep(Object cls, Object start, Object stop, Object step) {
-            if (isNumber(stop)) {
-                int intStop = 0;
-                if (stop instanceof Integer) {
-                    intStop = (int) stop;
-                } else if (stop instanceof Long) {
-                    intStop = ((Long) (stop)).intValue();
+                if (canBeInt(start, stop, step, lib)) {
+                    return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
                 } else {
-                    intStop = ((PInt) stop).intValue();
-                }
-
-                if (start instanceof PNone) {
-                    return factory().createRange(intStop);
-                }
-
-                if (isNumber(start)) {
-                    int intStart = 0;
-                    if (start instanceof Integer) {
-                        intStart = (int) start;
-                    } else if (start instanceof Long) {
-                        intStart = ((Long) (start)).intValue();
-                    } else {
-                        intStart = ((PInt) start).intValue();
-                    }
-
-                    if (step instanceof PNone) {
-                        return factory().createRange(intStart, intStop);
-                    }
-
-                    if (isNumber(step)) {
-                        int intStep = 0;
-                        if (step instanceof Integer) {
-                            intStep = (int) step;
-                        } else if (step instanceof Long) {
-                            intStep = ((Long) (step)).intValue();
-                        } else {
-                            intStep = ((PInt) step).intValue();
-                        }
-
-                        return factory().createRange(intStart, intStop, intStep);
-                    }
+                    return createBigRangeNode.execute(lstart, lstop, lstep, factory());
                 }
             }
-
-            throw raise(TypeError, ErrorMessages.RANGE_DOES_NOT_SUPPORT, start, stop, step);
         }
 
-        @TruffleBoundary
-        @Specialization(guards = "!isNumber(stop)")
-        public PSequence rangeError(Object cls, Object start, Object stop, Object step) {
-            CompilerDirectives.transferToInterpreter();
-            throw raise(TypeError, ErrorMessages.RANGE_DOES_NOT_SUPPORT, start, stop, step);
+        protected boolean isStop(Object start, Object stop, Object step) {
+            return isNoValue(start) && !isNoValue(stop) && isNoValue(step);
         }
 
-        public static boolean isNumber(Object value) {
-            return value instanceof Integer || value instanceof Long || value instanceof PInt;
+        protected boolean isStartStop(Object start, Object stop, Object step) {
+            return !isNoValue(start) && !isNoValue(stop) && isNoValue(step);
         }
 
-        public static boolean caseStop(Object start, Object step) {
-            return start == PNone.NO_VALUE && step == PNone.NO_VALUE;
+        protected boolean isStartStopStep(Object start, Object stop, Object step) {
+            return !isNoValue(start) && !isNoValue(stop) && !isNoValue(step);
         }
-
-        public static boolean caseStartStop(Object step) {
-            return step == PNone.NO_VALUE;
-        }
-
-        public static boolean caseStartStop(long start, long stop, Object step) {
-            return step == PNone.NO_VALUE;
-        }
-
     }
 
     // set([iterable])
@@ -3140,39 +3162,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice)
     @GenerateNodeFactory
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
-        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
-        @SuppressWarnings("unused")
-        Object sliceStop(Object cls, int first, PNone second, PNone third) {
-            return factory().createSlice(MISSING_INDEX, first, MISSING_INDEX);
-        }
-
-        @Specialization(guards = "isNoValue(third)")
-        Object sliceStart(@SuppressWarnings("unused") Object cls, int first, int second, @SuppressWarnings("unused") PNone third) {
-            return factory().createSlice(first, second, MISSING_INDEX);
-        }
-
-        @Specialization
-        Object slice(@SuppressWarnings("unused") Object cls, int first, int second, int third) {
-            return factory().createSlice(first, second, third);
-        }
-
-        @Specialization(guards = "isNoValue(third)")
-        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, @SuppressWarnings("unused") PNone third,
-                        @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, first, second, MISSING_INDEX);
-        }
 
         @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object slice(VirtualFrame frame, Object cls, Object first, PNone second, PNone third,
+        Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, MISSING_INDEX, first, MISSING_INDEX);
+            return sliceNode.execute(frame, PNone.NONE, first, PNone.NONE);
         }
 
-        @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
-        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+        @Specialization(guards = {"!isNoValue(second)", "isNoValue(third)"})
+        @SuppressWarnings("unused")
+        Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, start, stop, step);
+            return sliceNode.execute(frame, first, second, PNone.NONE);
+        }
+
+        @Specialization(guards = {"!isNoValue(second)", "!isNoValue(third)"})
+        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(frame, first, second, third);
         }
     }
 

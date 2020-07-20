@@ -38,40 +38,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.slice;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.PNone;
 
-/**
- * Casts a Python integer to a Java int, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * isn't possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
+public final class PIntSlice extends PSlice {
 
-    public static CastToJavaIntLossyNode create() {
-        return CastToJavaIntLossyNodeGen.create();
+    protected final int start;
+    protected final int stop;
+    protected final int step;
+
+    protected final boolean startIsNone;
+    protected final boolean stepIsNone;
+
+    public PIntSlice(int start, int stop, int step, boolean startIsNone, boolean stepIsNone) {
+        this.start = startIsNone ? 0 : start;
+        this.stop = stop;
+        this.step = stepIsNone ? 1 : step;
+        this.startIsNone = startIsNone;
+        this.stepIsNone = stepIsNone;
     }
 
-    public static CastToJavaIntLossyNode getUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
+    public PIntSlice(int start, int stop, int step) {
+        this(start, stop, step, false, false);
     }
 
-    @Specialization
-    protected int toInt(long x) {
-        int i = (int) x;
-        return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+    public final int getIntStart() {
+        return start;
     }
 
-    @Specialization
-    protected int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (ArithmeticException e) {
-            // return min or max int
-        }
-        return !x.isNegative() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    @Override
+    public final Object getStart() {
+        return startIsNone ? PNone.NONE : start;
+    }
+
+    public final int getIntStop() {
+        return stop;
+    }
+
+    @Override
+    public final Object getStop() {
+        return stop;
+    }
+
+    public final int getIntStep() {
+        return step;
+    }
+
+    public boolean isStartIsNone() {
+        return startIsNone;
+    }
+
+    @Override
+    public final Object getStep() {
+        return stepIsNone ? PNone.NONE : step;
+    }
+
+    public SliceInfo computeIndices(int length) {
+        return computeIndices(getStart(), stop, getStep(), length);
     }
 }

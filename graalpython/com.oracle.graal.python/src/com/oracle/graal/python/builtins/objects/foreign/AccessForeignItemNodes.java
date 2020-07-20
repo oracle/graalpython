@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFa
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -63,6 +64,8 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIterat
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -112,9 +115,9 @@ abstract class AccessForeignItemNodes {
             throw raise(TypeError, ErrorMessages.NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT, foreignSizeObj);
         }
 
-        protected SliceInfo materializeSlice(PSlice idxSlice, Object object, InteropLibrary libForObject) throws UnsupportedMessageException {
+        protected SliceInfo materializeSlice(PSlice idxSlice, Object object, ComputeIndices compute, InteropLibrary libForObject) throws UnsupportedMessageException {
             int foreignSize = getForeignSize(object, libForObject);
-            return idxSlice.computeIndices(foreignSize);
+            return compute.execute(idxSlice, foreignSize);
         }
     }
 
@@ -126,14 +129,17 @@ abstract class AccessForeignItemNodes {
         @Specialization
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached("create()") PythonObjectFactory factory) {
+                        @Cached("create()") PythonObjectFactory factory,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLen) {
             SliceInfo mslice;
             try {
-                mslice = materializeSlice(idxSlice, object, lib);
+                mslice = materializeSlice(sliceCast.execute(idxSlice), object, compute, lib);
             } catch (UnsupportedMessageException e) {
                 throw raiseAttributeError(object);
             }
-            Object[] values = new Object[mslice.length];
+            Object[] values = new Object[sliceLen.len(mslice)];
             for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
                 values[j] = readForeignValue(object, i, lib);
             }
@@ -224,11 +230,13 @@ abstract class AccessForeignItemNodes {
                         @Cached PTypeToForeignNode valueToForeignNode,
                         @Cached BranchProfile unsupportedMessage,
                         @Cached BranchProfile unsupportedType,
-                        @Cached BranchProfile wrongIndex) {
+                        @Cached BranchProfile wrongIndex,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute) {
             Object value;
             SliceInfo mslice;
             try {
-                mslice = materializeSlice(idxSlice, object, lib);
+                mslice = materializeSlice(sliceCast.execute(idxSlice), object, compute, lib);
             } catch (UnsupportedMessageException e) {
                 throw raiseNoSetItem(object);
             }
@@ -331,10 +339,12 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
-                        @CachedLibrary("object") InteropLibrary lib) {
+                        @CachedLibrary("object") InteropLibrary lib,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute) {
 
             try {
-                SliceInfo mslice = materializeSlice(idxSlice, object, lib);
+                SliceInfo mslice = materializeSlice(sliceCast.execute(idxSlice), object, compute, lib);
                 for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
                     removeForeignValue(object, i, lib);
                 }

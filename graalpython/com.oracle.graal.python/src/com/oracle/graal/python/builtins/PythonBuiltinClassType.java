@@ -96,7 +96,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PNone("NoneType"),
     PNotImplemented("NotImplementedType"),
     PRandom("Random", "_random"),
-    PRange("range", BuiltinNames.BUILTINS),
+    PRange("range", BuiltinNames.BUILTINS, false),
     PReferenceType("ReferenceType", "_weakref"),
     PSentinelIterator("callable_iterator"),
     PForeignArrayIterator("foreign_iterator"),

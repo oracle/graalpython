@@ -38,40 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.range;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.truffle.api.interop.InteropLibrary;
 
-/**
- * Casts a Python integer to a Java int, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * isn't possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
-
-    public static CastToJavaIntLossyNode create() {
-        return CastToJavaIntLossyNodeGen.create();
+public final class RangeUtils {
+    public static boolean canBeInt(Object start, Object stop, Object step, InteropLibrary lib) {
+        return lib.fitsInInt(start) && lib.fitsInInt(stop) && lib.fitsInInt(step);
     }
 
-    public static CastToJavaIntLossyNode getUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
+    public static boolean canBePint(Object start, Object stop, Object step, PythonObjectLibrary lib) {
+        return lib.canBePInt(start) && lib.canBePInt(stop) && lib.canBePInt(step);
     }
 
-    @Specialization
-    protected int toInt(long x) {
-        int i = (int) x;
-        return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
-    }
-
-    @Specialization
-    protected int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (ArithmeticException e) {
-            // return min or max int
-        }
-        return !x.isNegative() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    public static boolean canBeIndex(Object start, Object stop, Object step, PythonObjectLibrary lib) {
+        return lib.canBeIndex(start) && lib.canBeIndex(stop) && lib.canBeIndex(step);
     }
 }

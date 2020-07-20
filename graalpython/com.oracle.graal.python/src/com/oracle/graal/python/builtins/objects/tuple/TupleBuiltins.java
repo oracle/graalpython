@@ -355,12 +355,12 @@ public class TupleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
-    @ImportStatic(MathGuards.class)
+    @ImportStatic({MathGuards.class, PGuards.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        private static final String TYPE_ERROR_MESSAGE = "tuple indices must be integers or slices, not %p";
+        private static final String TYPE_ERROR_MESSAGE = "tuple " + ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES;
 
         public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
@@ -386,10 +386,6 @@ public class TupleBuiltins extends PythonBuiltins {
 
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
             return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), TYPE_ERROR_MESSAGE, (s, f) -> f.createTuple(s));
-        }
-
-        protected boolean isPSlice(Object object) {
-            return object instanceof PSlice;
         }
     }
 

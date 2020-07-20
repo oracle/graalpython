@@ -31,63 +31,35 @@ import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
-public class PSlice extends PythonBuiltinObject {
+public abstract class PSlice extends PythonBuiltinObject {
 
-    public static final int MISSING_INDEX = Integer.MIN_VALUE;
-
-    protected int start;
-    protected int stop;
-    protected int step;
-
-    public PSlice(int start, int stop, int step) {
+    public PSlice() {
         super(PythonBuiltinClassType.PSlice, PythonBuiltinClassType.PSlice.newInstance());
-        this.start = start;
-        this.stop = stop;
-        this.step = step;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         StringBuilder str = new StringBuilder("slice(");
-        if (start == MISSING_INDEX) {
-            str.append("None");
-        } else {
-            str.append(start);
-        }
-        str.append(", ");
-        if (stop == MISSING_INDEX) {
-            str.append("None");
-        } else {
-            str.append(stop);
-        }
-        str.append(", ");
-        if (step == MISSING_INDEX) {
-            str.append("None");
-        } else {
-            str.append(step);
-        }
+        str.append(getStart()).append(", ");
+        str.append(getStop()).append(", ");
+        str.append(getStep());
 
         return str.append(")").toString();
     }
 
-    public final int getStart() {
-        return start;
-    }
+    public abstract Object getStart();
 
-    public final int getStop() {
-        return stop;
-    }
+    public abstract Object getStop();
 
-    public final int getStep() {
-        return step;
-    }
+    public abstract Object getStep();
 
     @Override
     public boolean equals(Object obj) {
@@ -98,12 +70,12 @@ public class PSlice extends PythonBuiltinObject {
             return true;
         }
         PSlice other = (PSlice) obj;
-        return (this.start == other.start && this.stop == other.stop && this.step == other.step);
+        return (this.getStart() == other.getStart() && this.getStop() == other.getStop() && this.getStep() == other.getStep());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.start, this.stop, this.step);
+        return Objects.hash(this.getStart(), this.getStop(), this.getStep());
     }
 
     @ValueType
@@ -111,71 +83,99 @@ public class PSlice extends PythonBuiltinObject {
         public final int start;
         public final int stop;
         public final int step;
-        public final int length;
 
-        public SliceInfo(int start, int stop, int step, int length) {
+        public SliceInfo(int start, int stop, int step) {
             this.start = start;
             this.stop = stop;
             this.step = step;
-            this.length = length;
         }
     }
 
-    public SliceInfo computeIndices(int length) {
-        return PSlice.computeIndices(start, stop, step, length);
-
-    }
-
-    public static SliceInfo computeIndices(int startIn, int stopIn, int stepIn, int length) {
-        int tmpStart, tmpStop;
-        int newLen, start, stop, step;
-
-        if (stepIn == MISSING_INDEX) {
-            step = 1;
-        } else if (stepIn == 0) {
+    protected static void checkNegative(int length) {
+        if (length < 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
-        } else {
-            step = stepIn;
+            throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
-        tmpStart = step < 0 ? length - 1 : 0;
-        tmpStop = step < 0 ? -1 : length;
+    }
 
-        if (startIn == MISSING_INDEX) {
-            start = tmpStart;
+    private static final int ONE = 1;
+    private static final int ZERO = 0;
+
+    private static boolean pyLT(int left, int right) {
+        return left < right;
+    }
+
+    private static boolean pyGT(int left, int right) {
+        return left > right;
+    }
+
+    private static int pySign(int n) {
+        return n == 0 ? 0 : n < 0 ? -1 : 1;
+    }
+
+    public static SliceInfo computeIndices(Object startIn, Object stopIn, Object stepIn, int length) {
+        assert length >= 0;
+        boolean stepIsNegative;
+        int lower, upper;
+        int start, stop, step;
+        if (stepIn == PNone.NONE) {
+            step = ONE;
+            stepIsNegative = false;
         } else {
-            start = startIn;
-            if (start < 0) {
-                start += length;
-            }
-            if (start < 0) {
-                start = step < 0 ? -1 : 0;
-            }
-            if (start >= length) {
-                start = step < 0 ? length - 1 : length;
+            step = (int) stepIn;
+            stepIsNegative = pySign(step) < 0;
+            if (pySign(step) == 0) {
+                CompilerDirectives.transferToInterpreter();
+                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
-        if (stopIn == MISSING_INDEX) {
-            stop = tmpStop;
+
+        /* Find lower and upper bounds for start and stop. */
+        if (stepIsNegative) {
+            lower = -1;
+            upper = lower + length;
         } else {
-            stop = stopIn;
-            if (stop < 0) {
-                stop += length;
-            }
-            if (stop < 0) {
-                stop = step < 0 ? -1 : 0;
-            }
-            if (stop >= length) {
-                stop = step < 0 ? length - 1 : length;
+            lower = ZERO;
+            upper = length;
+        }
+
+        /* Compute start. */
+        if (startIn == PNone.NONE) {
+            start = stepIsNegative ? upper : lower;
+        } else {
+            start = (int) startIn;
+            if (pySign(start) < 0) {
+                start = start + length;
+                // PyObject_RichCompareBool(start, lower, Py_LT);
+                if (pyLT(start, lower)) {
+                    start = lower;
+                }
+            } else {
+                // PyObject_RichCompareBool(start, upper, Py_GT);
+                if (pyGT(start, upper)) {
+                    start = upper;
+                }
             }
         }
-        if ((step < 0 && stop >= start) || (step > 0 && start >= stop)) {
-            newLen = 0;
-        } else if (step < 0) {
-            newLen = (stop - start + 1) / step + 1;
+
+        /* Compute stop. */
+        if (stopIn == PNone.NONE) {
+            stop = stepIsNegative ? lower : upper;
         } else {
-            newLen = (stop - start - 1) / step + 1;
+            stop = (int) stopIn;
+            if (pySign(stop) < 0) {
+                stop = stop + length;
+                // PyObject_RichCompareBool(stop, lower, Py_LT);
+                if (pyLT(stop, lower)) {
+                    stop = lower;
+                }
+            } else {
+                // PyObject_RichCompareBool(stop, upper, Py_GT);
+                if (pyGT(stop, upper)) {
+                    stop = upper;
+                }
+            }
         }
-        return new SliceInfo(start, stop, step, newLen);
+        return new SliceInfo(start, stop, step);
     }
 }

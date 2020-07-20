@@ -53,10 +53,11 @@ import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -65,6 +66,9 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -465,25 +469,14 @@ public abstract class StringNodes {
             return lib;
         }
 
-        private PSlice.SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
-            PSlice tmpSlice = factory().createSlice(getLibrary().asSize(start, null), getLibrary().asSize(end, null), 1);
+        private SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
+            PIntSlice tmpSlice = factory().createIntSlice(getLibrary().asSize(start, null), getLibrary().asSize(end, null), 1);
             // We need to distinguish between slice with length == 0 and a slice that's out of
             // bounds when matching empty strings
             if (start > length) {
                 return null;
             }
             return tmpSlice.computeIndices(length);
-        }
-
-        private PSlice.SliceInfo computeSlice(VirtualFrame frame, int length, Object startO, Object endO) {
-            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(startO, null, PArguments.getThreadState(frame));
-            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(endO, null, PArguments.getThreadState(frame));
-            // We need to distinguish between slice with length == 0 and a slice that's out of
-            // bounds when matching empty strings
-            if (start > length) {
-                return null;
-            }
-            return PSlice.computeIndices(start, end, 1, length);
         }
 
         @Specialization
@@ -494,7 +487,7 @@ public abstract class StringNodes {
         @Specialization
         int findStringStart(VirtualFrame frame, String self, String str, long start, @SuppressWarnings("unused") PNone end) {
             int len = self.length();
-            PSlice.SliceInfo info = computeSlice(frame, len, start, len);
+            SliceInfo info = computeSlice(frame, len, start, len);
             if (info == null) {
                 return -1;
             }
@@ -503,7 +496,7 @@ public abstract class StringNodes {
 
         @Specialization
         int findStringEnd(VirtualFrame frame, String self, String str, @SuppressWarnings("unused") PNone start, long end) {
-            PSlice.SliceInfo info = computeSlice(frame, self.length(), 0, end);
+            SliceInfo info = computeSlice(frame, self.length(), 0, end);
             if (info == null) {
                 return -1;
             }
@@ -512,7 +505,7 @@ public abstract class StringNodes {
 
         @Specialization
         int findStringStartEnd(VirtualFrame frame, String self, String str, long start, long end) {
-            PSlice.SliceInfo info = computeSlice(frame, self.length(), start, end);
+            SliceInfo info = computeSlice(frame, self.length(), start, end);
             if (info == null) {
                 return -1;
             }
@@ -520,8 +513,12 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        int findStringGeneric(VirtualFrame frame, String self, String str, Object start, Object end) {
-            PSlice.SliceInfo info = computeSlice(frame, self.length(), start, end);
+        int findStringGeneric(VirtualFrame frame, String self, String str, Object start, Object end,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached CoerceToIntSlice cast,
+                        @Cached ComputeIndices compute) {
+            PSlice slice = sliceNode.execute(frame, PGuards.isPNone(start) ? PNone.NONE : start, PGuards.isPNone(end) ? PNone.NONE : end, 1);
+            SliceInfo info = compute.execute(cast.execute(slice), self.length());
             if (info == null) {
                 return -1;
             }
@@ -530,9 +527,12 @@ public abstract class StringNodes {
 
         @Specialization
         int findGeneric(VirtualFrame frame, String self, Object sub, Object start, Object end,
-                        @Cached CastToJavaStringCheckedNode castSubNode) {
+                        @Cached CastToJavaStringCheckedNode castSubNode,
+                        @Cached SliceLiteralNode slice,
+                        @Cached CoerceToIntSlice cast,
+                        @Cached ComputeIndices compute) {
             String subStr = castSubNode.cast(sub, StringBuiltins.MUST_BE_STR, sub);
-            return findStringGeneric(frame, self, subStr, start, end);
+            return findStringGeneric(frame, self, subStr, start, end, slice, cast, compute);
         }
 
         @SuppressWarnings("unused")
@@ -554,6 +554,7 @@ public abstract class StringNodes {
             }
             return objectFactory;
         }
+
     }
 
     public abstract static class FindNode extends FindBaseNode {

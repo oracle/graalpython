@@ -286,6 +286,10 @@ public final class PInt extends PythonBuiltinObject {
         return compareTo(value, right.getValue());
     }
 
+    public int compareTo(BigInteger right) {
+        return compareTo(value, right);
+    }
+
     @TruffleBoundary
     private static int compareTo(BigInteger left, BigInteger right) {
         return left.compareTo(right);
@@ -506,5 +510,32 @@ public final class PInt extends PythonBuiltinObject {
 
     public boolean isNative() {
         return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
+    }
+
+    @TruffleBoundary
+    public BigInteger multiply(BigInteger other) {
+        return this.value.multiply(other);
+    }
+
+    public BigInteger multiply(PInt other) {
+        return multiply(other.value);
+    }
+
+    @TruffleBoundary
+    public BigInteger add(BigInteger other) {
+        return this.value.add(other);
+    }
+
+    @TruffleBoundary
+    public BigInteger subtract(BigInteger other) {
+        return this.value.subtract(other);
+    }
+
+    public BigInteger subtract(PInt other) {
+        return subtract(other.getValue());
+    }
+
+    public BigInteger add(PInt other) {
+        return add(other.value);
     }
 }
