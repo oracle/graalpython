@@ -190,7 +190,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
                 throw e;
             }
             tryChainExceptionFromHandler(handlerException, pException);
-            throw handlerException;
+            throw handlerException.getExceptionForReraise();
         } finally {
             restoreExceptionState(frame, savedExceptionState);
         }

@@ -84,7 +84,7 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
                 throw e;
             }
             tryChainExceptionFromHandler(handlerException, handledException);
-            throw handlerException;
+            throw handlerException.getExceptionForReraise();
         } finally {
             restoreExceptionState(frame, exceptionState);
         }
