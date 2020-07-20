@@ -87,7 +87,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
-import com.oracle.graal.python.util.WeakASTReference;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -96,15 +95,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PGuards {
-
-    public static WeakASTReference weak(Object object) {
-        if (object == null) {
-            return null;
-        } else {
-            return new WeakASTReference(object);
-        }
-    }
-
     /**
      * Specialization guards.
      */

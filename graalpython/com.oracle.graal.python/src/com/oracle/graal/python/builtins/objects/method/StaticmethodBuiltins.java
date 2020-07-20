@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.util.WeakASTReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -74,11 +73,11 @@ public class StaticmethodBuiltins extends PythonBuiltins {
         /**
          * @see ClassmethodBuiltins.GetNode#getCached
          */
-        @Specialization(guards = {"cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"cachedSelf == self"}, assumptions = "singleContextAssumption()")
         protected Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
-                        @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
-                        @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable) {
-            return cachedCallable.get();
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
+                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable) {
+            return cachedCallable;
         }
 
         @Specialization(replaces = "getCached")

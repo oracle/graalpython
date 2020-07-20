@@ -31,8 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
-import java.lang.ref.WeakReference;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -84,30 +82,17 @@ public final class PythonModule extends PythonObject {
 
     @ExportMessage
     static class GetDict {
-        static final WeakReference<Object> weak(Object self) {
-            return new WeakReference<>(self);
-        }
-
-        static final boolean compare(Object a, Object b) {
-            return a == b;
-        }
-
         protected static boolean dictExists(Object dict) {
             return dict instanceof PHashingCollection;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"compare(self, cachedModule.get())", "dict.get() != null"}, assumptions = "singleContextAssumption()", limit = "1")
+        @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
         static PHashingCollection getConstant(PythonModule self,
-                        @Cached("weak(self)") WeakReference<Object> cachedModule,
-                        @Cached("weak(self.getAttribute(DICT))") WeakReference<Object> dict) {
+                        @Cached(value = "self", weak = true) PythonModule cachedModule,
+                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
             // module.__dict__ is a read-only attribute
-            Object d = dict.get();
-            if (d != null) {
-                return (PHashingCollection) d;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("a type.__dict__ was collected before the type");
-            }
+            return (PHashingCollection) dict;
         }
 
         @Specialization(replaces = "getConstant")

@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
-import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -47,7 +46,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -311,30 +309,17 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @ExportMessage
     static class GetDict {
-        static final WeakReference<Object> weak(Object self) {
-            return new WeakReference<>(self);
-        }
-
-        static final boolean compare(Object a, Object b) {
-            return a == b;
-        }
-
         protected static boolean dictExists(Object dict) {
             return dict instanceof PHashingCollection;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"compare(self, cachedManagedClass.get())", "dictExists(dict.get())"}, assumptions = "singleContextAssumption()", limit = "1")
+        @Specialization(guards = {"self == cachedManagedClass", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
         static PHashingCollection getConstant(PythonManagedClass self,
-                        @Cached("weak(self)") WeakReference<Object> cachedManagedClass,
-                        @Cached("weak(self.getAttribute(DICT))") WeakReference<Object> dict) {
+                        @Cached(value = "self", weak = true) PythonManagedClass cachedManagedClass,
+                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
             // type.__dict__ is a read-only attribute
-            Object d = dict.get();
-            if (d != null) {
-                return (PHashingCollection) d;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("a type.__dict__ was collected before the type");
-            }
+            return (PHashingCollection) dict;
         }
 
         @Specialization(replaces = "getConstant")

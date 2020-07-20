@@ -40,20 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import java.lang.ref.WeakReference;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public abstract class PythonNativeWrapper implements TruffleObject {
@@ -121,30 +117,13 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
-    protected static boolean isEq(Object obj, Object obj2) {
-        return obj == obj2;
-    }
-
-    protected static WeakReference<PythonNativeWrapper> weak(PythonNativeWrapper wrapper) {
-        return new WeakReference<>(wrapper);
-    }
-
-    protected static WeakReference<Assumption> weakAssumption(PythonNativeWrapper wrapper) {
-        Assumption handleValidAssumption = wrapper.getHandleValidAssumption();
-        // The assumption only exists if the wrapper was used in a cache at some point.
-        if (handleValidAssumption != null) {
-            return new WeakReference<>(handleValidAssumption);
-        }
-        return null;
-    }
-
     @ExportMessage(name = "getDelegate")
     protected static class GetDelegate {
-        @Specialization(guards = {"isEq(cachedWrapper.get(), wrapper)", "!isEq(delegate.get(), null)"}, assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"cachedWrapper == wrapper", "delegate != null"}, assumptions = "singleContextAssumption()")
         protected static Object getCachedDel(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
-                        @Exclusive @SuppressWarnings("unused") @Cached("weak(wrapper)") WeakReference<PythonNativeWrapper> cachedWrapper,
-                        @Cached("wrapper.getDelegatePrivate()") WeakReference<Object> delegate) {
-            return delegate.get();
+                        @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
+                        @Cached(value = "wrapper.getDelegatePrivate()", weak = true) Object delegate) {
+            return delegate;
         }
 
         @Specialization(replaces = "getCachedDel")
@@ -153,8 +132,8 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
     }
 
-    protected final WeakReference<Object> getDelegatePrivate() {
-        return new WeakReference<>(delegate);
+    protected final Object getDelegatePrivate() {
+        return delegate;
     }
 
     protected void setDelegate(Object delegate) {
@@ -164,17 +143,12 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     @ExportMessage(name = "getNativePointer")
     protected static class GetNativePointer {
-        @Specialization(guards = {"isEq(cachedWrapper.get(), wrapper)", "!isEq(nativePointer.get(), null)"}, assumptions = "singleContextAssumption()", //
-                        rewriteOn = InvalidAssumptionException.class)
+        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
         protected static Object getCachedPtr(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
-                        @Exclusive @SuppressWarnings("unused") @Cached("weak(wrapper)") WeakReference<PythonNativeWrapper> cachedWrapper,
-                        @Exclusive @Cached("weakAssumption(wrapper)") WeakReference<Assumption> cachedAssumption,
-                        @Exclusive @Cached("wrapper.getNativePointerPrivate()") WeakReference<Object> nativePointer) throws InvalidAssumptionException {
-            if (cachedAssumption != null) {
-                // as long as the wrapper exists, the assumption will also exist
-                cachedAssumption.get().check();
-            }
-            return nativePointer.get();
+                        @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
+                        @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,
+                        @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer) {
+            return nativePointer;
         }
 
         @Specialization(replaces = "getCachedPtr")
@@ -183,8 +157,8 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
     }
 
-    protected final WeakReference<Object> getNativePointerPrivate() {
-        return new WeakReference<>(nativePointer);
+    protected final Object getNativePointerPrivate() {
+        return nativePointer;
     }
 
     public void setNativePointer(Object nativePointer) {
@@ -198,16 +172,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     @ExportMessage(name = "isNative")
     protected static class IsNative {
-        @Specialization(guards = {"isEq(cachedWrapper.get(), wrapper)", "!isEq(nativePointer.get(), null)"}, assumptions = "singleContextAssumption()", //
-                        rewriteOn = InvalidAssumptionException.class)
+        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
         protected static boolean isCachedNative(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
-                        @Exclusive @SuppressWarnings("unused") @Cached("weak(wrapper)") WeakReference<PythonNativeWrapper> cachedWrapper,
-                        @Exclusive @Cached("weakAssumption(wrapper)") WeakReference<Assumption> cachedAssumption,
-                        @Exclusive @SuppressWarnings("unused") @Cached("wrapper.getNativePointerPrivate()") WeakReference<Object> nativePointer) throws InvalidAssumptionException {
-            if (cachedAssumption != null) {
-                // as long as the wrapper exists, the assumption will also exist
-                cachedAssumption.get().check();
-            }
+                        @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
+                        @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,
+                        @SuppressWarnings("unused") @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer) {
             return true;
         }
 

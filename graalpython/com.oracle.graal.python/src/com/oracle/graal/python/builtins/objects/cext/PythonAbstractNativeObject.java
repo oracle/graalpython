@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT;
 
-import java.lang.ref.WeakReference;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -227,9 +226,9 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
-        @Specialization(guards = "object == cachedObject.get()", limit = "1", assumptions = "getSingleContextAssumption()")
+        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "getSingleContextAssumption()")
         static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
-                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
@@ -240,7 +239,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
         @Specialization(guards = "isSame(lib, cachedObject, object)", assumptions = "getSingleContextAssumption()")
         static Object getNativeClassCached(PythonAbstractNativeObject object,
-                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass,
                         @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
             // TODO same as for 'getNativeClassCachedIdentity'
@@ -267,16 +266,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
         }
 
-        static WeakReference<PythonAbstractNativeObject> weak(PythonAbstractNativeObject object) {
-            return new WeakReference<>(object);
-        }
-
-        static boolean isSame(InteropLibrary lib, WeakReference<PythonAbstractNativeObject> cachedObjectRef, PythonAbstractNativeObject object) {
-            PythonAbstractNativeObject cachedObject = cachedObjectRef.get();
-            if (cachedObject != null) {
-                return lib.isIdentical(cachedObject.object, object.object, lib);
-            }
-            return false;
+        static boolean isSame(InteropLibrary lib, PythonAbstractNativeObject cachedObject, PythonAbstractNativeObject object) {
+            return lib.isIdentical(cachedObject.object, object.object, lib);
         }
 
         public static Object getNativeClassUncached(PythonAbstractNativeObject object) {
