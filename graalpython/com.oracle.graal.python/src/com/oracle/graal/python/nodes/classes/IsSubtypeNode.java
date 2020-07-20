@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -93,9 +92,6 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         int derivedMroLen = derivedMroAry.length;
         int offset = derivedMroLen - baseMroLen;
         if (offset >= 0) {
-            // we can only do this for classes where all MRO entries have only a
-            // single or no base
-            assert GetBaseClassesNodeGen.getUncached().execute(derivedMroAry[offset]).length <= 1;
             return isSameType(isSameTypeNode, derivedMroAry[offset], base);
         } else {
             return false;

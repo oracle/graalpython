@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -181,6 +182,35 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             }
         }
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
+    }
+
+    @TruffleBoundary
+    public void setSuperClass(PythonAbstractClass... newBaseClasses) {
+        PythonAbstractClass[] oldBaseClasses = getBaseClasses();
+        try {
+            setSuperClassInternal(newBaseClasses);
+        } catch (PException pe) {
+            setSuperClassInternal(oldBaseClasses);
+            throw pe;
+        }
+    }
+
+    private void setSuperClassInternal(PythonAbstractClass[] basses) {
+        for (PythonAbstractClass base : basses) {
+            if (base != null) {
+                GetSubclassesNode.getUncached().execute(base).add(this);
+            }
+        }
+
+        this.baseClasses = basses;
+        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
+
+        Set<PythonAbstractClass> subclasses = GetSubclassesNode.getUncached().execute(this);
+        for (PythonAbstractClass scls : subclasses) {
+            if (scls instanceof PythonManagedClass) {
+                ((PythonManagedClass) scls).methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(scls));
+            }
+        }
     }
 
     final Set<PythonAbstractClass> getSubClasses() {
