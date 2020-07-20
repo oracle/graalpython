@@ -183,8 +183,9 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(Object klass,
                         @Cached("create()") TypeNodes.GetMroNode getMroNode,
-                        @Cached TypeNodes.GetMroStorageNode getMroStorageNode) {
-            if (klass instanceof PythonManagedClass && !getMroStorageNode.execute(klass).isInitialized()) {
+                        @Cached TypeNodes.GetMroStorageNode getMroStorageNode,
+                        @Cached("createBinaryProfile()") ConditionProfile notInitialized) {
+            if (notInitialized.profile(klass instanceof PythonManagedClass && !getMroStorageNode.execute(klass).isInitialized())) {
                 return PNone.NONE;
             }
             PythonAbstractClass[] mro = getMroNode.execute(klass);
