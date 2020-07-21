@@ -1575,4 +1575,19 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    @Builtin(name = "is_integer", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsIntegerNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isInteger(double value) {
+            return Double.isFinite(value) && (long) value == value;
+        }
+
+        @Specialization
+        boolean trunc(PFloat pValue) {
+            return isInteger(pValue.getValue());
+        }
+
+    }
 }
