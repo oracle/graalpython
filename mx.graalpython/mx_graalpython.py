@@ -33,6 +33,7 @@ import os
 import platform
 import re
 import shutil
+import shlex
 import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
@@ -555,23 +556,47 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
 
     args += [_graalpytest_driver(), "-v"]
 
-    agent_args = " ".join(mx_gate.get_jacoco_agent_args() or [])
+    agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
     if agent_args:
-        # if we leave the excludes, the string is too long and it will be ignored by
-        # the JVM, which ignores JAVA_TOOL_OPTIONS long than 1024 chars silently on JDK8
-        agent_args = re.sub("excludes=[^,]+,", "", agent_args)
-        # we know these can be excluded
-        agent_args += ",excludes=*NodeGen*:*LibraryGen*:*BuiltinsFactory*"
-        assert len(agent_args) < 1024
+        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
+        # with the arguments
+        basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
+        jacoco_basedir = "%s-jacoco" % basedir
+        shutil.rmtree(jacoco_basedir, ignore_errors=True)
+        shutil.copytree(basedir, jacoco_basedir, symlinks=True)
+        launcher_path = os.path.join(jacoco_basedir, 'bin', 'graalpython')
+        with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+            lines = launcher.readlines()
+        assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
+        lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
+        with open(launcher_path, 'w') as launcher:
+            launcher.writelines(lines)
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
-        env['JAVA_TOOL_OPTIONS'] = agent_args
         for testfile in testfiles:
-            mx.run([python_binary] + args + [testfile], nonZeroIsFatal=True, env=env)
+            mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
+
+
+def run_tagged_unittests(python_binary, env=None):
+    if env is None:
+        env = os.environ
+    env = env.copy()
+    env.update(
+        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
+        ENABLE_THREADED_GRAALPYTEST="true",
+        PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
+    )
+    run_python_unittests(
+        python_binary,
+        args=["-v",
+              "--python.WithThread=true"],
+        paths=["test_tagged_unittests.py"],
+        env=env,
+    )
 
 
 def graalpython_gate_runner(args, tasks):
@@ -613,19 +638,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            env = os.environ.copy()
-            env.update(
-                ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
-                ENABLE_THREADED_GRAALPYTEST="true",
-                PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
-            )
-            run_python_unittests(
-                python_gvm(),
-                args=["-v",
-                      "--python.WithThread=true"],
-                paths=["test_tagged_unittests.py"],
-                env=env,
-            )
+            run_tagged_unittests(python_gvm())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -1469,11 +1482,7 @@ def python_coverage(args):
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
-            {
-                "args": ["-v", "--python.WithThread=true"],
-                "paths": ["test_tagged_unittests.py"],
-                "tagged": True
-            },
+            {"tagged": True},
         ]
         outputlcov = "coverage.lcov"
         if os.path.exists(outputlcov):
@@ -1487,20 +1496,19 @@ def python_coverage(args):
                 if os.path.exists(outfile):
                     os.unlink(outfile)
                 extra_args = [
+                    "--experimental-options",
                     "--coverage",
                     "--coverage.TrackInternal",
-                    "--coverage.FilterFile=%s/*.%s" % (prefix, pattern),
+                    "--coverage.FilterFile=*/lib-*/*.%s" % pattern,
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=%s" % outfile,
                 ]
-                with set_env(GRAAL_PYTHON_ARGS=" ".join(extra_args)):
-                    with _dev_pythonhome_context(): # run all our tests in the dev-home, so that lcov has consistent paths
-                        kwds["args"].append("--python.CAPI=" + _get_capi_home())
-                        if kwds.pop("tagged", False):
-                            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                                run_python_unittests(executable, **kwds)
-                        else:
-                            run_python_unittests(executable, **kwds)
+                env = os.environ.copy()
+                env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+                if kwds.pop("tagged", False):
+                    run_tagged_unittests(executable, env=env)
+                else:
+                    run_python_unittests(executable, env=env, **kwds)
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
@@ -1517,7 +1525,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
     for filename in filenames:
         if filename.endswith(".py"):
             fullname = os.path.join(dirpath, filename)
-            with open(fullname, 'r') as f:
+            with open(fullname, 'rb') as f:
                 try:
                     compile(f.read(), fullname, 'exec')
                 except BaseException as e:
@@ -1537,9 +1545,16 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     f.name
                 ])
 
+        home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'jre/languages/python')
         # merge all generated lcov files
         for f in os.listdir(SUITE.dir):
-            if f.endswith(".lcov"):
+            if f.endswith(".lcov") and os.path.getsize(f):
+                # Normalize lib-graalpython path
+                with open(f) as lcov_file:
+                    lcov = lcov_file.read()
+                lcov = lcov.replace(home_launcher, prefix)
+                with open(f, 'w') as lcov_file:
+                    lcov_file.write(lcov)
                 cmdargs += ["-a", f]
 
         mx.run(cmdargs)
