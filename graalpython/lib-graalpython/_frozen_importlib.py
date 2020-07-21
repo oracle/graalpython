@@ -57,13 +57,4 @@ sys.modules["builtins"].__import__ = __graalpython__.builtin(importlib.__import_
 # Insert our meta finder for caching
 _imp.CachedImportFinder.ModuleSpec = importlib.ModuleSpec
 sys.meta_path.insert(0, _imp.CachedImportFinder)
-
-ModuleType = type(sys)
-
-
-def _repr(module):
-    from importlib import _bootstrap
-    return _bootstrap._module_repr(module)
-
-
-ModuleType.__repr__ = _repr
+type(sys).__repr__ = importlib._module_repr
