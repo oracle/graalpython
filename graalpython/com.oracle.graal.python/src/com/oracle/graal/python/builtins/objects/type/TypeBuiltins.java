@@ -585,12 +585,12 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            PythonAbstractClass newBestBase = getBestBase.execute(frame, baseClasses);
+            LazyPythonClass newBestBase = getBestBase.execute(baseClasses);
             if (newBestBase == null) {
                 return null;
             }
 
-            PythonAbstractClass oldBase = getBase.execute(frame, cls);
+            LazyPythonClass oldBase = getBase.execute(cls);
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
             cls.setSuperClass(baseClasses);
@@ -616,9 +616,9 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BaseNode extends PythonBuiltinNode {
         @Specialization
-        static Object base(VirtualFrame frame, Object self,
+        static Object base(Object self,
                         @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
-            Object baseClass = getBaseClassNode.execute(frame, self);
+            Object baseClass = getBaseClassNode.execute(self);
             return baseClass != null ? baseClass : PNone.NONE;
         }
     }

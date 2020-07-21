@@ -283,7 +283,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return ensureGetMroNode().execute(clazz);
     }
 
-    private static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
+    public static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
         MroSequenceStorage mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);

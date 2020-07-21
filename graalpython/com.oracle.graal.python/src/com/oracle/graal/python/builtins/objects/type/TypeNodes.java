@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseCla
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
@@ -95,8 +96,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -556,14 +560,14 @@ public abstract class TypeNodes {
     }
 
     @ImportStatic(SpecialMethodNames.class)
+    @GenerateUncached
     public abstract static class GetBaseClassNode extends PNodeWithContext {
 
-        @Child private GetBestBaseClassNode getBestBaseClassNode;
-
-        public abstract PythonAbstractClass execute(VirtualFrame frame, Object obj);
+        public abstract LazyPythonClass execute(Object obj);
 
         @Specialization
-        PythonAbstractClass doPythonClass(VirtualFrame frame, PythonManagedClass obj) {
+        LazyPythonClass doPythonClass(PythonManagedClass obj,
+                        @Cached GetBestBaseClassNode getBestBaseClassNode) {
             PythonAbstractClass[] baseClasses = obj.getBaseClasses();
             if (baseClasses.length == 0) {
                 return null;
@@ -571,12 +575,13 @@ public abstract class TypeNodes {
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
-            return getBestBaseNode().execute(frame, baseClasses);
+            return getBestBaseClassNode.execute(baseClasses);
         }
 
         @Specialization
-        PythonAbstractClass doPythonClass(VirtualFrame frame, PythonBuiltinClassType obj,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+        LazyPythonClass doPythonClass(PythonBuiltinClassType obj,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached GetBestBaseClassNode getBestBaseClassNode) {
             PythonAbstractClass[] baseClasses = context.getCore().lookupType(obj).getBaseClasses();
             if (baseClasses.length == 0) {
                 return null;
@@ -584,7 +589,7 @@ public abstract class TypeNodes {
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
-            return getBestBaseNode().execute(frame, baseClasses);
+            return getBestBaseClassNode.execute(baseClasses);
         }
 
         @Specialization
@@ -602,26 +607,17 @@ public abstract class TypeNodes {
             CompilerDirectives.transferToInterpreter();
             throw raise.raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
         }
-
-        private GetBestBaseClassNode getBestBaseNode() {
-            if (getBestBaseClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getBestBaseClassNode = insert(GetBestBaseClassNode.create());
-            }
-            return getBestBaseClassNode;
-        }
     }
 
     @ImportStatic(SpecialMethodNames.class)
-    abstract static class GetBestBaseClassNode extends TypeStructNodeNode {
-
-        @Child private IsSubtypeNode isSubTypeNode;
+    @GenerateUncached
+    abstract static class GetBestBaseClassNode extends PNodeWithContext {
 
         static GetBestBaseClassNode create() {
             return TypeNodesFactory.GetBestBaseClassNodeGen.create();
         }
 
-        public abstract PythonAbstractClass execute(VirtualFrame frame, Object bases);
+        public abstract LazyPythonClass execute(Object bases);
 
         @Specialization(guards = "bases.length == 0")
         PythonAbstractClass getEmpty(@SuppressWarnings("unused") PythonAbstractClass[] bases) {
@@ -639,9 +635,11 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = "bases.length > 1")
-        PythonAbstractClass getBestBase(VirtualFrame frame, PythonAbstractClass[] bases,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return bestBase(frame, bases, context);
+        LazyPythonClass getBestBase(PythonAbstractClass[] bases,
+                        @Cached IsSubtypeNode isSubTypeNode,
+                        @Cached GetSolidBaseNode getSolidBaseNode,
+                        @Cached PRaiseNode raiseNode) {
+            return bestBase(bases, getSolidBaseNode, isSubTypeNode, raiseNode);
         }
 
         @Specialization(guards = "isClasses(bases)")
@@ -650,80 +648,47 @@ public abstract class TypeNodes {
             throw raise.raise(TypeError, ErrorMessages.BASES_MUST_BE_TYPES);
         }
 
-        protected boolean isClasses(Object obj) {
+        protected static boolean isClasses(Object obj) {
             return obj instanceof PythonAbstractClass[] || obj instanceof PythonAbstractClass;
         }
 
         /**
          * Aims to get as close as possible to typeobject.best_base().
          */
-        private PythonAbstractClass bestBase(VirtualFrame frame, PythonAbstractClass[] bases, PythonContext context) throws PException {
-            PythonAbstractClass base = null;
-            PythonAbstractClass winner = null;
+        private static LazyPythonClass bestBase(PythonAbstractClass[] bases, GetSolidBaseNode getSolidBaseNode, IsSubtypeNode isSubTypeNode, PRaiseNode raiseNode) throws PException {
+            LazyPythonClass base = null;
+            LazyPythonClass winner = null;
             for (int i = 0; i < bases.length; i++) {
                 PythonAbstractClass basei = bases[i];
-                PythonAbstractClass candidate = solidBase(frame, basei, context);
+                LazyPythonClass candidate = getSolidBaseNode.execute(basei);
                 if (winner == null) {
                     winner = candidate;
                     base = basei;
-                } else if (getIsSubTypeNode().execute(winner, candidate)) {
+                } else if (isSubTypeNode.execute(winner, candidate)) {
                     //
-                } else if (getIsSubTypeNode().execute(candidate, winner)) {
+                } else if (isSubTypeNode.execute(candidate, winner)) {
                     winner = candidate;
                     base = basei;
                 } else {
-                    throw getRaiseNode().raise(SystemError, ErrorMessages.MULTIPLE_BASES_LAYOUT_CONFLICT);
+                    throw raiseNode.raise(SystemError, ErrorMessages.MULTIPLE_BASES_LAYOUT_CONFLICT);
                 }
             }
             return base;
         }
-
-        private PythonAbstractClass solidBase(VirtualFrame frame, PythonAbstractClass type, PythonContext context) {
-            PythonAbstractClass base = getBaseClassNode().execute(frame, type);
-
-            if (base != null) {
-                base = solidBase(frame, base, context);
-            } else {
-                base = context.getCore().lookupType(PythonBuiltinClassType.PythonObject);
-            }
-
-            if (extraivars(frame, type, base)) {
-                return type;
-            } else {
-                return base;
-            }
-        }
-
-        private boolean extraivars(VirtualFrame frame, PythonAbstractClass type, PythonAbstractClass base) {
-            Object typeSlots = getSlotsFromDict(frame, type);
-            Object baseSlots = getSlotsFromDict(frame, base);
-
-            if (typeSlots == null ^ baseSlots == null) {
-                return true;
-            }
-
-            Object typeNewMethod = getLookupNewNode().execute(type);
-            Object baseNewMethod = getLookupNewNode().execute(base);
-            if (typeNewMethod != baseNewMethod) {
-                return true;
-            }
-
-            if (typeSlots != null && baseSlots != null) {
-                return compareSortedSlots(typeSlots, baseSlots, getObjectArrayNode());
-            }
-            return hasDict(base) != hasDict(type);
-        }
-
-        private IsSubtypeNode getIsSubTypeNode() {
-            if (isSubTypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSubTypeNode = insert(IsSubtypeNode.create());
-            }
-            return isSubTypeNode;
-        }
     }
 
-    public abstract static class CheckCompatibleForAssigmentNode extends TypeStructNodeNode {
+    public abstract static class CheckCompatibleForAssigmentNode extends PNodeWithContext {
+
+        @Child private GetBaseClassNode getBaseClassNode;
+        @Child private LookupAttributeInMRONode lookupSlotsNode;
+        @Child private LookupAttributeInMRONode lookupNewNode;
+        @Child private GetDictStorageNode getDictStorageNode;
+        @Child private LookupAndCallBinaryNode getDictNode;
+        @Child private HashingStorageLibrary hashingStorageLib;
+        @Child private PythonObjectLibrary objectLibrary;
+        @Child private GetObjectArrayNode getObjectArrayNode;
+        @Child private PRaiseNode raiseNode;
+        @Child private GetNameNode getTypeNameNode;
 
         public abstract boolean execute(VirtualFrame frame, Object oldBase, Object newBase);
 
@@ -744,16 +709,16 @@ public abstract class TypeNodes {
             Object newBase = newB;
             Object oldBase = oldB;
 
-            Object newParent = getBaseClassNode().execute(frame, newBase);
+            Object newParent = getBaseClassNode().execute(newBase);
             while (newParent != null && compatibleWithBase(frame, newBase, newParent)) {
                 newBase = newParent;
-                newParent = getBaseClassNode().execute(frame, newBase);
+                newParent = getBaseClassNode().execute(newBase);
             }
 
-            Object oldParent = getBaseClassNode().execute(frame, oldBase);
+            Object oldParent = getBaseClassNode().execute(oldBase);
             while (oldParent != null && compatibleWithBase(frame, oldBase, oldParent)) {
                 oldBase = oldParent;
-                oldParent = getBaseClassNode().execute(frame, oldBase);
+                oldParent = getBaseClassNode().execute(oldBase);
             }
 
             if (newBase != oldBase && (newParent != oldParent || !compareSlotsFromDict(frame, newBase, oldBase))) {
@@ -829,44 +794,8 @@ public abstract class TypeNodes {
             int bSize = bSlots != PNone.NO_VALUE ? getObjectLibrary().length(bSlots) : 0;
             return aSize == bSize;
         }
-    }
 
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class TypeStructNodeNode extends PNodeWithContext {
-        @Child private GetBaseClassNode getBaseClassNode;
-        @Child private LookupAttributeInMRONode lookupSlotsNode;
-        @Child private LookupAttributeInMRONode lookupNewNode;
-        @Child private GetDictStorageNode getDictStorageNode;
-        @Child private LookupAndCallBinaryNode getDictNode;
-        @Child private HashingStorageLibrary hashingStorageLib;
-        @Child private PythonObjectLibrary objectLibrary;
-        @Child private GetObjectArrayNode getObjectArrayNode;
-        @Child private PRaiseNode raiseNode;
-        @Child private GetNameNode getTypeNameNode;
-
-        @TruffleBoundary
-        protected static boolean compareSortedSlots(Object aSlots, Object bSlots, GetObjectArrayNode getObjectArrayNode) {
-            Object[] aArray = getObjectArrayNode.execute(aSlots);
-            Object[] bArray = getObjectArrayNode.execute(bSlots);
-            if (bArray.length != aArray.length) {
-                return false;
-            }
-            aArray = Arrays.copyOf(aArray, aArray.length);
-            bArray = Arrays.copyOf(bArray, bArray.length);
-            // what cpython does in same_slots_added() is a compare on a sorted slots list
-            // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
-            // NOT the same like the unsorted __slots__ attribute.
-            Arrays.sort(bArray);
-            Arrays.sort(aArray);
-            for (int i = 0; i < aArray.length; i++) {
-                if (!aArray[i].equals(bArray[i])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        protected GetBaseClassNode getBaseClassNode() {
+        private GetBaseClassNode getBaseClassNode() {
             if (getBaseClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getBaseClassNode = insert(GetBaseClassNodeGen.create());
@@ -874,7 +803,7 @@ public abstract class TypeNodes {
             return getBaseClassNode;
         }
 
-        protected String getTypeName(Object clazz) {
+        private String getTypeName(Object clazz) {
             if (getTypeNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getTypeNameNode = insert(TypeNodes.GetNameNode.create());
@@ -882,7 +811,7 @@ public abstract class TypeNodes {
             return getTypeNameNode.execute(clazz);
         }
 
-        protected Object getSlotsFromDict(VirtualFrame frame, Object type) {
+        private Object getSlotsFromDict(VirtualFrame frame, Object type) {
             Object dict = getDictNode().executeObject(frame, type, __DICT__);
             if (dict != PNone.NO_VALUE) {
                 HashingStorage storage = getDictStorageNode().execute((PHashingCollection) dict);
@@ -891,11 +820,11 @@ public abstract class TypeNodes {
             return null;
         }
 
-        protected boolean hasDict(Object obj) {
+        private boolean hasDict(Object obj) {
             return getObjectLibrary().lookupAttribute(obj, __DICT__) != PNone.NO_VALUE;
         }
 
-        protected GetObjectArrayNode getObjectArrayNode() {
+        private GetObjectArrayNode getObjectArrayNode() {
             if (getObjectArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
@@ -903,7 +832,7 @@ public abstract class TypeNodes {
             return getObjectArrayNode;
         }
 
-        protected PythonObjectLibrary getObjectLibrary() {
+        private PythonObjectLibrary getObjectLibrary() {
             if (objectLibrary == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
@@ -911,7 +840,7 @@ public abstract class TypeNodes {
             return objectLibrary;
         }
 
-        protected LookupAndCallBinaryNode getDictNode() {
+        private LookupAndCallBinaryNode getDictNode() {
             if (getDictNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getDictNode = insert(LookupAndCallBinaryNode.create(__GETATTRIBUTE__));
@@ -919,7 +848,7 @@ public abstract class TypeNodes {
             return getDictNode;
         }
 
-        protected GetDictStorageNode getDictStorageNode() {
+        private GetDictStorageNode getDictStorageNode() {
             if (getDictStorageNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getDictStorageNode = insert(GetDictStorageNode.create());
@@ -927,7 +856,7 @@ public abstract class TypeNodes {
             return getDictStorageNode;
         }
 
-        protected HashingStorageLibrary getHashingStorageLibrary() {
+        private HashingStorageLibrary getHashingStorageLibrary() {
             if (hashingStorageLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 hashingStorageLib = insert(HashingStorageLibrary.getFactory().createDispatched(4));
@@ -935,7 +864,7 @@ public abstract class TypeNodes {
             return hashingStorageLib;
         }
 
-        protected LookupAttributeInMRONode getLookupSlots() {
+        private LookupAttributeInMRONode getLookupSlots() {
             if (lookupSlotsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupSlotsNode = insert(LookupAttributeInMRONode.create(__SLOTS__));
@@ -943,7 +872,7 @@ public abstract class TypeNodes {
             return lookupSlotsNode;
         }
 
-        protected LookupAttributeInMRONode getLookupNewNode() {
+        private LookupAttributeInMRONode getLookupNewNode() {
             if (lookupNewNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(__NEW__));
@@ -951,12 +880,116 @@ public abstract class TypeNodes {
             return lookupNewNode;
         }
 
-        protected PRaiseNode getRaiseNode() {
+        private PRaiseNode getRaiseNode() {
             if (raiseNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
             return raiseNode;
+        }
+    }
+
+    @TruffleBoundary
+    private static boolean compareSortedSlots(Object aSlots, Object bSlots, GetObjectArrayNode getObjectArrayNode) {
+        Object[] aArray = getObjectArrayNode.execute(aSlots);
+        Object[] bArray = getObjectArrayNode.execute(bSlots);
+        if (bArray.length != aArray.length) {
+            return false;
+        }
+        aArray = Arrays.copyOf(aArray, aArray.length);
+        bArray = Arrays.copyOf(bArray, bArray.length);
+        // what cpython does in same_slots_added() is a compare on a sorted slots list
+        // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
+        // NOT the same like the unsorted __slots__ attribute.
+        Arrays.sort(bArray);
+        Arrays.sort(aArray);
+        for (int i = 0; i < aArray.length; i++) {
+            if (!aArray[i].equals(bArray[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class GetSolidBaseNode extends Node {
+
+        static GetSolidBaseNode create() {
+            return GetSolidBaseNodeGen.create();
+        }
+
+        static GetSolidBaseNode getUncached() {
+            return GetSolidBaseNodeGen.getUncached();
+        }
+
+        abstract LazyPythonClass execute(LazyPythonClass type);
+
+        @Specialization
+        protected LazyPythonClass exec(LazyPythonClass type,
+                        @Cached GetBaseClassNode getBaseClassNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached LookupSpecialMethodNode.Dynamic lookupGetAttribute,
+                        @Cached CallBinaryMethodNode callGetAttr,
+                        @Cached GetDictStorageNode getDictStorageNode,
+                        @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
+                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary objectLibrary) {
+            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, getObjectArrayNode, objectLibrary);
+        }
+
+        private LazyPythonClass solidBase(LazyPythonClass type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
+                        CallBinaryMethodNode callGetAttr, GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary, GetObjectArrayNode getObjectArrayNode,
+                        PythonObjectLibrary objectLibrary) {
+            LazyPythonClass base = getBaseClassNode.execute(type);
+
+            if (base != null) {
+                base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, getObjectArrayNode, objectLibrary);
+            } else {
+                base = context.getCore().lookupType(PythonBuiltinClassType.PythonObject);
+            }
+
+            if (extraivars(type, base, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, getObjectArrayNode, objectLibrary)) {
+                return type;
+            } else {
+                return base;
+            }
+        }
+
+        private boolean extraivars(LazyPythonClass type, LazyPythonClass base, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
+                        GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary, GetObjectArrayNode getObjectArrayNode, PythonObjectLibrary objectLibrary) {
+            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary);
+            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary);
+
+            if (typeSlots == null ^ baseSlots == null) {
+                return true;
+            }
+
+            Object typeNewMethod = LookupAttributeInMRONode.lookupSlow(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
+            Object baseNewMethod = LookupAttributeInMRONode.lookupSlow(base, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
+            if (typeNewMethod != baseNewMethod) {
+                return true;
+            }
+
+            if (typeSlots != null && baseSlots != null) {
+                return compareSortedSlots(typeSlots, baseSlots, getObjectArrayNode);
+            }
+            return hasDict(base, objectLibrary) != hasDict(type, objectLibrary);
+        }
+
+        protected Object getSlotsFromDict(Object type, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
+                        GetDictStorageNode getDictStorageNode, HashingStorageLibrary lib) {
+            Object getAttr = lookupGetAttribute.execute(type, __GETATTRIBUTE__, type, false);
+            Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
+            if (dict != PNone.NO_VALUE) {
+                HashingStorage storage = getDictStorageNode.execute((PHashingCollection) dict);
+                return lib.getItem(storage, __SLOTS__);
+            }
+            return null;
+        }
+
+        protected boolean hasDict(Object obj, PythonObjectLibrary objectLibrary) {
+            return objectLibrary.lookupAttribute(obj, __DICT__) != PNone.NO_VALUE;
         }
     }
 
@@ -1160,6 +1193,8 @@ public abstract class TypeNodes {
 
         private static PythonAbstractClass[] mroCheck(LazyPythonClass cls, Object[] mro) {
             List<PythonAbstractClass> resultMro = new ArrayList<>(mro.length);
+            GetSolidBaseNode getSolidBase = GetSolidBaseNode.getUncached();
+            LazyPythonClass solid = getSolidBase.execute(cls);
             for (int i = 0; i < mro.length; i++) {
                 Object object = mro[i];
                 if (object == null) {
@@ -1168,9 +1203,7 @@ public abstract class TypeNodes {
                 if (!PythonObjectLibrary.getUncached().isLazyPythonClass(object)) {
                     throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.S_RETURNED_NON_CLASS, "mro()", object);
                 }
-                if (!IsSubtypeNode.getUncached().execute(cls, object)) {
-                    // XXX typeobject.c/mro_check() does !PyType_IsSubtype(solid, solid_base(base))
-                    // could reuse GetBestBaseClassNode.solidBase(), but need frame for that
+                if (!IsSubtypeNode.getUncached().execute(solid, getSolidBase.execute((LazyPythonClass) object))) {
                     throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT, "mro()", object);
                 }
                 resultMro.add((PythonAbstractClass) object);
