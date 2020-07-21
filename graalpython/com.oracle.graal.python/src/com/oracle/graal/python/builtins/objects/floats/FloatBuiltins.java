@@ -458,9 +458,9 @@ public final class FloatBuiltins extends PythonBuiltins {
                 // v**(+/-)inf is 1.0 if abs(v) == 1, unlike on Java
                 return 1;
             }
-            if (left == 0 && right < 0) {
+            if (left == 0 && right < 0 && Double.isFinite(right)) {
                 negativeRaise.enter();
-                // 0**w is an error if w is negative, unlike Java
+                // 0**w is an error if w is finite and negative, unlike Java
                 throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return 0;
@@ -480,7 +480,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (doSpecialCases(left, right, negativeRaise) == 1) {
                 return 1.0;
             }
-            if (left < 0 && (right % 1 != 0)) {
+            if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
                 throw new UnexpectedResultException(callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none));
@@ -495,7 +495,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (doSpecialCases(left, right, negativeRaise) == 1) {
                 return 1.0;
             }
-            if (left < 0 && (right % 1 != 0)) {
+            if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
                 return callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none);
             }
