@@ -608,19 +608,19 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         PTuple doDL(double left, long right) {
             raiseDivisionByZero(right == 0);
-            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+            return factory().createTuple(new Object[]{Math.floor(left / right), ModNode.op(left, right)});
         }
 
         @Specialization
         PTuple doDD(double left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+            return factory().createTuple(new Object[]{Math.floor(left / right), ModNode.op(left, right)});
         }
 
         @Specialization
         PTuple doLD(long left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+            return factory().createTuple(new Object[]{Math.floor(left / right), ModNode.op(left, right)});
         }
 
         @Specialization(guards = {"accepts(left)", "accepts(right)"})
@@ -820,41 +820,53 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class ModNode extends FloatBinaryBuiltinNode {
+    public abstract static class ModNode extends FloatBinaryBuiltinNode {
         @Specialization
         double doDL(double left, long right) {
             raiseDivisionByZero(right == 0);
-            return left % right;
+            return op(left, right);
         }
 
         @Specialization
         double doDL(double left, PInt right) {
             raiseDivisionByZero(right.isZero());
-            return left % right.doubleValue();
+            return op(left, right.doubleValue());
         }
 
         @Specialization
         double doDD(double left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return left % right;
+            return op(left, right);
         }
 
         @Specialization
         double doLD(long left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return left % right;
+            return op(left, right);
         }
 
         @Specialization
         double doPiD(PInt left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return left.doubleValue() % right;
+            return op(left.doubleValue(), right);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        public static double op(double left, double right) {
+            double mod = left % right;
+            if (mod != 0.0) {
+                if ((right < 0) != (mod < 0)) {
+                    mod += right;
+                }
+            } else {
+                mod = right < 0 ? -0.0 : 0.0;
+            }
+            return mod;
         }
     }
 
