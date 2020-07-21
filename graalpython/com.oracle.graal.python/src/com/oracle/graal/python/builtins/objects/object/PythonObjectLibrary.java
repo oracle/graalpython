@@ -590,6 +590,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiver self
      * @param name attribute name
      * @param inheritedOnly determines whether the lookup should start on the class or on the object
+     * @param strict whether to raise {@code AttributeError} when the attribute is not found
      */
     public Object lookupAttribute(Object receiver, String name, boolean inheritedOnly, boolean strict) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
