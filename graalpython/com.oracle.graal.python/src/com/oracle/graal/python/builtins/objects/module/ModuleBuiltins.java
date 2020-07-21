@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -57,7 +58,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -71,12 +76,16 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
@@ -91,13 +100,25 @@ public class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         public PNone module(PythonModule self, String name, Object doc,
                         @Cached WriteAttributeToObjectNode writeName,
                         @Cached WriteAttributeToObjectNode writeDoc,
                         @Cached WriteAttributeToObjectNode writePackage,
                         @Cached WriteAttributeToObjectNode writeLoader,
-                        @Cached WriteAttributeToObjectNode writeSpec) {
+                        @Cached WriteAttributeToObjectNode writeSpec,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            // create dict if missing
+            if (lib.getDict(self) == null) {
+                try {
+                    lib.setDict(self, factory().createDictFixedStorage(self));
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            }
+
+            // init
             writeName.execute(self, __NAME__, name);
             if (doc != PNone.NO_VALUE) {
                 writeDoc.execute(self, __DOC__, doc);
@@ -108,6 +129,47 @@ public class ModuleBuiltins extends PythonBuiltins {
             writeLoader.execute(self, __LOADER__, PNone.NONE);
             writeSpec.execute(self, __SPEC__, PNone.NONE);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class ModuleDictNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"isNoValue(none)"}, limit = "1")
+        Object dict(PythonModule self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
+                return PNone.NONE;
+            }
+            return dict;
+        }
+
+        @Specialization(limit = "1")
+        Object dict(PythonModule self, PDict dict,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, dict);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(none)", limit = "1")
+        Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
+                raise(self, none);
+            }
+            return dict;
+        }
+
+        @Fallback
+        Object raise(Object self, @SuppressWarnings("unused") Object dict) {
+            throw raise(PythonBuiltinClassType.TypeError, "descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object", self);
         }
     }
 

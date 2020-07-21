@@ -33,7 +33,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PythonModule extends PythonObject {
@@ -54,7 +59,14 @@ public final class PythonModule extends PythonObject {
      * Only to be used during context creation
      */
     public static PythonModule createInternal(String moduleName) {
-        return new PythonModule(moduleName);
+        PythonModule pythonModule = new PythonModule(moduleName);
+        PDict dict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonModule);
+        try {
+            PythonObjectLibrary.getUncached().setDict(pythonModule, dict);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere("BuiltinModule: could not set __dict__");
+        }
+        return pythonModule;
     }
 
     @Override
