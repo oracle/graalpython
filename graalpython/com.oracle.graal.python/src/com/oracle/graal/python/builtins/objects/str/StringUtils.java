@@ -206,8 +206,4 @@ public final class StringUtils {
     public static boolean containsNullCharacter(String value) {
         return value.indexOf(0) > 0;
     }
-
-    public static boolean containsNullCharacter(PString value) {
-        return containsNullCharacter(value.getValue());
-    }
 }
