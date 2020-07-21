@@ -1743,7 +1743,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // round(number[, ndigits])
-    @Builtin(name = ROUND, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = ROUND, minNumOfPositionalArgs = 1, parameterNames = {"number", "ndigits"})
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization

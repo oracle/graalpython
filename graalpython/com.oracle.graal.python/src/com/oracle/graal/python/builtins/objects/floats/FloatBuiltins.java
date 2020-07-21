@@ -926,41 +926,63 @@ public final class FloatBuiltins extends PythonBuiltins {
          * The logic is borrowed from Jython.
          */
         @TruffleBoundary
+        private static double op(double x, long n) {
+            // (Slightly less than) n*log2(10).
+            float nlog2_10 = 3.3219f * n;
+
+            // x = a * 2^b and a<2.
+            int b = Math.getExponent(x);
+
+            if (nlog2_10 > 52 - b) {
+                // When n*log2(10) > nmax, the lsb of abs(x) is >1, so x rounds to itself.
+                return x;
+            } else if (nlog2_10 < -(b + 2)) {
+                // When n*log2(10) < -(b+2), abs(x)<0.5*10^n so x rounds to (signed) zero.
+                return Math.copySign(0.0, x);
+            } else {
+                // We have to work it out properly.
+                BigDecimal xx = BigDecimal.valueOf(x);
+                BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_UP);
+                return rr.doubleValue();
+            }
+        }
+
         @Specialization
         double round(double x, long n) {
             if (Double.isNaN(x) || Double.isInfinite(x) || x == 0.0) {
                 // nans, infinities and zeros round to themselves
                 return x;
-            } else {
-                // (Slightly less than) n*log2(10).
-                float nlog2_10 = 3.3219f * n;
-
-                // x = a * 2^b and a<2.
-                int b = Math.getExponent(x);
-
-                if (nlog2_10 > 52 - b) {
-                    // When n*log2(10) > nmax, the lsb of abs(x) is >1, so x rounds to itself.
-                    return x;
-                } else if (nlog2_10 < -(b + 2)) {
-                    // When n*log2(10) < -(b+2), abs(x)<0.5*10^n so x rounds to (signed) zero.
-                    return Math.copySign(0.0, x);
-                } else {
-                    // We have to work it out properly.
-                    BigDecimal xx = BigDecimal.valueOf(x);
-                    BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_UP);
-                    return rr.doubleValue();
-                }
             }
+            double d = op(x, n);
+            if (Double.isInfinite(d)) {
+                throw raise(OverflowError, ErrorMessages.ROUNDED_VALUE_TOO_LARGE);
+            }
+            return d;
         }
 
-        @TruffleBoundary
         @Specialization
         double round(double x, PInt n) {
-            return round(x, n.longValue());
+            long nLong;
+            if (n.compareTo(Long.MAX_VALUE) > 0) {
+                nLong = Long.MAX_VALUE;
+            } else if (n.compareTo(Long.MIN_VALUE) < 0) {
+                nLong = Long.MIN_VALUE;
+            } else {
+                nLong = n.longValue();
+            }
+            return round(x, nLong);
         }
 
         @Specialization
-        long round(double x, @SuppressWarnings("unused") PNone none) {
+        long round(double x, @SuppressWarnings("unused") PNone none,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+            if (nanProfile.profile(Double.isNaN(x))) {
+                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
+            }
+            if (infProfile.profile(Double.isInfinite(x))) {
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
+            }
             return (long) round(x, 0);
         }
 
