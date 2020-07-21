@@ -643,9 +643,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public int lengthWithState(ThreadState state,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Exclusive @Cached ConditionProfile hasLen,
+                    @Exclusive @Cached ConditionProfile ltZero,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raiseNode,
@@ -737,9 +737,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isTrueWithState(ThreadState state,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasBool,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Exclusive @Cached ConditionProfile hasBool,
+                    @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupAttrs,
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
                     @Exclusive @Cached PRaiseNode raiseNode,
@@ -788,7 +788,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public long hashWithState(ThreadState state,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
@@ -819,7 +819,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public int equalsInternal(Object other, ThreadState state,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("isNode") @Cached IsNode isNode,
                     @Exclusive @Cached CallBinaryMethodNode callNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupEqAttrNode) {
@@ -869,7 +869,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("asIndexLookup") @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
         // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
         // and PythonAbstractNativeObject and dispatched polymorphically
@@ -897,7 +897,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
                     @Cached CastToJavaStringNode castToJavaStringNode,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         Object func = lookup.execute(this, __FSPATH__);
         if (func == PNone.NO_VALUE) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
@@ -922,7 +922,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         return asPString(this, lookup, gotState, state, callNode, isSubtypeNode, lib, raise);
     }
 
@@ -952,7 +952,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
                     @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
-                    @Exclusive @Cached ConditionProfile gotState,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
 
@@ -1037,10 +1037,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object callFunctionWithState(ThreadState state, Object[] arguments,
-                    @Exclusive @Cached ConditionProfile hasStateProfile,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CallNode callNode) {
         VirtualFrame frame = null;
-        if (hasStateProfile.profile(state != null)) {
+        if (gotState.profile(state != null)) {
             frame = PArguments.frameForCall(state);
         }
         return callNode.execute(frame, this, arguments);
@@ -1065,12 +1065,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         @Specialization(limit = "3")
         Object getAndCall(ThreadState state, Object method, boolean ignoreGetException, Object receiver, Object[] arguments,
                         @CachedLibrary("receiver") PythonObjectLibrary plib,
-                        @Cached ConditionProfile hasStateProfile,
+                        @Cached ConditionProfile gotState,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                         @Cached CallNode callGet,
                         @Cached CallNode callMethod) {
             VirtualFrame frame = null;
-            if (hasStateProfile.profile(state != null)) {
+            if (gotState.profile(state != null)) {
                 frame = PArguments.frameForCall(state);
             }
             Object get = lookupGet.execute(method, __GET__);
@@ -1115,7 +1115,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("asPIntLookupAttr") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached ConditionProfile gotState,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached ConditionProfile hasIntFunc) {
@@ -1186,7 +1186,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached() ConditionProfile hasIndexFunc,
                     @Shared("asJavaLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
-                    @Exclusive @Cached ConditionProfile gotState,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached() ConditionProfile hasFloatFunc,
                     @Exclusive @Cached PRaiseNode raise) {
@@ -1227,7 +1227,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public long asJavaLongWithState(ThreadState state,
                     @Shared("asJavaLongLookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
-                    @Exclusive @Cached ConditionProfile gotState,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CastToJavaLongExactNode castToLong,
                     @Exclusive @Cached PRaiseNode raise) {
 

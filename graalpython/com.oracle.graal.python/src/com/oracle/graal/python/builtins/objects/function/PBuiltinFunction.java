@@ -50,6 +50,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -179,10 +180,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached ConditionProfile hasStateProfile,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CallUnboundMethodNode call) {
         VirtualFrame frame = null;
-        if (hasStateProfile.profile(state != null)) {
+        if (gotState.profile(state != null)) {
             frame = PArguments.frameForCall(state);
         }
         return call.execute(frame, this, receiver, arguments);

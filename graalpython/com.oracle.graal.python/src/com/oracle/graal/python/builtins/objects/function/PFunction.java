@@ -43,6 +43,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -235,10 +236,10 @@ public class PFunction extends PythonObject {
 
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached ConditionProfile hasStateProfile,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CallNode call) {
         VirtualFrame frame = null;
-        if (hasStateProfile.profile(state != null)) {
+        if (gotState.profile(state != null)) {
             frame = PArguments.frameForCall(state);
         }
         return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
