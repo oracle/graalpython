@@ -239,6 +239,6 @@ final class DefaultPythonDoubleExports {
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
-        return methodLib.callFunctionWithState(method, state, arguments);
+        return methodLib.callObjectWithState(method, state, arguments);
     }
 }

@@ -1055,7 +1055,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object callFunctionWithState(ThreadState state, Object[] arguments,
+    public Object callObjectWithState(ThreadState state, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CallNode callNode) {
         VirtualFrame frame = null;
@@ -1121,7 +1121,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
-        return methodLib.callFunctionWithState(method, state, arguments);
+        return methodLib.callObjectWithState(method, state, arguments);
     }
 
     @ExportMessage

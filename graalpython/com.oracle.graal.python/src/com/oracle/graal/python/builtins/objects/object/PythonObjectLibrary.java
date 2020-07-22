@@ -670,18 +670,18 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Call a callable object.
      */
-    public final Object callFunction(Object callable, VirtualFrame frame, Object... arguments) {
+    public final Object callObject(Object callable, VirtualFrame frame, Object... arguments) {
         ThreadState state = null;
         if (profileHasFrame(frame)) {
             state = PArguments.getThreadState(frame);
         }
-        return callFunctionWithState(callable, state, arguments);
+        return callObjectWithState(callable, state, arguments);
     }
 
     /**
      * Call a callable object.
      */
-    public Object callFunctionWithState(Object callable, ThreadState state, Object... arguments) {
+    public Object callObjectWithState(Object callable, ThreadState state, Object... arguments) {
         throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
     }
 

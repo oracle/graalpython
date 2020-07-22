@@ -1592,16 +1592,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
             int lastValue = values.length - 1;
             Object writeMethod = fileLib.lookupAttributeStrict(file, frame, "write");
             for (int i = 0; i < lastValue; i++) {
-                methodLib.callFunction(writeMethod, frame, valueLib.asPString(values[i]));
-                methodLib.callFunction(writeMethod, frame, sep);
+                methodLib.callObject(writeMethod, frame, valueLib.asPString(values[i]));
+                methodLib.callObject(writeMethod, frame, sep);
             }
             if (lastValue >= 0) {
-                methodLib.callFunction(writeMethod, frame, valueLib.asPString(values[lastValue]));
+                methodLib.callObject(writeMethod, frame, valueLib.asPString(values[lastValue]));
             }
-            methodLib.callFunction(writeMethod, frame, end);
+            methodLib.callObject(writeMethod, frame, end);
             if (flush) {
                 Object flushMethod = fileLib.lookupAttributeStrict(file, frame, "flush");
-                methodLib.callFunction(flushMethod, frame);
+                methodLib.callObject(flushMethod, frame);
             }
             return PNone.NONE;
         }
