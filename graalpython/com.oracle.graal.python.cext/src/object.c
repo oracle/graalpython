@@ -204,12 +204,26 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
 NO_INLINE
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     // the arguments are given as a variable list followed by NULL
-    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
-    for (int i = 1; i < polyglot_get_arg_count() - 1; i++) {
-        PyObject* arg = (PyObject*) polyglot_get_arg(i);
-        Py_XINCREF(arg);
-        PyTuple_SetItem(args, i - 1, arg);
+    va_list vargs;
+    va_list countva;
+    va_start(vargs, callable);
+    va_copy(countva, vargs);
+    int nargs = 0;
+    for (;;) {
+        if (va_arg(countva, PyObject *) != NULL) {
+            nargs++;
+        } else {
+            break;
+        }
     }
+    va_end(countva);
+    PyObject* args = PyTuple_New(nargs);
+    for (int i = 0; i < nargs; i++) {
+        PyObject* arg = (PyObject*) va_arg(vargs, PyObject *);
+        Py_XINCREF(arg);
+        PyTuple_SetItem(args, i, arg);
+    }
+    va_end(vargs);
     return PyObject_CallObject(callable, args);
 }
 
