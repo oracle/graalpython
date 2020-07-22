@@ -255,7 +255,7 @@ PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* 
 NO_INLINE
 PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
     PyObject* args;
-	CallWithPolyglotArgs(args, name, 2, PyTruffle_Tuple_Pack, 0);
+    CallWithPolyglotArgs(args, name, PyTruffle_Tuple_Pack, 0);
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(callable), native_to_java(name), native_to_java(args));
 }
 

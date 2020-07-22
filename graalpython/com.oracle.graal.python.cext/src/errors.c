@@ -161,7 +161,7 @@ int PyErr_ExceptionMatches(PyObject *exc) {
 
 NO_INLINE
 PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
-    CallWithPolyglotArgs(PyObject* formatted_msg, fmt, 2, PyTruffle_Unicode_FromFormat, fmt);
+    CallWithPolyglotArgs(PyObject* formatted_msg, fmt, PyTruffle_Unicode_FromFormat, fmt);
     UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(formatted_msg));
     return NULL;
 }

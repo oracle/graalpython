@@ -230,7 +230,7 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
 
 #define AS_I64(__arg__) (polyglot_fits_in_i64((__arg__)) ? polyglot_as_i64((__arg__)) : (int64_t)(__arg__))
 
-MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc) {
+MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) {
     size_t fmt_size = strlen(fmt) + 1;
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
@@ -320,12 +320,12 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
 }
 
 PyObject* PyUnicode_FromFormatV(const char* format, va_list va) {
-    return PyTruffle_Unicode_FromFormat(format, va, NULL, 0);
+    return PyTruffle_Unicode_FromFormat(format, va);
 }
 
 NO_INLINE
 PyObject* PyUnicode_FromFormat(const char* format, ...) {
-    CallWithPolyglotArgs(PyObject* result, format, 1, PyTruffle_Unicode_FromFormat, format);
+    CallWithPolyglotArgs(PyObject* result, format, PyTruffle_Unicode_FromFormat, format);
     return result;
 }
 

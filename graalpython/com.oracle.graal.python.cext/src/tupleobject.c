@@ -90,7 +90,7 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
 }
 
 MUST_INLINE
-PyObject* PyTruffle_Tuple_Pack(int dummy, va_list vlist, void **argv, int argc) {
+PyObject* PyTruffle_Tuple_Pack(int dummy, va_list vlist) {
     PyObject *result = PyTuple_New(argc);
     for (int i = 0; i < argc; i++) {
         PyObject *o = (PyObject*) argv[i];

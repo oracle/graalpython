@@ -273,7 +273,7 @@ typedef struct _build_stack {
     struct _build_stack* prev;
 } build_stack;
 
-MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list va, void** poly_args, int argc) {
+MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list va) {
     PyObject* (*converter)(void*) = NULL;
     int offset = 0;
     char argchar[2] = {'\0'};
@@ -482,18 +482,18 @@ PyObject* Py_VaBuildValue(const char *format, va_list va) {
 }
 
 PyObject* _Py_VaBuildValue_SizeT(const char *format, va_list va) {
-    return _PyTruffle_BuildValue(format, va, NULL, 0);
+    return _PyTruffle_BuildValue(format, va);
 }
 
 NO_INLINE
 PyObject* Py_BuildValue(const char *format, ...) {
-    CallWithPolyglotArgs(PyObject* result, format, 1, _PyTruffle_BuildValue, format);
+    CallWithPolyglotArgs(PyObject* result, format, _PyTruffle_BuildValue, format);
     return result;
 }
 
 NO_INLINE
 PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
-    CallWithPolyglotArgs(PyObject* result, format, 1, _PyTruffle_BuildValue, format);
+    CallWithPolyglotArgs(PyObject* result, format, _PyTruffle_BuildValue, format);
     return result;
 }
 
