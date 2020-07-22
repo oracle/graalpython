@@ -551,10 +551,13 @@ int _PyArg_UnpackStack(PyObject *const *args, Py_ssize_t nargs, const char *name
         return 0;
     }
 
+    va_list vargs;
+    va_start(vargs, max);
     for (i = 0; i < nargs; i++) {
-        o = polyglot_get_arg(i + 5);
+        o = va_arg(vargs, PyObject **);
         *o = args[i];
     }
+    va_end(vargs);
     return 1;
 }
 
@@ -601,10 +604,13 @@ int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize
         return 0;
     }
 
+    va_list vargs;
+    va_start(vargs, max);
     for (i = 0; i < l; i++) {
-        o = polyglot_get_arg(i + 4);
+        o = va_arg(vargs, PyObject **);
         *o = PyTuple_GET_ITEM(args, i);
     }
+    va_end(vargs);
     return 1;
 }
 
