@@ -241,8 +241,16 @@ PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* 
 
 NO_INLINE
 PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
-    PyObject* args;
-    CallWithPolyglotArgs(args, name, PyTruffle_Tuple_Pack, 0);
+    va_list vargs;
+    va_start(vargs, name);
+    int argc = polyglot_get_array_size(vargs);
+    PyObject* args = PyTuple_New(argc);
+    for (int i = 0; i < argc; i++) {
+        PyObject *arg = va_arg(vargs, PyObject*);
+        Py_INCREF(arg);
+        PyTuple_SetItem(args, i, arg);
+    }
+    va_end(vargs);
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(callable), native_to_java(name), native_to_java(args));
 }
 

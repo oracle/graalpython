@@ -380,7 +380,6 @@ extern PyObject* wrapped_null;
 
 /* STR */
 __attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va);
-__attribute__((always_inline)) PyObject* PyTruffle_Tuple_Pack(int dummy, va_list va);
 
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
