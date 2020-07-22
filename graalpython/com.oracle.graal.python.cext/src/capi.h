@@ -391,12 +391,6 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes);
 /* MEMORYVIEW, BUFFERDECORATOR */
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
 
-#define CallWithPolyglotArgs(result, last, function, ...)               \
-    va_list __poly_args;                                                \
-    va_start(__poly_args, last);                                        \
-    result = function(__VA_ARGS__, __poly_args);                        \
-    va_end(__poly_args)
-
 typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 

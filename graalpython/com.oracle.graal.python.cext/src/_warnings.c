@@ -70,12 +70,18 @@ int PyErr_WarnEx(PyObject *category, const char *text, Py_ssize_t stack_level) {
 }
 
 NO_INLINE int PyErr_WarnFormat(PyObject *category, Py_ssize_t stack_level, const char *format, ...) {
-    CallWithPolyglotArgs(PyObject* result, format, PyTruffle_Unicode_FromFormat, format);
+    va_list args;
+    va_start(args, format);
+    PyObject* result = PyTruffle_Unicode_FromFormat(format, args);
+    va_end(args);
     return warn_unicode(category, result, stack_level, Py_None);
 }
 
 int PyErr_ResourceWarning(PyObject *source, Py_ssize_t stack_level, const char *format, ...) {
-    CallWithPolyglotArgs(PyObject* result, format, PyTruffle_Unicode_FromFormat, format);
+    va_list args;
+    va_start(args, format);
+    PyObject* result = PyTruffle_Unicode_FromFormat(format, args);
+    va_end(args);
     return warn_unicode(PyExc_ResourceWarning, result, stack_level, source);
 }
 

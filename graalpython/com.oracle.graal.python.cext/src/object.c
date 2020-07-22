@@ -163,13 +163,15 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
 
 NO_INLINE
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
-    PyObject* args;
-
     if (fmt == NULL || fmt[0] == '\0') {
         return PyObject_CallObject(callable, NULL);
     }
 
-    CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
+    va_list va;
+    va_start(va, fmt);
+    PyObject* args = Py_VaBuildValue(fmt, va);
+    va_end(va);
+
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -183,13 +185,15 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
 
 NO_INLINE
 PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
-    PyObject* args;
-
     if (fmt == NULL || fmt[0] == '\0') {
         return PyObject_CallObject(callable, NULL);
     }
 
-    CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
+    va_list va;
+    va_start(va, fmt);
+    PyObject* args = Py_VaBuildValue(fmt, va);
+    va_end(va);
+
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -203,24 +207,14 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
 
 NO_INLINE
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
-    // the arguments are given as a variable list followed by NULL
     va_list vargs;
-    va_list countva;
     va_start(vargs, callable);
-    va_copy(countva, vargs);
-    int nargs = 0;
-    for (;;) {
-        if (va_arg(countva, PyObject *) != NULL) {
-            nargs++;
-        } else {
-            break;
-        }
-    }
-    va_end(countva);
+    // the arguments are given as a variable list followed by NULL
+    int nargs = polyglot_get_array_size(vargs) - 1;
     PyObject* args = PyTuple_New(nargs);
     for (int i = 0; i < nargs; i++) {
         PyObject* arg = (PyObject*) va_arg(vargs, PyObject *);
-        Py_XINCREF(arg);
+        Py_INCREF(arg);
         PyTuple_SetItem(args, i, arg);
     }
     va_end(vargs);
@@ -234,7 +228,10 @@ PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* 
     if (fmt == NULL || fmt[0] == '\0') {
         args = Py_None;
     } else {
-        CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
+        va_list va;
+        va_start(va, fmt);
+        args = Py_VaBuildValue(fmt, va);
+        va_end(va);
     }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
@@ -243,7 +240,8 @@ NO_INLINE
 PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
     va_list vargs;
     va_start(vargs, name);
-    int argc = polyglot_get_array_size(vargs);
+    // the arguments are given as a variable list followed by NULL
+    int argc = polyglot_get_array_size(vargs) - 1;
     PyObject* args = PyTuple_New(argc);
     for (int i = 0; i < argc; i++) {
         PyObject *arg = va_arg(vargs, PyObject*);
@@ -260,7 +258,10 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     if (fmt == NULL || fmt[0] == '\0') {
         args = Py_None;
     } else {
-        CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
+        va_list va;
+        va_start(va, fmt);
+        args = Py_VaBuildValue(fmt, va);
+        va_end(va);
     }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }

@@ -234,8 +234,6 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) 
     size_t fmt_size = strlen(fmt) + 1;
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
-    int use_valist = args == NULL;
-    int pos = 0;
 
     int remaining_space = 2047;
     char* buffer = (char*)calloc(sizeof(char), remaining_space + 1);
@@ -256,11 +254,8 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) 
                     allocated = NULL;
                 }
                 variable = NULL;
-            } else if (use_valist) {
-                bytes_written = vsnprintf(buffer, remaining_space, fmtcpy, va);
             } else {
-                strncpy(buffer, fmtcpy, remaining_space);
-                bytes_written = strlen(fmtcpy);
+                bytes_written = vsnprintf(buffer, remaining_space, fmtcpy, va);
             }
             remaining_space -= bytes_written;
             buffer += bytes_written;
@@ -281,7 +276,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) 
             case 'R':
                 if (converter == NULL) converter = PyObject_Repr;
                 c[1] = 's';
-                allocated = variable = as_char_pointer(converter(use_valist ? va_arg(va, PyObject*) : (PyObject*)(args[pos++])));
+                allocated = variable = as_char_pointer(converter(va_arg(va, PyObject*)));
                 break;
             case '%':
                 // literal %
@@ -290,11 +285,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) 
                 // This case should just treat it's argument as an integer
                 c[1] = 'd';
             default:
-                // if we're reading args from a void* array, read it now,
-                // otherwise there's nothing to do
-                if (args != NULL) {
-                    variable = args[pos++];
-                }
+                variable = va_arg(va, PyObject*);
             }
             // skip over next char, we checked it
             c += 1;
@@ -308,10 +299,8 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) 
         if (allocated) {
             free(allocated);
         }
-    } else if (use_valist) {
-        vsnprintf(buffer, remaining_space, fmtcpy, va);
     } else {
-        strncpy(buffer, fmtcpy, remaining_space);
+        vsnprintf(buffer, remaining_space, fmtcpy, va);
     }
 
     PyObject* result = PyUnicode_FromString(full_buffer);
@@ -325,7 +314,10 @@ PyObject* PyUnicode_FromFormatV(const char* format, va_list va) {
 
 NO_INLINE
 PyObject* PyUnicode_FromFormat(const char* format, ...) {
-    CallWithPolyglotArgs(PyObject* result, format, PyTruffle_Unicode_FromFormat, format);
+    va_list args;
+    va_start(args, format);
+    PyObject* result = PyTruffle_Unicode_FromFormat(format, args);
+    va_end(args);
     return result;
 }
 
