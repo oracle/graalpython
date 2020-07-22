@@ -943,8 +943,9 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getQualName();
+        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getName.execute(cls, __QUALNAME__);
         }
 
         @Specialization(guards = "!isNoValue(value)")
