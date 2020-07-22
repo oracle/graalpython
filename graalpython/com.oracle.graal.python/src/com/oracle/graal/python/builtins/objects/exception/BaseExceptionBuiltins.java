@@ -322,7 +322,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached ArgsNode argsNode) {
             Object clazz = lib.getLazyPythonClass(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
-            Object dict = lib.lookupAttribute(self, __DICT__);
+            Object dict = lib.lookupAttributeOnTypeStrict(self, __DICT__);
             return factory().createTuple(new Object[]{clazz, args, dict});
         }
     }

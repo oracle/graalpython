@@ -101,10 +101,10 @@ public class PythonObjectLibraryTests extends PythonTests {
         PythonObjectLibrary lib = PythonObjectLibrary.getFactory().getUncached();
         execInContext(() -> {
             Object value = createValue.call();
-            Object attr = lib.lookupAttribute(value, attrName, false, false);
+            Object attr = lib.lookupAttribute(value, null, attrName);
             assertAttr(attr, expectNoValue);
 
-            attr = lib.lookupAttribute(value, attrName, true, false);
+            attr = lib.lookupAttributeOnType(value, attrName);
             assertAttr(attr, expectNoValue);
             return null;
         });

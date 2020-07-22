@@ -246,7 +246,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object absObject(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-            Object method = lib.lookupSpecialMethod(object, __ABS__);
+            Object method = lib.lookupAttributeOnType(object, __ABS__);
             if (method == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
@@ -1590,7 +1590,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             int lastValue = values.length - 1;
-            Object writeMethod = fileLib.lookupAttributeStrict(file, "write");
+            Object writeMethod = fileLib.lookupAttributeStrict(file, frame, "write");
             for (int i = 0; i < lastValue; i++) {
                 methodLib.callFunction(writeMethod, frame, valueLib.asPString(values[i]));
                 methodLib.callFunction(writeMethod, frame, sep);
@@ -1600,7 +1600,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             methodLib.callFunction(writeMethod, frame, end);
             if (flush) {
-                Object flushMethod = fileLib.lookupAttributeStrict(file, "flush");
+                Object flushMethod = fileLib.lookupAttributeStrict(file, frame, "flush");
                 methodLib.callFunction(flushMethod, frame);
             }
             return PNone.NONE;

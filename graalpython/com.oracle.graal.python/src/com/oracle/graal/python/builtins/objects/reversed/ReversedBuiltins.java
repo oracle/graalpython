@@ -181,10 +181,8 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isPSequence()")
         public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
-            Object content = callUnaryNode.executeObject(frame, reduce);
+            Object content = pol.lookupAndCallSpecialMethod(self.getPSequence(), frame, __REDUCE__);
             return reduceInternal(self, content, self.index, pol);
         }
 

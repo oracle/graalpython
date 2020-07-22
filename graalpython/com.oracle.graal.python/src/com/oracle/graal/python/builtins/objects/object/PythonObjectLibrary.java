@@ -386,6 +386,14 @@ public abstract class PythonObjectLibrary extends Library {
         }
     }
 
+    private ThreadState getStateFromFrame(VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
+            return PArguments.getThreadState(frame);
+        } else {
+            return null;
+        }
+    }
+
     private boolean profileHasFrame(VirtualFrame frame) {
         if (isAdoptable()) {
             if (hasFrameProfile == null) {
@@ -589,47 +597,74 @@ public abstract class PythonObjectLibrary extends Library {
      *
      * @param receiver self
      * @param name attribute name
-     * @param inheritedOnly determines whether the lookup should start on the class or on the object
-     * @param strict whether to raise {@code AttributeError} when the attribute is not found
+     * @return found attribute object or {@link PNone#NO_VALUE}
      */
-    public Object lookupAttribute(Object receiver, String name, boolean inheritedOnly, boolean strict) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    public Object lookupAttribute(Object receiver, VirtualFrame frame, String name) {
+        return lookupAttributeInternal(receiver, getStateFromFrame(frame), name, false);
     }
 
     /**
-     * @see #lookupAttribute
+     * @see #lookupAttribute(Object, VirtualFrame, String)
      */
-    public final Object lookupAttribute(Object receiver, String name) {
-        return lookupAttribute(receiver, name, false, false);
+    public final Object lookupAttributeWithState(Object receiver, ThreadState state, String name) {
+        return lookupAttributeInternal(receiver, state, name, false);
     }
 
     /**
-     * Like {@link #lookupAttribute(Object, String)}, but throws {@code AttributeError} when the
-     * attribute is not found
+     * Looks up an attribute for the given receiver like {@code PyObject_GetAttr}. Raises an
+     * {@code AttributeError} if not found.
+     *
+     * @param receiver self
+     * @param name attribute name
+     * @return found attribute object
      */
-    public final Object lookupAttributeStrict(Object receiver, String name) {
-        return lookupAttribute(receiver, name, false, true);
+    public final Object lookupAttributeStrict(Object receiver, VirtualFrame frame, String name) {
+        return lookupAttributeInternal(receiver, getStateFromFrame(frame), name, true);
     }
 
     /**
-     * Looks up an unbound method object on the receiver's type that can be called with
-     * {@link #callUnboundMethod}
+     * @see #lookupAttributeStrict(Object, VirtualFrame, String)
+     */
+    public final Object lookupAttributeStrictWithState(Object receiver, ThreadState state, String name) {
+        return lookupAttributeInternal(receiver, state, name, true);
+    }
+
+    /**
+     * Method to implement {@link #lookupAttribute} and {@link #lookupAttributeStrict} for the
+     * library. Implementor note: state may be null.
+     */
+    protected Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict) {
+        // Default implementation for objects that only want to provide special methods
+        return lookupAttributeOnTypeInternal(receiver, name, strict);
+    }
+
+    /**
+     * Lookup an attribute directly in MRO of the receiver's type. Typically used to lookup special
+     * methods and attributes. Equivalent of CPython's {@code _PyType_Lookup}.
      * 
      * @param receiver self
-     * @param name method name
-     * @return unbound method descriptor
+     * @param name attribute name
+     * @return found attribute or {@code PNone#NO_VALUE}
      */
-    public final Object lookupSpecialMethod(Object receiver, String name) {
-        return lookupAttribute(receiver, name, true, false);
+    public final Object lookupAttributeOnType(Object receiver, String name) {
+        return lookupAttributeOnTypeInternal(receiver, name, false);
     }
 
     /**
-     * Like {@link #lookupSpecialMethod(Object, String)}, but throws {@code AttributeError} when the
-     * method is not found
+     * Like {@link #lookupAttributeOnType(Object, String)}, but raises an {@code AttributeError}
+     * when the attribute is not found.
      */
-    public final Object lookupSpecialMethodStrict(Object receiver, String name) {
-        return lookupAttribute(receiver, name, true, true);
+    public final Object lookupAttributeOnTypeStrict(Object receiver, String name) {
+        return lookupAttributeOnTypeInternal(receiver, name, true);
+    }
+
+    /**
+     * Method to implement {@link #lookupAttributeOnType} and {@link #lookupAttributeOnTypeStrict}
+     * for the library.
+     */
+    protected Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
     /**
@@ -654,7 +689,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Call an unbound method or other unbound descriptor using given receiver. Will first call
      * {@code __get__} to bind the descriptor, then call the bound object. There are optimized
      * implementations for plain and builtin functions that avoid creating the intermediate bound
-     * object. Typically called on a result of {@link #lookupSpecialMethod}.
+     * object. Typically called on a result of {@link #lookupAttributeOnType}.
      *
      * @param method unbound method or descriptor object whose {@code __get__} hasn't been called
      * @param receiver self

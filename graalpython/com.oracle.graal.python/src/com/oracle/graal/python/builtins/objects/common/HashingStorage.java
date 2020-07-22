@@ -205,7 +205,7 @@ public abstract class HashingStorage {
         }
 
         protected boolean hasIterAttrButNotBuiltin(PHashingCollection col, PythonObjectLibrary lib) {
-            Object attr = lib.lookupAttribute(col, SpecialMethodNames.__ITER__);
+            Object attr = lib.lookupAttributeOnType(col, SpecialMethodNames.__ITER__);
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
 

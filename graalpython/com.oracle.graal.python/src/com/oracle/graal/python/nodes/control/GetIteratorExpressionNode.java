@@ -142,7 +142,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            Object iterMethod = iterMethodProfile.profile(plib.lookupSpecialMethod(value, __ITER__));
+            Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(value, __ITER__));
             if (iterMethod != PNone.NONE) {
                 if (iterMethod != PNone.NO_VALUE) {
                     Object iterObj = methodLib.callUnboundMethodIgnoreGetException(iterMethod, frame, value);
@@ -152,7 +152,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                         throw nonIterator(raiseNode, iterObj);
                     }
                 }
-                Object getItemAttrObj = plib.lookupSpecialMethod(value, __GETITEM__);
+                Object getItemAttrObj = plib.lookupAttributeOnType(value, __GETITEM__);
                 if (getItemAttrObj != PNone.NO_VALUE) {
                     return factory.createSequenceIterator(value);
                 }

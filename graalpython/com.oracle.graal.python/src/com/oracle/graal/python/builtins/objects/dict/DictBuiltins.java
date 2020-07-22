@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -77,10 +78,8 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -329,10 +327,9 @@ public final class DictBuiltins extends PythonBuiltins {
         protected abstract Object execute(VirtualFrame frame, Object self, Object key);
 
         @Specialization(guards = "hasMissing(self, lib)", limit = "1")
-        protected Object misssing(Object self, Object key,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Exclusive @Cached CallNode callNode) {
-            return callNode.execute(lib.lookupAttribute(self, __MISSING__), key);
+        protected Object misssing(VirtualFrame frame, Object self, Object key,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            return lib.lookupAndCallSpecialMethod(self, frame, __MISSING__, key);
         }
 
         @Specialization(guards = "!hasMissing(self, lib)", limit = "1")
@@ -343,7 +340,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         protected boolean hasMissing(Object self, PythonObjectLibrary lib) {
-            Object missing = lib.lookupAttribute(self, __MISSING__);
+            Object missing = lib.lookupAttributeOnType(self, __MISSING__);
             return missing != PNone.NO_VALUE && missing instanceof PMethod;
         }
     }
@@ -633,7 +630,7 @@ public final class DictBuiltins extends PythonBuiltins {
             return newStorage;
         }
 
-        @Specialization(guards = {"args.length == 1", "!isDict(args)", "hasKeysAttr(args, libArg)"})
+        @Specialization(guards = {"args.length == 1", "!isDict(args)", "hasKeysAttr(args, frame, libArg)"})
         public Object updateMapping(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
@@ -650,7 +647,7 @@ public final class DictBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"args.length == 1", "!isDict(args)", "!hasKeysAttr(args, libArg)"})
+        @Specialization(guards = {"args.length == 1", "!isDict(args)", "!hasKeysAttr(args, frame, libArg)"})
         public Object updateSequence(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
@@ -703,8 +700,8 @@ public final class DictBuiltins extends PythonBuiltins {
             return isDict(args) && args[0] == self;
         }
 
-        protected boolean hasKeysAttr(Object[] args, PythonObjectLibrary lib) {
-            return lib.lookupAttribute(args[0], KEYS) != PNone.NO_VALUE;
+        protected boolean hasKeysAttr(Object[] args, VirtualFrame frame, PythonObjectLibrary lib) {
+            return lib.lookupAttribute(args[0], frame, KEYS) != PNone.NO_VALUE;
         }
 
     }
@@ -714,7 +711,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromKeysNode extends PythonBuiltinNode {
 
-        @Specialization(guards = {"lib.isIterable(iterable)", "isBuiltinType(cls)", "hasBuiltinSetItem(cls, lib)"})
+        @Specialization(guards = {"lib.isIterable(iterable)", "isBuiltinType(cls)", "hasBuiltinSetItem(cls, frame, lib)"})
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary libStorage,
@@ -740,24 +737,23 @@ public final class DictBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(guards = {"lib.isIterable(iterable)", "!isBuiltinType(cls) || !hasBuiltinSetItem(cls, lib)"})
+        @Specialization(guards = {"lib.isIterable(iterable)", "!isBuiltinType(cls) || !hasBuiltinSetItem(cls, frame, lib)"})
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Cached("create(__CALL__)") LookupAndCallVarargsNode constructNode,
-                        @Cached CallNode callSetItemNode,
+                        // 2 for method calls, 2 for setitem lookups
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached GetIteratorNode getIteratorNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ConditionProfile noSetItemProfile) {
-            Object dict = constructNode.execute(null, cls, new Object[]{cls});
-            Object attrSetItem = lib.lookupAttribute(dict, __SETITEM__);
+            Object dict = lib.callObject(cls, frame);
+            Object setitemMethod = lib.lookupAttributeOnType(dict, __SETITEM__);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
-            if (noSetItemProfile.profile(attrSetItem != PNone.NO_VALUE)) {
+            if (noSetItemProfile.profile(setitemMethod != PNone.NO_VALUE)) {
                 Object it = getIteratorNode.executeWith(frame, iterable);
                 while (true) {
                     try {
                         Object key = nextNode.execute(frame, it);
-                        callSetItemNode.execute(frame, attrSetItem, key, val);
+                        lib.callUnboundMethod(setitemMethod, frame, dict, key, val);
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         break;
@@ -786,8 +782,9 @@ public final class DictBuiltins extends PythonBuiltins {
             return type == PythonBuiltinClassType.PDict;
         }
 
-        protected boolean hasBuiltinSetItem(Object cls, PythonObjectLibrary lib) {
-            Object attr = lib.lookupAttribute(cls, __SETITEM__);
+        protected boolean hasBuiltinSetItem(Object cls, VirtualFrame frame, PythonObjectLibrary lib) {
+            // msimacek: this should rather use direct MRO lookup
+            Object attr = lib.lookupAttribute(cls, frame, __SETITEM__);
             return attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction;
         }
     }

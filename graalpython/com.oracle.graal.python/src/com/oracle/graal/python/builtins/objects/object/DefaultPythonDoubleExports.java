@@ -44,8 +44,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -170,7 +171,7 @@ final class DefaultPythonDoubleExports {
                     @Cached.Exclusive @Cached CallUnaryMethodNode callNode,
                     @Cached.Exclusive @Cached IsSubtypeNode isSubtypeNode,
                     @Cached.Exclusive @Cached PRaiseNode raise,
-                    @Cached.Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
     }
 
@@ -208,16 +209,28 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    public static Object lookupAttribute(Double x, String name, boolean inheritedOnly, boolean strict,
-                    @Exclusive @Cached LookupAttributeNode lookup) {
-        return lookup.execute(x, name, inheritedOnly, strict);
+    public static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return lookup.execute(frame, receiver, name, strict);
+    }
+
+    @ExportMessage
+    public static Object lookupAttributeOnTypeInternal(Double receiver, String name, boolean strict,
+                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
     }
 
     @ExportMessage
     public static Object lookupAndCallSpecialMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupSpecialMethodStrict(receiver, methodName);
+        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
         return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
     }
 
@@ -225,7 +238,7 @@ final class DefaultPythonDoubleExports {
     public static Object lookupAndCallRegularMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrict(receiver, methodName);
+        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
         return methodLib.callFunctionWithState(method, state, arguments);
     }
 }

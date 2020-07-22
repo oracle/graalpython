@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -330,27 +329,28 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object lookupAttribute(Object x, String name, boolean inheritedOnly, boolean strict,
+    public static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
+                    @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
-        return lookup.execute(x, name, inheritedOnly, strict);
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return lookup.execute(frame, receiver, name, strict);
     }
 
     @ExportMessage
-    public static Object callFunctionWithState(Object receiver, ThreadState state, Object[] arguments,
-                    @Exclusive @Cached ConditionProfile hasStateProfile,
-                    @Exclusive @Cached CallNode callNode) {
-        VirtualFrame frame = null;
-        if (hasStateProfile.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
-        }
-        return callNode.execute(frame, receiver, arguments);
+    public static Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict,
+                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
     }
 
     @ExportMessage
     public static Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupSpecialMethodStrict(receiver, methodName);
+        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
         return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
     }
 
@@ -358,7 +358,7 @@ final class DefaultPythonObjectExports {
     public static Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrict(receiver, methodName);
+        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
         return methodLib.callFunctionWithState(method, state, arguments);
     }
 }

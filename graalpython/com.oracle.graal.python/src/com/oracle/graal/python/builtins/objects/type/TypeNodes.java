@@ -837,7 +837,7 @@ public abstract class TypeNodes {
         }
 
         private boolean hasDict(Object obj) {
-            return getObjectLibrary().lookupAttribute(obj, __DICT__) != PNone.NO_VALUE;
+            return getObjectLibrary().lookupAttributeOnType(obj, __DICT__) != PNone.NO_VALUE;
         }
 
         private GetObjectArrayNode getObjectArrayNode() {
@@ -1005,7 +1005,7 @@ public abstract class TypeNodes {
         }
 
         protected boolean hasDict(Object obj, PythonObjectLibrary objectLibrary) {
-            return objectLibrary.lookupAttribute(obj, __DICT__) != PNone.NO_VALUE;
+            return objectLibrary.lookupAttribute(obj, null, __DICT__) != PNone.NO_VALUE;
         }
     }
 
