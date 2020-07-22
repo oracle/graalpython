@@ -41,6 +41,8 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -76,22 +78,34 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     @Specialization(limit = "1", //
                     guards = {"dynamicObject == cachedObject", "key == cachedKey"}, //
                     assumptions = {"singleContextAssumption()", "propertyAssumption"})
-    protected Object readFinal(DynamicObject dynamicObject, String key,
+    protected Object readFinalModuleAttr(PythonModule dynamicObject, String key,
                     @Cached("key") String cachedKey,
-                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
+                    @Cached(value = "dynamicObject", weak = true) PythonModule cachedObject,
                     @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
                     @Cached(value = "getAttribute(dynamicObject, key)", weak = true) Object value) {
         return value;
     }
 
-    @Specialization(guards = "key == cachedKey", limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = "readFinal")
+    @SuppressWarnings("unused")
+    @Specialization(limit = "1", //
+                    guards = {"dynamicObject == cachedObject", "key == cachedKey"}, //
+                    assumptions = {"singleContextAssumption()", "propertyAssumption"})
+    protected Object readFinalClassAttr(PythonManagedClass dynamicObject, String key,
+                    @Cached("key") String cachedKey,
+                    @Cached(value = "dynamicObject", weak = true) PythonManagedClass cachedObject,
+                    @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
+                    @Cached(value = "getAttribute(dynamicObject, key)", weak = true) Object value) {
+        return value;
+    }
+
+    @Specialization(guards = "key == cachedKey", limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readFinalModuleAttr", "readFinalClassAttr"})
     protected Object readDirect(DynamicObject dynamicObject, @SuppressWarnings("unused") String key,
                     @Cached("key") String cachedKey,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         return dylib.getOrDefault(dynamicObject, cachedKey, PNone.NO_VALUE);
     }
 
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readDirect", "readFinal"})
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readDirect", "readFinalModuleAttr", "readFinalClassAttr"})
     protected Object read(DynamicObject dynamicObject, Object key,
                     @Cached CastToJavaStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
