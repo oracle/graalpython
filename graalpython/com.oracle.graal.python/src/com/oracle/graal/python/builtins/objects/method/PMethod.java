@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -76,5 +78,10 @@ public final class PMethod extends PythonBuiltinObject {
     @ExportMessage
     protected boolean hasSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) {
         return lib.hasSourceLocation(function);
+    }
+
+    @ExportMessage
+    protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
+        return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
     }
 }

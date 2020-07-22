@@ -34,7 +34,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 
 import java.util.List;
 
@@ -44,7 +43,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -56,7 +54,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -184,20 +181,6 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Fallback
         boolean eq(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return false;
-        }
-    }
-
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doGeneric(PMethod self) {
-            return PythonAbstractObject.systemHashCode(self.getSelf()) ^ PythonAbstractObject.systemHashCode(self.getFunction());
-        }
-
-        @Specialization
-        Object doGeneric(PBuiltinMethod self) {
-            return PythonAbstractObject.systemHashCode(self.getSelf()) ^ PythonAbstractObject.systemHashCode(self.getFunction());
         }
     }
 

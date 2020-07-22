@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -64,5 +66,10 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     @SuppressWarnings("static-method")
     public boolean isCallable() {
         return true;
+    }
+
+    @ExportMessage
+    protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
+        return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
     }
 }
