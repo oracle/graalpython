@@ -701,8 +701,6 @@ int PyTruffle_Debug(void *arg) {
     return 0;
 }
 
-#define ARG(__n) ((PyObject*)polyglot_get_arg((__n)))
-
 int truffle_ptr_compare(void* x, void* y, int op) {
     switch (op) {
     case Py_LT:
