@@ -417,6 +417,7 @@ public abstract class ErrorMessages {
     public static final String READONLY_ATTRIBUTE = "readonly attribute";
     public static final String REQUIRES_CODE_OBJ = "%s() requires a code object with %d free vars, not %d";
     public static final String REQUIRES_INT_OR_CHAR = "%%%c requires int or char";
+    public static final String ROUNDED_VALUE_TOO_LARGE = "rounded value too large to represent";
     public static final String S_FORMAT_NUMBER_IS_REQUIRED_NOT_S = "%%%s format: a number is required, not %p";
     public static final String S_FORMAT_INTEGER_IS_REQUIRED_NOT_S = "%%%s format: an integer is required, not %p";
     public static final String C_ARG_NOT_IN_RANGE256_DECIMAL = "%%c arg not in range(256)";

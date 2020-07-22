@@ -458,9 +458,9 @@ public final class FloatBuiltins extends PythonBuiltins {
                 // v**(+/-)inf is 1.0 if abs(v) == 1, unlike on Java
                 return 1;
             }
-            if (left == 0 && right < 0) {
+            if (left == 0 && right < 0 && Double.isFinite(right)) {
                 negativeRaise.enter();
-                // 0**w is an error if w is negative, unlike Java
+                // 0**w is an error if w is finite and negative, unlike Java
                 throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return 0;
@@ -480,7 +480,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (doSpecialCases(left, right, negativeRaise) == 1) {
                 return 1.0;
             }
-            if (left < 0 && (right % 1 != 0)) {
+            if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
                 throw new UnexpectedResultException(callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none));
@@ -495,7 +495,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (doSpecialCases(left, right, negativeRaise) == 1) {
                 return 1.0;
             }
-            if (left < 0 && (right % 1 != 0)) {
+            if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
                 return callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none);
             }
@@ -608,19 +608,19 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         PTuple doDL(double left, long right) {
             raiseDivisionByZero(right == 0);
-            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+            return factory().createTuple(new Object[]{Math.floor(left / right), ModNode.op(left, right)});
         }
 
         @Specialization
         PTuple doDD(double left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+            return factory().createTuple(new Object[]{Math.floor(left / right), ModNode.op(left, right)});
         }
 
         @Specialization
         PTuple doLD(long left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return factory().createTuple(new Object[]{Math.floor(left / right), left % right});
+            return factory().createTuple(new Object[]{Math.floor(left / right), ModNode.op(left, right)});
         }
 
         @Specialization(guards = {"accepts(left)", "accepts(right)"})
@@ -820,41 +820,53 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class ModNode extends FloatBinaryBuiltinNode {
+    public abstract static class ModNode extends FloatBinaryBuiltinNode {
         @Specialization
         double doDL(double left, long right) {
             raiseDivisionByZero(right == 0);
-            return left % right;
+            return op(left, right);
         }
 
         @Specialization
         double doDL(double left, PInt right) {
             raiseDivisionByZero(right.isZero());
-            return left % right.doubleValue();
+            return op(left, right.doubleValue());
         }
 
         @Specialization
         double doDD(double left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return left % right;
+            return op(left, right);
         }
 
         @Specialization
         double doLD(long left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return left % right;
+            return op(left, right);
         }
 
         @Specialization
         double doPiD(PInt left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return left.doubleValue() % right;
+            return op(left.doubleValue(), right);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        public static double op(double left, double right) {
+            double mod = left % right;
+            if (mod != 0.0) {
+                if ((right < 0) != (mod < 0)) {
+                    mod += right;
+                }
+            } else {
+                mod = right < 0 ? -0.0 : 0.0;
+            }
+            return mod;
         }
     }
 
@@ -914,41 +926,63 @@ public final class FloatBuiltins extends PythonBuiltins {
          * The logic is borrowed from Jython.
          */
         @TruffleBoundary
+        private static double op(double x, long n) {
+            // (Slightly less than) n*log2(10).
+            float nlog2_10 = 3.3219f * n;
+
+            // x = a * 2^b and a<2.
+            int b = Math.getExponent(x);
+
+            if (nlog2_10 > 52 - b) {
+                // When n*log2(10) > nmax, the lsb of abs(x) is >1, so x rounds to itself.
+                return x;
+            } else if (nlog2_10 < -(b + 2)) {
+                // When n*log2(10) < -(b+2), abs(x)<0.5*10^n so x rounds to (signed) zero.
+                return Math.copySign(0.0, x);
+            } else {
+                // We have to work it out properly.
+                BigDecimal xx = BigDecimal.valueOf(x);
+                BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_UP);
+                return rr.doubleValue();
+            }
+        }
+
         @Specialization
         double round(double x, long n) {
             if (Double.isNaN(x) || Double.isInfinite(x) || x == 0.0) {
                 // nans, infinities and zeros round to themselves
                 return x;
-            } else {
-                // (Slightly less than) n*log2(10).
-                float nlog2_10 = 3.3219f * n;
-
-                // x = a * 2^b and a<2.
-                int b = Math.getExponent(x);
-
-                if (nlog2_10 > 52 - b) {
-                    // When n*log2(10) > nmax, the lsb of abs(x) is >1, so x rounds to itself.
-                    return x;
-                } else if (nlog2_10 < -(b + 2)) {
-                    // When n*log2(10) < -(b+2), abs(x)<0.5*10^n so x rounds to (signed) zero.
-                    return Math.copySign(0.0, x);
-                } else {
-                    // We have to work it out properly.
-                    BigDecimal xx = BigDecimal.valueOf(x);
-                    BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_UP);
-                    return rr.doubleValue();
-                }
             }
+            double d = op(x, n);
+            if (Double.isInfinite(d)) {
+                throw raise(OverflowError, ErrorMessages.ROUNDED_VALUE_TOO_LARGE);
+            }
+            return d;
         }
 
-        @TruffleBoundary
         @Specialization
         double round(double x, PInt n) {
-            return round(x, n.longValue());
+            long nLong;
+            if (n.compareTo(Long.MAX_VALUE) > 0) {
+                nLong = Long.MAX_VALUE;
+            } else if (n.compareTo(Long.MIN_VALUE) < 0) {
+                nLong = Long.MIN_VALUE;
+            } else {
+                nLong = n.longValue();
+            }
+            return round(x, nLong);
         }
 
         @Specialization
-        long round(double x, @SuppressWarnings("unused") PNone none) {
+        long round(double x, @SuppressWarnings("unused") PNone none,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+            if (nanProfile.profile(Double.isNaN(x))) {
+                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
+            }
+            if (infProfile.profile(Double.isInfinite(x))) {
+                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
+            }
             return (long) round(x, 0);
         }
 
@@ -1540,5 +1574,20 @@ public final class FloatBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
         }
+    }
+
+    @Builtin(name = "is_integer", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsIntegerNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isInteger(double value) {
+            return Double.isFinite(value) && (long) value == value;
+        }
+
+        @Specialization
+        boolean trunc(PFloat pValue) {
+            return isInteger(pValue.getValue());
+        }
+
     }
 }

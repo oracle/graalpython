@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetO
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -519,8 +520,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public PTuple doDouble(double a, double b) {
+            if (b == 0) {
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+            }
             double q = Math.floor(a / b);
-            return factory().createTuple(new Object[]{q, a % b});
+            return factory().createTuple(new Object[]{q, FloatBuiltins.ModNode.op(a, b)});
         }
 
         @Specialization
@@ -1739,7 +1743,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // round(number[, ndigits])
-    @Builtin(name = ROUND, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = ROUND, minNumOfPositionalArgs = 1, parameterNames = {"number", "ndigits"})
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization

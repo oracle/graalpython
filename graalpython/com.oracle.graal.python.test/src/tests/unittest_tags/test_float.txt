@@ -5,7 +5,10 @@
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_issue35560
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_issue5864
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_containment
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_mod
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_pow
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_floatasratio
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_is_integer
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_keyword_args
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_ends
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_from_hex
@@ -13,6 +16,8 @@
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_roundtrip
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_subclass
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_whitespace
+*graalpython.lib-python.3.test.test_float.IEEEFormatTestCase.test_double_specials_do_unpack
+*graalpython.lib-python.3.test.test_float.IEEEFormatTestCase.test_float_specials_do_unpack
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_inf_as_str
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_inf_from_str
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_inf_signs
@@ -21,7 +26,12 @@
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_nan_signs
 *graalpython.lib-python.3.test.test_float.ReprTestCase.test_repr
 *graalpython.lib-python.3.test.test_float.ReprTestCase.test_short_repr
+*graalpython.lib-python.3.test.test_float.RoundTestCase.test_None_ndigits
+*graalpython.lib-python.3.test.test_float.RoundTestCase.test_inf_nan
+*graalpython.lib-python.3.test.test_float.RoundTestCase.test_large_n
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_matches_float_format
+*graalpython.lib-python.3.test.test_float.RoundTestCase.test_overflow
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_previous_round_bugs
+*graalpython.lib-python.3.test.test_float.RoundTestCase.test_small_n
 *graalpython.lib-python.3.test.test_float.UnknownFormatTestCase.test_double_specials_dont_unpack
 *graalpython.lib-python.3.test.test_float.UnknownFormatTestCase.test_float_specials_dont_unpack
