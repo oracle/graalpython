@@ -46,11 +46,14 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -59,6 +62,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -71,6 +77,7 @@ import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -129,6 +136,59 @@ public class ModuleBuiltins extends PythonBuiltins {
             writeLoader.execute(self, __LOADER__, PNone.NONE);
             writeSpec.execute(self, __SPEC__, PNone.NONE);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object dir(PythonModule self,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached IsBuiltinClassProfile isDictProfile,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        @Cached CallNode callNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            Object dict = pol.lookupAttribute(self, __DICT__);
+            if (isDict(dict, isDictProfile)) {
+                HashingStorage dictStorage = getDictStorageNode.execute((PHashingCollection) dict);
+                Object dirFunc = hashLib.getItem(dictStorage, __DIR__);
+                if (dirFunc != null) {
+                    return callNode.execute(dirFunc);
+                } else {
+                    return factory().createList(exhaustIterator(hashLib.keys(dictStorage)));
+                }
+            } else {
+                String name = getName(self, pol, hashLib, castToJavaStringNode);
+                throw this.raise(PythonBuiltinClassType.TypeError, "%s.__dict__ is not a dictionary", name);
+            }
+        }
+
+        private static <T> Object[] exhaustIterator(Iterable<T> iterable) {
+            return exhaustIterator(iterable.iterator());
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private static <T> Object[] exhaustIterator(Iterator<T> iterator) {
+            ArrayList<T> values = new ArrayList<>();
+            iterator.forEachRemaining(values::add);
+            return values.toArray();
+        }
+
+        private String getName(PythonModule self, PythonObjectLibrary pol, HashingStorageLibrary hashLib, CastToJavaStringNode castToJavaStringNode) {
+            PHashingCollection dict = pol.getDict(self);
+            if (dict != null) {
+                Object name = hashLib.getItem(dict.getDictStorage(), __NAME__);
+                if (name != null) {
+                    return castToJavaStringNode.execute(name);
+                }
+            }
+            throw raise(PythonBuiltinClassType.SystemError, "nameless module");
+        }
+
+        protected static boolean isDict(Object object, IsBuiltinClassProfile profile) {
+            return profile.profileObject(object, PythonBuiltinClassType.PDict);
         }
     }
 
