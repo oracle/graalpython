@@ -52,8 +52,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -72,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -147,6 +146,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached IsBuiltinClassProfile isDictProfile,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
@@ -157,23 +157,12 @@ public class ModuleBuiltins extends PythonBuiltins {
                 if (dirFunc != null) {
                     return callNode.execute(dirFunc);
                 } else {
-                    return factory().createList(exhaustIterator(hashLib.keys(dictStorage)));
+                    return constructListNode.execute(dict);
                 }
             } else {
                 String name = getName(self, pol, hashLib, castToJavaStringNode);
                 throw this.raise(PythonBuiltinClassType.TypeError, "%s.__dict__ is not a dictionary", name);
             }
-        }
-
-        private static <T> Object[] exhaustIterator(Iterable<T> iterable) {
-            return exhaustIterator(iterable.iterator());
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        private static <T> Object[] exhaustIterator(Iterator<T> iterator) {
-            ArrayList<T> values = new ArrayList<>();
-            iterator.forEachRemaining(values::add);
-            return values.toArray();
         }
 
         private String getName(PythonModule self, PythonObjectLibrary pol, HashingStorageLibrary hashLib, CastToJavaStringNode castToJavaStringNode) {
