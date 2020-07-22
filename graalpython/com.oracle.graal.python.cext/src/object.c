@@ -161,33 +161,6 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
     return PyObject_Call(callable, args, PyDict_New());
 }
 
-// (tfel): this is used a couple of times in this file only, for now
-#define CALL_WITH_VARARGS(retval, funcname, skipN, ...)                 \
-    switch (polyglot_get_arg_count() - skipN) {                         \
-    case 0:                                                             \
-        retval = funcname(__VA_ARGS__); break;                          \
-    case 1:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN)); break; \
-    case 2:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1)); break; \
-    case 3:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2)); break; \
-    case 4:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3)); break; \
-    case 5:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4)); break; \
-    case 6:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5)); break; \
-    case 7:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5), polyglot_get_arg(skipN + 6)); break; \
-    case 8:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5), polyglot_get_arg(skipN + 6), polyglot_get_arg(skipN + 7)); break; \
-    case 9:                                                             \
-        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5), polyglot_get_arg(skipN + 6), polyglot_get_arg(skipN + 7), polyglot_get_arg(skipN + 8)); break; \
-    default:                                                            \
-        fprintf(stderr, "Too many arguments passed through varargs: %d", polyglot_get_arg_count() - skipN); \
-    }
-
 NO_INLINE
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
@@ -196,7 +169,7 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
         return PyObject_CallObject(callable, NULL);
     }
 
-    CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
+    CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -216,7 +189,7 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
         return PyObject_CallObject(callable, NULL);
     }
 
-    CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
+    CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -247,7 +220,7 @@ PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* 
     if (fmt == NULL || fmt[0] == '\0') {
         args = Py_None;
     } else {
-    	CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+        CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
     }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
@@ -265,7 +238,7 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     if (fmt == NULL || fmt[0] == '\0') {
         args = Py_None;
     } else {
-    	CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+        CallWithPolyglotArgs(args, fmt, _PyTruffle_BuildValue, fmt);
     }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
