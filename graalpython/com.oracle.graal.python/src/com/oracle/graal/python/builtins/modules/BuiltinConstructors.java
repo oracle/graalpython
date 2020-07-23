@@ -2342,6 +2342,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             Object slots = null;
+            boolean qualnameSet = false;
             for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                 Object key = entry.getKey();
                 Object value = entry.getValue();
@@ -2380,9 +2381,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         }
                     }
                     pythonClass.setAttribute(key, value);
+                } else if (SpecialAttributeNames.__QUALNAME__.equals(key)) {
+                    try {
+                        pythonClass.setQualName(ensureCastToStringNode().execute(value));
+                        qualnameSet = true;
+                    } catch (CannotCastException e) {
+                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
+                    }
                 } else {
                     pythonClass.setAttribute(key, value);
                 }
+            }
+
+            if (!qualnameSet) {
+                pythonClass.setQualName(name);
             }
 
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is

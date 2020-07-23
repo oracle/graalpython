@@ -818,12 +818,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        String getNameBuiltin(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
-        }
-
-        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value) {
+        String getNameBuiltin(PythonManagedClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
         }
 
@@ -938,14 +933,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+        String getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getQualName();
-        }
-
-        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode getName) {
-            return getName.execute(cls, __QUALNAME__);
         }
 
         @Specialization(guards = "!isNoValue(value)")
