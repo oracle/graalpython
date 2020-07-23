@@ -236,6 +236,22 @@ public final class PString extends PImmutableSequence {
         return true;
     }
 
+    @ExportMessage
+    public Object readArrayElement(long index,
+                    @Cached CastToJavaStringNode cast) {
+        try {
+            return cast.execute(this).codePointAt((int) index);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere("A PString should always have an underlying CharSequence");
+        }
+    }
+
+    @Override
+    @ExportMessage
+    public long getArraySize(@CachedLibrary("this") PythonObjectLibrary lib) {
+        return lib.length(this);
+    }
+
     @ExportMessage.Ignore
     @TruffleBoundary(allowInlining = true)
     public static int length(String s) {
