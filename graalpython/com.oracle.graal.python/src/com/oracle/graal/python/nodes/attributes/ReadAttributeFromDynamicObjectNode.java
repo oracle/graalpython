@@ -42,18 +42,17 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
@@ -69,91 +68,33 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
 
     public abstract Object execute(Object object, Object key);
 
-    protected static Object readFinalValue(DynamicObject object, Location location) {
-        Object value = location.get(object);
-        return value == null ? PNone.NO_VALUE : value;
-    }
-
-    /*
-     * Includes "dynamicObject" as a parameter so that Truffle DSL sees this as a dynamic check.
-     */
-    protected static boolean checkShape(@SuppressWarnings("unused") DynamicObject dynamicObject, DynamicObject cachedObject, Shape cachedShape) {
-        return cachedObject.getShape() == cachedShape;
+    protected static Object getAttribute(DynamicObject object, String key) {
+        return DynamicObjectLibrary.getUncached().getOrDefault(object, key, PNone.NO_VALUE);
     }
 
     @SuppressWarnings("unused")
     @Specialization(limit = "1", //
-                    guards = {
-                                    "dynamicObject == cachedDynamicObject",
-                                    "checkShape(dynamicObject, cachedDynamicObject, cachedShape)",
-                                    "key == cachedKey",
-                                    "loc != null",
-                                    "loc.isAssumedFinal()",
-                    }, //
-                    assumptions = {
-                                    "singleContextAssumption",
-                                    "layoutAssumption",
-                                    "finalAssumption"
-                    })
-    protected Object readDirectFinal(DynamicObject dynamicObject, Object key,
-                    @Cached("dynamicObject") DynamicObject cachedDynamicObject,
-                    @Cached("key") Object cachedKey,
-                    @Cached("attrKey(key)") Object attrKey,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
-                    @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached("readFinalValue(dynamicObject, loc)") Object cachedValue) {
-        return cachedValue;
+                    guards = {"dynamicObject == cachedObject", "key == cachedKey"}, //
+                    assumptions = {"singleContextAssumption()", "propertyAssumption"})
+    protected Object readFinal(DynamicObject dynamicObject, String key,
+                    @Cached("key") String cachedKey,
+                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
+                    @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
+                    @Cached(value = "getAttribute(dynamicObject, key)", weak = true) Object value) {
+        return value;
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    guards = {
-                                    "dynamicObject.getShape() == cachedShape",
-                                    "key == cachedKey",
-                    }, //
-                    assumptions = {
-                                    "layoutAssumption"
-                    }, //
-                    replaces = "readDirectFinal")
-    protected Object readDirect(DynamicObject dynamicObject, Object key,
-                    @Cached("key") Object cachedKey,
-                    @Cached("attrKey(cachedKey)") Object attrKey,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
-        if (loc == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return loc.get(dynamicObject, cachedShape);
-        }
+    @Specialization(guards = "key == cachedKey", limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = "readFinal")
+    protected Object readDirect(DynamicObject dynamicObject, @SuppressWarnings("unused") String key,
+                    @Cached("key") String cachedKey,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        return dylib.getOrDefault(dynamicObject, cachedKey, PNone.NO_VALUE);
     }
 
-    @SuppressWarnings({"unused", "deprecation"})
-    @Specialization(guards = {
-                    "dynamicObject.getShape() == cachedShape",
-                    "!layoutAssumption.isValid()"
-    })
-    protected Object updateShapeAndRead(DynamicObject dynamicObject, Object key,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("create()") ReadAttributeFromDynamicObjectNode nextNode) {
-        CompilerDirectives.transferToInterpreter();
-        dynamicObject.updateShape();
-        return nextNode.execute(dynamicObject, key);
-    }
-
-    @SuppressWarnings("deprecation")
-    @TruffleBoundary
-    @Specialization(replaces = {"readDirect", "readDirectFinal", "updateShapeAndRead"})
-    protected static Object readIndirect(DynamicObject dynamicObject, Object key) {
-        Object value = dynamicObject.get(attrKey(key));
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readDirect", "readFinal"})
+    protected Object read(DynamicObject dynamicObject, Object key,
+                    @Cached CastToJavaStringNode castNode,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        return dylib.getOrDefault(dynamicObject, attrKey(key, castNode), PNone.NO_VALUE);
     }
 }
