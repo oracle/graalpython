@@ -59,6 +59,8 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.R
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
@@ -206,15 +208,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // foreign Object
     @Specialization(guards = "plib.isForeignObject(object)", limit = "3")
     protected Object readForeign(TruffleObject object, Object key,
+                    @Cached CastToJavaStringNode castNode,
                     @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode fromForeign,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
         try {
-            String member = (String) attrKey(key);
+            String member = castNode.execute(key);
             if (read.isMemberReadable(object, member)) {
                 return fromForeign.executeConvert(read.readMember(object, member));
             }
-        } catch (UnknownIdentifierException | UnsupportedMessageException ignored) {
+        } catch (CannotCastException | UnknownIdentifierException | UnsupportedMessageException ignored) {
         }
         return PNone.NO_VALUE;
     }
