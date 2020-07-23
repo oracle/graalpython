@@ -49,7 +49,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -179,14 +178,24 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     @ExportMessage
+    // Note: Avoiding calling __get__ for builtin functions seems like just an optimization, but it
+    // is actually necessary for being able to correctly call special methods on None, because
+    // type(None).__eq__.__get__(None, type(None)) wouldn't bind the method correctly
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CallUnboundMethodNode call) {
+                    @Shared("callMethod") @Cached CallUnboundMethodNode call) {
         VirtualFrame frame = null;
         if (gotState.profile(state != null)) {
             frame = PArguments.frameForCall(state);
         }
         return call.execute(frame, this, receiver, arguments);
+    }
+
+    @ExportMessage
+    public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("callMethod") @Cached CallUnboundMethodNode call) {
+        return callUnboundMethodWithState(state, receiver, arguments, gotState, call);
     }
 
     @GenerateUncached
