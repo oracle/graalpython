@@ -43,10 +43,12 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectFactory;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Property;
@@ -59,7 +61,7 @@ public class PythonObject extends PythonAbstractObject {
 
     private Object storedPythonClass;
     private PHashingCollection dict;
-    private final DynamicObject storage;
+    final DynamicObject storage;
 
     public PythonObject(Object pythonClass, DynamicObject storage) {
         assert pythonClass != null;
@@ -84,7 +86,8 @@ public class PythonObject extends PythonAbstractObject {
 
         @SuppressWarnings("deprecation")
         @Specialization
-        public static void setMultiContext(PythonObject self, Object cls) {
+        public static void setMultiContext(PythonObject self, Object cls,
+                        @CachedLibrary("self.storage") DynamicObjectLibrary dylib) {
             self.storedPythonClass = cls;
             if (PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(self.storage) != null) {
                 // for the builtin class enums, we now should change the shape
@@ -142,14 +145,14 @@ public class PythonObject extends PythonAbstractObject {
     @SuppressWarnings("deprecation")
     @TruffleBoundary
     public final Object getAttribute(Object key) {
-        return getStorage().get(key, PNone.NO_VALUE);
+        return DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), key, PNone.NO_VALUE);
     }
 
     @SuppressWarnings("deprecation")
     @TruffleBoundary
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        getStorage().define(name, value);
+        DynamicObjectLibrary.getUncached().putWithFlags(getStorage(), name, value, 0);
     }
 
     @SuppressWarnings("deprecation")
@@ -157,7 +160,7 @@ public class PythonObject extends PythonAbstractObject {
     public List<String> getAttributeNames() {
         ArrayList<String> keyList = new ArrayList<>();
         for (Object o : getStorage().getShape().getKeyList()) {
-            if (o instanceof String && getStorage().get(o) != PNone.NO_VALUE) {
+            if (o instanceof String && DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), o, PNone.NO_VALUE) != PNone.NO_VALUE) {
                 keyList.add((String) o);
             }
         }
