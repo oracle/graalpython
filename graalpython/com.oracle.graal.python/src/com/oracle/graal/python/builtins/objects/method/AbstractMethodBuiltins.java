@@ -63,6 +63,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMethod, PythonBuiltinClassType.PBuiltinMethod})
 public class AbstractMethodBuiltins extends PythonBuiltins {
@@ -213,11 +215,10 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @SuppressWarnings("deprecation")
-        @Specialization(guards = "!isNoValue(value)")
-        Object getModule(PBuiltinMethod self, Object value) {
-            CompilerDirectives.transferToInterpreter();
-            self.getStorage().define(__MODULE__, value);
+        @Specialization(guards = "!isNoValue(value)", limit = "1")
+        Object getModule(PBuiltinMethod self, Object value,
+                        @CachedLibrary("self.getStorage()") DynamicObjectLibrary dylib) {
+            dylib.put(self.getStorage(), __MODULE__, value);
             return PNone.NONE;
         }
     }
