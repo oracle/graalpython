@@ -50,8 +50,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
@@ -166,13 +164,11 @@ final class DefaultPythonDoubleExports {
 
     @ExportMessage
     static Object asPString(Double receiver,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Cached.Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                    @Cached.Exclusive @Cached CallUnaryMethodNode callNode,
-                    @Cached.Exclusive @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached.Exclusive @Cached PRaiseNode raise,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
-        return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
+                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
+                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    @Exclusive @Cached PRaiseNode raise) {
+        return PythonAbstractObject.asPString(lib, receiver, null, isSubtypeNode, resultLib, raise);
     }
 
     @SuppressWarnings("static-method")
@@ -210,7 +206,7 @@ final class DefaultPythonDoubleExports {
 
     @ExportMessage
     public static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
         VirtualFrame frame = null;
         if (gotState.profile(state != null)) {

@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -51,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
@@ -181,7 +186,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is callable
      */
     public boolean isCallable(Object receiver) {
-        return false;
+        Object callMethod = lookupAttributeOnType(receiver, __CALL__);
+        return PGuards.isCallable(callMethod);
     }
 
     /**
@@ -498,7 +504,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is indexable
      */
     public boolean canBeIndex(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __INDEX__) != PNone.NO_VALUE;
     }
 
     /**
@@ -780,9 +786,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiver the receiver Object
      * @return True if object can be converted to a java double
      */
-    @Abstract(ifExported = {"asJavaDoubleWithState", "asJavaDouble"})
     public boolean canBeJavaDouble(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __FLOAT__) != PNone.NO_VALUE || canBeIndex(receiver);
     }
 
     /**
@@ -814,9 +819,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiver the receiver Object
      * @return True if object can be converted to a Python int
      */
-    @Abstract(ifExported = {"asPIntWithState", "asPInt"})
     public boolean canBePInt(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __INDEX__) != PNone.NO_VALUE || lookupAttributeOnType(receiver, __INT__) != PNone.NO_VALUE;
     }
 
     /**
@@ -848,9 +852,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiver the receiver Object
      * @return True if object can be converted to a java long
      */
-    @Abstract(ifExported = {"asJavaLongWithState", "asJavaLong"})
     public boolean canBeJavaLong(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __INT__) != PNone.NO_VALUE;
     }
 
     /**
