@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -76,7 +77,7 @@ public class PythonObject extends PythonAbstractObject {
 
     @ExportMessage
     public void setLazyPythonClass(Object cls,
-                    @CachedLibrary("this") DynamicObjectLibrary dylib) {
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         // n.b.: the CLASS property is usually a constant property that is stored in the shape in
         // single-context-mode. If we change it for the first time, there's an implicit shape
         // transition
@@ -93,7 +94,7 @@ public class PythonObject extends PythonAbstractObject {
         @SuppressWarnings("unused")
         @Specialization(guards = {"klass != null", "self.getShape() == cachedShape", "hasInitialClass"}, limit = "1")
         public static Object getConstantClass(PythonObject self,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib,
+                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
                         @Cached("hasInitialClass(self, dylib)") boolean hasInitialClass,
                         @Cached("self.getShape()") Shape cachedShape,
                         @Cached("getPythonClass(self, dylib)") Object klass) {
@@ -102,7 +103,7 @@ public class PythonObject extends PythonAbstractObject {
 
         @Specialization(replaces = "getConstantClass")
         public static Object getPythonClass(PythonObject self,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
             return dylib.getOrDefault(self, CLASS, self.initialPythonClass);
         }
     }
@@ -164,18 +165,18 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     @ExportMessage
-    public boolean hasDict(@CachedLibrary("this") DynamicObjectLibrary dylib) {
+    public boolean hasDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         return dylib.containsKey(this, DICT);
     }
 
     @ExportMessage
-    public PHashingCollection getDict(@CachedLibrary("this") DynamicObjectLibrary dylib) {
+    public PHashingCollection getDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         return (PHashingCollection) dylib.getOrDefault(this, DICT, null);
     }
 
     @ExportMessage
     public final void setDict(PHashingCollection dict,
-                    @CachedLibrary("this") DynamicObjectLibrary dylib) {
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         dylib.put(this, DICT, dict);
     }
 

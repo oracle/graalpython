@@ -50,6 +50,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -324,7 +325,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         @Specialization(replaces = "getConstant")
         static PHashingCollection getDict(PythonManagedClass self,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
             return (PHashingCollection) dylib.getOrDefault(self, DICT, null);
         }
     }

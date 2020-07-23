@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -97,7 +98,7 @@ public final class PythonModule extends PythonObject {
 
         @Specialization(replaces = "getConstant")
         static PHashingCollection getDict(PythonModule self,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
             return (PHashingCollection) dylib.getOrDefault(self, DICT, null);
         }
     }

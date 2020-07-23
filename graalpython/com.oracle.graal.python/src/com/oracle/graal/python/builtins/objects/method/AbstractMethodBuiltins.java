@@ -215,9 +215,9 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "1")
+        @Specialization(guards = "!isNoValue(value)", limit = "2")
         Object getModule(PBuiltinMethod self, Object value,
-                        @CachedLibrary("self.getStorage()") DynamicObjectLibrary dylib) {
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
             dylib.put(self.getStorage(), __MODULE__, value);
             return PNone.NONE;
         }
