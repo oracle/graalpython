@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -68,13 +70,12 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
@@ -87,12 +88,12 @@ public final class DynamicObjectStorage extends HashingStorage {
     private static final Layout LAYOUT = Layout.createLayout();
     private static final Shape EMPTY_SHAPE = LAYOUT.createShape(new ObjectType());
 
-    protected final DynamicObject store;
+    final DynamicObject store;
     private final MroSequenceStorage mro;
 
     @SuppressWarnings("deprecation")
     public DynamicObjectStorage() {
-        this(LAYOUT.newInstance(EMPTY_SHAPE), null);
+        this(EMPTY_SHAPE.newInstance(), null);
     }
 
     public DynamicObjectStorage(DynamicObject store) {
@@ -362,22 +363,22 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
     @ExportMessage
-    @TruffleBoundary
-    public HashingStorage clear() {
-        store.setShapeAndResize(store.getShape(), EMPTY_SHAPE);
-        store.updateShape();
+    public HashingStorage clear(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+        dylib.resetShape(store, EMPTY_SHAPE);
+        dylib.updateShape(store);
         return this;
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
     @ExportMessage
     @TruffleBoundary
-    public HashingStorage copy() {
-        return new DynamicObjectStorage(store.copy(store.getShape()));
+    public HashingStorage copy(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+        DynamicObject copy = store.getShape().newInstance();
+        Object[] keys = dylib.getKeyArray(store);
+        for (int i = 0; i < keys.length; i++) {
+            dylib.put(copy, keys[i], dylib.getOrDefault(store, keys[i], PNone.NO_VALUE));
+        }
+        return new DynamicObjectStorage(copy);
     }
 
     @ExportMessage
