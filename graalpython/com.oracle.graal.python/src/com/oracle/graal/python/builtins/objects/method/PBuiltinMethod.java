@@ -69,6 +69,11 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    boolean isHashable() {
+        return true;
+    }
+
+    @ExportMessage
     protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
         return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
     }
