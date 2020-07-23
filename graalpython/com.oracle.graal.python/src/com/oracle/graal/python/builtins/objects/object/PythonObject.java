@@ -180,12 +180,7 @@ public class PythonObject extends PythonAbstractObject {
         dylib.put(this, DICT, dict);
     }
 
-    private static final Shape emptyShape = Shape.newBuilder().
-        allowImplicitCastIntToDouble(false).
-        allowImplicitCastIntToLong(true).
-        shapeFlags(0).
-        propertyAssumptions(true).
-        build();
+    private static final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
 
     public static Shape freshShape(Object klass) {
         return Shape.newBuilder(emptyShape).addConstantProperty(CLASS, klass, 0).build();

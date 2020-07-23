@@ -83,12 +83,12 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     @SuppressWarnings("unused")
     @Specialization(limit = "1", //
                     guards = {
-                        "dynamicObject == cachedObject",
-                        "isLongLivedObject(cachedObject)",
-                        "key == cachedKey",
-                        "dynamicObject.getShape() == cachedShape",
-                        "loc != null",
-                        "loc.isAssumedFinal()"
+                                    "dynamicObject == cachedObject",
+                                    "isLongLivedObject(cachedObject)",
+                                    "key == cachedKey",
+                                    "dynamicObject.getShape() == cachedShape",
+                                    "loc != null",
+                                    "loc.isAssumedFinal()"
                     }, //
                     assumptions = {"singleContextAssumption()", "cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
     protected Object readFinalAttr(DynamicObject dynamicObject, String key,
