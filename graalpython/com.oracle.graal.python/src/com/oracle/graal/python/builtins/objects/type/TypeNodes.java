@@ -321,7 +321,7 @@ public abstract class TypeNodes {
 
         @Specialization
         String doManagedClass(PythonManagedClass obj) {
-            return obj.getQualName();
+            return obj.getName();
         }
 
         @Specialization
@@ -339,7 +339,7 @@ public abstract class TypeNodes {
         @TruffleBoundary
         public static String doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
-                return ((PythonManagedClass) obj).getQualName();
+                return ((PythonManagedClass) obj).getName();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
