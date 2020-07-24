@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.SORT;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -850,7 +851,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.sort(key=, reverse=)
-    @Builtin(name = "sort", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
+    @Builtin(name = SORT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
     @GenerateNodeFactory
     public abstract static class ListSortNode extends PythonVarargsBuiltinNode {
 
