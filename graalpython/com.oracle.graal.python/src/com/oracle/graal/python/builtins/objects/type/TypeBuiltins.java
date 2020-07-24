@@ -38,7 +38,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -77,16 +76,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -137,6 +132,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -589,7 +590,9 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBase,
                         @Cached GetBestBaseClassNode getBestBase,
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigment,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached GetMroNode getMroNode) {
 
             Object[] a = getArray.execute(value);
             if (a.length == 0) {
@@ -598,7 +601,8 @@ public class TypeBuiltins extends PythonBuiltins {
             PythonAbstractClass[] baseClasses = new PythonAbstractClass[a.length];
             for (int i = 0; i < a.length; i++) {
                 if (PGuards.isPythonClass(a[i])) {
-                    if (isSubtypeNode.execute(frame, a[i], cls)) {
+                    if (isSubtypeNode.execute(frame, a[i], cls) ||
+                                    hasMRO(getMroNode, (PythonAbstractClass) a[i]) && typeIsSubtypeBaseChain((PythonAbstractClass) a[i], cls, getBase, isSameTypeNode)) {
                         throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
                     baseClasses[i] = (PythonAbstractClass) a[i];
@@ -618,6 +622,23 @@ public class TypeBuiltins extends PythonBuiltins {
             cls.setSuperClass(baseClasses);
 
             return PNone.NONE;
+        }
+
+        private static boolean hasMRO(GetMroNode getMroNode, PythonAbstractClass i) {
+            PythonAbstractClass[] mro = getMroNode.execute(i);
+            return mro != null && mro.length > 0;
+        }
+
+        private static boolean typeIsSubtypeBaseChain(PythonAbstractClass a, PythonAbstractClass b, GetBaseClassNode getBaseNode, IsSameTypeNode isSameTypeNode) {
+            PythonAbstractClass base = a;
+            do {
+                if (isSameTypeNode.execute(base, b)) {
+                    return true;
+                }
+                base = (PythonAbstractClass) getBaseNode.execute(base);
+            } while (base != null);
+
+            return (isSameTypeNode.execute(b, PythonBuiltinClassType.PythonObject));
         }
 
         @Specialization(guards = "!isPTuple(value)")
