@@ -55,6 +55,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
+import java.util.ArrayList;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
 
@@ -210,30 +211,68 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     public void setSuperClass(PythonAbstractClass... newBaseClasses) {
-        PythonAbstractClass[] oldBaseClasses = getBaseClasses();
-        try {
-            setSuperClassInternal(newBaseClasses);
-        } catch (PException pe) {
-            setSuperClassInternal(oldBaseClasses);
-            throw pe;
-        }
-    }
-
-    private void setSuperClassInternal(PythonAbstractClass[] basses) {
-        for (PythonAbstractClass base : basses) {
-            if (base != null) {
-                GetSubclassesNode.getUncached().execute(base).add(this);
+        ArrayList<Set<PythonAbstractClass>> newBasesSubclasses = new ArrayList<>(newBaseClasses.length);
+        for (int i = 0; i < newBaseClasses.length; i++) {
+            if (newBaseClasses[i] != null) {
+                newBasesSubclasses.add(GetSubclassesNode.getUncached().execute(newBaseClasses[i]));
             }
         }
 
-        this.baseClasses = basses;
-        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
+        PythonAbstractClass[] oldBaseClasses = getBaseClasses();
+        Object[] oldMRO = this.methodResolutionOrder.getInternalArray();
 
         Set<PythonAbstractClass> subclasses = GetSubclassesNode.getUncached().execute(this);
-        for (PythonAbstractClass scls : subclasses) {
+        PythonAbstractClass[] subclassesArray = subclasses.toArray(new PythonAbstractClass[subclasses.size()]);
+        Object[][] oldSubClasssMROs = new Object[subclasses.size()][];
+        for (int i = 0; i < subclassesArray.length; i++) {
+            PythonAbstractClass scls = subclassesArray[i];
             if (scls instanceof PythonManagedClass) {
-                ((PythonManagedClass) scls).methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(scls));
+                oldSubClasssMROs[i] = ((PythonManagedClass) scls).methodResolutionOrder.getInternalArray();
             }
+        }
+
+        try {
+            for (PythonAbstractClass base : newBaseClasses) {
+                if (base != null) {
+                    GetSubclassesNode.getUncached().execute(base).add(this);
+                }
+            }
+
+            this.baseClasses = newBaseClasses;
+            this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
+            this.methodResolutionOrder.lookupChanged();
+
+            for (PythonAbstractClass scls : subclasses) {
+                if (scls instanceof PythonManagedClass) {
+                    PythonManagedClass pmc = (PythonManagedClass) scls;
+                    pmc.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(scls));
+                    pmc.methodResolutionOrder.lookupChanged();
+                }
+            }
+        } catch (PException pe) {
+            // undo
+            for (int i = 0; i < newBaseClasses.length; i++) {
+                PythonAbstractClass base = newBaseClasses[i];
+                if (base != null) {
+                    Set<PythonAbstractClass> s = GetSubclassesNode.getUncached().execute(base);
+                    s.clear();
+                    s.addAll(newBasesSubclasses.get(i));
+                }
+            }
+
+            this.baseClasses = oldBaseClasses;
+            this.methodResolutionOrder.setInternalArrayObject(oldMRO);
+            this.methodResolutionOrder.lookupChanged();
+
+            for (int i = 0; i < subclassesArray.length; i++) {
+                PythonAbstractClass scls = subclassesArray[i];
+                if (oldSubClasssMROs[i] != null) {
+                    PythonManagedClass pmc = (PythonManagedClass) scls;
+                    pmc.methodResolutionOrder.setInternalArrayObject(oldSubClasssMROs[i]);
+                    pmc.methodResolutionOrder.lookupChanged();
+                }
+            }
+            throw pe;
         }
     }
 
