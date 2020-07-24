@@ -168,3 +168,11 @@ def test_mro():
     class C(A, B, metaclass = M): pass
 
     assert C.__mro__ == (C, B, A, object)
+    
+def test_dir_sorted():
+    class C:
+        b = 1
+        a = 2
+
+    assert dir(C) == sorted(dir(C))
+    assert dir(C()) == sorted(dir(C()))
