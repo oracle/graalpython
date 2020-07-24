@@ -46,19 +46,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -136,13 +134,25 @@ public class MethodBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        Object reprMethod(VirtualFrame frame, PMethod self,
-                        @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
-                        @Cached("create(__QUALNAME__)") GetAttributeNode getNameAttrNode,
-                        @Cached GetNameNode getTypeNameNode) {
-            String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return strFormat("<bound method %s of %s object at 0x%x>", getNameAttrNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
+        @Specialization
+        Object reprMethod(VirtualFrame frame, PMethod method,
+                        @Cached("create(__REPR__)") LookupAndCallUnaryNode callReprNode,
+                        @Cached CastToJavaStringNode toJavaStringNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            Object self = method.getSelf();
+            Object func = method.getFunction();
+            String defname = "?";
+
+            Object funcName = pol.lookupAttribute(func, __QUALNAME__);
+            if (funcName == PNone.NO_VALUE) {
+                funcName = pol.lookupAttribute(func, __NAME__);
+            }
+
+            try {
+                return strFormat("<bound method %s of %s>", toJavaStringNode.execute(funcName), callReprNode.executeObject(frame, self));
+            } catch (CannotCastException e) {
+                return strFormat("<bound method %s of %s>", defname, callReprNode.executeObject(frame, self));
+            }
         }
 
         @TruffleBoundary
@@ -202,7 +212,7 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class MethodName extends PythonUnaryBuiltinNode {
         @Specialization
         Object getName(VirtualFrame frame, PMethod method,
-                       @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
+                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
             return getNameAttrNode.executeObject(frame, method.getFunction());
         }
     }
@@ -210,7 +220,7 @@ public class MethodBuiltins extends PythonBuiltins {
     @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         Object getQualName(VirtualFrame frame, PMethod method,
                         @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
@@ -223,7 +233,7 @@ public class MethodBuiltins extends PythonBuiltins {
                 return selfName;
             }
 
-            Object type = isTypeNode.execute(self) ? self: pol.getLazyPythonClass(self);
+            Object type = isTypeNode.execute(self) ? self : pol.getLazyPythonClass(self);
             String typeQualName;
             try {
                 typeQualName = castToJavaStringNode.execute(getQualNameAttrNode.executeObject(frame, type));
