@@ -941,8 +941,8 @@ public final class FloatBuiltins extends PythonBuiltins {
                 return Math.copySign(0.0, x);
             } else {
                 // We have to work it out properly.
-                BigDecimal xx = BigDecimal.valueOf(x);
-                BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_UP);
+                BigDecimal xx = new BigDecimal(x);
+                BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_EVEN);
                 return rr.doubleValue();
             }
         }

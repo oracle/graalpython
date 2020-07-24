@@ -1024,8 +1024,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 // Double.valueOf allows format specifier ("d" or "f") at the end
                 String lowSval = sval.toLowerCase(Locale.ENGLISH);
-                if (lowSval.equals("nan") || lowSval.equals("+nan") || lowSval.equals("-nan")) {
+                if (lowSval.equals("nan") || lowSval.equals("+nan")) {
                     return Double.NaN;
+                } else if (lowSval.equals("-nan")) {
+                    return Math.copySign(Double.NaN, -1);
                 } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
                     return Double.POSITIVE_INFINITY;
                 } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
