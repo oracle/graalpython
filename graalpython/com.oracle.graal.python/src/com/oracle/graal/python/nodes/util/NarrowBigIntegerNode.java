@@ -41,53 +41,73 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
+@GenerateUncached
 public abstract class NarrowBigIntegerNode extends PNodeWithContext {
+
+    private static final Field MAG_FIELD;
+
+    static {
+        try {
+            MAG_FIELD = BigInteger.class.getDeclaredField("mag");
+            MAG_FIELD.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Unable to access BigInteger.mag", e);
+        }
+    }
 
     public abstract Object execute(BigInteger x);
 
-    @Specialization(guards = "fitsIntoInt(x)")
-    int narrowToInt(BigInteger x) {
-        return PInt.intValue(x);
-    }
-
-    @Specialization(guards = "fitsIntoLongButNotInt(x)")
-    long narrowToLong(BigInteger x) {
-        return PInt.longValue(x);
-    }
-
-    @Specialization(guards = "!fitsIntoLong(x)")
-    PInt makePInt(BigInteger x,
-                    @Cached PythonObjectFactory factory) {
+    @Specialization
+    Object narrowBigInteger(BigInteger x,
+                    @Cached PythonObjectFactory factory,
+                    @Cached BranchProfile neddsPIntProfile) {
+        int signum = x.signum();
+        if (signum == 0) {
+            return 0;
+        }
+        int[] mag = getMag(x);
+        if (mag.length == 1) {
+            if (mag[0] > 0 || (mag[0] == 0x80000000 && signum < 0)) {
+                return signum * mag[0];
+            } else {
+                long mag0 = mag[0] & 0xFFFFFFFFL;
+                return signum * mag0;
+            }
+        }
+        if (mag.length == 2) {
+            if (mag[0] > 0 || (mag[0] == 0x80000000 && signum < 0 && mag[1] == 0)) {
+                long mag0 = mag[0] & 0xFFFFFFFFL;
+                long mag1 = mag[1] & 0xFFFFFFFFL;
+                return signum * ((mag0 << 32) | mag1);
+            }
+        }
+        neddsPIntProfile.enter();
         return factory.createInt(x);
     }
 
-    @TruffleBoundary
-    static boolean fitsIntoInt(BigInteger x) {
-        return x.bitLength() <= 31;
-    }
-
-    @TruffleBoundary
-    static boolean fitsIntoLongButNotInt(BigInteger x) {
-        int bitLen = x.bitLength();
-        return bitLen > 31 && bitLen <= 63;
-    }
-
-    @TruffleBoundary
-    static boolean fitsIntoLong(BigInteger x) {
-        return x.bitLength() <= 63;
+    @TruffleBoundary(allowInlining = true)
+    static int[] getMag(BigInteger x) {
+        try {
+            return (int[]) MAG_FIELD.get(x);
+        } catch (IllegalAccessException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 }
