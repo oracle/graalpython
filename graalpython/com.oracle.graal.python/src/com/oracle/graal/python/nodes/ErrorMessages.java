@@ -299,6 +299,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
+    public static final String IS_NOT_A = "%s is not a %s";
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String INIT_TAKES_ONE_ARG = "%N.__init__() takes exactly one argument (the instance to initialize)";
     public static final String INIT_TAKES_ONE_ARG_OBJECT = "object.__init__() takes exactly one argument (the instance to initialize)";
