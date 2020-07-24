@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
@@ -56,7 +55,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
