@@ -733,7 +733,7 @@ public abstract class TypeNodes {
                 oldParent = getBaseClassNode().execute(oldBase);
             }
 
-            if (newBase != oldBase && (newParent != oldParent || !compareSlotsFromDict(frame, newBase, oldBase))) {
+            if (newBase != oldBase && (newParent != oldParent || !sameSlotsAdded(frame, newBase, oldBase))) {
                 return false;
             }
             return true;
@@ -782,9 +782,13 @@ public abstract class TypeNodes {
             return true;
         }
 
-        private boolean compareSlotsFromDict(VirtualFrame frame, Object a, Object b) {
-            Object aSlots = getSlotsFromDict(frame, b);
-            Object bSlots = getSlotsFromDict(frame, a);
+        private boolean sameSlotsAdded(VirtualFrame frame, Object a, Object b) {
+            // !(a->tp_flags & Py_TPFLAGS_HEAPTYPE) || !(b->tp_flags & Py_TPFLAGS_HEAPTYPE))
+            if (a instanceof PythonBuiltinClass || b instanceof PythonBuiltinClass) {
+                return false;
+            }
+            Object aSlots = getSlotsFromDict(frame, a);
+            Object bSlots = getSlotsFromDict(frame, b);
             return compareSlots(a, b, aSlots, bSlots);
         }
 
