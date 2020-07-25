@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_smtplib.GeneralTests.testTimeoutNone
 *graalpython.lib-python.3.test.test_smtplib.GeneralTests.testTimeoutValue
 *graalpython.lib-python.3.test.test_smtplib.GeneralTests.test_debuglevel
+*graalpython.lib-python.3.test.test_smtplib.GeneralTests.test_debuglevel_2
 *graalpython.lib-python.3.test.test_smtplib.NonConnectingTests.testNonnumericPort
 *graalpython.lib-python.3.test.test_smtplib.NonConnectingTests.testNotConnected
 *graalpython.lib-python.3.test.test_smtplib.NonConnectingTests.testSockAttributeExists

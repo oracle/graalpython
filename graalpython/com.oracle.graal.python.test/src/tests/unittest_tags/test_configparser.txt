@@ -334,4 +334,5 @@
 *graalpython.lib-python.3.test.test_configparser.StrictTestCase.test_read_returns_file_list_with_bytestring_path
 *graalpython.lib-python.3.test.test_configparser.StrictTestCase.test_set_string_types
 *graalpython.lib-python.3.test.test_configparser.StrictTestCase.test_setitem
+*graalpython.lib-python.3.test.test_configparser.StrictTestCase.test_weird_errors
 *graalpython.lib-python.3.test.test_configparser.StrictTestCase.test_write

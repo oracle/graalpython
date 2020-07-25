@@ -11,8 +11,13 @@
 *graalpython.lib-python.3.test.test_urllib.ProxyTests.test_proxy_bypass_environment_newline
 *graalpython.lib-python.3.test.test_urllib.ProxyTests.test_proxy_cgi_ignore
 *graalpython.lib-python.3.test.test_urllib.ProxyTests_withOrderedEnv.test_getproxies_environment_prefer_lowercase
+*graalpython.lib-python.3.test.test_urllib.QuotingTests.test_default_quoting
 *graalpython.lib-python.3.test.test_urllib.QuotingTests.test_default_safe
 *graalpython.lib-python.3.test.test_urllib.QuotingTests.test_never_quote
+*graalpython.lib-python.3.test.test_urllib.QuotingTests.test_quote_bytes
+*graalpython.lib-python.3.test.test_urllib.QuotingTests.test_quote_plus_with_unicode
+*graalpython.lib-python.3.test.test_urllib.QuotingTests.test_quoting_plus
+*graalpython.lib-python.3.test.test_urllib.QuotingTests.test_quoting_space
 *graalpython.lib-python.3.test.test_urllib.QuotingTests.test_safe
 *graalpython.lib-python.3.test.test_urllib.RequestTests.test_default_values
 *graalpython.lib-python.3.test.test_urllib.RequestTests.test_with_method_arg
@@ -22,6 +27,7 @@
 *graalpython.lib-python.3.test.test_urllib.URL2PathNameTests.test_roundtrip_url2pathname
 *graalpython.lib-python.3.test.test_urllib.URL2PathNameTests.test_simple_compare
 *graalpython.lib-python.3.test.test_urllib.URLopener_Tests.test_local_file_open
+*graalpython.lib-python.3.test.test_urllib.URLopener_Tests.test_quoted_open
 *graalpython.lib-python.3.test.test_urllib.URLopener_Tests.test_urlopener_retrieve_file
 *graalpython.lib-python.3.test.test_urllib.URLopener_Tests.test_urlopener_retrieve_remote
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_plus
@@ -29,6 +35,11 @@
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_empty_sequence
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_nonstring_seq_values
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_nonstring_values
+*graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_quoting
+*graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_urlencode_bytes
+*graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_urlencode_encoding
+*graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_urlencode_encoding_doseq
+*graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_urlencode_encoding_safe_parameter
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_using_mapping
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_using_sequence
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_close
