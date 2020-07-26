@@ -96,6 +96,21 @@ sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
 
 
+# Try to close the std streams when we exit. This currently doesn't work due to GR-25185
+# To make this work reliably, we probably have to implement the _io module in Java
+# import atexit
+# def close_stdouts(so=sys.stdout, se=sys.stderr):
+#     try:
+#         so.close()
+#     except:
+#         pass
+#     try:
+#         se.close()
+#     except:
+#         pass
+# atexit.register(close_stdouts)
+
+
 # See comment in _pyio.py. This method isn't strictly necessary and is provided
 # on CPython for performance. Because it goes through memoryview, it is slower
 # for us due to the overhead of memoryview being in C and the warmup cost

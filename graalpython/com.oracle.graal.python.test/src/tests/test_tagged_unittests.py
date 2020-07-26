@@ -92,7 +92,10 @@ for idx, working_test in enumerate(WORKING_TESTS):
                 cmd.extend(["-k", testpattern])
             testmod = working_test[0].rpartition(".")[2]
             print("Running test:", working_test[0])
-            cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
+            testfile = os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod)
+            if not os.path.isfile(testfile):
+                testfile = os.path.join(os.path.dirname(test.__file__), "%s/__init__.py" % testmod)
+            cmd.append(testfile)
             subprocess.check_call(cmd)
             print(working_test[0], "was finished.")
 
@@ -156,6 +159,8 @@ if __name__ == "__main__":
     timeout = p.stdout.strip()
 
     testfiles = glob.glob(glob_pattern)
+    testfiles += glob.glob(glob_pattern.replace(".py", "/__init__.py"))
+
     for idx, testfile in enumerate(testfiles):
         for repeat in range(maxrepeats):
             # we always do this multiple times, because sometimes the tagging
@@ -164,7 +169,10 @@ if __name__ == "__main__":
             # use the tags and if it fails in the last run, we assume something
             # sad is happening and delete the tags file to skip the tests
             # entirely
-            testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
+            if testfile.endswith("__init__.py"):
+                testfile_stem = os.path.basename(os.path.dirname(testfile))
+            else:
+                testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
             cmd = [timeout, "-s", "9", "120"] + executable
             if repeat == 0:
