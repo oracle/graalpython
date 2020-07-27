@@ -555,7 +555,13 @@ def main(argv):
                 info(p[len(user_site) + 1:])
     elif args.command == "uninstall":
         warn("WARNING: I will only delete the package folder, proper uninstallation is not supported at this time.")
-        user_site = site.getusersitepackages()
+        if site.ENABLE_USER_SITE:
+            user_site = site.getusersitepackages()
+        else:
+            for s in site.getsitepackages():
+                if s.endswith("site-packages"):
+                    user_site = s
+                    break
         for pkg in args.package.split(","):
             deleted = False
             for p in sys.path:
