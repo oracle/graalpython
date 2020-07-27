@@ -91,13 +91,16 @@ public class PythonObject extends PythonAbstractObject {
             return (dylib.getShapeFlags(self) & CLASS_CHANGED_FLAG) == 0;
         }
 
+        public static Object getInitialClass(PythonObject self) {
+            return self.initialPythonClass;
+        }
+
         @SuppressWarnings("unused")
-        @Specialization(guards = {"klass != null", "self.getShape() == cachedShape", "hasInitialClass"}, limit = "1")
+        @Specialization(guards = {"klass != null", "self.getShape() == cachedShape", "hasInitialClass(self, dylib)"}, limit = "1", assumptions = "singleContextAssumption()")
         public static Object getConstantClass(PythonObject self,
                         @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
-                        @Cached("hasInitialClass(self, dylib)") boolean hasInitialClass,
                         @Cached("self.getShape()") Shape cachedShape,
-                        @Cached("getPythonClass(self, dylib)") Object klass) {
+                        @Cached(value = "getInitialClass(self)", weak = true) Object klass) {
             return klass;
         }
 
