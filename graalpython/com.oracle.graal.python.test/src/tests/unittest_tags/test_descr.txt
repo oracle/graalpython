@@ -2,8 +2,10 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_altmro
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_assign_slice
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_binary_operator_override
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_bound_method_repr
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_bpo25750
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_buffer_inheritance
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_builtin_bases
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_builtin_function_or_method
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_classic
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_classic_comparisons
@@ -50,6 +52,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_proxy_super
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_python_dicts
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_python_lists
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_qualname_dict
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_recursive_call
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_refleaks_in_classmethod___init__
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_refleaks_in_staticmethod___init__
@@ -79,6 +82,7 @@
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_super
 *graalpython.lib-python.3.test.test_descr.MroTest.test_reent_set_bases_on_base
 *graalpython.lib-python.3.test.test_descr.MroTest.test_reent_set_bases_on_direct_base
+*graalpython.lib-python.3.test.test_descr.MroTest.test_reent_set_bases_tp_base_cycle
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_complexes
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_dicts
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_explicit_reverse_methods
