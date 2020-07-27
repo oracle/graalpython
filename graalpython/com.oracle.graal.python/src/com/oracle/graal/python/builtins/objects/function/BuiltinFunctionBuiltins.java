@@ -114,7 +114,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
         Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
