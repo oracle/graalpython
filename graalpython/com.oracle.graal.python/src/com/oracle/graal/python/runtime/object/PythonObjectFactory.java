@@ -189,7 +189,6 @@ public abstract class PythonObjectFactory extends Node {
         return null;
     }
 
-    @SuppressWarnings("static-method")
     protected static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
         return contextRef.get().getEnv().lookup(AllocationReporter.class);
     }
@@ -712,16 +711,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PStringReverseIterator(cls, getShape(cls), str));
     }
 
-    public PIntegerSequenceIterator createIntegerSequenceIterator(IntSequenceStorage storage) {
-        return trace(new PIntegerSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage));
+    public PIntegerSequenceIterator createIntegerSequenceIterator(IntSequenceStorage storage, PList list) {
+        return trace(new PIntegerSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage, list));
     }
 
-    public PLongSequenceIterator createLongSequenceIterator(LongSequenceStorage storage) {
-        return trace(new PLongSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage));
+    public PLongSequenceIterator createLongSequenceIterator(LongSequenceStorage storage, PList list) {
+        return trace(new PLongSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage, list));
     }
 
-    public PDoubleSequenceIterator createDoubleSequenceIterator(DoubleSequenceStorage storage) {
-        return trace(new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage));
+    public PDoubleSequenceIterator createDoubleSequenceIterator(DoubleSequenceStorage storage, PList list) {
+        return trace(new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), storage, list));
     }
 
     public PSequenceIterator createSequenceIterator(Object sequence) {

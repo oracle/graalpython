@@ -362,20 +362,29 @@ public class IteratorBuiltins extends PythonBuiltins {
         public Object reduce(PIntegerSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(factory().createList(self.getSequenceStorage()), self.getIndex(), context, pol);
+            if (self.isExhausted()) {
+                return reduceInternal(factory().createList(), null, context, pol);
+            }
+            return reduceInternal(self.getObject(), self.getIndex(), context, pol);
         }
 
         @Specialization
         public Object reduce(PPrimitiveIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(factory().createList(self.getSequenceStorage()), self.getIndex(), context, pol);
+            if (self.isExhausted()) {
+                return reduceInternal(factory().createList(), null, context, pol);
+            }
+            return reduceInternal(self.getObject(), self.getIndex(), context, pol);
         }
 
         @Specialization
         public Object reduce(PStringIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            if (self.isExhausted()) {
+                return reduceInternal("", null, context, pol);
+            }
             return reduceInternal(self.value, self.getIndex(), context, pol);
         }
 

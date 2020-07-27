@@ -163,12 +163,18 @@ public class ReversedBuiltins extends PythonBuiltins {
         @Specialization
         public Object reduce(PStringReverseIterator self,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            if (self.isExhausted()) {
+                return reduceInternal(self, "", null, pol);
+            }
             return reduceInternal(self, self.value, self.index, pol);
         }
 
         @Specialization(guards = "self.isPSequence()")
         public Object reduce(PSequenceReverseIterator self,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            if (self.isExhausted()) {
+                return reduceInternal(self, factory().createList(), null, pol);
+            }
             return reduceInternal(self, self.getPSequence(), self.index, pol);
         }
 
@@ -200,8 +206,8 @@ public class ReversedBuiltins extends PythonBuiltins {
         public Object reduce(PBuiltinIterator self, Object index,
                         @CachedLibrary(value = "index") PythonObjectLibrary pol) {
             int idx = pol.asSize(index);
-            if (idx < 0) {
-                idx = 0;
+            if (idx < -1) {
+                idx = -1;
             }
             self.index = idx;
             return PNone.NONE;
