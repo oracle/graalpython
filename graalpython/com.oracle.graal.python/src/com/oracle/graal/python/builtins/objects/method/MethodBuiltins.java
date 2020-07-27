@@ -222,15 +222,20 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         Object getQualName(VirtualFrame frame, PMethod method,
-                        @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
+                        @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
             Object self = method.getSelf();
-            String selfName = castToJavaStringNode.execute(getNameAttrNode.executeObject(frame, self));
-            if (self instanceof PythonModule) {
-                return selfName;
+            String methodName;
+            try {
+                methodName = castToJavaStringNode.execute(getNameAttrNode.executeObject(frame, method));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __NAME__, "unicode object");
+            }
+            if (self == null || self instanceof PythonModule) {
+                return methodName;
             }
 
             Object type = isTypeNode.execute(self) ? self : pol.getLazyPythonClass(self);
@@ -241,7 +246,7 @@ public class MethodBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __QUALNAME__, "unicode object");
             }
 
-            return getQualNameGeneric(typeQualName, selfName);
+            return getQualNameGeneric(typeQualName, methodName);
         }
 
         @TruffleBoundary
