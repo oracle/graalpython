@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
@@ -56,7 +55,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
@@ -245,13 +243,15 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public double asJavaDouble(
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached CastToJavaDoubleNode castToDouble,
-                    @Exclusive @Cached() ConditionProfile hasIndexFunc,
-                    @Exclusive @Cached PRaiseNode raise) {
-        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-            return castToDouble.execute(lib.asIndex(this));
-        }
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
+                    @Shared("castToDouble") @Cached CastToJavaDoubleNode castToDouble) {
+        return castToDouble.execute(lib.asIndex(this));
+    }
+
+    @ExportMessage
+    public double asJavaDoubleWithState(ThreadState threadState,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("castToDouble") @Cached CastToJavaDoubleNode castToDouble) {
+        return castToDouble.execute(lib.asIndexWithState(this, threadState));
     }
 
     @SuppressWarnings("static-method")
@@ -346,7 +346,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static int intValue(BigInteger value) {
+    public static int intValue(BigInteger value) {
         return value.intValue();
     }
 
@@ -355,7 +355,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static int intValueExact(BigInteger value) {
+    public static int intValueExact(BigInteger value) {
         return value.intValueExact();
     }
 
@@ -373,7 +373,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    static long longValueExact(BigInteger value) throws ArithmeticException {
+    public static long longValueExact(BigInteger value) throws ArithmeticException {
         return value.longValueExact();
     }
 

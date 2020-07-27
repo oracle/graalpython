@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -42,16 +43,21 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -59,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -74,6 +81,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
@@ -119,23 +127,29 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double doL(long value) {
-            return count(value);
+            return op(value);
         }
 
         @Specialization
         public double doD(double value) {
-            return count(value);
+            return op(value);
         }
 
         @Specialization
         public double doPI(PInt value) {
-            return count(value.doubleValueWithOverflow(getRaiseNode()));
+            return op(value.doubleValueWithOverflow(getRaiseNode()));
         }
 
         @Specialization(guards = "!isNumber(value)", limit = "1")
         public double doGeneral(Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
-            return count(lib.asJavaDouble(value));
+            return op(lib.asJavaDouble(value));
+        }
+
+        private double op(double arg) {
+            double res = count(arg);
+            checkMathDomainError(Double.isNaN(res) && !Double.isNaN(arg));
+            return res;
         }
     }
 
@@ -1447,12 +1461,22 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AcoshNode extends MathDoubleUnaryBuiltinNode {
 
+        private static final double TWO_POW_P28 = 0x1.0p28;
+        private static final double LN_2 = 6.93147180559945286227e-01;
+
+        private final ConditionProfile largeProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile smallProfile = ConditionProfile.createBinaryProfile();
+
         @Specialization
         @TruffleBoundary
         @Override
         public double doPI(PInt value) {
             BigInteger bValue = value.getValue();
             checkMathDomainError(bValue.compareTo(BigInteger.ONE) < 0);
+
+            if (bValue.bitLength() >= 28) {
+                return Math.log(bValue.doubleValue()) + LN_2;
+            }
 
             BigDecimal sqrt = SqrtNode.sqrtBigNumber(bValue.multiply(bValue).subtract(BigInteger.ONE));
             BigDecimal bd = new BigDecimal(bValue);
@@ -1462,6 +1486,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Override
         public double count(double value) {
             checkMathDomainError(value < 1);
+            if (largeProfile.profile(value >= TWO_POW_P28)) {
+                return Math.log(value) + LN_2;
+            }
+            if (smallProfile.profile(value <= 2.0)) {
+                double t = value - 1.0;
+                return Math.log1p(t + Math.sqrt(2.0 * t + t * t));
+            }
             return Math.log(value + Math.sqrt(value * value - 1.0));
         }
     }
@@ -1555,13 +1586,26 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AtanhNode extends MathDoubleUnaryBuiltinNode {
 
+        private static final double TWO_POW_M28 = 0x1.0p-28;
+
+        private final ConditionProfile closeToZeroProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile lessThanHalfProfile = ConditionProfile.createBinaryProfile();
+
         @Override
         public double count(double value) {
-            if (value == 0) {
-                return 0;
+            double abs = Math.abs(value);
+            checkMathDomainError(abs >= 1.0);
+            if (closeToZeroProfile.profile(abs < TWO_POW_M28)) {
+                return value;
             }
-            checkMathDomainError(value <= -1 || value >= 1);
-            return Math.log((1 / value + 1) / (1 / value - 1)) / 2;
+            double t;
+            if (lessThanHalfProfile.profile(abs < 0.5)) {
+                t = abs + abs;
+                t = 0.5 * Math.log1p(t + t * abs / (1.0 - abs));
+            } else {
+                t = 0.5 * Math.log1p((abs + abs) / (1.0 - abs));
+            }
+            return Math.copySign(t, value);
         }
     }
 
@@ -1858,7 +1902,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return value;
             }
             double result = Math.log1p(value);
-            checkMathDomainError(Double.isInfinite(result));
+            checkMathDomainError(!Double.isFinite(result));
             return result;
         }
     }
@@ -2547,5 +2591,158 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return r;
         }
 
+    }
+
+    @Builtin(name = "isqrt", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class IsqrtNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object isqrtLong(long x,
+                        @Cached NarrowBigIntegerNode makeInt) {
+            raiseIfNegative(x < 0);
+            return makeInt.execute(op(PInt.longToBigInteger(x)));
+        }
+
+        @Specialization
+        Object isqrtPInt(PInt x,
+                        @Cached NarrowBigIntegerNode makeInt) {
+            raiseIfNegative(x.isNegative());
+            return makeInt.execute(op(x.getValue()));
+        }
+
+        @Specialization(guards = "!isInteger(x)")
+        Object doGeneral(VirtualFrame frame, Object x,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached IsqrtNode recursiveNode) {
+            return recursiveNode.execute(frame, lib.asIndexWithFrame(x, hasFrame, frame));
+        }
+
+        @TruffleBoundary
+        private static BigInteger op(BigInteger x) {
+            // assumes x >= 0
+            if (x.equals(BigInteger.ZERO) || x.equals(BigInteger.ONE)) {
+                return x;
+            }
+            BigInteger start = BigInteger.ONE;
+            BigInteger end = x;
+            BigInteger result = BigInteger.ZERO;
+            BigInteger two = BigInteger.valueOf(2);
+            while (start.compareTo(end) <= 0) {
+                BigInteger mid = (start.add(end).divide(two));
+                int cmp = mid.multiply(mid).compareTo(x);
+                if (cmp == 0) {
+                    return mid;
+                }
+                if (cmp < 0) {
+                    start = mid.add(BigInteger.ONE);
+                    result = mid;
+                } else {
+                    end = mid.subtract(BigInteger.ONE);
+                }
+            }
+            return result;
+        }
+
+        private void raiseIfNegative(boolean condition) {
+            if (condition) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "isqrt() argument");
+            }
+        }
+    }
+
+    @Builtin(name = "prod", minNumOfPositionalArgs = 1, parameterNames = {"iterable"}, keywordOnlyNames = {"start"})
+    @GenerateNodeFactory
+    public abstract static class ProdNode extends PythonBuiltinNode {
+
+        @Child private GetIteratorNode iter = GetIteratorNode.create();
+        @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(__NEXT__);
+        @Child private LookupAndCallBinaryNode mul = BinaryArithmetic.Mul.create();
+        @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public Object doGenericNoStart(VirtualFrame frame, Object iterable, PNone start) {
+            return doGeneric(frame, iterable, 1);
+        }
+
+        @Specialization(guards = "!isNoValue(start)")
+        public Object doGeneric(VirtualFrame frame, Object iterable, Object start) {
+            Object iterator = iter.executeWith(frame, iterable);
+            Object value = start;
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.executeObject(frame, iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return value;
+                }
+                value = mul.executeObject(frame, value, nextValue);
+            }
+        }
+    }
+
+    @Builtin(name = "dist", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"p", "q"})
+    @GenerateNodeFactory
+    public abstract static class DistNode extends PythonBuiltinNode {
+
+        @Specialization
+        public double doGeneric(VirtualFrame frame, Object p, Object q,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached TupleNodes.ConstructTupleNode tupleCtor,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArray,
+                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile1,
+                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile2,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile trivialProfile) {
+            // adapted from CPython math_dist_impl and vector_norm
+            Object[] ps = getObjectArray.execute(tupleCtor.execute(frame, p));
+            Object[] qs = getObjectArray.execute(tupleCtor.execute(frame, q));
+            int len = ps.length;
+            if (len != qs.length) {
+                throw raise(ValueError, ErrorMessages.BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS);
+            }
+            double[] diffs = new double[len];
+            double max = 0.0;
+            boolean foundNan = false;
+            loopProfile1.profileCounted(len);
+            for (int i = 0; loopProfile1.inject(i < len); ++i) {
+                double a = lib.asJavaDoubleWithState(ps[i], PArguments.getThreadState(frame));
+                double b = lib.asJavaDoubleWithState(qs[i], PArguments.getThreadState(frame));
+                double x = Math.abs(a - b);
+                diffs[i] = x;
+                foundNan |= Double.isNaN(x);
+                if (x > max) {
+                    max = x;
+                }
+            }
+            if (infProfile.profile(Double.isInfinite(max))) {
+                return max;
+            }
+            if (nanProfile.profile(foundNan)) {
+                return Double.NaN;
+            }
+            if (trivialProfile.profile(max == 0.0 || len <= 1)) {
+                return max;
+            }
+
+            double csum = 1.0;
+            double frac = 0.0;
+            loopProfile2.profileCounted(len);
+            for (int i = 0; loopProfile2.inject(i < len); ++i) {
+                double x = diffs[i];
+                x /= max;
+                x = x * x;
+                double oldcsum = csum;
+                csum += x;
+                frac += (oldcsum - csum) + x;
+            }
+            return max * Math.sqrt(csum - 1.0 + frac);
+        }
     }
 }
