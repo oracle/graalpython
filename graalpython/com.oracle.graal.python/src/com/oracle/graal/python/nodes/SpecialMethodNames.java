@@ -167,6 +167,7 @@ public abstract class SpecialMethodNames {
     public static final String __CLASS_GETITEM__ = "__class_getitem__";
     public static final String FILENO = "fileno";
     public static final String ISDISJOINT = "isdisjoint";
+    public static final String MRO = "mro";
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";

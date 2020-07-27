@@ -34,12 +34,15 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
@@ -82,6 +85,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         // Compute MRO
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
+        this.methodResolutionOrder.setInitialized();
         this.needsNativeAllocation = computeNeedsNativeAllocation();
 
         setAttribute(__NAME__, getBaseName(name));
@@ -177,11 +181,15 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         this.baseClasses = newBaseClasses;
 
         for (PythonAbstractClass base : getBaseClasses()) {
+            if (base instanceof PythonManagedClass && !((PythonManagedClass) base).getMethodResolutionOrder().isInitialized()) {
+                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_EXTEND_INCOMPLETE_P, base);
+            }
+        }
+        for (PythonAbstractClass base : getBaseClasses()) {
             if (base != null) {
                 GetSubclassesNode.getUncached().execute(base).add(this);
             }
         }
-        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
     }
 
     @TruffleBoundary

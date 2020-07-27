@@ -133,6 +133,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -178,12 +179,17 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
         Object doit(Object klass,
-                        @Cached("create()") TypeNodes.GetMroNode getMroNode) {
-            return factory().createTuple(getMroNode.execute(klass));
+                        @Cached("create()") TypeNodes.GetMroNode getMroNode,
+                        @Cached TypeNodes.GetMroStorageNode getMroStorageNode) {
+            if (klass instanceof PythonManagedClass && !getMroStorageNode.execute(klass).isInitialized()) {
+                return PNone.NONE;
+            }
+            PythonAbstractClass[] mro = getMroNode.execute(klass);
+            return factory().createTuple(mro);
         }
     }
 
-    @Builtin(name = "mro", minNumOfPositionalArgs = 1)
+    @Builtin(name = MRO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization(guards = "lib.isLazyPythonClass(klass)")
@@ -197,7 +203,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!lib.isLazyPythonClass(object)")
         Object doit(Object object,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "mro", "type", object);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, MRO, "type", object);
         }
     }
 
@@ -597,12 +603,12 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            PythonAbstractClass newBestBase = getBestBase.execute(frame, baseClasses);
+            LazyPythonClass newBestBase = getBestBase.execute(baseClasses);
             if (newBestBase == null) {
                 return null;
             }
 
-            PythonAbstractClass oldBase = getBase.execute(frame, cls);
+            LazyPythonClass oldBase = getBase.execute(cls);
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
             cls.setSuperClass(baseClasses);
@@ -628,9 +634,9 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BaseNode extends PythonBuiltinNode {
         @Specialization
-        static Object base(VirtualFrame frame, Object self,
+        static Object base(Object self,
                         @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
-            Object baseClass = getBaseClassNode.execute(frame, self);
+            Object baseClass = getBaseClassNode.execute(self);
             return baseClass != null ? baseClass : PNone.NONE;
         }
     }

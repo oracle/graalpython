@@ -122,6 +122,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_INSTANCES = "cannot create '%s' instances";
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
     public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
+    public static final String CANNOT_EXTEND_INCOMPLETE_P = "Cannot extend an incomplete type '%p'";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
@@ -427,8 +428,10 @@ public abstract class ErrorMessages {
     public static final String REQUIRES_STRING_AS_LEFT_OPERAND = "'in <string>' requires string as left operand, not %P";
     public static final String RESULT_TOO_MANY_ITEMS = "%s result has too many items";
     public static final String RETURN_OUTSIDE_FUNC = "'return' outside function";
+    public static final String S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = "%s returned base with unsuitable layout ('%p')";
     public static final String RETURNED_NON_FLOAT = "%p.%s returned non-float (type %p)";
     public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
+    public static final String S_RETURNED_NON_CLASS = "%s returned a non-class ('%p')";
     public static final String P_S_RETURNED_NON_INT = "%p.%s returned a non int (type %p)";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
     public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
