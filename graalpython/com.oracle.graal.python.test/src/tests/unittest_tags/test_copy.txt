@@ -43,6 +43,7 @@
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_list
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_list_subclass
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_memo
+*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_range
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_reduce
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_reduce_ex
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_reflexive_dict

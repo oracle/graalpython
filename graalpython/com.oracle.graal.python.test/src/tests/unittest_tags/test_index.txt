@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_index.BaseTestCase.test_basic
+*graalpython.lib-python.3.test.test_index.BaseTestCase.test_slice
 *graalpython.lib-python.3.test.test_index.BaseTestCase.test_subclasses
 *graalpython.lib-python.3.test.test_index.BaseTestCase.test_wrappers
 *graalpython.lib-python.3.test.test_index.ByteArrayTestCase.test_error

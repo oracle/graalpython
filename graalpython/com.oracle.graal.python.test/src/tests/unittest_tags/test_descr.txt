@@ -40,6 +40,8 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_newslots
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_not_implemented
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_object_class
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_object_new
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_object_new_and_init_with_parameters
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_overloading
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_properties_doc_attrib
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_properties_plus

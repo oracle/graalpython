@@ -57,6 +57,7 @@
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_eq
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_floordiv
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_ge
+*graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_getitem
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_gt
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_indexOf
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_inplace
