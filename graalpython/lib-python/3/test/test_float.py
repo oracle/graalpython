@@ -635,6 +635,7 @@ class IEEEFormatTestCase(unittest.TestCase):
                           ('<f', LE_FLOAT_NAN)]:
             struct.unpack(fmt, data)
 
+    @support.impl_detail(graalvm=False)
     @support.requires_IEEE_754
     def test_serialized_float_rounding(self):
         from _testcapi import FLT_MAX
