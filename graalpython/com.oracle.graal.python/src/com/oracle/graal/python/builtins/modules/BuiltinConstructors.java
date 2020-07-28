@@ -1027,6 +1027,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             StringBuilder s = null;
             int n = str.length();
 
+            boolean containsUnderscores = false;
+            boolean containsN = false;
             for (int i = 0; i < n; i++) {
                 char ch = str.charAt(i);
                 if (ch == '\u0000' || ch == 'x' || ch == 'X') {
@@ -1045,19 +1047,50 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     s.setCharAt(i, ' ');
                 }
+                containsUnderscores |= ch == '_';
+                containsN |= ch == 'n' || ch == 'N';
             }
-            String sval = s != null ? s.toString() : str.trim();
-            String lowSval = sval.toLowerCase(Locale.ENGLISH);
-            if (lowSval.equals("nan") || lowSval.equals("+nan")) {
-                return Double.NaN;
-            } else if (lowSval.equals("-nan")) {
-                return Math.copySign(Double.NaN, -1);
-            } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
-                return Double.POSITIVE_INFINITY;
-            } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
-                return Double.NEGATIVE_INFINITY;
+            String sval = s != null ? s.toString().trim() : str;
+            if (containsUnderscores) {
+                sval = checkAndRemoveUnderscores(sval);
+            }
+            if (containsN) {
+                String lowSval = sval.toLowerCase(Locale.ENGLISH);
+                if (lowSval.equals("nan") || lowSval.equals("+nan")) {
+                    return Double.NaN;
+                } else if (lowSval.equals("-nan")) {
+                    return Math.copySign(Double.NaN, -1);
+                } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
+                    return Double.POSITIVE_INFINITY;
+                } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
+                    return Double.NEGATIVE_INFINITY;
+                }
             }
             return Double.parseDouble(sval);
+        }
+
+        private static String checkAndRemoveUnderscores(String src) {
+            StringBuilder sb = new StringBuilder();
+            char prev = 0;
+            int len = src.length();
+            for (int i = 0; i < len; i++) {
+                char ch = src.charAt(i);
+                if (ch == '_') {
+                    if (!(prev >= '0' && prev <= '9')) {
+                        throw new NumberFormatException();
+                    }
+                } else {
+                    if (prev == '_' && !(ch >= '0' && ch <= '9')) {
+                        throw new NumberFormatException();
+                    }
+                    sb.append(ch);
+                }
+                prev = ch;
+            }
+            if (prev == '_') {
+                throw new NumberFormatException();
+            }
+            return sb.toString();
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
