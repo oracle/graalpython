@@ -74,6 +74,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -916,6 +917,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @ReportPolymorphism
     public abstract static class FloatNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
+        @Child private LookupAndCallUnaryNode callFloatNode;
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         private ConditionProfile isNanProfile;
@@ -1051,20 +1053,51 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isPrimitiveFloat(cls)")
         double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+
+            if (obj instanceof PNone) {
+                return 0.0;
+            }
             if (obj instanceof String) {
                 return convertStringToDouble((String) obj);
-            } else if (obj instanceof PString) {
+            }
+            // Follows logic from PyNumber_Float:
+            // lib.asJavaDouble cannot be used here because it models PyFloat_AsDouble,
+            // which ignores __float__ defined by float subclasses, whereas PyNumber_Float
+            // uses the __float__ even for subclasses
+            if (callFloatNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFloatNode = insert(LookupAndCallUnaryNode.create(__FLOAT__));
+            }
+            Object result = callFloatNode.executeObject(frame, obj);
+            if (result != PNone.NO_VALUE) {
+                if (PGuards.isDouble(result)) {
+                    return (double) result;
+                }
+                if (PGuards.isPFloat(result)) {
+                    if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PFloat)) {
+                        // TODO deprecation warning
+                    }
+                    return ((PFloat) result).getValue();
+                }
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, "__float__", result);
+            }
+            if (lib.canBeIndex(obj)) {
+                return lib.asJavaDouble(lib.asIndex(obj));
+            }
+            // Follows logic from PyFloat_FromString:
+            if (obj instanceof PString) {
                 return convertStringToDouble(((PString) obj).getValue());
-            } else if (obj instanceof PNone) {
-                return 0.0;
             } else if (obj instanceof PIBytesLike) {
                 return convertBytesToDouble(frame, (PIBytesLike) obj);
+            } else if (lib.isBuffer(obj)) {
+                try {
+                    return convertStringToDouble(createString(lib.getBufferBytes(obj)));
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
+                }
             }
-            if (lib.canBeJavaDouble(obj)) {
-                return lib.asJavaDouble(obj);
-            } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
-            }
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
