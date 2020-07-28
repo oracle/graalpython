@@ -162,6 +162,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_anchor
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_anchor_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_as_posix_common
+*graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_as_uri
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_as_uri_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_constructor_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_div
