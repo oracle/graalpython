@@ -113,7 +113,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
      * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
      */
     protected static HashingStorage getStorage(Object module, PHashingCollection cachedGlobals) {
-        return HashingCollectionNodes.GetDictStorageNode.getUncached().execute(cachedGlobals);
+        return ((PDict) cachedGlobals).getDictStorage();
     }
 
     protected static PHashingCollection getDict(Object object) {
