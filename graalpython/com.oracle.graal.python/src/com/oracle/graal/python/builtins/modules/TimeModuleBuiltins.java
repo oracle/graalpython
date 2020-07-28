@@ -333,8 +333,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.canBeJavaDouble(secondsObj)")
         Object sleepObj(VirtualFrame frame, Object secondsObj,
-                    @Shared("branchProfile") @Cached BranchProfile profile,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @Shared("branchProfile") @Cached BranchProfile profile,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             double seconds = lib.asJavaDouble(secondsObj);
             double deadline = timeSeconds() + seconds;
             doSleep(seconds, deadline);
