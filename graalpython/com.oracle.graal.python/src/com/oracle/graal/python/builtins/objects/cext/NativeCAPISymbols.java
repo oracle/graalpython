@@ -114,7 +114,8 @@ public abstract class NativeCAPISymbols {
     private static final String FUN_GET_FLOAT_T_TYPEID = "get_float_t_typeid";
     private static final String FUN_GET_DOUBLE_T_TYPEID = "get_double_t_typeid";
     private static final String FUN_GET_PY_SSIZE_T_TYPEID = "get_Py_ssize_t_typeid";
-    private static final String FUN_GET_VOID_PTR_T_TYPEID = "get_void_ptr_t_typeid";
+    private static final String FUN_GET_PYOBJECT_PTR_T_TYPEID = "get_PyObject_ptr_t_typeid";
+    private static final String FUN_GET_PYOBJECT_PTR_PTR_T_TYPEID = "get_PyObject_ptr_ptr_t_typeid";
     private static final String FUN_GET_CHAR_PTR_T_TYPEID = "get_char_ptr_t_typeid";
     private static final String FUN_GET_INT8_PTR_T_TYPEID = "get_int8_ptr_t_typeid";
     private static final String FUN_GET_INT16_PTR_T_TYPEID = "get_int16_ptr_t_typeid";

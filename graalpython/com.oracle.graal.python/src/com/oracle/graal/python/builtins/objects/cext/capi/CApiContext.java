@@ -742,7 +742,7 @@ public final class CApiContext extends CExtContext {
         double_t,
         Py_ssize_t,
         Py_complex,
-        void_ptr_t,
+        PyObject_ptr_t,
         char_ptr_t,
         int8_ptr_t,
         int16_ptr_t,
@@ -753,13 +753,36 @@ public final class CApiContext extends CExtContext {
         uint32_ptr_t,
         uint64_ptr_t,
         Py_complex_ptr_t,
+        PyObject_ptr_ptr_t,
         float_ptr_t,
         double_ptr_t,
         Py_ssize_ptr_t;
 
         public static String getGetterFunctionName(LLVMType llvmType) {
             CompilerAsserts.neverPartOfCompilation();
-            return "get_" + llvmType.name() + "_typeid()";
+            return "get_" + llvmType.name() + "_typeid";
+        }
+
+        public static boolean isPointer(LLVMType llvmType) {
+            switch (llvmType) {
+                case PyObject_ptr_t:
+                case char_ptr_t:
+                case int8_ptr_t:
+                case int16_ptr_t:
+                case int32_ptr_t:
+                case int64_ptr_t:
+                case uint8_ptr_t:
+                case uint16_ptr_t:
+                case uint32_ptr_t:
+                case uint64_ptr_t:
+                case Py_complex_ptr_t:
+                case PyObject_ptr_ptr_t:
+                case float_ptr_t:
+                case double_ptr_t:
+                case Py_ssize_ptr_t:
+                    return true;
+            }
+            return false;
         }
 
         public static boolean isPointerToPrimitive(LLVMType llvmType) {
