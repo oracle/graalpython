@@ -59,8 +59,8 @@ public class BuiltinFunctionTests {
 
     @Test
     public void roundTest0() {
-        String source = "x = round(2.5)\n" + "print(x)";
-        assertPrints("3\n", source);
+        String source = "x = round(3.5)\n" + "print(x)";
+        assertPrints("4\n", source);
     }
 
     @Test
