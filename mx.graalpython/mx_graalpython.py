@@ -37,7 +37,6 @@ import shlex
 import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
-UNITTEST_WITH_CPY = False
 
 PY3 = sys.version_info[0] == 3 # compatibility between Python versions
 import tempfile
@@ -609,11 +608,15 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if UNITTEST_WITH_CPY and platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
-                # TODO: drop condition when python3 is available on darwin
+            if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
                 mx.log("Running tests with CPython")
-                test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
-                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+                exe = os.environ.get("PYTHON3_HOME", None)
+                if exe:
+                    exe = os.path.join(exe, "python")
+                else:
+                    exe = "python3"
+                test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
+                mx.run(test_args, nonZeroIsFatal=True)
             mx.run(["env"])
             run_python_unittests(python_gvm())
 
