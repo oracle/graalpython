@@ -199,7 +199,63 @@ initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
 POLYGLOT_DECLARE_TYPE(newfunc);
-POLYGLOT_DECLARE_TYPE(uint32_t);
+
+
+/* primitive and pointer type declarations */
+
+#define REGISTER_BASIC_TYPE(typename)                                     \
+    POLYGLOT_DECLARE_TYPE(typename);                                      \
+    NO_INLINE static polyglot_typeid get_ ## typename ## _typeid(void)  { \
+		return polyglot_ ## typename ## _typeid();                        \
+    }
+
+/* just a renaming to avoid name clash with Java types */
+typedef float      float_t;
+typedef double     double_t;
+
+REGISTER_BASIC_TYPE(int64_t);
+REGISTER_BASIC_TYPE(int32_t);
+REGISTER_BASIC_TYPE(int16_t);
+REGISTER_BASIC_TYPE(int8_t);
+REGISTER_BASIC_TYPE(uint64_t);
+REGISTER_BASIC_TYPE(uint32_t);
+REGISTER_BASIC_TYPE(uint16_t);
+REGISTER_BASIC_TYPE(uint8_t);
+REGISTER_BASIC_TYPE(Py_complex);
+REGISTER_BASIC_TYPE(float_t);
+REGISTER_BASIC_TYPE(double_t);
+REGISTER_BASIC_TYPE(Py_ssize_t);
+
+typedef int64_t*    int64_ptr_t;
+typedef int32_t*    int32_ptr_t;
+typedef int16_t*    int16_ptr_t;
+typedef int8_t*     int8_ptr_t;
+typedef char*       char_ptr_t;
+typedef float*      float_ptr_t;
+typedef double*     double_ptr_t;
+typedef uint64_t*   uint64_ptr_t;
+typedef uint32_t*   uint32_ptr_t;
+typedef uint16_t*   uint16_ptr_t;
+typedef uint8_t*    uint8_ptr_t;
+typedef Py_complex* Py_complex_ptr_t;
+typedef void*       void_ptr_t;
+typedef Py_ssize_t* Py_ssize_ptr_t;
+
+REGISTER_BASIC_TYPE(int64_ptr_t);
+REGISTER_BASIC_TYPE(int32_ptr_t);
+REGISTER_BASIC_TYPE(int16_ptr_t);
+REGISTER_BASIC_TYPE(int8_ptr_t);
+REGISTER_BASIC_TYPE(char_ptr_t);
+REGISTER_BASIC_TYPE(uint64_ptr_t);
+REGISTER_BASIC_TYPE(uint32_ptr_t);
+REGISTER_BASIC_TYPE(uint16_ptr_t);
+REGISTER_BASIC_TYPE(uint8_ptr_t);
+REGISTER_BASIC_TYPE(Py_complex_ptr_t);
+REGISTER_BASIC_TYPE(void_ptr_t);
+REGISTER_BASIC_TYPE(float_ptr_t);
+REGISTER_BASIC_TYPE(double_ptr_t);
+REGISTER_BASIC_TYPE(Py_ssize_ptr_t);
+
 
 static void initialize_globals() {
     // register native NULL

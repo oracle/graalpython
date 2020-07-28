@@ -130,6 +130,9 @@ public final class CApiContext extends CExtContext {
      */
     @CompilationFinal private int pyLongBitsInDigit = -1;
 
+    /** Cache for polyglot types of primitive and pointer types. */
+    @CompilationFinal(dimensions = 1) private final TruffleObject[] llvmTypeCache;
+
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
@@ -138,6 +141,9 @@ public final class CApiContext extends CExtContext {
         // avoid 0 to be used as ID
         int nullID = nativeObjectWrapperList.reserve();
         assert nullID == 0;
+
+        // initialize primitive and pointer type cache
+        llvmTypeCache = new TruffleObject[LLVMType.values().length];
 
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
@@ -178,6 +184,14 @@ public final class CApiContext extends CExtContext {
             pyLongBitsInDigit = (int) CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_GET_LONG_BITS_PER_DIGIT);
         }
         return pyLongBitsInDigit;
+    }
+
+    public TruffleObject getLLVMTypeID(LLVMType llvmType) {
+        return llvmTypeCache[llvmType.ordinal()];
+    }
+
+    public void setLLVMTypeID(LLVMType llvmType, TruffleObject llvmTypeId) {
+        llvmTypeCache[llvmType.ordinal()] = llvmTypeId;
     }
 
     @TruffleBoundary
@@ -708,6 +722,62 @@ public final class CApiContext extends CExtContext {
 
         public long getId() {
             return id;
+        }
+    }
+
+    /**
+     * Enum of basic C types. These type names need to stay in sync with the declarations in
+     * 'capi.c'.
+     */
+    public enum LLVMType {
+        int8_t,
+        int16_t,
+        int32_t,
+        int64_t,
+        uint8_t,
+        uint16_t,
+        uint32_t,
+        uint64_t,
+        float_t,
+        double_t,
+        Py_ssize_t,
+        Py_complex,
+        void_ptr_t,
+        char_ptr_t,
+        int8_ptr_t,
+        int16_ptr_t,
+        int32_ptr_t,
+        int64_ptr_t,
+        uint8_ptr_t,
+        uint16_ptr_t,
+        uint32_ptr_t,
+        uint64_ptr_t,
+        Py_complex_ptr_t,
+        float_ptr_t,
+        double_ptr_t,
+        Py_ssize_ptr_t;
+
+        public static String getGetterFunctionName(LLVMType llvmType) {
+            CompilerAsserts.neverPartOfCompilation();
+            return "get_" + llvmType.name() + "_typeid()";
+        }
+
+        public static boolean isPointerToPrimitive(LLVMType llvmType) {
+            switch (llvmType) {
+                case int8_ptr_t:
+                case int16_ptr_t:
+                case int32_ptr_t:
+                case int64_ptr_t:
+                case uint8_ptr_t:
+                case uint16_ptr_t:
+                case uint32_ptr_t:
+                case uint64_ptr_t:
+                case float_ptr_t:
+                case double_ptr_t:
+                case char_ptr_t:
+                    return true;
+            }
+            return false;
         }
     }
 

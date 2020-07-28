@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.WrapVoidPt
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
@@ -3232,6 +3233,34 @@ public abstract class CExtNodes {
 
         static boolean isFallback(Object object) {
             return !(object instanceof PInt || object instanceof Integer || object instanceof Long);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetLLVMType extends Node {
+        public abstract TruffleObject execute(LLVMType llvmType);
+
+        @Specialization(guards = "llvmType == cachedType", limit = "typeCount()")
+        static TruffleObject doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
+                        @Cached("llvmType") LLVMType cachedType,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+
+            CApiContext cApiContext = context.getCApiContext();
+            TruffleObject llvmTypeID = cApiContext.getLLVMTypeID(cachedType);
+
+            // TODO(fa): get rid of lazy initialization for better sharing
+            if (llvmTypeID == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                String getterFunctionName = LLVMType.getGetterFunctionName(llvmType);
+                llvmTypeID = (TruffleObject) PCallCapiFunction.getUncached().call(getterFunctionName);
+                cApiContext.setLLVMTypeID(cachedType, llvmTypeID);
+            }
+            return llvmTypeID;
+        }
+
+        static int typeCount() {
+            CompilerAsserts.neverPartOfCompilation();
+            return LLVMType.values().length;
         }
     }
 
