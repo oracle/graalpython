@@ -915,7 +915,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     @ReportPolymorphism
-    public abstract static class FloatNode extends PythonBuiltinNode {
+    public abstract static class FloatNode extends PythonBinaryBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
         @Child private LookupAndCallUnaryNode callFloatNode;
         @Child private LookupAndCallUnaryNode callReprNode;
@@ -976,15 +976,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNativeClass(cls)")
         Object floatFromString(VirtualFrame frame, Object cls, String arg) {
             double value = convertStringToDouble(frame, arg, arg);
-            if (isPrimitiveFloat(cls)) {
-                return value;
-            }
-            return factoryCreateFloat(cls, value);
-        }
-
-        @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromBytes(VirtualFrame frame, Object cls, PIBytesLike arg) {
-            double value = convertBytesToDouble(frame, arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
@@ -1101,16 +1092,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, 0.0);
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
+        static boolean isHandledType(Object o) {
+            return PGuards.canBeInteger(o) || PGuards.isDouble(o) || o instanceof String || PGuards.isPNone(o);
+        }
+
+        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(obj)"})
         double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-
-            if (obj instanceof PNone) {
-                return 0.0;
-            }
-            if (obj instanceof String) {
-                return convertStringToDouble(frame, (String) obj, obj);
-            }
             // Follows logic from PyNumber_Float:
             // lib.asJavaDouble cannot be used here because it models PyFloat_AsDouble,
             // which ignores __float__ defined by float subclasses, whereas PyNumber_Float
@@ -1136,6 +1124,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return lib.asJavaDouble(lib.asIndex(obj));
             }
             // Follows logic from PyFloat_FromString:
+            // These types are handled only if the object doesn't implement __float__/__index__
             if (obj instanceof PString) {
                 return convertStringToDouble(frame, ((PString) obj).getValue(), obj);
             } else if (obj instanceof PIBytesLike) {
@@ -1151,10 +1140,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
         }
 
-        @Specialization(guards = "!isNativeClass(cls)")
+        @Specialization(guards = {"!isNativeClass(cls)", "!isPrimitiveFloat(cls)"})
         Object doPythonObject(VirtualFrame frame, Object cls, Object obj,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            return floatFromDouble(cls, doubleFromObject(frame, cls, obj, lib));
+                        @Cached FloatNode recursiveCallNode) {
+            Object doubleValue = recursiveCallNode.executeWith(frame, PythonBuiltinClassType.PFloat, obj);
+            if (!(doubleValue instanceof Double)) {
+                throw CompilerDirectives.shouldNotReachHere("float() returned non-primitive value");
+            }
+            return floatFromDouble(cls, (double) doubleValue);
         }
 
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
@@ -1164,9 +1157,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.FloatSubtypeNew subtypeNew,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            double realFloat = doubleFromObject(frame, PythonBuiltinClassType.PFloat, obj, lib);
-            return subtypeNew.call(cls, realFloat);
+                        @Cached FloatNode recursiveCallNode) {
+            Object doubleValue = recursiveCallNode.executeWith(frame, PythonBuiltinClassType.PFloat, obj);
+            if (!(doubleValue instanceof Double)) {
+                throw CompilerDirectives.shouldNotReachHere("float() returned non-primitive value");
+            }
+            return subtypeNew.call(cls, (double) doubleValue);
         }
 
         @Fallback

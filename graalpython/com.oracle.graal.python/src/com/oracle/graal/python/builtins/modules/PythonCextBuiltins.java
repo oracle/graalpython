@@ -2654,7 +2654,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
             if (floatNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create(null));
+                floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create());
             }
             return toNewRefNode.execute(floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
         }
