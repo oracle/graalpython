@@ -918,6 +918,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FloatNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
         @Child private LookupAndCallUnaryNode callFloatNode;
+        @Child private LookupAndCallUnaryNode callReprNode;
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         private ConditionProfile isNanProfile;
@@ -973,8 +974,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromString(Object cls, String arg) {
-            double value = convertStringToDouble(arg);
+        Object floatFromString(VirtualFrame frame, Object cls, String arg) {
+            double value = convertStringToDouble(frame, arg, arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
@@ -991,7 +992,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private double convertBytesToDouble(VirtualFrame frame, PIBytesLike arg) {
-            return convertStringToDouble(createString(getByteArray(frame, arg)));
+            return convertStringToDouble(frame, createString(getByteArray(frame, arg)), arg);
         }
 
         @TruffleBoundary
@@ -999,10 +1000,30 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return new String(bytes);
         }
 
-        // Taken from Jython PyString's atof() method
-        // The last statement throw Py.ValueError is modified
+        private double convertStringToDouble(VirtualFrame frame, String str, Object origObj) {
+            try {
+                return convertStringToDoubleOrThrow(str);
+            } catch (NumberFormatException exc) {
+                if (callReprNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                }
+                Object strStr = callReprNode.executeObject(frame, origObj);
+                if (PGuards.isString(strStr)) {
+                    throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, strStr);
+                } else {
+                    // During the formatting of "ValueError: invalid literal ..." exception,
+                    // CPython attempts to raise "TypeError: __repr__ returned non-string",
+                    // which gets later overwitten with the original "ValueError",
+                    // but without any message (since the message formatting failed)
+                    throw raise(ValueError);
+                }
+            }
+        }
+
+        // Adapted from Jython PyString's atof() method
         @TruffleBoundary
-        private double convertStringToDouble(String str) {
+        private double convertStringToDoubleOrThrow(String str) throws NumberFormatException {
             StringBuilder s = null;
             int n = str.length();
 
@@ -1023,23 +1044,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (s != null) {
                 sval = s.toString();
             }
-            try {
-                // Double.valueOf allows format specifier ("d" or "f") at the end
-                String lowSval = sval.toLowerCase(Locale.ENGLISH);
-                if (lowSval.equals("nan") || lowSval.equals("+nan")) {
-                    return Double.NaN;
-                } else if (lowSval.equals("-nan")) {
-                    return Math.copySign(Double.NaN, -1);
-                } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
-                    return Double.POSITIVE_INFINITY;
-                } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
-                    return Double.NEGATIVE_INFINITY;
-                }
-                return Double.valueOf(sval).doubleValue();
-            } catch (NumberFormatException exc) {
-                // throw Py.ValueError("invalid literal for __float__: " + str);
-                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, str);
+            String lowSval = sval.toLowerCase(Locale.ENGLISH);
+            if (lowSval.equals("nan") || lowSval.equals("+nan")) {
+                return Double.NaN;
+            } else if (lowSval.equals("-nan")) {
+                return Math.copySign(Double.NaN, -1);
+            } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
+                return Double.POSITIVE_INFINITY;
+            } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
+                return Double.NEGATIVE_INFINITY;
             }
+            return Double.parseDouble(sval);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
@@ -1058,7 +1073,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return 0.0;
             }
             if (obj instanceof String) {
-                return convertStringToDouble((String) obj);
+                return convertStringToDouble(frame, (String) obj, obj);
             }
             // Follows logic from PyNumber_Float:
             // lib.asJavaDouble cannot be used here because it models PyFloat_AsDouble,
@@ -1086,12 +1101,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             // Follows logic from PyFloat_FromString:
             if (obj instanceof PString) {
-                return convertStringToDouble(((PString) obj).getValue());
+                return convertStringToDouble(frame, ((PString) obj).getValue(), obj);
             } else if (obj instanceof PIBytesLike) {
                 return convertBytesToDouble(frame, (PIBytesLike) obj);
             } else if (lib.isBuffer(obj)) {
                 try {
-                    return convertStringToDouble(createString(lib.getBufferBytes(obj)));
+                    return convertStringToDouble(frame, createString(lib.getBufferBytes(obj)), obj);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
