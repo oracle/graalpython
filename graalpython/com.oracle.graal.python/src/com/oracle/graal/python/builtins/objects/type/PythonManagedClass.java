@@ -25,12 +25,14 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -47,8 +49,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
-
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
 
@@ -69,6 +69,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @TruffleBoundary
     protected PythonManagedClass(Object typeClass, DynamicObject storage, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
         super(typeClass, storage);
+        this.name = getBaseName(name);
+        this.qualName = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
 
@@ -85,8 +87,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         this.methodResolutionOrder.setInitialized();
         this.needsNativeAllocation = computeNeedsNativeAllocation();
 
-        this.name = getBaseName(name);
-        this.qualName = name;
         setAttribute(__DOC__, PNone.NONE);
 
         if (instanceShape != null) {
