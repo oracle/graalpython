@@ -1029,8 +1029,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             for (int i = 0; i < n; i++) {
                 char ch = str.charAt(i);
-                if (ch == '\u0000') {
-                    throw raise(ValueError, ErrorMessages.EMPTY_STR_FOR_COMPLEX);
+                if (ch == '\u0000' || ch == 'x' || ch == 'X') {
+                    throw new NumberFormatException();
                 }
                 if (Character.isDigit(ch)) {
                     if (s == null) {
@@ -1039,11 +1039,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     int val = Character.digit(ch, 10);
                     s.setCharAt(i, Character.forDigit(val, 10));
                 }
+                if (Character.isWhitespace(ch)) {
+                    if (s == null) {
+                        s = new StringBuilder(str);
+                    }
+                    s.setCharAt(i, ' ');
+                }
             }
-            String sval = str.trim();
-            if (s != null) {
-                sval = s.toString();
-            }
+            String sval = s != null ? s.toString() : str.trim();
             String lowSval = sval.toLowerCase(Locale.ENGLISH);
             if (lowSval.equals("nan") || lowSval.equals("+nan")) {
                 return Double.NaN;
