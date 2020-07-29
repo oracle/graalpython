@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -419,7 +420,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private CheckFunctionResultNode getCheckResultNode() {
             if (checkResultNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                checkResultNode = insert(CheckFunctionResultNode.create());
+                checkResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
             }
             return checkResultNode;
         }

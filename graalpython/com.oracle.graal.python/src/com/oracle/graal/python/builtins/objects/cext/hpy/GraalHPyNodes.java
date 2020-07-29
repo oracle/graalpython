@@ -48,8 +48,11 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywor
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethKeywordsNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethNoargsNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -337,13 +340,13 @@ public class GraalHPyNodes {
         @TruffleBoundary
         private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name, Object callable) {
             if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethNoargsRoot(language, name, callable, MethNoargsNode.METH_NOARGS_CONVERTER);
             } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethORoot(language, name, callable, MethONode.METH_O_CONVERTER);
             } else if (CExtContext.isMethKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethKeywordsRoot(language, name, callable, MethKeywordsNode.METH_KEYWORDS_CONVERTER);
             } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethVarargsRoot(language, name, callable, MethVarargsNode.METH_VARARGS_CONVERTER);
             }
             throw new IllegalStateException("illegal method flags");
         }

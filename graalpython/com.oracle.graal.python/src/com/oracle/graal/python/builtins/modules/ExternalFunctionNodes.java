@@ -46,6 +46,8 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.Cre
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -192,7 +194,7 @@ public abstract class ExternalFunctionNodes {
      */
     static final class ExternalFunctionInvokeNode extends PNodeWithContext implements IndirectCallNode {
         @Child private CExtNodes.ConvertArgsToSulongNode toSulongNode;
-        @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
+        @Child private CheckFunctionResultNode checkResultNode;
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
@@ -220,12 +222,17 @@ public abstract class ExternalFunctionNodes {
             return node;
         }
 
+        @TruffleBoundary
         ExternalFunctionInvokeNode() {
             this.toSulongNode = CExtNodes.AllToSulongNode.create();
         }
 
-        ExternalFunctionInvokeNode(ConvertArgsToSulongNode convertArgsNode) {
+        @TruffleBoundary
+        ExternalFunctionInvokeNode(PExternalFunctionWrapper provider) {
+            ConvertArgsToSulongNode convertArgsNode = provider.createConvertArgsToSulongNode();
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : CExtNodes.AllToSulongNode.create();
+            CheckFunctionResultNode checkFunctionResultNode = provider.getCheckFunctionResultNode();
+            this.checkResultNode = checkFunctionResultNode != null ? checkFunctionResultNode : DefaultCheckFunctionResultNodeGen.create();
         }
 
         public Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs, int argsOffset) {
@@ -283,8 +290,8 @@ public abstract class ExternalFunctionNodes {
             return new ExternalFunctionInvokeNode();
         }
 
-        public static ExternalFunctionInvokeNode create(ConvertArgsToSulongNode convertArgsNode) {
-            return new ExternalFunctionInvokeNode(convertArgsNode);
+        public static ExternalFunctionInvokeNode create(PExternalFunctionWrapper provider) {
+            return new ExternalFunctionInvokeNode(provider);
         }
     }
 
@@ -369,12 +376,12 @@ public abstract class ExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        MethodDescriptorRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        MethodDescriptorRoot(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
             super(language);
             this.name = name;
             this.callable = callable;
-            if (convertArgsToSulongNode != null) {
-                this.externalInvokeNode = ExternalFunctionInvokeNode.create(convertArgsToSulongNode);
+            if (provider != null) {
+                this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider);
             } else {
                 this.invokeNode = CallVarargsMethodNode.create();
             }
@@ -476,8 +483,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        public MethKeywordsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        public MethKeywordsRoot(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
@@ -523,8 +530,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        public MethVarargsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        public MethVarargsRoot(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
@@ -564,8 +571,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        public MethNoargsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        public MethNoargsRoot(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
         }
 
         @Override
@@ -588,8 +595,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        public MethORoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        public MethORoot(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
         }
 
@@ -616,8 +623,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
@@ -653,8 +660,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        public MethFastcallRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        public MethFastcallRoot(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
         }
@@ -684,8 +691,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        AllocFuncRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        AllocFuncRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
@@ -720,8 +727,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        GetAttrFuncRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        GetAttrFuncRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
         }
@@ -754,8 +761,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        SetAttrFuncRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        SetAttrFuncRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
@@ -790,8 +797,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        RichCmpFuncRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        RichCmpFuncRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
@@ -829,8 +836,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        SSizeObjArgProcRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        SSizeObjArgProcRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
@@ -869,8 +876,8 @@ public abstract class ExternalFunctionNodes {
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
         }
 
-        MethReverseRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        MethReverseRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readArg0Node = ReadIndexedArgumentNode.create(0);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
         }
@@ -910,8 +917,8 @@ public abstract class ExternalFunctionNodes {
             this.profile = null;
         }
 
-        MethPowRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        MethPowRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.profile = ConditionProfile.createBinaryProfile();
         }
@@ -944,8 +951,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable);
         }
 
-        MethRPowRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-            super(language, name, callable, convertArgsToSulongNode);
+        MethRPowRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
         }
 
         @Override
@@ -969,8 +976,8 @@ public abstract class ExternalFunctionNodes {
             this.op = op;
         }
 
-        MethRichcmpOpRootNode(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode, int op) {
-            super(language, name, callable, convertArgsToSulongNode);
+        MethRichcmpOpRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider, int op) {
+            super(language, name, callable, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.op = op;
         }

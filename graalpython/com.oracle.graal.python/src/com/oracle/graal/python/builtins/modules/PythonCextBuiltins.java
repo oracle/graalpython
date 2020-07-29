@@ -85,7 +85,7 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVararg
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -504,7 +504,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
 
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, null);
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, false);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
             }
@@ -534,7 +534,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, null);
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, false);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
             }
@@ -549,7 +549,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, callable, wrapper.createConvertArgsToSulongNode());
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, callable, true);
             return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
         }
 
@@ -863,15 +863,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
-    @ImportStatic(PGuards.class)
     abstract static class CheckFunctionResultNode extends PNodeWithContext {
         public abstract Object execute(String name, Object result);
+    }
+
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    @ImportStatic(PGuards.class)
+    abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "1")
-        Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
+        static Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
                         @CachedLibrary(value = "result") PythonNativeWrapperLibrary lib,
-                        @Cached CheckFunctionResultNode recursive) {
+                        @Cached DefaultCheckFunctionResultNode recursive) {
             return recursive.execute(name, lib.getDelegate(result));
         }
 
@@ -984,10 +987,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected static boolean isPythonObjectNativeWrapper(Object object) {
             return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
-        }
-
-        public static CheckFunctionResultNode create() {
-            return CheckFunctionResultNodeGen.create();
         }
     }
 
@@ -1594,13 +1593,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PExternalFunctionWrapper extends PythonBuiltinObject {
 
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
+        private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
 
         public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
             super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.getInstanceShape());
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
+            this.checkFunctionResultNodeSupplier = DefaultCheckFunctionResultNodeGen::create;
         }
 
-        protected abstract RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode);
+        public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
+            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.getInstanceShape());
+            this.convertArgsNodeSupplier = convertArgsNodeSupplier;
+            this.checkFunctionResultNodeSupplier = checkFunctionResultNodeSupplier;
+        }
+
+        protected abstract RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion);
 
         @TruffleBoundary
         public static RootCallTarget createCallTarget(RootNode n) {
@@ -1611,307 +1618,347 @@ public class PythonCextBuiltins extends PythonBuiltins {
         protected ConvertArgsToSulongNode createConvertArgsToSulongNode() {
             return convertArgsNodeSupplier.get();
         }
+
+        @TruffleBoundary
+        public CheckFunctionResultNode getCheckFunctionResultNode() {
+            return checkFunctionResultNodeSupplier.get();
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @Builtin(name = "METH_DIRECT")
     @GenerateNodeFactory
     public abstract static class MethDirectNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_DIRECT_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        // this should directly (== without argument conversion) call a managed
-                        // function; so directly use the function. null indicates this
-                        return null;
-                    } else {
-                        return createCallTarget(MethDirectRoot.create(language, name, callable));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    // this should directly (== without argument conversion) call a managed
+                    // function; so directly use the function. null indicates this
+                    return null;
+                } else {
+                    return createCallTarget(MethDirectRoot.create(language, name, callable));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_DIRECT_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_KEYWORDS")
     @GenerateNodeFactory
     public abstract static class MethKeywordsNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_KEYWORDS_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethKeywordsRoot(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethKeywordsRoot(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethKeywordsRoot(language, name, callable));
+                } else {
+                    return createCallTarget(new MethKeywordsRoot(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_KEYWORDS_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_VARARGS")
     @GenerateNodeFactory
     public abstract static class MethVarargsNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_VARARGS_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethVarargsRoot(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethVarargsRoot(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethVarargsRoot(language, name, callable));
+                } else {
+                    return createCallTarget(new MethVarargsRoot(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_VARARGS_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_NOARGS")
     @GenerateNodeFactory
     public abstract static class MethNoargsNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_NOARGS_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethNoargsRoot(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethNoargsRoot(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethNoargsRoot(language, name, callable));
+                } else {
+                    return createCallTarget(new MethNoargsRoot(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_NOARGS_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_O")
     @GenerateNodeFactory
     public abstract static class MethONode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_O_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethORoot(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethORoot(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethORoot(language, name, callable));
+                } else {
+                    return createCallTarget(new MethORoot(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_O_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_FASTCALL")
     @GenerateNodeFactory
     public abstract static class MethFastcallNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(FastCallArgsToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_FASTCALL_CONVERTER = new PExternalFunctionWrapper(FastCallArgsToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethFastcallRoot(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethFastcallRoot(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethFastcallRoot(language, name, callable));
+                } else {
+                    return createCallTarget(new MethFastcallRoot(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_FASTCALL_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_FASTCALL_WITH_KEYWORDS")
     @GenerateNodeFactory
     public abstract static class MethFastcallWithKeywordsNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(FastCallWithKeywordsArgsToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_FASTCALL_WITH_KEYWORDS_CONVERTER = new PExternalFunctionWrapper(FastCallWithKeywordsArgsToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable));
+                } else {
+                    return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_FASTCALL_WITH_KEYWORDS_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_ALLOC")
     @GenerateNodeFactory
     public abstract static class MethAllocNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(BinaryFirstToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_ALLOC_CONVERTER = new PExternalFunctionWrapper(BinaryFirstToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new AllocFuncRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new AllocFuncRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new AllocFuncRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new AllocFuncRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_ALLOC_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_GETATTR")
     @GenerateNodeFactory
     public abstract static class MethGetattrNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(BinaryFirstToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_GETATTR_CONVERTER = new PExternalFunctionWrapper(BinaryFirstToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new GetAttrFuncRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new GetAttrFuncRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new GetAttrFuncRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new GetAttrFuncRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_GETATTR_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_SETATTR")
     @GenerateNodeFactory
     public abstract static class MethSetattrNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(TernaryFirstThirdToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_SETATTR_CONVERTER = new PExternalFunctionWrapper(TernaryFirstThirdToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new SetAttrFuncRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new SetAttrFuncRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new SetAttrFuncRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new SetAttrFuncRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_SETATTR_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_RICHCMP")
     @GenerateNodeFactory
     public abstract static class MethRichcmpNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(TernaryFirstSecondToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_RICHCMP_CONVERTER = new PExternalFunctionWrapper(TernaryFirstSecondToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new RichCmpFuncRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new RichCmpFuncRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new RichCmpFuncRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new RichCmpFuncRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_RICHCMP_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_SSIZE_OBJ_ARG")
     @GenerateNodeFactory
     public abstract static class MethSSizeObjArgNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(TernaryFirstThirdToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_SSIZE_OBJ_ARG_CONVERTER = new PExternalFunctionWrapper(TernaryFirstThirdToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_SSIZE_OBJ_ARG_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_REVERSE")
     @GenerateNodeFactory
     public abstract static class MethReverseNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_REVERSE_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethReverseRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethReverseRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethReverseRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new MethReverseRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_REVERSE_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_POW")
     @GenerateNodeFactory
     public abstract static class MethPowNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_POW_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethPowRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethPowRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethPowRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new MethPowRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_POW_CONVERTER;
         }
     }
 
     @Builtin(name = "METH_REVERSE_POW")
     @GenerateNodeFactory
     public abstract static class MethRPowNode extends PythonBuiltinNode {
-        @Specialization
-        PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(AllToSulongNode::create) {
+        public static final PExternalFunctionWrapper METH_REVERSE_POW_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create) {
 
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethRPowRootNode(language, name, callable));
-                    } else {
-                        return createCallTarget(new MethRPowRootNode(language, name, callable, convertArgsToSulongNode));
-                    }
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new MethRPowRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new MethRPowRootNode(language, name, callable, this));
                 }
-            };
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_REVERSE_POW_CONVERTER;
         }
     }
 
@@ -1924,25 +1971,46 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static final int PY_GT = 4;
         static final int PY_GE = 5;
 
+        private static final PExternalFunctionWrapper[] METH_RICHCMP_OP_CONVERTERS = new PExternalFunctionWrapper[PY_GE + 1];
+
+        private static PExternalFunctionWrapper createConverter(int op) {
+            return new PExternalFunctionWrapper(TernaryFirstSecondToSulongNode::create) {
+                @Override
+                @TruffleBoundary
+                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                    if (!doArgAndResultConversion) {
+                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, op));
+                    } else {
+                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, this, op));
+                    }
+                }
+            };
+        }
+
         private final int op;
 
         MethRichcmpOpBaseNode(int op) {
+            assert PY_LT <= op && op <= PY_GE;
             this.op = op;
         }
 
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(TernaryFirstSecondToSulongNode::create) {
-                @Override
-                @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
-                    if (convertArgsToSulongNode == null) {
-                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, op));
+            PExternalFunctionWrapper converter = METH_RICHCMP_OP_CONVERTERS[op];
+            if (converter == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                synchronized (METH_RICHCMP_OP_CONVERTERS) {
+                    // check again
+                    if (METH_RICHCMP_OP_CONVERTERS[op] == null) {
+                        converter = MethRichcmpOpBaseNode.createConverter(op);
+                        METH_RICHCMP_OP_CONVERTERS[op] = converter;
                     } else {
-                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, convertArgsToSulongNode, op));
+                        // if another thread created it in the meantime; load it
+                        converter = METH_RICHCMP_OP_CONVERTERS[op];
                     }
                 }
-            };
+            }
+            return converter;
         }
     }
 
