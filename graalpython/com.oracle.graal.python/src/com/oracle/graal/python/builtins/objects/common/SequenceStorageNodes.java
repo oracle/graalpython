@@ -2298,10 +2298,20 @@ public abstract class SequenceStorageNodes {
             this.genNodeProvider = genNodeProvider;
         }
 
-        public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, Object iterable);
+        public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, Object iterable, int len);
+
+        private static int lengthResult(int current, int ext) {
+            try {
+                return Math.addExact(current, ext);
+            } catch (ArithmeticException e) {
+                // (mq) There is no need to ensure capacity as we either
+                // run out of memory or dealing with a fake length.
+                return current;
+            }
+        }
 
         @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(lib.getLazyPythonClass(seq))"})
-        SequenceStorage doWithStorage(SequenceStorage left, PSequence seq,
+        SequenceStorage doWithStorage(SequenceStorage left, PSequence seq, int len,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached LenNode lenNode,
@@ -2310,15 +2320,20 @@ public abstract class SequenceStorageNodes {
                         @Cached BranchProfile overflowErrorProfile,
                         @Cached ConcatBaseNode concatStoragesNode) {
             SequenceStorage right = getStorageNode.execute(seq);
-            int len1 = lenNode.execute(left);
-            int len2 = lenNode.execute(right);
+            int lenLeft = lenNode.execute(left);
+            int lenResult;
+            if (len > 0) {
+                lenResult = lengthResult(lenLeft, len);
+            } else {
+                lenResult = lengthResult(lenLeft, lenNode.execute(right));
+            }
             SequenceStorage dest = null;
             try {
-                dest = ensureCapacityNode.execute(left, Math.addExact(len1, len2));
+                dest = ensureCapacityNode.execute(left, lenResult);
                 return concatStoragesNode.execute(dest, left, right);
             } catch (SequenceStoreException e) {
                 dest = generalizeStore(dest, e.getIndicationValue());
-                dest = ensureCapacityNode.execute(dest, Math.addExact(len1, len2));
+                dest = ensureCapacityNode.execute(dest, lenResult);
                 return concatStoragesNode.execute(dest, left, right);
             } catch (ArithmeticException e) {
                 overflowErrorProfile.enter();
@@ -2327,14 +2342,20 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(lib.getLazyPythonClass(iterable))")
-        SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage s, Object iterable,
+        SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("create()") GetIteratorNode getIteratorNode,
+                        @Cached LenNode lenNode,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached AppendNode appendNode) {
-            SequenceStorage currentStore = s;
+            SequenceStorage currentStore = left;
+            int lenLeft = lenNode.execute(currentStore);
             Object it = getIteratorNode.executeWith(frame, iterable);
+            if (len > 0) {
+                ensureCapacityNode.execute(left, lengthResult(lenLeft, len));
+            }
             while (true) {
                 Object value;
                 try {
@@ -3689,10 +3710,11 @@ public abstract class SequenceStorageNodes {
 
         protected abstract Object nextObject(VirtualFrame frame, T nextNode, Object iterator);
 
-        protected SequenceStorage doIt(VirtualFrame frame, Object iterator, ListStorageType type, T nextNode, IsBuiltinClassProfile errorProfile) {
+        protected SequenceStorage doIt(VirtualFrame frame, Object iterator, int len, ListStorageType type, T nextNode, IsBuiltinClassProfile errorProfile) {
             SequenceStorage storage;
+            final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
-                Object[] elements = new Object[START_SIZE];
+                Object[] elements = new Object[size];
                 int i = 0;
                 while (true) {
                     try {
@@ -3713,7 +3735,7 @@ public abstract class SequenceStorageNodes {
                 try {
                     switch (type) {
                         case Boolean: {
-                            boolean[] elements = new boolean[START_SIZE];
+                            boolean[] elements = new boolean[size];
                             array = elements;
                             while (true) {
                                 try {
@@ -3732,7 +3754,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         case Byte: {
-                            byte[] elements = new byte[START_SIZE];
+                            byte[] elements = new byte[size];
                             array = elements;
                             while (true) {
                                 try {
@@ -3757,7 +3779,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         case Int: {
-                            int[] elements = new int[START_SIZE];
+                            int[] elements = new int[size];
                             array = elements;
                             while (true) {
                                 try {
@@ -3776,7 +3798,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         case Long: {
-                            long[] elements = new long[START_SIZE];
+                            long[] elements = new long[size];
                             array = elements;
                             while (true) {
                                 try {
@@ -3795,7 +3817,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         case Double: {
-                            double[] elements = new double[START_SIZE];
+                            double[] elements = new double[size];
                             array = elements;
                             while (true) {
                                 try {
@@ -3814,7 +3836,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         case List: {
-                            PList[] elements = new PList[START_SIZE];
+                            PList[] elements = new PList[size];
                             array = elements;
                             while (true) {
                                 try {
@@ -3833,7 +3855,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         case Tuple: {
-                            PTuple[] elements = new PTuple[START_SIZE];
+                            PTuple[] elements = new PTuple[size];
                             array = elements;
                             while (true) {
                                 try {
@@ -3852,7 +3874,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         case Generic: {
-                            Object[] elements = new Object[START_SIZE];
+                            Object[] elements = new Object[size];
                             while (true) {
                                 try {
                                     Object value = nextObject(frame, nextNode, iterator);
@@ -3943,7 +3965,11 @@ public abstract class SequenceStorageNodes {
         @CompilationFinal private ListStorageType expectedElementType = Uninitialized;
 
         public SequenceStorage execute(VirtualFrame frame, Object iterator) {
-            SequenceStorage doIt = HELPER.doIt(frame, iterator, expectedElementType, getNextNode, errorProfile);
+            return execute(frame, iterator, -1);
+        }
+
+        public SequenceStorage execute(VirtualFrame frame, Object iterator, int len) {
+            SequenceStorage doIt = HELPER.doIt(frame, iterator, len, expectedElementType, getNextNode, errorProfile);
             ListStorageType actualElementType = getElementType.execute(doIt);
             if (expectedElementType != actualElementType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -4028,7 +4054,7 @@ public abstract class SequenceStorageNodes {
         public SequenceStorage execute(Object iterator) {
             // NOTE: it is fine to pass 'null' frame because the callers must already take care of
             // the global state
-            SequenceStorage doIt = HELPER.doIt(null, iterator, expectedElementType, getNextNode, errorProfile);
+            SequenceStorage doIt = HELPER.doIt(null, iterator, -1, expectedElementType, getNextNode, errorProfile);
             ListStorageType actualElementType = doIt.getElementType();
             if (expectedElementType != actualElementType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -4045,7 +4071,7 @@ public abstract class SequenceStorageNodes {
         public SequenceStorage execute(Object iterator) {
             // NOTE: it is fine to pass 'null' frame because the callers must already take care of
             // the global state
-            return HELPER.doIt(null, iterator, Uninitialized, GetNextWithoutFrameNodeGen.getUncached(), IsBuiltinClassProfile.getUncached());
+            return HELPER.doIt(null, iterator, -1, Uninitialized, GetNextWithoutFrameNodeGen.getUncached(), IsBuiltinClassProfile.getUncached());
         }
 
     }

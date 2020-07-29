@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
@@ -272,11 +273,13 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         PNone listIterable(VirtualFrame frame, PList list, Object iterable,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") CreateStorageFromIteratorNode storageNode) {
+                        @Cached IteratorNodes.GetLength lenNode,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached CreateStorageFromIteratorNode storageNode) {
             clearStorage(list);
+            int len = lenNode.execute(frame, iterable);
             Object iterObj = getIteratorNode.executeWith(frame, iterable);
-            list.setSequenceStorage(storageNode.execute(frame, iterObj));
+            list.setSequenceStorage(storageNode.execute(frame, iterObj, len));
             return PNone.NONE;
         }
 
@@ -403,8 +406,10 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone extendSequence(VirtualFrame frame, PList list, Object iterable,
+                        @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable));
+            int len = lenNode.execute(frame, iterable);
+            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable, len));
             return PNone.NONE;
         }
 
@@ -940,8 +945,10 @@ public class ListBuiltins extends PythonBuiltins {
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         PList extendSequence(VirtualFrame frame, PList list, Object iterable,
+                        @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable));
+            int len = lenNode.execute(frame, iterable);
+            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable, len));
             return list;
         }
 

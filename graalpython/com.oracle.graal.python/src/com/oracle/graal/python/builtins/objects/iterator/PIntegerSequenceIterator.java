@@ -31,14 +31,20 @@ import com.oracle.truffle.api.object.Shape;
 public final class PIntegerSequenceIterator extends PIntegerIterator {
 
     final IntSequenceStorage sequence;
+    final int size;
 
     public PIntegerSequenceIterator(Object clazz, Shape instanceShape, IntSequenceStorage sequence) {
         super(clazz, instanceShape);
         this.sequence = sequence;
+        this.size = sequence.length();
     }
 
     public IntSequenceStorage getSequenceStorage() {
         return sequence;
+    }
+
+    public int getSize() {
+        return size;
     }
 
     @Override

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -67,7 +68,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.List;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class LocalsStorage extends HashingStorage {
@@ -84,12 +84,12 @@ public class LocalsStorage extends HashingStorage {
     }
 
     public MaterializedFrame getFrame() {
-        return frame;
+        return this.frame;
     }
 
     private Object getValue(FrameSlot slot) {
         if (slot != null) {
-            Object value = frame.getValue(slot);
+            Object value = this.frame.getValue(slot);
             if (value instanceof PCell) {
                 return ((PCell) value).getRef();
             }
@@ -101,20 +101,20 @@ public class LocalsStorage extends HashingStorage {
     @Override
     @ExportMessage
     public int length() {
-        if (len == -1) {
+        if (this.len == -1) {
             CompilerDirectives.transferToInterpreter();
             calculateLength();
         }
-        return len;
+        return this.len;
     }
 
     @TruffleBoundary
     private void calculateLength() {
-        len = frame.getFrameDescriptor().getSize();
-        for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
+        this.len = this.frame.getFrameDescriptor().getSize();
+        for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
             Object identifier = slot.getIdentifier();
-            if (!FrameSlotIDs.isUserFrameSlot(identifier) || frame.getValue(slot) == null) {
-                len--;
+            if (!FrameSlotIDs.isUserFrameSlot(identifier) || this.frame.getValue(slot) == null) {
+                this.len--;
             }
         }
     }
@@ -214,7 +214,7 @@ public class LocalsStorage extends HashingStorage {
     public Object forEachUntyped(ForEachNode<Object> node, Object arg) {
         bailout();
         Object result = arg;
-        for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
+        for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
             Object value = getValue(slot);
             if (value != null) {
                 result = node.execute(slot.getIdentifier(), result);
@@ -276,42 +276,67 @@ public class LocalsStorage extends HashingStorage {
     @Override
     @ExportMessage
     public HashingStorage copy() {
-        return new LocalsStorage(frame);
+        return new LocalsStorage(this.frame);
     }
 
     @Override
     @ExportMessage
     public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(new LocalsIterator(frame));
+        return new HashingStorageIterable<>(new LocalsIterator(this.frame));
     }
 
     @ExportMessage
     @Override
     public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(new ReverseLocalsIterator(frame));
+        return new HashingStorageIterable<>(new ReverseLocalsIterator(this.frame));
     }
 
-    private abstract static class AbstractLocalsIterator implements Iterator<Object> {
+    protected abstract static class AbstractLocalsIterator implements Iterator<Object> {
+        protected List<? extends FrameSlot> slots;
+        protected final int size;
+        protected int index;
         protected final MaterializedFrame frame;
         protected FrameSlot nextFrameSlot = null;
 
         AbstractLocalsIterator(MaterializedFrame frame) {
             this.frame = frame;
+            this.slots = getSlots(frame);
+            this.size = getSize(frame);
+            this.index = 0;
+        }
+
+        @TruffleBoundary
+        private static List<? extends FrameSlot> getSlots(MaterializedFrame frame) {
+            return frame.getFrameDescriptor().getSlots();
+        }
+
+        @TruffleBoundary
+        private static int getSize(MaterializedFrame frame) {
+            return frame.getFrameDescriptor().getSize();
+        }
+
+        public int getState() {
+            return this.index;
+        }
+
+        public void setState(int state) {
+            this.index = state;
         }
 
         protected abstract boolean loadNext();
 
         @Override
         public boolean hasNext() {
-            if (frame.getFrameDescriptor().getSize() == 0) {
+            if (this.size == 0) {
                 return false;
             }
-            if (nextFrameSlot == null) {
+            if (this.nextFrameSlot == null) {
                 return loadNext();
             }
             return true;
         }
 
+        @Override
         @TruffleBoundary
         public Object next() {
             return nextSlot().getIdentifier();
@@ -320,9 +345,9 @@ public class LocalsStorage extends HashingStorage {
         @TruffleBoundary
         public FrameSlot nextSlot() {
             if (hasNext()) {
-                assert nextFrameSlot != null;
-                FrameSlot value = nextFrameSlot;
-                nextFrameSlot = null;
+                assert this.nextFrameSlot != null;
+                FrameSlot value = this.nextFrameSlot;
+                this.nextFrameSlot = null;
                 return value;
             }
             throw new NoSuchElementException();
@@ -331,7 +356,6 @@ public class LocalsStorage extends HashingStorage {
     }
 
     private static final class LocalsIterator extends AbstractLocalsIterator {
-        private Iterator<? extends FrameSlot> keys;
 
         LocalsIterator(MaterializedFrame frame) {
             super(frame);
@@ -340,14 +364,14 @@ public class LocalsStorage extends HashingStorage {
         @TruffleBoundary
         @Override
         protected boolean loadNext() {
-            while (keysIterator().hasNext()) {
-                FrameSlot nextCandidate = keysIterator().next();
+            while (this.index < this.size) {
+                FrameSlot nextCandidate = this.slots.get(this.index++);
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
                     if (FrameSlotIDs.isUserFrameSlot(identifier)) {
-                        Object nextValue = frame.getValue(nextCandidate);
+                        Object nextValue = this.frame.getValue(nextCandidate);
                         if (nextValue != null) {
-                            nextFrameSlot = nextCandidate;
+                            this.nextFrameSlot = nextCandidate;
                             return true;
                         }
                     }
@@ -355,38 +379,26 @@ public class LocalsStorage extends HashingStorage {
             }
             return false;
         }
-
-        protected final Iterator<? extends FrameSlot> keysIterator() {
-            if (keys == null) {
-                keys = frame.getFrameDescriptor().getSlots().iterator();
-            }
-            return keys;
-        }
     }
 
     private static final class ReverseLocalsIterator extends AbstractLocalsIterator {
-        private List<? extends FrameSlot> slots;
-        private int index;
 
         ReverseLocalsIterator(MaterializedFrame frame) {
             super(frame);
+            this.index = this.size - 1;
         }
 
         @TruffleBoundary
         @Override
         protected boolean loadNext() {
-            if (slots == null) {
-                slots = frame.getFrameDescriptor().getSlots();
-                index = slots.size() - 1;
-            }
-            while (index >= 0) {
-                FrameSlot nextCandidate = slots.get(index--);
+            while (this.index >= 0) {
+                FrameSlot nextCandidate = this.slots.get(this.index--);
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
                     if (FrameSlotIDs.isUserFrameSlot(identifier)) {
-                        Object nextValue = frame.getValue(nextCandidate);
+                        Object nextValue = this.frame.getValue(nextCandidate);
                         if (nextValue != null) {
-                            nextFrameSlot = nextCandidate;
+                            this.nextFrameSlot = nextCandidate;
                             return true;
                         }
                     }

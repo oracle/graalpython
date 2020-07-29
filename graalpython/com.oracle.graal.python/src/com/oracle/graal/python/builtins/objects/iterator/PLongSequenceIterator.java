@@ -33,7 +33,7 @@ public final class PLongSequenceIterator extends PPrimitiveIterator {
     final LongSequenceStorage sequence;
 
     public PLongSequenceIterator(Object clazz, Shape instanceShape, LongSequenceStorage sequence) {
-        super(clazz, instanceShape);
+        super(clazz, storage, sequence.length());
         this.sequence = sequence;
     }
 

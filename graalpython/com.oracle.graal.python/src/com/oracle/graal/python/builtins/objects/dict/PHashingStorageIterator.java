@@ -64,11 +64,19 @@ public abstract class PHashingStorageIterator<T> extends PBuiltinIterator {
         return iterator;
     }
 
+    public HashingStorage getHashingStorage() {
+        return hashingStorage;
+    }
+
     @TruffleBoundary
     public final Object next() {
         assert hasNext();
         index++;
         return iterator.next();
+    }
+
+    public final int getSize() {
+        return size;
     }
 
     @TruffleBoundary

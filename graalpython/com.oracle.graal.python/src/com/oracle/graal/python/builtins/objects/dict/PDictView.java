@@ -63,11 +63,6 @@ public abstract class PDictView extends PythonBuiltinObject {
         return dict;
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    //
-    // the keys
-    //
-    // -----------------------------------------------------------------------------------------------------------------
     public abstract static class PBaseDictIterator<T> extends PHashingStorageIterator<T> {
 
         public PBaseDictIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int initialSize) {
@@ -79,6 +74,11 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    //
+    // the keys
+    //
+    // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictKeyIterator extends PBaseDictIterator<Object> {
         public PDictKeyIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
@@ -122,7 +122,7 @@ public abstract class PDictView extends PythonBuiltinObject {
 
         @Override
         public Object next(PythonObjectFactory factory) {
-            DictEntry value = this.getIterator().next();
+            DictEntry value = (DictEntry) super.next();
             return factory.createTuple(new Object[]{value.getKey(), value.getValue()});
         }
     }

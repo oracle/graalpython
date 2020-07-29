@@ -33,7 +33,7 @@ public final class PDoubleSequenceIterator extends PPrimitiveIterator {
     final DoubleSequenceStorage sequence;
 
     public PDoubleSequenceIterator(Object clazz, Shape instanceShape, DoubleSequenceStorage sequence) {
-        super(clazz, instanceShape);
+        super(clazz, instanceShape, sequence.length());
         this.sequence = sequence;
     }
 

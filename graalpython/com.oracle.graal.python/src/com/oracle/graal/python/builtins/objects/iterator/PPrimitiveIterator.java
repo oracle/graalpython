@@ -44,8 +44,16 @@ import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PPrimitiveIterator extends PBuiltinIterator {
-    public PPrimitiveIterator(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape);
+
+    final int size;
+
+    public PPrimitiveIterator(Object clazz, Shape instanceShape, int size) {
+        super(clazz, storage);
+        this.size = size;
+    }
+
+    public int getSize() {
+        return size;
     }
 
     public abstract TypedSequenceStorage getSequenceStorage();
