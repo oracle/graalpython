@@ -1577,31 +1577,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
                         @SuppressWarnings("unused") PNone flush,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary fileLib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, fileLib, methodLib, valueLib);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib, valueLib);
         }
 
-        @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"}, limit = "2")
+        @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
-                        @CachedLibrary("file") PythonObjectLibrary fileLib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             int lastValue = values.length - 1;
-            Object writeMethod = fileLib.lookupAttributeStrict(file, frame, "write");
+            Object writeMethod = lib.lookupAttributeStrict(file, frame, "write");
             for (int i = 0; i < lastValue; i++) {
-                methodLib.callObject(writeMethod, frame, valueLib.asPString(values[i]));
-                methodLib.callObject(writeMethod, frame, sep);
+                lib.callObject(writeMethod, frame, valueLib.asPString(values[i]));
+                lib.callObject(writeMethod, frame, sep);
             }
             if (lastValue >= 0) {
-                methodLib.callObject(writeMethod, frame, valueLib.asPString(values[lastValue]));
+                lib.callObject(writeMethod, frame, valueLib.asPString(values[lastValue]));
             }
-            methodLib.callObject(writeMethod, frame, end);
+            lib.callObject(writeMethod, frame, end);
             if (flush) {
-                Object flushMethod = fileLib.lookupAttributeStrict(file, frame, "flush");
-                methodLib.callObject(flushMethod, frame);
+                Object flushMethod = lib.lookupAttributeStrict(file, frame, "flush");
+                lib.callObject(flushMethod, frame);
             }
             return PNone.NONE;
         }
@@ -1612,8 +1610,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary fileLib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             String sep;
             try {
@@ -1641,7 +1638,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, fileLib, methodLib, valueLib);
+            return printAllGiven(frame, values, sep, end, file, flush, lib, valueLib);
         }
 
         private Object getStdout() {
