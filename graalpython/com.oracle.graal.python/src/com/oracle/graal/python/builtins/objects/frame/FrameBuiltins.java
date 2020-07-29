@@ -83,7 +83,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String getFormat(PFrame self, PCode code, int lineno) {
-            return String.format("<frame at 0x%x, file %s, line %d, code %s>",
+            return String.format("<frame at 0x%x, file '%s', line %d, code %s>",
                             self.hashCode(), code.getFilename(), lineno, code.getName());
         }
     }
