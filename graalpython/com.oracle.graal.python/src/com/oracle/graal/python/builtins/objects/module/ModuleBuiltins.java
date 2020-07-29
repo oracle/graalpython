@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -58,26 +59,39 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
@@ -88,27 +102,123 @@ public class ModuleBuiltins extends PythonBuiltins {
         return ModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"self", "name", "doc"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
-        @Specialization
-        public PNone module(PythonModule self, String name, Object path,
+        @Specialization(limit = "1")
+        public PNone module(PythonModule self, String name, Object doc,
                         @Cached WriteAttributeToObjectNode writeName,
                         @Cached WriteAttributeToObjectNode writeDoc,
                         @Cached WriteAttributeToObjectNode writePackage,
                         @Cached WriteAttributeToObjectNode writeLoader,
                         @Cached WriteAttributeToObjectNode writeSpec,
-                        @Cached WriteAttributeToObjectNode writeFile) {
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            // create dict if missing
+            if (lib.getDict(self) == null) {
+                try {
+                    lib.setDict(self, factory().createDictFixedStorage(self));
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            }
+
+            // init
             writeName.execute(self, __NAME__, name);
-            writeDoc.execute(self, __DOC__, PNone.NONE);
+            if (doc != PNone.NO_VALUE) {
+                writeDoc.execute(self, __DOC__, doc);
+            } else {
+                writeDoc.execute(self, __DOC__, PNone.NONE);
+            }
             writePackage.execute(self, __PACKAGE__, PNone.NONE);
             writeLoader.execute(self, __LOADER__, PNone.NONE);
             writeSpec.execute(self, __SPEC__, PNone.NONE);
-            if (path != PNone.NO_VALUE) {
-                writeFile.execute(self, __FILE__, path);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object dir(PythonModule self,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached IsBuiltinClassProfile isDictProfile,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        @Cached ListNodes.ConstructListNode constructListNode,
+                        @Cached CallNode callNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            Object dict = pol.lookupAttribute(self, __DICT__);
+            if (isDict(dict, isDictProfile)) {
+                HashingStorage dictStorage = getDictStorageNode.execute((PHashingCollection) dict);
+                Object dirFunc = hashLib.getItem(dictStorage, __DIR__);
+                if (dirFunc != null) {
+                    return callNode.execute(dirFunc);
+                } else {
+                    return constructListNode.execute(dict);
+                }
+            } else {
+                String name = getName(self, pol, hashLib, castToJavaStringNode);
+                throw this.raise(PythonBuiltinClassType.TypeError, "%s.__dict__ is not a dictionary", name);
+            }
+        }
+
+        private String getName(PythonModule self, PythonObjectLibrary pol, HashingStorageLibrary hashLib, CastToJavaStringNode castToJavaStringNode) {
+            PHashingCollection dict = pol.getDict(self);
+            if (dict != null) {
+                Object name = hashLib.getItem(dict.getDictStorage(), __NAME__);
+                if (name != null) {
+                    return castToJavaStringNode.execute(name);
+                }
+            }
+            throw raise(PythonBuiltinClassType.SystemError, "nameless module");
+        }
+
+        protected static boolean isDict(Object object, IsBuiltinClassProfile profile) {
+            return profile.profileObject(object, PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class ModuleDictNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"isNoValue(none)"}, limit = "1")
+        Object dict(PythonModule self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
+                return PNone.NONE;
+            }
+            return dict;
+        }
+
+        @Specialization(limit = "1")
+        Object dict(PythonModule self, PDict dict,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, dict);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(e);
             }
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(none)", limit = "1")
+        Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
+                raise(self, none);
+            }
+            return dict;
+        }
+
+        @Fallback
+        Object raise(Object self, @SuppressWarnings("unused") Object dict) {
+            throw raise(PythonBuiltinClassType.TypeError, "descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object", self);
         }
     }
 

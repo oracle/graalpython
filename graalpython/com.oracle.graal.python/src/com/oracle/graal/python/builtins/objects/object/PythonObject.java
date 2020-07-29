@@ -181,7 +181,7 @@ public class PythonObject extends PythonAbstractObject {
     public String toString() {
         String className = "unknown";
         if (storedPythonClass instanceof PythonManagedClass) {
-            className = ((PythonManagedClass) storedPythonClass).getName();
+            className = ((PythonManagedClass) storedPythonClass).getQualName();
         } else if (storedPythonClass instanceof PythonBuiltinClassType) {
             className = ((PythonBuiltinClassType) storedPythonClass).getName();
         } else if (PGuards.isNativeClass(storedPythonClass)) {

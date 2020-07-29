@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,8 @@
  * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.objects.str;
+
+import com.oracle.truffle.api.CompilerDirectives;
 
 public final class StringUtils {
     public enum StripKind {
@@ -198,5 +200,10 @@ public final class StringUtils {
         }
 
         return str.substring(i, j);
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public static boolean containsNullCharacter(String value) {
+        return value.indexOf(0) > 0;
     }
 }

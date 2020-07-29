@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
@@ -37,6 +38,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -75,12 +77,16 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -110,6 +116,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -129,11 +137,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -815,14 +818,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        String getNameBuiltin(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+        String getNameBuiltin(PythonManagedClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
-        }
-
-        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode getName) {
-            return getName.execute(cls, __NAME__);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -837,8 +834,17 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
         Object setName(PythonClass cls, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, __NAME__, value);
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            try {
+                String string = castToJavaStringNode.execute(value);
+                if (containsNullCharacter(string)) {
+                    throw raise(PythonBuiltinClassType.ValueError, "type name must not contain null characters");
+                }
+                cls.setName(string);
+                return PNone.NONE;
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, "can only assign string to %p.__name__, not '%p'", cls, value);
+            }
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -927,14 +933,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
-        }
-
-        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode getName) {
-            return getName.execute(cls, __QUALNAME__);
+        String getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getQualName();
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -944,8 +944,13 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
         Object setName(PythonClass cls, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, __QUALNAME__, value);
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            try {
+                cls.setQualName(castToJavaStringNode.execute(value));
+                return PNone.NONE;
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, "can only assign string to %p.__qualname__, not '%p'", cls, value);
+            }
         }
 
         @Specialization(guards = "isNoValue(value)")

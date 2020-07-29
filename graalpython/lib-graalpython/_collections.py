@@ -243,7 +243,7 @@ class deque(object):
         return _mul(deque(self, maxlen=self.maxlen), times)
 
     def __hash__(self):
-        raise TypeError("unhashable type: '%s'" % self.__name__)
+        raise TypeError("unhashable type: '{}'".format(type(self).__name__))
 
     @synchronized
     def extendleft(self, iterable):
