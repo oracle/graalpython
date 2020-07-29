@@ -131,7 +131,7 @@ public final class ReadCallerFrameNode extends Node {
                     return PArguments.getCurrentFrameInfo(callerFrame);
                 }
                 return PFrame.Reference.EMPTY;
-            } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
+            } else if (!(skipInternal && (callerInfo.getCallNode() == null || PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode())))) {
                 i++;
             }
             currentFrame = callerInfo;
