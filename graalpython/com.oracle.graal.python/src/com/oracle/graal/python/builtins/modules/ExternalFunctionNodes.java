@@ -225,6 +225,7 @@ public abstract class ExternalFunctionNodes {
         @TruffleBoundary
         ExternalFunctionInvokeNode() {
             this.toSulongNode = CExtNodes.AllToSulongNode.create();
+            this.checkResultNode = DefaultCheckFunctionResultNodeGen.create();
         }
 
         @TruffleBoundary
@@ -999,6 +1000,31 @@ public abstract class ExternalFunctionNodes {
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+    }
+
+    /**
+     * Wrapper root node for C function type {@code iternextfunc}.
+     */
+    static class IterNextFuncRootNode extends MethodDescriptorRoot {
+
+        IterNextFuncRootNode(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable);
+        }
+
+        IterNextFuncRootNode(PythonLanguage language, String name, Object callable, PExternalFunctionWrapper provider) {
+            super(language, name, callable, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{readSelfNode.execute(frame)};
+        }
+
+        @Override
+        public Signature getSignature() {
+            // same signature as a method without arguments (just the self)
+            return MethNoargsRoot.SIGNATURE;
         }
     }
 

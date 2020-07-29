@@ -295,6 +295,7 @@ void initialize_hashes();
 #define JWRAPPER_NE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NE"))
 #define JWRAPPER_GT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GT"))
 #define JWRAPPER_GE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GE"))
+#define JWRAPPER_ITERNEXT                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_ITERNEXT"))
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \

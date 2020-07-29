@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.IterNextFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
@@ -85,6 +86,7 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVararg
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -827,7 +829,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
          * custom slots at a time where the C API is not yet loaded. So we need to check if any of
          * the base classes defines custom slots and adapt the basicsize to allocate space for the
          * slots and add the native member slot descriptors.
-         *
          */
         @Specialization
         Object slots(Object module, Object pythonClass, String subKey,
@@ -987,6 +988,31 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected static boolean isPythonObjectNativeWrapper(Object object) {
             return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+        }
+    }
+
+    // equivalent to result processing done in 'wrap_next' in 'Objects/typeobject.c'
+    abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
+
+        @Specialization(limit = "3")
+        static Object doGeneric(String name, Object result,
+                        @CachedLibrary("result") InteropLibrary lib,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                        @Cached PRaiseNode raiseNode) {
+            if (lib.isNull(result)) {
+                PythonContext context = contextRef.get();
+                PException currentException = context.getCurrentException();
+                // if no exception occurred, the iterator is exhausted -> raise StopIteration
+                if (currentException == null) {
+                    throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                } else {
+                    // consume exception
+                    context.setCurrentException(null);
+                    // re-raise exception
+                    throw currentException.getExceptionForReraise();
+                }
+            }
+            return result;
         }
     }
 
@@ -2059,6 +2085,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class MethGeNode extends MethRichcmpOpBaseNode {
         protected MethGeNode() {
             super(PY_GE);
+        }
+    }
+
+    @Builtin(name = "METH_ITERNEXT")
+    @GenerateNodeFactory
+    public abstract static class MethIterNextNode extends PythonBuiltinNode {
+        private static final PExternalFunctionWrapper METH_ITERNEXT_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create, CheckIterNextResultNodeGen::create) {
+
+            @Override
+            @TruffleBoundary
+            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return createCallTarget(new IterNextFuncRootNode(language, name, callable));
+                } else {
+                    return createCallTarget(new IterNextFuncRootNode(language, name, callable, this));
+                }
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_ITERNEXT_CONVERTER;
         }
     }
 
