@@ -55,7 +55,7 @@ def decode(self, encoding="utf-8", errors="strict"):
     return _codecs.decode(self, encoding=encoding, errors=errors)
 
 
-bytes.decode = decode
+bytes.decode = __graalpython__.builtin_method(decode)
 
 
 def count(self, sub, start=None, end=None):
@@ -81,7 +81,7 @@ def count(self, sub, start=None, end=None):
     return matches
 
 
-bytes.count = count
+bytes.count = __graalpython__.builtin_method(count)
 
 
 def rfind(self, sub, start=None, end=None):

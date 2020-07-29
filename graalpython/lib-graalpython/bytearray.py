@@ -46,5 +46,5 @@ def strip(self, what=None):
     return self.lstrip(what).rstrip(what)
 
 
-bytearray.strip = strip
+bytearray.strip = __graalpython__.builtin_method(strip)
 bytearray.rfind = bytes.rfind

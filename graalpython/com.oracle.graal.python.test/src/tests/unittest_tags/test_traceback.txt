@@ -27,6 +27,7 @@
 *graalpython.lib-python.3.test.test_traceback.TestStack.test_extract_stack_limit
 *graalpython.lib-python.3.test.test_traceback.TestStack.test_extract_stack_lookup_lines
 *graalpython.lib-python.3.test.test_traceback.TestStack.test_extract_stackup_deferred_lookup_lines
+*graalpython.lib-python.3.test.test_traceback.TestStack.test_format_locals
 *graalpython.lib-python.3.test.test_traceback.TestStack.test_format_smoke
 *graalpython.lib-python.3.test.test_traceback.TestStack.test_from_list
 *graalpython.lib-python.3.test.test_traceback.TestStack.test_from_list_edited_stack

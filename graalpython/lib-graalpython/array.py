@@ -45,5 +45,5 @@ def frombytes(self, bytesLike):
 def fromfile(self, f, n):
     self.frombytes(f.read(n))
 
-array.frombytes = frombytes
-array.fromfile = fromfile
+array.frombytes = __graalpython__.builtin_method(frombytes)
+array.fromfile = __graalpython__.builtin_method(fromfile)
