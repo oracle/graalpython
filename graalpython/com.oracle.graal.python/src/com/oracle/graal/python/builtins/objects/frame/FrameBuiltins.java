@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -33,6 +35,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -40,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
@@ -47,6 +51,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -62,6 +67,23 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FrameBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        String repr(VirtualFrame frame, PFrame self,
+                        @Cached GetCodeNode getCodeNode) {
+            PCode code = getCodeNode.executeObject(frame, self);
+            return getFormat(self, code);
+        }
+
+        @TruffleBoundary
+        private static String getFormat(PFrame self, PCode code) {
+            return String.format("<frame at 0x%x, file %s, line %d, code %s>",
+                            self.hashCode(), code.getFilename(), self.getLine(), code.getName());
+        }
     }
 
     @Builtin(name = "f_globals", minNumOfPositionalArgs = 1, isGetter = true)
@@ -131,8 +153,10 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_code", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
+        public abstract PCode executeObject(VirtualFrame frame, PFrame self);
+
         @Specialization
-        Object get(VirtualFrame frame, PFrame self,
+        PCode get(VirtualFrame frame, PFrame self,
                         @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
             RootCallTarget ct = self.getTarget();
             if (ct != null) {
@@ -143,6 +167,10 @@ public final class FrameBuiltins extends PythonBuiltins {
             return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0],
                             "<internal>",
                             "<internal>", -1, new byte[0]);
+        }
+
+        public static GetCodeNode create() {
+            return FrameBuiltinsFactory.GetCodeNodeFactory.create(new ReadArgumentNode[0]);
         }
     }
 
