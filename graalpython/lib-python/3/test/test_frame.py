@@ -29,6 +29,7 @@ class ClearTest(unittest.TestCase):
             tb.tb_frame.clear()
             tb = tb.tb_next
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_clear_locals(self):
         class C:
             pass
