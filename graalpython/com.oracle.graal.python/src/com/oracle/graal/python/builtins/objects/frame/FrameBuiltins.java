@@ -74,15 +74,17 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         String repr(VirtualFrame frame, PFrame self,
-                        @Cached GetCodeNode getCodeNode) {
+                        @Cached GetCodeNode getCodeNode,
+                        @Cached GetLinenoNode getLinenoNode) {
             PCode code = getCodeNode.executeObject(frame, self);
-            return getFormat(self, code);
+            int lineno = getLinenoNode.executeInt(frame, self);
+            return getFormat(self, code, lineno);
         }
 
         @TruffleBoundary
-        private static String getFormat(PFrame self, PCode code) {
+        private static String getFormat(PFrame self, PCode code, int lineno) {
             return String.format("<frame at 0x%x, file %s, line %d, code %s>",
-                            self.hashCode(), code.getFilename(), self.getLine(), code.getName());
+                            self.hashCode(), code.getFilename(), lineno, code.getName());
         }
     }
 
@@ -124,9 +126,25 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonBuiltinNode {
+        public abstract int executeInt(VirtualFrame frame, PFrame self);
+
         @Specialization
-        int get(PFrame self) {
+        int get(VirtualFrame frame, PFrame self,
+                        @Cached ConditionProfile isCurrentFrameProfile,
+                        @Cached MaterializeFrameNode materializeNode) {
+            // Special case because this builtin can be called without going through an invoke node:
+            // we need to sync the location of the frame if and only if 'self' represents the
+            // current frame. If 'self' represents another frame on the stack, the location is
+            // already set
+            if (isCurrentFrameProfile.profile(PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+                PFrame pyFrame = materializeNode.execute(frame, this, false, false);
+                assert pyFrame == self;
+            }
             return self.getLine();
+        }
+
+        public static GetLinenoNode create() {
+            return FrameBuiltinsFactory.GetLinenoNodeFactory.create(new ReadArgumentNode[0]);
         }
     }
 
