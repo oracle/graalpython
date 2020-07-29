@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -151,8 +152,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone doGeneric(VirtualFrame frame, PByteArray byteArray, Object source,
+                        @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            SequenceStorage execute = extendNode.execute(frame, byteArray.getSequenceStorage(), source);
+            int len = lenNode.execute(frame, source);
+            SequenceStorage execute = extendNode.execute(frame, byteArray.getSequenceStorage(), source, len);
             assert byteArray.getSequenceStorage() == execute;
             return PNone.NONE;
         }

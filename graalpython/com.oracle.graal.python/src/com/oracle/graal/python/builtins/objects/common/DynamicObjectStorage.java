@@ -481,27 +481,39 @@ public final class DynamicObjectStorage extends HashingStorage {
         return new HashingStorageIterable<>(new EntriesIterator(store, readNode));
     }
 
-    private static final class EntriesIterator implements Iterator<DictEntry> {
-        private final Iterator<Object> keyIter;
+    protected static final class EntriesIterator implements Iterator<DictEntry> {
+        private final List<Object> keyList;
         private final DynamicObject store;
         private final ReadAttributeFromDynamicObjectNode readNode;
         private DictEntry next = null;
+        private int state;
+        private final int size;
 
         public EntriesIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
-            this.keyIter = getIterator(store.getShape());
+            this.keyList = keyList(store.getShape());
             this.store = store;
             this.readNode = readNode;
+            this.state = 0;
+            this.size = this.keyList.size();
+        }
+
+        public int getState() {
+            return state;
+        }
+
+        public void setState(int state) {
+            this.state = state;
         }
 
         @TruffleBoundary
-        private static Iterator<Object> getIterator(Shape shape) {
+        private static Iterator<Object> getList(Shape shape) {
             return keyList(shape).iterator();
         }
 
         @TruffleBoundary
         public boolean hasNext() {
-            while (next == null && keyIter.hasNext()) {
-                Object key = keyIter.next();
+            while (next == null && state < size) {
+                Object key = keyList.get(state++);
                 Object value = readNode.execute(store, key);
                 if (value != PNone.NO_VALUE) {
                     next = new DictEntry(key, value);

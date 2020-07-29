@@ -40,8 +40,12 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
         super(clazz, instanceShape);
     }
 
+    public void setExhausted(boolean isExhausted) {
+        exhausted = isExhausted;
+    }
+
     public void setExhausted() {
-        exhausted = true;
+        setExhausted(true);
     }
 
     public boolean isExhausted() {

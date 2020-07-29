@@ -28,22 +28,29 @@ class repeat():
     def __init__(self, obj, times=None):
         self.obj = obj
         self.times = times
-        self.step = 0
+        self.count = times if times and times > 0 else 0
 
     def __iter__(self):
         return self
 
     def __next__(self):
         if self.times is not None:
-            if self.step >= self.times:
+            if self.count == 0:
                 raise StopIteration
-            else:
-                self.step += 1
+            self.count -= 1
         return self.obj
+
+    def __length_hint__(self):
+        return self.count
+
+    def __reduce__(self):
+        if self.times is not None:
+            return (self, (self.obj, self.count))
+        return (self, (self.obj,))
 
     def __repr__(self):
         if self.times is not None:
-            return "{}({}, {})".format(type(self).__name__, self.obj, self.times)
+            return "{}({}, {})".format(type(self).__name__, self.obj, self.count)
         return "{}({})".format(type(self).__name__, self.obj)
 
 

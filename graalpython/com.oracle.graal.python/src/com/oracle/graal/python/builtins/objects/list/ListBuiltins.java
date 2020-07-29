@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
@@ -127,7 +128,7 @@ public class ListBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        builtinConstants.put(__HASH__, PNone.NONE);
+        this.builtinConstants.put(__HASH__, PNone.NONE);
     }
 
     @Override
@@ -272,11 +273,13 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         PNone listIterable(VirtualFrame frame, PList list, Object iterable,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") CreateStorageFromIteratorNode storageNode) {
+                        @Cached IteratorNodes.GetLength lenNode,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached CreateStorageFromIteratorNode storageNode) {
             clearStorage(list);
+            int len = lenNode.execute(frame, iterable);
             Object iterObj = getIteratorNode.executeWith(frame, iterable);
-            list.setSequenceStorage(storageNode.execute(frame, iterObj));
+            list.setSequenceStorage(storageNode.execute(frame, iterObj, len));
             return PNone.NONE;
         }
 
@@ -367,7 +370,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private void updateStorage(PList primary, SequenceStorage newStorage) {
-            if (generalizedProfile.profile(primary.getSequenceStorage() != newStorage)) {
+            if (this.generalizedProfile.profile(primary.getSequenceStorage() != newStorage)) {
                 primary.setSequenceStorage(newStorage);
             }
         }
@@ -403,8 +406,10 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone extendSequence(VirtualFrame frame, PList list, Object iterable,
+                        @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable));
+            int len = lenNode.execute(frame, iterable);
+            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable, len));
             return PNone.NONE;
         }
 
@@ -549,11 +554,11 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private int getLength(SequenceStorage s) {
-            if (lenNode == null) {
+            if (this.lenNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
+                this.lenNode = insert(SequenceStorageNodes.LenNode.create());
             }
-            return lenNode.execute(s);
+            return this.lenNode.execute(s);
         }
 
     }
@@ -628,11 +633,11 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private SequenceStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
+            if (this.getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.create(createNormalize()));
+                this.getItemNode = insert(SequenceStorageNodes.GetItemNode.create(createNormalize()));
             }
-            return getItemNode;
+            return this.getItemNode;
         }
 
         protected static SequenceStorageNodes.DeleteNode createDelete() {
@@ -774,19 +779,19 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private SequenceStorageNodes.ItemIndexNode getItemIndexNode() {
-            if (itemIndexNode == null) {
+            if (this.itemIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                itemIndexNode = insert(SequenceStorageNodes.ItemIndexNode.create());
+                this.itemIndexNode = insert(SequenceStorageNodes.ItemIndexNode.create());
             }
-            return itemIndexNode;
+            return this.itemIndexNode;
         }
 
         private int getLength(SequenceStorage s) {
-            if (lenNode == null) {
+            if (this.lenNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
+                this.lenNode = insert(SequenceStorageNodes.LenNode.create());
             }
-            return lenNode.execute(s);
+            return this.lenNode.execute(s);
         }
 
     }
@@ -940,8 +945,10 @@ public class ListBuiltins extends PythonBuiltins {
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         PList extendSequence(VirtualFrame frame, PList list, Object iterable,
+                        @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable));
+            int len = lenNode.execute(frame, iterable);
+            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable, len));
             return list;
         }
 
@@ -1148,17 +1155,17 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
         public PIntegerSequenceIterator doPListInt(PList primary) {
-            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage());
+            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isLongStorage(primary)"})
         public PLongSequenceIterator doPListLong(PList primary) {
-            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage());
+            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isDoubleStorage(primary)"})
         public PDoubleSequenceIterator doPListDouble(PList primary) {
-            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage());
+            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})

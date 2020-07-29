@@ -77,26 +77,32 @@ public class ReversedBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "self.isExhausted()")
+        public Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+            throw raise(StopIteration);
+        }
+
+        @Specialization(guards = "!self.isExhausted()")
         Object next(VirtualFrame frame, PSequenceReverseIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
                         @Cached("create()") IsBuiltinClassProfile profile) {
-            if (self.index < 0) {
-                throw raise(StopIteration);
+            if (self.index >= 0) {
+                try {
+                    return callGetItem.executeObject(frame, self.getObject(), self.index--);
+                } catch (PException e) {
+                    e.expectIndexError(profile);
+                }
             }
-            try {
-                return callGetItem.executeObject(frame, self.getObject(), self.index--);
-            } catch (PException e) {
-                e.expectIndexError(profile);
-                throw raise(StopIteration);
-            }
+            self.setExhausted();
+            throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
         Object next(PStringReverseIterator self) {
             if (self.index >= 0) {
                 return Character.toString(self.value.charAt(self.index--));
             }
+            self.setExhausted();
             throw raise(StopIteration);
         }
     }
@@ -114,21 +120,31 @@ public class ReversedBuiltins extends PythonBuiltins {
     @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
-        @Specialization
+
+        @Specialization(guards = "self.isExhausted()")
+        public int exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+            return 0;
+        }
+
+        @Specialization(guards = "!self.isExhausted()")
         public int lengthHint(PStringReverseIterator self) {
             return self.index + 1;
         }
 
-        @Specialization(guards = "self.isPSequence()")
+        @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         public Object lengthHint(PSequenceReverseIterator self,
                         @Cached SequenceNodes.LenNode lenNode) {
-            if (lenNode.execute(self.getPSequence()) == -1) {
+            int len = lenNode.execute(self.getPSequence());
+            if (len == -1) {
                 throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+            }
+            if (len < self.index) {
+                return 0;
             }
             return self.index + 1;
         }
 
-        @Specialization(guards = "!self.isPSequence()")
+        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
         public Object lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__ADD__, __RADD__)") LookupAndCallBinaryNode callAdd) {
@@ -147,12 +163,18 @@ public class ReversedBuiltins extends PythonBuiltins {
         @Specialization
         public Object reduce(PStringReverseIterator self,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            if (self.isExhausted()) {
+                return reduceInternal(self, "", null, pol);
+            }
             return reduceInternal(self, self.value, self.index, pol);
         }
 
         @Specialization(guards = "self.isPSequence()")
         public Object reduce(PSequenceReverseIterator self,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            if (self.isExhausted()) {
+                return reduceInternal(self, factory().createList(), null, pol);
+            }
             return reduceInternal(self, self.getPSequence(), self.index, pol);
         }
 
@@ -184,8 +206,8 @@ public class ReversedBuiltins extends PythonBuiltins {
         public Object reduce(PBuiltinIterator self, Object index,
                         @CachedLibrary(value = "index") PythonObjectLibrary pol) {
             int idx = pol.asSize(index);
-            if (idx < 0) {
-                idx = 0;
+            if (idx < -1) {
+                idx = -1;
             }
             self.index = idx;
             return PNone.NONE;
