@@ -1014,7 +1014,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         // Adapted from Jython PyString's atof() method
         @TruffleBoundary
-        private double convertStringToDoubleOrThrow(String str) throws NumberFormatException {
+        private static double convertStringToDoubleOrThrow(String str) throws NumberFormatException {
             StringBuilder s = null;
             int n = str.length();
 
