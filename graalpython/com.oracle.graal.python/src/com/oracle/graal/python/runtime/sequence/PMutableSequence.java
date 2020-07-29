@@ -55,13 +55,13 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PMutableSequence extends PSequence {
 
-    public PMutableSequence(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PMutableSequence(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
     @Override

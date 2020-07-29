@@ -57,7 +57,7 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
     }
 
     public GetSetDescriptor(Object get, Object set, String name, Object type, boolean allowsDelete) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.newInstance());
+        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape());
         this.get = get;
         this.set = set;
         this.name = name;

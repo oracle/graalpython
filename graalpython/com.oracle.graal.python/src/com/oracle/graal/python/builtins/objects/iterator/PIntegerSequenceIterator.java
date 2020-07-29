@@ -26,14 +26,14 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PIntegerSequenceIterator extends PIntegerIterator {
 
     final IntSequenceStorage sequence;
 
-    public PIntegerSequenceIterator(Object clazz, DynamicObject storage, IntSequenceStorage sequence) {
-        super(clazz, storage);
+    public PIntegerSequenceIterator(Object clazz, Shape instanceShape, IntSequenceStorage sequence) {
+        super(clazz, instanceShape);
         this.sequence = sequence;
     }
 

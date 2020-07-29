@@ -41,14 +41,14 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 public abstract class PSequence extends PythonBuiltinObject {
 
-    public PSequence(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PSequence(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
     public abstract SequenceStorage getSequenceStorage();

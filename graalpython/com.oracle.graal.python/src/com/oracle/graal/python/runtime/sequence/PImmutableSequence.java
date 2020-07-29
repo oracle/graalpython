@@ -30,13 +30,13 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PImmutableSequence extends PSequence {
 
-    public PImmutableSequence(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PImmutableSequence(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
     @Override

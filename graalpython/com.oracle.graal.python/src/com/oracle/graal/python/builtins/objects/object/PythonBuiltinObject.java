@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 /**
  * The base class of all Python built-in data types (int, complex, tuple...). Subclasses of
@@ -39,7 +39,7 @@ import com.oracle.truffle.api.object.DynamicObject;
  */
 public abstract class PythonBuiltinObject extends PythonObject {
 
-    public PythonBuiltinObject(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PythonBuiltinObject(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 }

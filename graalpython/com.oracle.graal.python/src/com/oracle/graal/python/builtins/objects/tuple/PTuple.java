@@ -31,20 +31,20 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PTuple extends PImmutableSequence {
 
     private SequenceStorage store;
     private long hash = -1;
 
-    public PTuple(Object cls, DynamicObject storage, Object[] elements) {
-        super(cls, storage);
+    public PTuple(Object cls, Shape instanceShape, Object[] elements) {
+        super(cls, instanceShape);
         this.store = new ObjectSequenceStorage(elements);
     }
 
-    public PTuple(Object cls, DynamicObject storage, SequenceStorage store) {
-        super(cls, storage);
+    public PTuple(Object cls, Shape instanceShape, SequenceStorage store) {
+        super(cls, instanceShape);
         this.store = store;
     }
 

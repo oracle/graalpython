@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PSentinelIterator extends PythonBuiltinObject {
 
@@ -49,8 +49,8 @@ public final class PSentinelIterator extends PythonBuiltinObject {
     private final Object sentinel;
     private boolean sentinelReached;
 
-    public PSentinelIterator(Object cls, DynamicObject storage, Object callable, Object sentinel) {
-        super(cls, storage);
+    public PSentinelIterator(Object cls, Shape instanceShape, Object callable, Object sentinel) {
+        super(cls, instanceShape);
         this.callTarget = callable;
         this.sentinel = sentinel;
     }

@@ -35,7 +35,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
@@ -44,8 +44,8 @@ import com.oracle.truffle.api.source.SourceSection;
 @ExportLibrary(InteropLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
-    public PythonClass(Object typeClass, DynamicObject storage, String name, PythonAbstractClass[] baseClasses) {
-        super(typeClass, storage, null, name, baseClasses);
+    public PythonClass(Object typeClass, Shape instanceShape, String name, PythonAbstractClass[] baseClasses) {
+        super(typeClass, instanceShape, null, name, baseClasses);
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
@@ -81,10 +81,9 @@ public final class PythonClass extends PythonManagedClass {
      * some monkey-patching, we'll get some other source location.
      */
     protected static SourceSection findSourceSection(PythonManagedClass self) {
-        DynamicObject storage = self.getStorage();
-        for (Object key : storage.getShape().getKeys()) {
+        for (Object key : self.getShape().getKeys()) {
             if (key instanceof String) {
-                Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(storage, key);
+                Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(self, key);
                 InteropLibrary uncached = InteropLibrary.getFactory().getUncached();
                 if (uncached.hasSourceLocation(value)) {
                     try {

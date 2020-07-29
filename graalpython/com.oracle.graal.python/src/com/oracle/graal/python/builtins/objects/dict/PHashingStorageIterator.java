@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PHashingStorageIterator<T> extends PBuiltinIterator {
 
@@ -53,8 +53,8 @@ public abstract class PHashingStorageIterator<T> extends PBuiltinIterator {
     private final int size;
     private final HashingStorageIterator<T> iterator;
 
-    public PHashingStorageIterator(Object clazz, DynamicObject storage, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int size) {
-        super(clazz, storage);
+    public PHashingStorageIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int size) {
+        super(clazz, instanceShape);
         this.iterator = iterator;
         this.hashingStorage = hashingStorage;
         this.size = size;

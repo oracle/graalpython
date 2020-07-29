@@ -33,21 +33,28 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PythonModule extends PythonObject {
-    public PythonModule(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PythonModule(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
     private PythonModule(String moduleName) {
-        super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.newInstance());
+        super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.getInstanceShape());
         setAttribute(__NAME__, moduleName);
         setAttribute(__DOC__, PNone.NONE);
         setAttribute(__PACKAGE__, PNone.NONE);
@@ -74,4 +81,25 @@ public final class PythonModule extends PythonObject {
         return "<module '" + this.getAttribute(__NAME__) + "'>";
     }
 
+    @ExportMessage
+    static class GetDict {
+        protected static boolean dictExists(Object dict) {
+            return dict instanceof PHashingCollection;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
+        static PHashingCollection getConstant(PythonModule self,
+                        @Cached(value = "self", weak = true) PythonModule cachedModule,
+                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
+            // module.__dict__ is a read-only attribute
+            return (PHashingCollection) dict;
+        }
+
+        @Specialization(replaces = "getConstant")
+        static PHashingCollection getDict(PythonModule self,
+                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+            return (PHashingCollection) dylib.getOrDefault(self, DICT, null);
+        }
+    }
 }

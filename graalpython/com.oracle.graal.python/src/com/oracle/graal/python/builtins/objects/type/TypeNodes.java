@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -51,7 +51,6 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
@@ -1053,9 +1052,8 @@ public abstract class TypeNodes {
 
         @Specialization(guards = "isPythonAbstractClass(object)", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
         static Object doPythonAbstractClass(Object object,
-                        @Cached("weak(object)") WeakReference<PythonAbstractClass> cachedObjectRef,
+                        @Cached(value = "object", weak = true) Object cachedObject,
                         @CachedLibrary(limit = "2") InteropLibrary lib) throws NotSameTypeException {
-            Object cachedObject = cachedObjectRef.get();
             if (lib.isIdentical(object, cachedObject, lib)) {
                 return cachedObject;
             }
@@ -1070,10 +1068,6 @@ public abstract class TypeNodes {
 
         protected static boolean isPythonAbstractClass(Object obj) {
             return PythonAbstractClass.isInstance(obj);
-        }
-
-        static WeakReference<PythonAbstractClass> weak(Object object) {
-            return new WeakReference<>(PythonAbstractClass.cast(object));
         }
 
         static final class NotSameTypeException extends ControlFlowException {

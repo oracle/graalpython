@@ -36,7 +36,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 public abstract class PRange extends PythonBuiltinObject {
 
     public PRange() {
-        super(PythonBuiltinClassType.PRange, PythonBuiltinClassType.PRange.newInstance());
+        super(PythonBuiltinClassType.PRange, PythonBuiltinClassType.PRange.getInstanceShape());
     }
 
     public abstract Object getStart();

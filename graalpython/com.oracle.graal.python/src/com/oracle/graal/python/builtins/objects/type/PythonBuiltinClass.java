@@ -29,6 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -38,7 +39,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 
 /**
  * A Python built-in class that is immutable.
@@ -48,7 +48,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
     public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.newInstance(), builtinClass.getInstanceShape(), builtinClass.getQualifiedName(), base);
+        super(PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(), builtinClass.getInstanceShape(), builtinClass.getQualifiedName(), base);
         this.type = builtinClass;
     }
 

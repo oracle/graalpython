@@ -49,15 +49,15 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PMemoryView extends PythonBuiltinObject {
 
     static final String C_MEMORYVIEW = "__c_memoryview";
 
-    public PMemoryView(Object cls, DynamicObject storage, @SuppressWarnings("unused") Object obj) {
-        super(cls, storage);
+    public PMemoryView(Object cls, Shape instanceShape, @SuppressWarnings("unused") Object obj) {
+        super(cls, instanceShape);
     }
 
     @ExportMessage

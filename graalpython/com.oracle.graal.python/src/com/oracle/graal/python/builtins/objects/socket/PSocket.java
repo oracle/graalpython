@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PSocket extends PythonBuiltinObject implements Channel {
     public static final int AF_UNSPEC = 0;
@@ -113,16 +113,16 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     private HashMap<Object, Object> options;
 
-    public PSocket(Object cls, DynamicObject storage, int family, int type, int proto) {
-        super(cls, storage);
+    public PSocket(Object cls, Shape instanceShape, int family, int type, int proto) {
+        super(cls, instanceShape);
         this.family = family;
         this.proto = proto;
         this.type = type;
         this.fileno = -1;
     }
 
-    public PSocket(Object cls, DynamicObject storage, int family, int type, int proto, int fileno) {
-        super(cls, storage);
+    public PSocket(Object cls, Shape instanceShape, int family, int type, int proto, int fileno) {
+        super(cls, instanceShape);
         this.fileno = fileno;
         this.family = family;
         this.proto = proto;

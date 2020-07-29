@@ -42,14 +42,14 @@ package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PThread extends PythonBuiltinObject {
     public static final String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
     private final Thread thread;
 
-    public PThread(Object cls, DynamicObject storage, Thread thread) {
-        super(cls, storage);
+    public PThread(Object cls, Shape instanceShape, Thread thread) {
+        super(cls, instanceShape);
         this.thread = thread;
     }
 

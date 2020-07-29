@@ -26,14 +26,14 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PLongSequenceIterator extends PPrimitiveIterator {
 
     final LongSequenceStorage sequence;
 
-    public PLongSequenceIterator(Object clazz, DynamicObject storage, LongSequenceStorage sequence) {
-        super(clazz, storage);
+    public PLongSequenceIterator(Object clazz, Shape instanceShape, LongSequenceStorage sequence) {
+        super(clazz, instanceShape);
         this.sequence = sequence;
     }
 

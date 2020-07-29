@@ -59,8 +59,9 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.R
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -111,26 +112,27 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     /**
      * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
      */
-    protected static HashingStorage getStorage(Object module, Object cachedGlobals) {
+    protected static HashingStorage getStorage(Object module, PHashingCollection cachedGlobals) {
         return ((PDict) cachedGlobals).getDictStorage();
     }
 
-    // special case for the very common module attribute read from an unchanging PDict
+    protected static PHashingCollection getDict(Object object) {
+        return PythonObjectLibrary.getUncached().getDict(object);
+    }
+
+    // special case for the very common module read
     @Specialization(guards = {
                     "cachedObject == object",
-                    "lib.getDict(cachedObject) == cachedDict",
-                    "getStorage(object, cachedDict) == cachedStorage",
-                    "isBuiltinDict(cachedDict, isBuiltinDict)",
-    }, assumptions = "singleContextAssumption", limit = "1")
+                    // no need to check the cachedDict for equality, module.__dict__ is read-only
+                    "getStorage(object, cachedDict) == cachedStorage"
+    }, assumptions = "singleContextAssumption()", limit = "1")
     @SuppressWarnings("unused")
-    protected Object readFromBuiltinModuleDictUnchanged(PythonModule object, String key,
+    protected Object readFromBuiltinModuleDict(PythonModule object, String key,
                     @CachedLibrary("object") PythonObjectLibrary lib,
-                    @Cached("object") PythonModule cachedObject,
-                    @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
-                    @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached("getStorage(object, cachedDict)") HashingStorage cachedStorage,
-                    @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                    @Cached(value = "object", weak = true) PythonModule cachedObject,
+                    @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
+                    @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
+                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib) {
         // note that we don't need to pass the state here - string keys are hashable by definition
         Object value = hlib.getItem(cachedStorage, key);
         if (value == null) {
@@ -138,35 +140,6 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         } else {
             return value;
         }
-    }
-
-    // special case for the very common module attribute read
-    @Specialization(guards = {
-                    "cachedObject == object",
-                    "lib.getDict(cachedObject) == cachedDict",
-                    "hasBuiltinDict(cachedObject, lib, isBuiltinDict, isBuiltinMappingproxy)",
-    }, assumptions = "singleContextAssumption", replaces = "readFromBuiltinModuleDictUnchanged")
-    @SuppressWarnings("unused")
-    protected Object readFromBuiltinModuleDict(PythonModule object, String key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Cached("object") PythonModule cachedObject,
-                    @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
-                    @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        Object value = hlib.getItem(getDictStorage.execute(cachedDict), key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
-    }
-
-    protected HashingStorage getDictStorage(PythonObject object, PythonObjectLibrary lib, HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
-        PHashingCollection dict = lib.getDict(object);
-        return dict != null ? getDictStorageNode.execute(dict) : null;
     }
 
     // read from a builtin dict
@@ -206,15 +179,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // foreign Object
     @Specialization(guards = "plib.isForeignObject(object)", limit = "3")
     protected Object readForeign(TruffleObject object, Object key,
+                    @Cached CastToJavaStringNode castNode,
                     @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode fromForeign,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
         try {
-            String member = (String) attrKey(key);
+            String member = castNode.execute(key);
             if (read.isMemberReadable(object, member)) {
                 return fromForeign.executeConvert(read.readMember(object, member));
             }
-        } catch (UnknownIdentifierException | UnsupportedMessageException ignored) {
+        } catch (CannotCastException | UnknownIdentifierException | UnsupportedMessageException ignored) {
         }
         return PNone.NO_VALUE;
     }

@@ -44,7 +44,7 @@ import java.util.Random;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PRandom extends PythonBuiltinObject {
     private static class PythonRandom extends Random {
@@ -59,8 +59,8 @@ public class PRandom extends PythonBuiltinObject {
 
     private PythonRandom javaRandom;
 
-    public PRandom(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PRandom(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
         resetJavaRandom();
     }
 

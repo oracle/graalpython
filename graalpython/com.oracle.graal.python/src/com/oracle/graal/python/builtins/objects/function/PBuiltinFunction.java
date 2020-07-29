@@ -58,7 +58,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
     public PBuiltinFunction(String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
-        super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.newInstance());
+        super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape());
         this.name = name;
         if (enclosingType != null) {
             this.qualname = PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name);

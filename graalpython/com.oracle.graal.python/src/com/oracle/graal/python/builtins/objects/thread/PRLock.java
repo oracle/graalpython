@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PRLock extends AbstractPythonLock {
     private static class InternalReentrantLock extends ReentrantLock {
@@ -62,8 +62,8 @@ public final class PRLock extends AbstractPythonLock {
 
     private final InternalReentrantLock lock;
 
-    public PRLock(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PRLock(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
         this.lock = allocateLock();
     }
 

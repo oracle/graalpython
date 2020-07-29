@@ -165,9 +165,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.Layout;
-import com.oracle.truffle.api.object.ObjectType;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -178,9 +175,6 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(NativeTypeLibrary.class)
 public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     static final String GP_OBJECT = "gp_object";
-    private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
-    private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
-
     private DynamicObjectStorage nativeMemberStore;
 
     public DynamicObjectNativeWrapper() {
@@ -192,7 +186,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     public DynamicObjectStorage createNativeMemberStore() {
         if (nativeMemberStore == null) {
-            nativeMemberStore = new DynamicObjectStorage(SHAPE.newInstance());
+            nativeMemberStore = new DynamicObjectStorage();
         }
         return nativeMemberStore;
     }

@@ -27,18 +27,18 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PFrozenSet extends PBaseSet {
 
     private long hash = -1;
 
-    public PFrozenSet(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PFrozenSet(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
-    public PFrozenSet(Object clazz, DynamicObject storage, HashingStorage store) {
-        super(clazz, storage, store);
+    public PFrozenSet(Object clazz, Shape instanceShape, HashingStorage store) {
+        super(clazz, instanceShape, store);
     }
 
     @Override

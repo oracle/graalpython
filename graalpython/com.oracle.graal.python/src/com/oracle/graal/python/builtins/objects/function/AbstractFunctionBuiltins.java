@@ -138,7 +138,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         Object getClosure(Object self) {
-            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
         }
     }
 
@@ -172,7 +172,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         Object getGlobals(Object self) {
-            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
         }
     }
 
@@ -208,7 +208,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object getModule(PBuiltinFunction self, Object value) {
-            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
         }
     }
 
@@ -237,7 +237,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object getModule(PBuiltinFunction self, Object value) {
-            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
         }
     }
 
@@ -275,7 +275,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object builtinCode(PBuiltinFunction self, Object mapping) {
-            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__dict__");
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__dict__");
         }
     }
 
@@ -287,7 +287,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             Object signature = readNode.execute(self, __TEXT_SIGNATURE__);
             if (signature == PNone.NO_VALUE) {
-                throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "function", "__text_signature__");
+                throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "function", "__text_signature__");
             }
             return signature;
         }

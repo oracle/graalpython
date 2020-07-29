@@ -25,13 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PStringIterator extends PBuiltinIterator {
     final String value;
 
-    public PStringIterator(Object clazz, DynamicObject storage, String value) {
-        super(clazz, storage);
+    public PStringIterator(Object clazz, Shape instanceShape, String value) {
+        super(clazz, instanceShape);
         this.value = value;
     }
 }

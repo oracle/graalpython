@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PSequenceIterator extends PBaseSequenceIterator {
-    public PSequenceIterator(Object clazz, DynamicObject storage, Object sequence) {
-        super(clazz, storage, sequence);
+    public PSequenceIterator(Object clazz, Shape instanceShape, Object sequence) {
+        super(clazz, instanceShape, sequence);
     }
 }

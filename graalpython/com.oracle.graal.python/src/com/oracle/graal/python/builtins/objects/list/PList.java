@@ -33,21 +33,21 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PList extends PMutableSequence {
     private final ListLiteralNode origin;
     private SequenceStorage store;
 
-    public PList(Object cls, DynamicObject storage, SequenceStorage store) {
-        super(cls, storage);
+    public PList(Object cls, Shape instanceShape, SequenceStorage store) {
+        super(cls, instanceShape);
         this.origin = null;
         this.store = store;
     }
 
-    public PList(Object cls, DynamicObject storage, SequenceStorage store, ListLiteralNode origin) {
-        super(cls, storage);
+    public PList(Object cls, Shape instanceShape, SequenceStorage store, ListLiteralNode origin) {
+        super(cls, instanceShape);
         this.origin = origin;
         this.store = store;
     }

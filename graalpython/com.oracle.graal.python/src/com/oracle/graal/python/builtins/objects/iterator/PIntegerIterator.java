@@ -25,12 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PIntegerIterator extends PBuiltinIterator {
 
-    public PIntegerIterator(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PIntegerIterator(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
     /**
