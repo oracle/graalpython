@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -340,8 +339,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         protected boolean hasMissing(Object self, PythonObjectLibrary lib) {
-            Object missing = lib.lookupAttributeOnType(self, __MISSING__);
-            return missing != PNone.NO_VALUE && missing instanceof PMethod;
+            return lib.lookupAttributeOnType(self, __MISSING__) != NO_VALUE;
         }
     }
 
