@@ -754,7 +754,7 @@ public abstract class TypeNodes {
             }
 
             // instead of child->tp_dictoffset == parent->tp_dictoffset
-            if (hasDict(child) != hasDict(parent)) {
+            if (hasDict(frame, child) != hasDict(frame, parent)) {
                 return false;
             }
 
@@ -828,7 +828,7 @@ public abstract class TypeNodes {
         }
 
         private Object getSlotsFromDict(VirtualFrame frame, Object type) {
-            Object dict = getDictNode().executeObject(frame, type, __DICT__);
+            Object dict = getObjectLibrary().lookupAttribute(type, frame, __DICT__);
             if (dict != PNone.NO_VALUE) {
                 HashingStorage storage = getDictStorageNode().execute((PHashingCollection) dict);
                 return getHashingStorageLibrary().getItem(storage, __SLOTS__);
@@ -836,8 +836,8 @@ public abstract class TypeNodes {
             return null;
         }
 
-        private boolean hasDict(Object obj) {
-            return getObjectLibrary().lookupAttributeOnType(obj, __DICT__) != PNone.NO_VALUE;
+        private boolean hasDict(VirtualFrame frame, Object type) {
+            return getObjectLibrary().lookupAttribute(type, frame, __DICT__) != PNone.NO_VALUE;
         }
 
         private GetObjectArrayNode getObjectArrayNode() {
@@ -854,14 +854,6 @@ public abstract class TypeNodes {
                 objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
             }
             return objectLibrary;
-        }
-
-        private LookupAndCallBinaryNode getDictNode() {
-            if (getDictNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDictNode = insert(LookupAndCallBinaryNode.create(__GETATTRIBUTE__));
-            }
-            return getDictNode;
         }
 
         private GetDictStorageNode getDictStorageNode() {

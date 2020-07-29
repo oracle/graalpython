@@ -142,7 +142,7 @@ public class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object dir(PythonModule self,
+        Object dir(VirtualFrame frame, PythonModule self,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached IsBuiltinClassProfile isDictProfile,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
@@ -150,7 +150,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            Object dict = pol.lookupAttribute(self, __DICT__);
+            Object dict = pol.lookupAttribute(self, frame, __DICT__);
             if (isDict(dict, isDictProfile)) {
                 HashingStorage dictStorage = getDictStorageNode.execute((PHashingCollection) dict);
                 Object dirFunc = hashLib.getItem(dictStorage, __DIR__);

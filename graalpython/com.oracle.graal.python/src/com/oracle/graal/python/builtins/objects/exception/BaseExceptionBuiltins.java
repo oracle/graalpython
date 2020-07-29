@@ -319,10 +319,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object reduce(VirtualFrame frame, PBaseException self,
                         @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached ArgsNode argsNode) {
+                        @Cached ArgsNode argsNode,
+                        @Cached DictNode dictNode) {
             Object clazz = lib.getLazyPythonClass(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
-            Object dict = lib.lookupAttributeOnTypeStrict(self, __DICT__);
+            Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
             return factory().createTuple(new Object[]{clazz, args, dict});
         }
     }

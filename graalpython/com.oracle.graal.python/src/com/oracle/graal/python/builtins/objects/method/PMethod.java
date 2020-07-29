@@ -81,6 +81,7 @@ public final class PMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isHashable() {
         return true;
     }

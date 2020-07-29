@@ -2612,10 +2612,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isInteger(x)")
         Object doGeneral(VirtualFrame frame, Object x,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached IsqrtNode recursiveNode) {
-            return recursiveNode.execute(frame, lib.asIndexWithFrame(x, hasFrame, frame));
+            return recursiveNode.execute(frame, lib.asIndexWithFrame(x, frame));
         }
 
         @TruffleBoundary
