@@ -256,7 +256,7 @@ class TestMisc(CPyExtTestCase):
         ),
         code="""
         PyObject* wrap_PyEval_GetBuiltins() {
-            return Py_TYPE(PyEval_GetBuiltins());
+            return (PyObject *) Py_TYPE(PyEval_GetBuiltins());
         }
         """,
         resultspec="O",
