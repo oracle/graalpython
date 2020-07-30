@@ -498,8 +498,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(object)")
         Object dir(VirtualFrame frame, Object object,
+                        @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
-            return dirNode.executeObject(frame, object);
+            Object list = dirNode.executeObject(frame, object);
+            if (list instanceof PList) {
+                sortNode.sort(frame, (PList) list);
+            }
+            return list;
         }
     }
 
