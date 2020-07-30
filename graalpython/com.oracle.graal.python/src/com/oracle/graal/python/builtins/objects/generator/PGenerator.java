@@ -193,7 +193,7 @@ public final class PGenerator extends PythonBuiltinObject {
 
     @Override
     public String toString() {
-        return "<generator object '" + name + "' at " + hashCode() + ">";
+        return "<generator object " + name + " at " + hashCode() + ">";
     }
 
     public static PGenerator require(Object value) {
