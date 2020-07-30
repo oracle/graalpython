@@ -56,9 +56,11 @@ def _reference_aslong(args):
 def _reference_as_unsigned_long(args):
     # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = args[0]
-    if n > 0x7fffffff or n < 0:
+    if n > 0xffffffff or n < 0:
         if sys.version_info.minor >= 6:
-            raise SystemError
+            exc = SystemError()
+            exc.__cause__ = OverflowError()
+            raise exc
         else:
             return -1
     return int(n)
@@ -171,11 +173,13 @@ class TestPyLong(CPyExtTestCase):
         _reference_as_unsigned_long,
         lambda: (
             (0,),
-            # TODO disable because CPython 3.4.1 does not correctly catch exceptions from native
-            # (-1,),
+            (-1,),
+            (-2,),
             (0x7fffffff,),
+            (0xffffffff,),
+            # we could use larger values on 64-bit systems but how should we know?
         ),
-        resultspec="l",
+        resultspec="k",
         argspec='O',
         arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
