@@ -297,10 +297,9 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeOnTypeInternal(Boolean receiver, String name, boolean strict,
-                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+    public static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Boolean receiver, String name, boolean strict,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
-        return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
+        return lookup.execute(PythonBuiltinClassType.Boolean, name, strict);
     }
 
     @ExportMessage

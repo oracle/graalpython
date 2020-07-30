@@ -209,10 +209,9 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeOnTypeInternal(String receiver, String name, boolean strict,
-                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+    public static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") String receiver, String name, boolean strict,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
-        return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
+        return lookup.execute(PythonBuiltinClassType.PString, name, strict);
     }
 
     @ExportMessage
