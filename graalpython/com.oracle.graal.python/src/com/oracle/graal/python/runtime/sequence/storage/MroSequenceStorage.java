@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -102,7 +103,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void setItemNormalized(int idx, Object value) {
-        if (value instanceof PythonAbstractClass) {
+        if (PGuards.isPythonClass(value)) {
             setClassItemNormalized(idx, (PythonAbstractClass) value);
         } else {
             throw new SequenceStoreException(value);

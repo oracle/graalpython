@@ -596,7 +596,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
             PythonAbstractClass[] baseClasses = new PythonAbstractClass[a.length];
             for (int i = 0; i < a.length; i++) {
-                if (a[i] instanceof PythonAbstractClass) {
+                if (PGuards.isPythonClass(a[i])) {
                     if (isSubtypeNode.execute(frame, a[i], cls)) {
                         throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
@@ -606,12 +606,12 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            LazyPythonClass newBestBase = getBestBase.execute(baseClasses);
+            Object newBestBase = getBestBase.execute(baseClasses);
             if (newBestBase == null) {
                 return null;
             }
 
-            LazyPythonClass oldBase = getBase.execute(cls);
+            Object oldBase = getBase.execute(cls);
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
             cls.setSuperClass(baseClasses);

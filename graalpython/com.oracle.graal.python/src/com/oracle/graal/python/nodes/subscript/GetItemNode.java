@@ -35,8 +35,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -135,7 +135,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
                 @Override
                 public Object execute(Object arg, Object arg2) {
-                    if (arg instanceof PythonAbstractClass) {
+                    if (PGuards.isPythonClass(arg)) {
                         if (getClassGetItemNode == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));

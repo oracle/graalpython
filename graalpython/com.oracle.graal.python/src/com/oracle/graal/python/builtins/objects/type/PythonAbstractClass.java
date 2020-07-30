@@ -41,8 +41,9 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-public interface PythonAbstractClass extends LazyPythonClass {
+public interface PythonAbstractClass extends TruffleObject {
 
     void lookupChanged();
 

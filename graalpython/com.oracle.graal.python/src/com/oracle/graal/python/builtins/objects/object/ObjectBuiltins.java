@@ -59,14 +59,12 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
@@ -138,13 +136,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
-        @Specialization
-        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
+        @Specialization(guards = "isNativeClass(klass)")
+        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
-        @Specialization
-        PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
+        @Specialization(guards = "isPythonClass(value)")
+        PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch) {
@@ -164,13 +162,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isPythonObject(self)")
-        Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonAbstractClass value) {
+        @Specialization(guards = {"isPythonClass(value)", "!isPythonObject(self)"})
+        Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Fallback
-        Object getClass(@SuppressWarnings("unused") Object self, Object value) {
+        Object getClassError(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
         }
 

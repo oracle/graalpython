@@ -59,6 +59,8 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -75,8 +77,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFir
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.WrapVoidPtrNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
@@ -2466,10 +2466,12 @@ public abstract class CExtNodes {
             this.nodeClass = determineNodeClass(node);
         }
 
+        @Override
         public T createNode(Object... arguments) {
             return NodeUtil.cloneNode(node);
         }
 
+        @Override
         public Class<T> getNodeClass() {
             return nodeClass;
         }
@@ -2486,10 +2488,12 @@ public abstract class CExtNodes {
             return nodeClass;
         }
 
+        @Override
         public List<List<Class<?>>> getNodeSignatures() {
             throw new IllegalAccessError();
         }
 
+        @Override
         public List<Class<? extends Node>> getExecutionSignature() {
             throw new IllegalAccessError();
         }
@@ -2831,10 +2835,10 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class LookupNativeMemberInMRONode extends Node {
 
-        public abstract Object execute(PythonAbstractClass cls, NativeMember nativeMemberName, Object managedMemberName);
+        public abstract Object execute(Object cls, NativeMember nativeMemberName, Object managedMemberName);
 
         @Specialization
-        static Object doSingleContext(PythonAbstractClass cls, NativeMember nativeMemberName, Object managedMemberName,
+        static Object doSingleContext(Object cls, NativeMember nativeMemberName, Object managedMemberName,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
