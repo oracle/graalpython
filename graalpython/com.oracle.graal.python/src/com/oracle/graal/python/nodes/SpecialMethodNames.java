@@ -125,7 +125,6 @@ public abstract class SpecialMethodNames {
     public static final String __ITRUEDIV__ = "__itruediv__";
     public static final String __IFLOORDIV__ = "__ifloordiv__";
     public static final String __IMOD__ = "__imod__";
-    public static final String __IDIVMOD__ = "__idivmod__";
     public static final String __IPOW__ = "__ipow__";
     public static final String __ILSHIFT__ = "__ilshift__";
     public static final String __IRSHIFT__ = "__irshift__";
