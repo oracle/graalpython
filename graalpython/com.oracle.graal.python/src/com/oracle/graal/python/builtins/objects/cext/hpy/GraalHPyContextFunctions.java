@@ -86,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -126,7 +125,7 @@ public abstract class GraalHPyContextFunctions {
     enum FunctionMode {
         OBJECT,
         CHAR_PTR,
-        INT32;
+        INT32
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -548,7 +547,7 @@ public abstract class GraalHPyContextFunctions {
             Object valueObj = fromCharPointerNode.execute(arguments[2]);
             try {
                 String errorMessage = castToJavaStringNode.execute(valueObj);
-                return raiseNode.raiseIntWithoutFrame(context, 0, (LazyPythonClass) errTypeObj, errorMessage);
+                return raiseNode.raiseIntWithoutFrame(context, 0, errTypeObj, errorMessage);
             } catch (CannotCastException e) {
                 return raiseNode.raiseIntWithoutFrame(context, -1, TypeError, "exception value is not a valid string");
             }

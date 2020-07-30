@@ -33,7 +33,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -114,7 +113,7 @@ public abstract class RaiseNode extends StatementNode {
         }
 
         protected static boolean isValidCause(Object object) {
-            return object instanceof PBaseException || object instanceof PythonAbstractClass || PGuards.isNone(object);
+            return object instanceof PBaseException || PGuards.isPythonClass(object) || PGuards.isNone(object);
         }
     }
 
@@ -157,7 +156,7 @@ public abstract class RaiseNode extends StatementNode {
         throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
 
-    private void checkBaseClass(VirtualFrame frame, PythonAbstractClass pythonClass, ValidExceptionNode validException, PRaiseNode raise) {
+    private void checkBaseClass(VirtualFrame frame, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise) {
         if (!validException.execute(frame, pythonClass)) {
             baseCheckFailedProfile.enter();
             throw raiseNoException(raise);
@@ -165,8 +164,8 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     // raise <class>
-    @Specialization(guards = "isNoValue(cause)")
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, @SuppressWarnings("unused") PNone cause,
+    @Specialization(guards = {"isPythonClass(pythonClass)", "isNoValue(cause)"})
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, @SuppressWarnings("unused") PNone cause,
                     @Cached ValidExceptionNode validException,
                     @Cached CallNode callConstructor,
                     @Cached BranchProfile constructorTypeErrorProfile,
@@ -183,8 +182,8 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     // raise <class> from *
-    @Specialization(guards = "!isNoValue(cause)")
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, Object cause,
+    @Specialization(guards = {"isPythonClass(pythonClass)", "!isNoValue(cause)"})
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, Object cause,
                     @Cached ValidExceptionNode validException,
                     @Cached PRaiseNode raise,
                     @Cached CallNode callConstructor,
@@ -217,6 +216,6 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     protected static boolean isBaseExceptionOrPythonClass(Object object) {
-        return object instanceof PBaseException || object instanceof PythonAbstractClass;
+        return object instanceof PBaseException || PGuards.isPythonClass(object);
     }
 }

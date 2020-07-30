@@ -491,7 +491,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return genericGetAttr(frame, self, attr);
         }
 
-        private boolean isSameType(Object execute, PythonAbstractClass abstractPythonClass) {
+        private boolean isSameType(Object execute, Object abstractPythonClass) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSameTypeNode = insert(IsSameTypeNodeGen.create());

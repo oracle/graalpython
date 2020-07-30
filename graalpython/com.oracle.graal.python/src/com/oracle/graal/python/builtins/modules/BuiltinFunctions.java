@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -1142,8 +1141,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract boolean executeWith(VirtualFrame frame, Object instance, Object cls);
 
-        @Specialization
-        boolean isInstance(VirtualFrame frame, Object instance, PythonAbstractClass cls,
+        @Specialization(guards = "isPythonClass(cls)")
+        boolean isInstance(VirtualFrame frame, Object instance, Object cls,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             Object instanceClass = getClassNode.execute(instance);

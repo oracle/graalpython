@@ -347,11 +347,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getNativeNullNode.execute());
         }
 
-        private static PythonAbstractClass ensureClassObject(PythonContext context, Object klass) {
+        private static Object ensureClassObject(PythonContext context, Object klass) {
             if (klass instanceof PythonBuiltinClassType) {
                 return context.getCore().lookupType((PythonBuiltinClassType) klass);
             }
-            return (PythonAbstractClass) klass;
+            return klass;
         }
 
         @Specialization(guards = "eq(TP_ALLOC, key)")
@@ -1012,8 +1012,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return flags;
         }
 
-        @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        static long doTpBasicsize(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
+
+        static long doTpBasicsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached IsBuiltinClassProfile profile) {
             if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
@@ -1024,8 +1025,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return basicsize;
         }
 
-        @Specialization(guards = "eq(TP_ALLOC, key)")
-        static Object doTpAlloc(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object allocFunc,
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_ALLOC, key)"})
+        static Object doTpAlloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object allocFunc,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
@@ -1045,16 +1046,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = "eq(TP_DEALLOC, key)")
-        static Object doTpDelloc(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEALLOC, key)"})
+        static Object doTpDelloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_DEALLOC, asPythonObjectNode.execute(deallocFunc));
             return deallocFunc;
         }
 
-        @Specialization(guards = "eq(TP_FREE, key)")
-        static Object doTpFree(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_FREE, key)"})
+        static Object doTpFree(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_FREE, asPythonObjectNode.execute(freeFunc));

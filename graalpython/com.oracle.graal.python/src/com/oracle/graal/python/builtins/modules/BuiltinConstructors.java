@@ -1787,7 +1787,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doNativeObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("create()") GetMroNode getMroNode) {
             checkExcessArgs(self, varargs, kwargs);
-            PythonNativeClass nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
+            Object nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
             return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
         }
 
@@ -1803,10 +1803,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "object.__new__(X): X", o);
         }
 
-        private static PythonNativeClass findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {
-            for (PythonAbstractClass cls : methodResolutionOrder) {
+        private static Object findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {
+            for (Object cls : methodResolutionOrder) {
                 if (PGuards.isNativeClass(cls)) {
-                    return PythonNativeClass.cast(cls);
+                    return cls;
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2394,7 +2394,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @SuppressWarnings("try")
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib) {
 
             Object[] array = ensureGetObjectArrayNode().execute(bases);
@@ -2407,7 +2406,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 basesArray = new PythonAbstractClass[array.length];
                 for (int i = 0; i < array.length; i++) {
                     // TODO: deal with non-class bases
-                    if (!(array[i] instanceof PythonAbstractClass)) {
+                    if (!PGuards.isPythonClass(array[i])) {
                         throw raise(NotImplementedError, "creating a class with non-class bases");
                     } else {
                         basesArray[i] = (PythonAbstractClass) array[i];
@@ -3257,24 +3256,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
+        @Specialization(guards = {"isPythonClass(owner)", "!isNoValue(get)", "!isNoValue(set)"})
         @TruffleBoundary
-        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, Object set, String name, PythonAbstractClass owner) {
+        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, Object set, String name, Object owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, set, name, owner);
         }
 
-        @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
+        @Specialization(guards = {"isPythonClass(owner)", "!isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
-        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, @SuppressWarnings("unused") PNone set, String name, PythonAbstractClass owner) {
+        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, @SuppressWarnings("unused") PNone set, String name, Object owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
 
-        @Specialization(guards = {"isNoValue(get)", "isNoValue(set)"})
+        @Specialization(guards = {"isPythonClass(owner)", "isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
         @SuppressWarnings("unused")
-        Object call(Object getSetClass, PNone get, PNone set, String name, PythonAbstractClass owner) {
+        Object call(Object getSetClass, PNone get, PNone set, String name, Object owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(null, null, name, owner);
         }

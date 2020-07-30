@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -305,6 +306,10 @@ public abstract class PGuards {
 
     public static boolean isNativeClass(Object klass) {
         return PythonNativeClass.isInstance(klass);
+    }
+
+    public static boolean isPythonClass(Object klass) {
+        return PythonAbstractClass.isInstance(klass);
     }
 
     public static boolean isPRange(Object obj) {

@@ -126,13 +126,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.VoidPtrToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
@@ -145,11 +138,17 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
@@ -161,11 +160,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -2732,8 +2731,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Compute_Mro extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        Object doIt(PythonNativeObject self, String className) {
+        @Specialization(guards = "isNativeObject(self)")
+        Object doIt(Object self, String className) {
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
             return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
         }
@@ -2744,19 +2743,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "isNoValue(mroTuple)")
-        Object doIt(PythonNativeClass clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
-            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+        @Specialization(guards = {"isNativeClass(clazz)", "isNoValue(mroTuple)"})
+        Object doIt(Object clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
+            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
             }
             return PNone.NONE;
         }
 
-        @Specialization
-        Object doIt(PythonNativeClass clazz, String name, PTuple mroTuple,
+        @Specialization(guards = "isNativeClass(clazz)")
+        Object doIt(Object clazz, String name, PTuple mroTuple,
                         @Cached("createClassProfile()") ValueProfile profile) {
-            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") called");
             }
