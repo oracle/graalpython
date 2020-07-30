@@ -647,7 +647,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile ltZero,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
                     @Exclusive @Cached CallUnaryMethodNode callNode,
-                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Shared("raise") @Cached PRaiseNode raiseNode,
                     @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object lenFunc = getLenNode.execute(this, __LEN__);
         if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
@@ -731,7 +731,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasBool,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
-                    @Exclusive @Cached PRaiseNode raiseNode) {
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
         // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
         // in the message impls in PNone and PInt
         Object boolMethod = lib.lookupAttributeOnType(this, __BOOL__);
@@ -771,7 +771,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public long hashWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached PRaiseNode raise,
+                    @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached CastToJavaLongExactNode castToLong) {
         Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
         if (!methodLib.isCallable(hashMethod)) {
@@ -824,7 +824,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @CachedLibrary(limit = "5") PythonObjectLibrary resultLib,
-                    @Exclusive @Cached PRaiseNode raise,
+                    @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached ConditionProfile noIndex,
                     @Exclusive @Cached ConditionProfile resultProfile) {
@@ -848,7 +848,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public String asPathWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached PRaiseNode raise,
+                    @Shared("raise") @Cached PRaiseNode raise,
                     @Cached CastToJavaStringNode castToJavaStringNode) {
         Object func = lib.lookupAttributeOnType(this, __FSPATH__);
         if (func == PNone.NO_VALUE) {
@@ -867,7 +867,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                     @Exclusive @Cached IsSubtypeNode isSubtypeNode,
-                    @Exclusive @Cached PRaiseNode raise) {
+                    @Shared("raise") @Cached PRaiseNode raise) {
         return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
     }
 
@@ -887,7 +887,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary libResult,
-                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Shared("raise") @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
                     @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
@@ -1058,7 +1058,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object asPIntWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached PRaiseNode raise,
+                    @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached ConditionProfile hasIntFunc) {
         Object result = PNone.NO_VALUE;
@@ -1085,7 +1085,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
-                    @Exclusive @Cached PRaiseNode raise,
+                    @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached CastToJavaLongLossyNode castToLong) {
         Object result = lib.asIndexWithState(this, state);
         long longResult;
@@ -1119,7 +1119,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached ConditionProfile hasFloatFunc,
-                    @Exclusive @Cached PRaiseNode raise) {
+                    @Shared("raise") @Cached PRaiseNode raise) {
 
         assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
 
@@ -1147,7 +1147,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Exclusive @Cached CastToJavaLongExactNode castToLong,
-                    @Exclusive @Cached PRaiseNode raise) {
+                    @Shared("raise") @Cached PRaiseNode raise) {
 
         assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
 
