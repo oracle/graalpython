@@ -605,7 +605,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @param name attribute name
      * @return found attribute object or {@link PNone#NO_VALUE}
      */
-    public Object lookupAttribute(Object receiver, VirtualFrame frame, String name) {
+    public final Object lookupAttribute(Object receiver, VirtualFrame frame, String name) {
         return lookupAttributeInternal(receiver, getStateFromFrame(frame), name, false);
     }
 
