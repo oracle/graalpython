@@ -376,7 +376,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private PComplex createComplex(Object cls, PComplex value) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
-                return value;
+                if (isPrimitiveProfile.profileObject(value, PythonBuiltinClassType.PComplex)) {
+                    return value;
+                }
+                return factory().createComplex(value.getReal(), value.getImag());
             }
             return factory().createComplex(cls, value.getReal(), value.getImag());
         }
