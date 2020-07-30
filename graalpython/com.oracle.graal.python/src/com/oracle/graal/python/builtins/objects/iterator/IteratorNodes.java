@@ -103,14 +103,14 @@ public abstract class IteratorNodes {
                         @Cached PRaiseNode raiseNode) {
             Object clazz = plib.getLazyPythonClass(iterable);
             Object attrLenObj = lenNode.execute(clazz);
-            if (hasLenProfile.profile(attrLenObj != PNone.NO_VALUE && attrLenObj != PNotImplemented.NOT_IMPLEMENTED)) {
+            if (hasLenProfile.profile(attrLenObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {
                     len = dispatchGetattribute.executeObject(frame, attrLenObj, iterable);
                 } catch (PException e) {
                     e.expect(TypeError, errorProfile);
                 }
-                if (len != null) {
+                if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
                     if (toInt.canBeIndex(len)) {
                         int intLen = cast.execute(toInt.asIndex(len));
                         if (intLen < 0) {
@@ -123,14 +123,14 @@ public abstract class IteratorNodes {
                 }
             }
             Object attrLenHintObj = lenHintNode.execute(clazz);
-            if (hasLenghtHintProfile.profile(attrLenHintObj != PNone.NO_VALUE && attrLenHintObj != PNotImplemented.NOT_IMPLEMENTED)) {
+            if (hasLenghtHintProfile.profile(attrLenHintObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {
                     len = dispatchGetattribute.executeObject(frame, attrLenHintObj, iterable);
                 } catch (PException e) {
                     e.expect(TypeError, errorProfile);
                 }
-                if (len != null) {
+                if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
                     if (toInt.canBeIndex(len)) {
                         int intLen = cast.execute(toInt.asIndex(len));
                         if (intLen < 0) {
