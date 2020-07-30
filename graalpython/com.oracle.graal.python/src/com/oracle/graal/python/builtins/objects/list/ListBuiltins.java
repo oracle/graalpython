@@ -877,6 +877,12 @@ public class ListBuiltins extends PythonBuiltins {
             return false;
         }
 
+        public final Object sort(VirtualFrame frame, PList list) {
+            return this.execute(frame, list, PArguments.EMPTY_VARARGS, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        public abstract Object execute(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords);
+
         @Specialization(guards = "!isSortable(list, lenNode)")
         @SuppressWarnings("unused")
         Object none(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
@@ -906,6 +912,10 @@ public class ListBuiltins extends PythonBuiltins {
             Object sortMethod = sort.executeObject(frame, list);
             callSort.execute(sortMethod, arguments, keywords);
             return PNone.NONE;
+        }
+
+        public static ListSortNode create() {
+            return ListBuiltinsFactory.ListSortNodeFactory.create();
         }
     }
 
