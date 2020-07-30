@@ -645,8 +645,9 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Lookup an attribute directly in MRO of the receiver's type. Typically used to lookup special
-     * methods and attributes. Equivalent of CPython's {@code _PyType_Lookup}.
+     * Lookup an attribute directly in MRO of the receiver's type. Doesn't bind the attribute to the
+     * object. Typically used to lookup special methods and attributes. Equivalent of CPython's
+     * {@code _PyType_Lookup} or {@code lookup_maybe_method}.
      * 
      * @param receiver self
      * @param name attribute name
@@ -695,7 +696,8 @@ public abstract class PythonObjectLibrary extends Library {
      * Call an unbound method or other unbound descriptor using given receiver. Will first call
      * {@code __get__} to bind the descriptor, then call the bound object. There are optimized
      * implementations for plain and builtin functions that avoid creating the intermediate bound
-     * object. Typically called on a result of {@link #lookupAttributeOnType}.
+     * object. Typically called on a result of {@link #lookupAttributeOnType}. Equivalent of
+     * CPython's {@code call_unbound}.
      *
      * @param method unbound method or descriptor object whose {@code __get__} hasn't been called
      * @param receiver self
