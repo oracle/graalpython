@@ -97,4 +97,8 @@ public abstract class ReadLocalsNode extends Node {
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         return frame.getLocals(factory);
     }
+
+    public static ReadLocalsNode create() {
+        return ReadLocalsNodeGen.create();
+    }
 }

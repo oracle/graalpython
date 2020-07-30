@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -38,6 +39,8 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
@@ -65,6 +68,8 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private CastToJavaStringNode castToStringNode;
     @Child private GetAnyAttributeNode readNode;
     @Child private PRaiseNode raiseNode;
+    @Child private MaterializeFrameNode getPFrameNode;
+    @Child private ReadLocalsNode getLocalsNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
 
@@ -105,7 +110,8 @@ public class ImportStarNode extends AbstractImportNode {
     @Override
     public void executeVoid(VirtualFrame frame) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
-        PythonObject globals = PArguments.getGlobals(frame);
+        PFrame pFrame = ensureGetPFrameNode().execute(frame, this, true, true);
+        PythonObject locals = (PythonObject) ensureGetLocalsNode().execute(frame, pFrame);
 
         if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
             try {
@@ -116,7 +122,7 @@ public class ImportStarNode extends AbstractImportNode {
                     // interop protocol guarantees these are Strings
                     String attrName = (String) interopLib.readArrayElement(hostAttrs, i);
                     Object attr = interopLib.readMember(importedModule, attrName);
-                    writeAttribute(frame, globals, attrName, attr);
+                    writeAttribute(frame, locals, attrName, attr);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -137,7 +143,7 @@ public class ImportStarNode extends AbstractImportNode {
                         throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrNameObj);
                     }
                     Object attr = readAttribute(frame, importedModule, attrName);
-                    writeAttribute(frame, globals, attrName, attr);
+                    writeAttribute(frame, locals, attrName, attr);
                 }
             } catch (PException e) {
                 e.expectAttributeError(ensureIsAttributeErrorProfile());
@@ -148,7 +154,7 @@ public class ImportStarNode extends AbstractImportNode {
                     // 'ceval.c: import_all_from')
                     if (!name.startsWith("__")) {
                         Object attr = readAttribute(frame, importedModule, name);
-                        writeAttribute(frame, globals, name, attr);
+                        writeAttribute(frame, locals, name, attr);
                     }
                 }
             }
@@ -177,6 +183,22 @@ public class ImportStarNode extends AbstractImportNode {
             castToStringNode = insert(CastToJavaStringNodeGen.create());
         }
         return castToStringNode;
+    }
+
+    private MaterializeFrameNode ensureGetPFrameNode() {
+        if (getPFrameNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getPFrameNode = insert(MaterializeFrameNode.create());
+        }
+        return getPFrameNode;
+    }
+
+    private ReadLocalsNode ensureGetLocalsNode() {
+        if (getLocalsNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getLocalsNode = insert(ReadLocalsNode.create());
+        }
+        return getLocalsNode;
     }
 
     private IsBuiltinClassProfile ensureIsAttributeErrorProfile() {
