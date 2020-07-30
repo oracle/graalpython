@@ -164,3 +164,19 @@ def test_circular_import():
             assert str(ae) == "partially initialized module 'circularimport.source' has no attribute 'spam' (most likely due to a circular import)"
         else:
             assert False
+
+import time as package25274  #has to be in global space for the next test
+def test_local_property_25274():
+    
+    def mytest():
+        assert len(locals()) == 0
+        import package25274.sub25274
+        assert 'package25274' in locals()
+        assert package25274.top_property == 10
+        assert package25274.sub25274.sub_property == 20
+        
+    mytest()
+    assert hasattr(package25274, 'tzname')
+
+
+    

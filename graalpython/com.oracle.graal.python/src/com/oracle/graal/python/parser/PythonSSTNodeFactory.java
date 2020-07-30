@@ -102,7 +102,20 @@ public final class PythonSSTNodeFactory {
     }
 
     public SSTNode createImport(String name, String asName, int startOffset, int endOffset) {
-        scopeEnvironment.createLocal(asName == null ? name : asName);
+        String varName;
+        if (asName != null) {
+            varName = asName;
+        } else {
+            // checking if the name is not something like module.submodule
+            int dotIndex = name.indexOf('.');
+            if (dotIndex == -1) {
+                varName = name;
+            } else {
+                // create local variable just for the top module
+                varName = name.substring(0, dotIndex);
+            }
+        }
+        scopeEnvironment.createLocal(varName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
     }
 
