@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -59,8 +59,8 @@ public class BuiltinFunctionTests {
 
     @Test
     public void roundTest0() {
-        String source = "x = round(2.5)\n" + "print(x)";
-        assertPrints("3\n", source);
+        String source = "x = round(3.5)\n" + "print(x)";
+        assertPrints("4\n", source);
     }
 
     @Test

@@ -104,6 +104,8 @@ def make_float_info_class():
 float_info = make_float_info_class()(float_info)
 del make_float_info_class
 
+float_repr_style = 'short'
+
 def make_int_info_class():
     from _descriptor import make_named_tuple_class
     return make_named_tuple_class(

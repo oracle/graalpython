@@ -4,12 +4,19 @@
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_format_testfile
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_issue35560
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_issue5864
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_error_message
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_containment
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_memoryview
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_mod
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_pow
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_with_comma
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_floatasratio
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_floatconversion
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_is_integer
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_keyword_args
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_non_numeric_input_types
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_underscores
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_ends
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_from_hex
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_invalid_inputs
@@ -18,6 +25,7 @@
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_whitespace
 *graalpython.lib-python.3.test.test_float.IEEEFormatTestCase.test_double_specials_do_unpack
 *graalpython.lib-python.3.test.test_float.IEEEFormatTestCase.test_float_specials_do_unpack
+*graalpython.lib-python.3.test.test_float.IEEEFormatTestCase.test_serialized_float_rounding
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_inf_as_str
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_inf_from_str
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_inf_signs

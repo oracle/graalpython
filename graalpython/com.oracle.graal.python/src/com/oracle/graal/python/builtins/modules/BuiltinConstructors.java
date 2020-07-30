@@ -74,6 +74,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -914,8 +915,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     @ReportPolymorphism
-    public abstract static class FloatNode extends PythonBuiltinNode {
+    public abstract static class FloatNode extends PythonBinaryBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
+        @Child private LookupAndCallUnaryNode callFloatNode;
+        @Child private LookupAndCallUnaryNode callReprNode;
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         private ConditionProfile isNanProfile;
@@ -971,17 +974,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromString(Object cls, String arg) {
-            double value = convertStringToDouble(arg);
-            if (isPrimitiveFloat(cls)) {
-                return value;
-            }
-            return factoryCreateFloat(cls, value);
-        }
-
-        @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromBytes(VirtualFrame frame, Object cls, PIBytesLike arg) {
-            double value = convertBytesToDouble(frame, arg);
+        Object floatFromString(VirtualFrame frame, Object cls, String arg) {
+            double value = convertStringToDouble(frame, arg, arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
@@ -989,7 +983,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private double convertBytesToDouble(VirtualFrame frame, PIBytesLike arg) {
-            return convertStringToDouble(createString(getByteArray(frame, arg)));
+            return convertStringToDouble(frame, createString(getByteArray(frame, arg)), arg);
         }
 
         @TruffleBoundary
@@ -997,17 +991,39 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return new String(bytes);
         }
 
-        // Taken from Jython PyString's atof() method
-        // The last statement throw Py.ValueError is modified
+        private double convertStringToDouble(VirtualFrame frame, String str, Object origObj) {
+            try {
+                return convertStringToDoubleOrThrow(str);
+            } catch (NumberFormatException exc) {
+                if (callReprNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                }
+                Object strStr = callReprNode.executeObject(frame, origObj);
+                if (PGuards.isString(strStr)) {
+                    throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, strStr);
+                } else {
+                    // During the formatting of "ValueError: invalid literal ..." exception,
+                    // CPython attempts to raise "TypeError: __repr__ returned non-string",
+                    // which gets later overwitten with the original "ValueError",
+                    // but without any message (since the message formatting failed)
+                    throw raise(ValueError);
+                }
+            }
+        }
+
+        // Adapted from Jython PyString's atof() method
         @TruffleBoundary
-        private double convertStringToDouble(String str) {
+        private static double convertStringToDoubleOrThrow(String str) throws NumberFormatException {
             StringBuilder s = null;
             int n = str.length();
 
+            boolean containsUnderscores = false;
+            boolean containsN = false;
             for (int i = 0; i < n; i++) {
                 char ch = str.charAt(i);
-                if (ch == '\u0000') {
-                    throw raise(ValueError, ErrorMessages.EMPTY_STR_FOR_COMPLEX);
+                if (ch == '\u0000' || ch == 'x' || ch == 'X') {
+                    throw new NumberFormatException();
                 }
                 if (Character.isDigit(ch)) {
                     if (s == null) {
@@ -1016,26 +1032,56 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     int val = Character.digit(ch, 10);
                     s.setCharAt(i, Character.forDigit(val, 10));
                 }
+                if (Character.isWhitespace(ch)) {
+                    if (s == null) {
+                        s = new StringBuilder(str);
+                    }
+                    s.setCharAt(i, ' ');
+                }
+                containsUnderscores |= ch == '_';
+                containsN |= ch == 'n' || ch == 'N';
             }
-            String sval = str.trim();
-            if (s != null) {
-                sval = s.toString();
+            String sval = s != null ? s.toString().trim() : str;
+            if (containsUnderscores) {
+                sval = checkAndRemoveUnderscores(sval);
             }
-            try {
-                // Double.valueOf allows format specifier ("d" or "f") at the end
+            if (containsN) {
                 String lowSval = sval.toLowerCase(Locale.ENGLISH);
-                if (lowSval.equals("nan") || lowSval.equals("+nan") || lowSval.equals("-nan")) {
+                if (lowSval.equals("nan") || lowSval.equals("+nan")) {
                     return Double.NaN;
+                } else if (lowSval.equals("-nan")) {
+                    return Math.copySign(Double.NaN, -1);
                 } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
                     return Double.POSITIVE_INFINITY;
                 } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
                     return Double.NEGATIVE_INFINITY;
                 }
-                return Double.valueOf(sval).doubleValue();
-            } catch (NumberFormatException exc) {
-                // throw Py.ValueError("invalid literal for __float__: " + str);
-                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, str);
             }
+            return Double.parseDouble(sval);
+        }
+
+        private static String checkAndRemoveUnderscores(String src) {
+            StringBuilder sb = new StringBuilder();
+            char prev = 0;
+            int len = src.length();
+            for (int i = 0; i < len; i++) {
+                char ch = src.charAt(i);
+                if (ch == '_') {
+                    if (!(prev >= '0' && prev <= '9')) {
+                        throw new NumberFormatException();
+                    }
+                } else {
+                    if (prev == '_' && !(ch >= '0' && ch <= '9')) {
+                        throw new NumberFormatException();
+                    }
+                    sb.append(ch);
+                }
+                prev = ch;
+            }
+            if (prev == '_') {
+                throw new NumberFormatException();
+            }
+            return sb.toString();
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
@@ -1046,29 +1092,62 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, 0.0);
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
-        double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            if (obj instanceof String) {
-                return convertStringToDouble((String) obj);
-            } else if (obj instanceof PString) {
-                return convertStringToDouble(((PString) obj).getValue());
-            } else if (obj instanceof PNone) {
-                return 0.0;
-            } else if (obj instanceof PIBytesLike) {
-                return convertBytesToDouble(frame, (PIBytesLike) obj);
-            }
-            if (lib.canBeJavaDouble(obj)) {
-                return lib.asJavaDouble(obj);
-            } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
-            }
+        static boolean isHandledType(Object o) {
+            return PGuards.canBeInteger(o) || PGuards.isDouble(o) || o instanceof String || PGuards.isPNone(o);
         }
 
-        @Specialization(guards = "!isNativeClass(cls)")
-        Object doPythonObject(VirtualFrame frame, Object cls, Object obj,
+        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(obj)"})
+        double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            return floatFromDouble(cls, doubleFromObject(frame, cls, obj, lib));
+            // Follows logic from PyNumber_Float:
+            // lib.asJavaDouble cannot be used here because it models PyFloat_AsDouble,
+            // which ignores __float__ defined by float subclasses, whereas PyNumber_Float
+            // uses the __float__ even for subclasses
+            if (callFloatNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFloatNode = insert(LookupAndCallUnaryNode.create(__FLOAT__));
+            }
+            Object result = callFloatNode.executeObject(frame, obj);
+            if (result != PNone.NO_VALUE) {
+                if (PGuards.isDouble(result)) {
+                    return (double) result;
+                }
+                if (PGuards.isPFloat(result)) {
+                    if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PFloat)) {
+                        // TODO deprecation warning
+                    }
+                    return ((PFloat) result).getValue();
+                }
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, "__float__", result);
+            }
+            if (lib.canBeIndex(obj)) {
+                return lib.asJavaDouble(lib.asIndex(obj));
+            }
+            // Follows logic from PyFloat_FromString:
+            // These types are handled only if the object doesn't implement __float__/__index__
+            if (obj instanceof PString) {
+                return convertStringToDouble(frame, ((PString) obj).getValue(), obj);
+            } else if (obj instanceof PIBytesLike) {
+                return convertBytesToDouble(frame, (PIBytesLike) obj);
+            } else if (lib.isBuffer(obj)) {
+                try {
+                    return convertStringToDouble(frame, createString(lib.getBufferBytes(obj)), obj);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
+                }
+            }
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
+        }
+
+        @Specialization(guards = {"!isNativeClass(cls)", "!isPrimitiveFloat(cls)"})
+        Object doPythonObject(VirtualFrame frame, Object cls, Object obj,
+                        @Cached FloatNode recursiveCallNode) {
+            Object doubleValue = recursiveCallNode.executeWith(frame, PythonBuiltinClassType.PFloat, obj);
+            if (!(doubleValue instanceof Double)) {
+                throw CompilerDirectives.shouldNotReachHere("float() returned non-primitive value");
+            }
+            return floatFromDouble(cls, (double) doubleValue);
         }
 
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
@@ -1078,9 +1157,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.FloatSubtypeNew subtypeNew,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            double realFloat = doubleFromObject(frame, PythonBuiltinClassType.PFloat, obj, lib);
-            return subtypeNew.call(cls, realFloat);
+                        @Cached FloatNode recursiveCallNode) {
+            Object doubleValue = recursiveCallNode.executeWith(frame, PythonBuiltinClassType.PFloat, obj);
+            if (!(doubleValue instanceof Double)) {
+                throw CompilerDirectives.shouldNotReachHere("float() returned non-primitive value");
+            }
+            return subtypeNew.call(cls, (double) doubleValue);
         }
 
         @Fallback
