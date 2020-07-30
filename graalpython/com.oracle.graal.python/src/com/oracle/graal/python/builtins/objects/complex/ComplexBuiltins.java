@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -591,30 +592,17 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doComplexInt(PComplex left, long right) {
-            if (left.getImag() == 0) {
-                return left.getReal() == right;
-            }
-            return false;
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right) == 0;
         }
 
         @Specialization
         boolean doComplexInt(PComplex left, PInt right) {
-            if (left.getImag() == 0) {
-                try {
-                    return left.getReal() == right.longValueExact();
-                } catch (ArithmeticException e) {
-                    // do nothing -> return false;
-                }
-            }
-            return false;
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
         }
 
         @Specialization
         boolean doComplexInt(PComplex left, double right) {
-            if (left.getImag() == 0) {
-                return left.getReal() == right;
-            }
-            return false;
+            return left.getImag() == 0 && left.getReal() == right;
         }
 
         @SuppressWarnings("unused")
@@ -699,12 +687,12 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doComplex(PComplex left, long right) {
-            return left.getImag() != 0 || left.getReal() != right;
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right) != 0;
         }
 
         @Specialization
         boolean doComplex(PComplex left, PInt right) {
-            return left.getImag() != 0 || left.getReal() != right.doubleValue();
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
         }
 
         @Specialization

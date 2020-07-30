@@ -999,7 +999,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         boolean eqDbDb(double a, double b) {
@@ -1008,7 +1008,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqDbLn(double a, long b) {
-            return a == b;
+            return compareDoubleToLong(a, b) == 0;
         }
 
         @Specialization
@@ -1041,7 +1041,24 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         // adapted from CPython's float_richcompare in floatobject.c
-        static double compareDoubleToLargeInt(double v, PInt w) {
+        public static double compareDoubleToLong(double v, long w) {
+            if (!Double.isFinite(v)) {
+                return v;
+            }
+            int vsign = v == 0.0 ? 0 : v < 0.0 ? -1 : 1;
+            int wsign = Long.signum(w);
+            if (vsign != wsign) {
+                return vsign - wsign;
+            }
+            if (w > -0x1000000000000L && w < 0x1000000000000L) {    // w is at most 48 bits
+                return v - w;
+            } else {
+                return compareUsingBigDecimal(v, BigInteger.valueOf(w));
+            }
+        }
+
+        // adapted from CPython's float_richcompare in floatobject.c
+        public static double compareDoubleToLargeInt(double v, PInt w) {
             if (!Double.isFinite(v)) {
                 return v;
             }
@@ -1074,7 +1091,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean neDbLn(double a, long b) {
-            return a != b;
+            return EqNode.compareDoubleToLong(a, b) != 0;
         }
 
         @Specialization
@@ -1118,7 +1135,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doDL(double x, long y) {
-            return x < y;
+            return EqNode.compareDoubleToLong(x, y) < 0;
         }
 
         @Specialization
@@ -1183,7 +1200,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doDL(double x, long y) {
-            return x <= y;
+            return EqNode.compareDoubleToLong(x, y) <= 0;
         }
 
         @Specialization
@@ -1248,7 +1265,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doDL(double x, long y) {
-            return x > y;
+            return EqNode.compareDoubleToLong(x, y) > 0;
         }
 
         @Specialization
@@ -1313,7 +1330,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doDL(double x, long y) {
-            return x >= y;
+            return EqNode.compareDoubleToLong(x, y) >= 0;
         }
 
         @Specialization
