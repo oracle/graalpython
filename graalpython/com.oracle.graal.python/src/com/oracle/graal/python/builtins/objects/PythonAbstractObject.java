@@ -115,7 +115,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -642,22 +641,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public int lengthWithState(ThreadState state,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached ConditionProfile ltZero,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
-                    @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode,
                     @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        Object lenFunc = getLenNode.execute(this, __LEN__);
+        Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
         if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
-            Object lenResult;
+            Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
             int len;
             if (gotState.profile(state == null)) {
-                lenResult = callNode.executeObject(lenFunc, this);
                 len = lib.asSize(lenResult);
             } else {
-                lenResult = callNode.executeObject(PArguments.frameForCall(state), lenFunc, this);
                 len = lib.asSizeWithState(lenResult, state);
             }
             if (ltZero.profile(len < 0)) {

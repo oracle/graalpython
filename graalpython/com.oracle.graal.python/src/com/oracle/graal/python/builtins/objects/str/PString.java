@@ -36,7 +36,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializ
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -166,15 +165,15 @@ public final class PString extends PImmutableSequence {
 
         @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
         static int subclassedString(PString self, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
-                        @Exclusive @Cached CallUnaryMethodNode callNode,
-                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("self") PythonObjectLibrary plib,
+                        @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile hasLen,
+                        @Exclusive @Cached ConditionProfile ltZero,
+                        @Shared("raise") @Cached PRaiseNode raiseNode,
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             // call the generic implementation in the superclass
-            return self.lengthWithState(state, gotState, hasLen, ltZero, getLenNode, callNode, raiseNode, lib);
+            return self.lengthWithState(state, plib, methodLib, gotState, hasLen, ltZero, raiseNode, lib);
         }
     }
 
