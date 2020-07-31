@@ -535,39 +535,41 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        static int doPIntTo32Bit(Frame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
+        @TruffleBoundary
+        static int doPIntTo32Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
                         @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
             try {
                 if (signed != 0) {
                     return obj.intValueExact();
                 } else if (obj.bitCount() <= 32) {
                     if (obj.isNegative()) {
-                        return raiseNegativeValue(frame, raiseNativeNode);
+                        return raiseNegativeValue(raiseNativeNode);
                     }
                     return obj.intValue();
                 }
             } catch (ArithmeticException e) {
                 // fall through
             }
-            return raiseTooLarge(frame, raiseNativeNode, targetTypeSize);
+            return raiseTooLarge(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        static long doPIntTo64Bit(Frame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
+        @TruffleBoundary
+        static long doPIntTo64Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
                         @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
             try {
                 if (signed != 0) {
                     return obj.longValueExact();
                 } else if (obj.bitCount() <= 64) {
                     if (obj.isNegative()) {
-                        return raiseNegativeValue(frame, raiseNativeNode);
+                        return raiseNegativeValue(raiseNativeNode);
                     }
                     return obj.longValue();
                 }
             } catch (ArithmeticException e) {
                 // fall through
             }
-            return raiseTooLarge(frame, raiseNativeNode, targetTypeSize);
+            return raiseTooLarge(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
@@ -582,12 +584,20 @@ public abstract class CExtCommonNodes {
             return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
         }
 
+        private static int raiseTooLarge(PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
+            return raiseNativeNode.raiseIntWithoutFrame(-1, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
         private static int raiseTooLarge(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
             return raiseNativeNode.raiseInt(frame, -1, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
         private static Integer raiseUnsupportedSize(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+
+        private static int raiseNegativeValue(PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseIntWithoutFrame(-1, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
 
         private static int raiseNegativeValue(Frame frame, PRaiseNativeNode raiseNativeNode) {
