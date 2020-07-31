@@ -39,8 +39,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
@@ -60,6 +58,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class ImportStarNode extends AbstractImportNode {
     private final ConditionProfile javaImport = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile haveCustomLocals = ConditionProfile.createBinaryProfile();
 
     @Child private SetItemNode dictWriteNode;
     @Child private SetAttributeNode.Dynamic setAttributeNode;
@@ -68,8 +67,6 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private CastToJavaStringNode castToStringNode;
     @Child private GetAnyAttributeNode readNode;
     @Child private PRaiseNode raiseNode;
-    @Child private MaterializeFrameNode getPFrameNode;
-    @Child private ReadLocalsNode getLocalsNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
 
@@ -109,9 +106,15 @@ public class ImportStarNode extends AbstractImportNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
-        PFrame pFrame = ensureGetPFrameNode().execute(frame, this, true, true);
-        PythonObject locals = (PythonObject) ensureGetLocalsNode().execute(frame, pFrame);
+        PythonObject globals = PArguments.getGlobals(frame);
+        Object importedModule = importModule(frame, moduleName, globals, new String[]{"*"}, level);
+        PythonObject locals = globals;
+
+        Object customLocals = PArguments.getCustomLocals(frame);
+        if (haveCustomLocals.profile(customLocals != null)) {
+            assert customLocals instanceof PFrame.Reference;
+            locals = (PythonObject) ((PFrame.Reference) customLocals).getPyFrame().getLocals(factory());
+        }
 
         if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
             try {
@@ -183,22 +186,6 @@ public class ImportStarNode extends AbstractImportNode {
             castToStringNode = insert(CastToJavaStringNodeGen.create());
         }
         return castToStringNode;
-    }
-
-    private MaterializeFrameNode ensureGetPFrameNode() {
-        if (getPFrameNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getPFrameNode = insert(MaterializeFrameNode.create());
-        }
-        return getPFrameNode;
-    }
-
-    private ReadLocalsNode ensureGetLocalsNode() {
-        if (getLocalsNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getLocalsNode = insert(ReadLocalsNode.create());
-        }
-        return getLocalsNode;
     }
 
     private IsBuiltinClassProfile ensureIsAttributeErrorProfile() {
