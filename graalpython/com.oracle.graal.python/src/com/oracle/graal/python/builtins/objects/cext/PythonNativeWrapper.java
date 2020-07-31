@@ -101,6 +101,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         handleValidAssumption.invalidate("releasing handle for native wrapper");
     }
 
+    @TruffleBoundary
+    public static boolean isValid(Assumption handleValidAssumption) {
+        return handleValidAssumption.isValid();
+    }
+
     public final Assumption getHandleValidAssumption() {
         return handleValidAssumption;
     }
@@ -185,7 +190,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             if (wrapper.nativePointer != null) {
                 Assumption handleValidAssumption = wrapper.getHandleValidAssumption();
                 // If an assumption exists, it must be valid
-                return handleValidAssumption == null || handleValidAssumption.isValid();
+                return handleValidAssumption == null || isValid(handleValidAssumption);
             }
             return false;
         }
