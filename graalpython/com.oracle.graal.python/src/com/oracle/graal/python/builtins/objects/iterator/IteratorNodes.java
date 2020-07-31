@@ -55,7 +55,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -93,7 +92,6 @@ public abstract class IteratorNodes {
         int length(VirtualFrame frame, Object iterable,
                         @CachedLibrary("iterable") PythonObjectLibrary plib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary toInt,
-                        @Cached CastToJavaIntLossyNode cast,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode lenNode,
                         @Cached("create(__LENGTH_HINT__)") LookupAttributeInMRONode lenHintNode,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
@@ -112,7 +110,7 @@ public abstract class IteratorNodes {
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
                     if (toInt.canBeIndex(len)) {
-                        int intLen = cast.execute(toInt.asIndex(len));
+                        int intLen = toInt.asSize(len);
                         if (intLen < 0) {
                             throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
                         }
@@ -132,7 +130,7 @@ public abstract class IteratorNodes {
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
                     if (toInt.canBeIndex(len)) {
-                        int intLen = cast.execute(toInt.asIndex(len));
+                        int intLen = toInt.asSize(len);
                         if (intLen < 0) {
                             throw raiseNode.raise(TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
                         }
