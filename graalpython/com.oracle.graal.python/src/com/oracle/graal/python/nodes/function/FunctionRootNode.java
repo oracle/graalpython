@@ -70,7 +70,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
     private final ExpressionNode uninitializedBody;
-    private final boolean isRewritten;
+    private boolean isPythonInternal;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor,
                     ExpressionNode uninitializedBody, ExecutionCellSlots executionCellSlots, Signature signature) {
@@ -85,7 +85,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         // "uninitializedBody" is never modified or executed
         this.uninitializedBody = uninitializedBody;
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
-        this.isRewritten = isRewritten;
+        this.isPythonInternal = isRewritten;
     }
 
     /**
@@ -99,7 +99,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         this.functionName = other.functionName;
         this.isGenerator = other.isGenerator;
         this.generatorFrameProfile = other.isGenerator ? ValueProfile.createClassProfile() : null;
-        this.isRewritten = other.isRewritten;
+        this.isPythonInternal = other.isPythonInternal;
         this.uninitializedBody = other.uninitializedBody;
     }
 
@@ -110,7 +110,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody, executionCellSlots,
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isPythonInternal, getFrameDescriptor(), uninitializedBody, executionCellSlots,
                         getSignature());
     }
 
@@ -206,10 +206,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         return sourceSection != null && sourceSection.getSource().isInternal();
     }
 
-    public boolean isRewritten() {
-        return isRewritten;
-    }
-
     @Override
     public void initializeFrame(VirtualFrame frame) {
         initClosureAndCellVars(frame);
@@ -217,7 +213,11 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public boolean isPythonInternal() {
-        return isRewritten;
+        return isPythonInternal;
+    }
+
+    public void setPythonInternal(boolean pythonInternal) {
+        isPythonInternal = pythonInternal;
     }
 
     public ExecutionCellSlots getExecutionCellSlots() {

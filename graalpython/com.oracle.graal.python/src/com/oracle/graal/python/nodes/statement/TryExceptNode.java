@@ -106,7 +106,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 if (handled) {
                     return;
                 } else {
-                    throw pe;
+                    throw pe.getExceptionForReraise();
                 }
             }
             throw e;
@@ -144,7 +144,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 throw e;
             }
             tryChainExceptionFromHandler(handlerException, exception);
-            throw handlerException;
+            throw handlerException.getExceptionForReraise();
         }
         return false;
     }

@@ -70,7 +70,6 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private PythonObjectFactory ofactory;
     @CompilationFinal private LoopConditionProfile contextChainHandledProfile;
     @CompilationFinal private LoopConditionProfile contextChainContextProfile;
-    @CompilationFinal private Boolean shouldCatchAllExceptions;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
@@ -199,8 +198,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         pe.setHideLocation(true);
         // Re-attach truffle stacktrace
         moveTruffleStackTrace(e, pe);
-        // Create a new traceback chain, because the current one has been finalized by Truffle
-        return pe.getExceptionForReraise();
+        return pe;
     }
 
     protected final PException wrapJavaExceptionIfApplicable(Throwable e) {

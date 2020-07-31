@@ -112,7 +112,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
             if (activeException != null) {
                 tryChainExceptionFromHandler(handlerException, activeException);
             }
-            throw handlerException;
+            throw handlerException.getExceptionForReraise();
         } finally {
             if (activeException != null) {
                 restoreExceptionState(frame, savedExceptionState);

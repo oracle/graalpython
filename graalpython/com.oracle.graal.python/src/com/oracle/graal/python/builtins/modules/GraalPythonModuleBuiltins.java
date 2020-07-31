@@ -389,12 +389,14 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
              */
             Signature signature = func.getSignature();
             PFunction builtinFunc;
+            FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
             if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
                 /*
                  * If the first parameter is called self, we assume the function does explicitly
                  * declare the module argument
                  */
                 builtinFunc = func;
+                functionRootNode.setPythonInternal(true);
             } else {
                 /*
                  * Otherwise, we create a new function with a signature that requires one extra
@@ -402,9 +404,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                  * PFunction cannot be used anymore (its signature won't agree with it's indexed
                  * parameter reads).
                  */
-                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
-                assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
-
+                assert !functionRootNode.isPythonInternal() : "a function cannot be rewritten as builtin twice";
                 functionRootNode = functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
 
                     public boolean visit(Node node) {
@@ -425,6 +425,17 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
 
             return builtinFunc;
+        }
+    }
+
+    @Builtin(name = "builtin_method", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class BuiltinMethodNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object doIt(PFunction func) {
+            FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+            functionRootNode.setPythonInternal(true);
+            return func;
         }
     }
 

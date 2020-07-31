@@ -226,9 +226,10 @@ public final class PFrame extends PythonBuiltinObject {
             } else {
                 SourceSection sourceSection = location.getEncapsulatingSourceSection();
                 if (sourceSection == null) {
-                    line = -1;
+                    return -1;
                 } else {
-                    line = sourceSection.getStartLine();
+                    // The location can change, so we shouldn't cache the value
+                    return sourceSection.getStartLine();
                 }
             }
         }
