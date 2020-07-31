@@ -351,11 +351,25 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
+        /**
+         * Generic integer conversion.<br/>
+         * In the interpreter: we just lookup the cached primitive native wrapper and use this
+         * instance. In compiled code, we do the same but create a fresh copy such that the compiler
+         * always sees a fresh instance. This avoids a phi and certainly a real allocation. Note: it
+         * is important to copy the existing cached wrapper because otherwise pointer equality is
+         * not ensured (see also:
+         * {@link AsPythonObjectBaseNode#mayUsePrimitive(IsPointerNode, PrimitiveNativeWrapper)}).
+         */
         @Specialization(replaces = "doIntegerSmall")
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallInteger(i)) {
-                return doIntegerSmall(cextContext, i, contextRef);
+            if (CApiGuards.isSmallInteger(i)) {
+                if (CompilerDirectives.inInterpreter()) {
+                    return doIntegerSmall(cextContext, i, contextRef);
+                } else {
+                    // for explanation: see method doc
+                    return doIntegerSmall(cextContext, i, contextRef).copy();
+                }
             }
             return PrimitiveNativeWrapper.createInt(i);
         }
@@ -373,8 +387,13 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doLongSmall")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallLong(l)) {
-                return doLongSmall(cextContext, l, contextRef);
+            if (CApiGuards.isSmallLong(l)) {
+                // for explanation of this construct: see 'ToSulongNode.doInteger'
+                if (CompilerDirectives.inInterpreter()) {
+                    return doLongSmall(cextContext, l, contextRef);
+                } else {
+                    return doLongSmall(cextContext, l, contextRef).copy();
+                }
             }
             return PrimitiveNativeWrapper.createLong(l);
         }
@@ -602,8 +621,13 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doIntegerSmall")
         static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallInteger(i)) {
-                return doIntegerSmall(cextContext, i, contextRef);
+            if (CApiGuards.isSmallInteger(i)) {
+                // for explanation of this construct: see 'ToSulongNode.doInteger'
+                if (CompilerDirectives.inInterpreter()) {
+                    return doIntegerSmall(cextContext, i, contextRef);
+                } else {
+                    return doIntegerSmall(cextContext, i, contextRef).copy();
+                }
             }
             return PrimitiveNativeWrapper.createInt(i);
         }
@@ -611,8 +635,13 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doLongSmall")
         static PrimitiveNativeWrapper doLong(CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CompilerDirectives.inInterpreter() && CApiGuards.isSmallLong(l)) {
-                return doLongSmall(cextContext, l, contextRef);
+            if (CApiGuards.isSmallLong(l)) {
+                // for explanation of this construct: see 'ToSulongNode.doInteger'
+                if (CompilerDirectives.inInterpreter()) {
+                    return doLongSmall(cextContext, l, contextRef);
+                } else {
+                    return doLongSmall(cextContext, l, contextRef).copy();
+                }
             }
             return PrimitiveNativeWrapper.createLong(l);
         }

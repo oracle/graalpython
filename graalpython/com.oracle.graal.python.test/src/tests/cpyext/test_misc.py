@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -194,6 +194,7 @@ class TestMisc(CPyExtTestCase):
         lambda: (
             (True, lambda arg0, *args: arg0),
             (False, lambda arg0, *args: arg0),
+            (1000, lambda arg0, *args: arg0),
             (10, lambda arg0, *args: arg0),
             (10.0, lambda arg0, *args: arg0),
             (float('nan'), lambda arg0, *args: arg0),
@@ -256,7 +257,7 @@ class TestMisc(CPyExtTestCase):
         ),
         code="""
         PyObject* wrap_PyEval_GetBuiltins() {
-            return Py_TYPE(PyEval_GetBuiltins());
+            return (PyObject *) Py_TYPE(PyEval_GetBuiltins());
         }
         """,
         resultspec="O",
