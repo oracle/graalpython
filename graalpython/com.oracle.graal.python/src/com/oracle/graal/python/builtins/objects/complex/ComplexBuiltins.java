@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
@@ -53,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
@@ -839,6 +841,28 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         PComplex hash(PComplex self) {
             return factory().createComplex(self.getReal(), -self.getImag());
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class FloorDivNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object floorDiv(Object arg) {
+            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ModNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object mod(Object arg) {
+            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
         }
     }
 }
