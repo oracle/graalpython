@@ -70,10 +70,12 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -95,6 +97,8 @@ public final class CApiContext extends CExtContext {
 
     public static final long REFERENCE_COUNT_BITS = Integer.SIZE;
     public static final long REFERENCE_COUNT_MARKER = (1L << REFERENCE_COUNT_BITS);
+    /* a random number between 1 and 20 */
+    private static final int MAX_COLLECTION_RETRIES = 17;
 
     /** Total amount of allocated native memory (in bytes). */
     private long allocatedMemory = 0;
@@ -108,7 +112,6 @@ public final class CApiContext extends CExtContext {
     private Map<Object, AllocInfo> freedNativeMemory;
 
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
-    @CompilationFinal private RootCallTarget triggerAsyncActionsCallTarget;
 
     /**
      * This cache is used to cache native wrappers for frequently used primitives. This is strictly
@@ -206,14 +209,6 @@ public final class CApiContext extends CExtContext {
             referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext()));
         }
         return referenceCleanerCallTarget;
-    }
-
-    RootCallTarget getTriggerAsyncActionsCallTarget() {
-        if (triggerAsyncActionsCallTarget == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            triggerAsyncActionsCallTarget = Truffle.getRuntime().createCallTarget(new TriggerAsyncActionsRootNode(getContext()));
-        }
-        return triggerAsyncActionsCallTarget;
     }
 
     public TraceMallocDomain getTraceMallocDomain(int domainIdx) {
@@ -419,43 +414,6 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    private static final class TriggerAsyncActionsRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[0], new String[0]);
-
-        @Child private CalleeContext calleeContext = CalleeContext.create();
-
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
-        private final BranchProfile asyncProfile = BranchProfile.create();
-        private final PythonContext context;
-
-        protected TriggerAsyncActionsRootNode(PythonContext context) {
-            super(context.getLanguage());
-            this.context = context;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
-            try {
-                doGc();
-                context.triggerAsyncActions(frame, asyncProfile);
-            } finally {
-                calleeContext.exit(frame, this);
-            }
-            return 0;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return true;
-        }
-    }
-
     public NativeObjectReference lookupNativeObjectReference(int idx) {
         return nativeObjectWrapperList.get(idx);
     }
@@ -615,35 +573,41 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
-    public void increaseMemoryPressure(GenericInvokeNode invokeNode, long size) {
+    public void increaseMemoryPressure(long size) {
         if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
-
-        // Triggering the GC and the async actions is hidden behind a call target to keep this
-        // method slim.
-        invokeNode.execute(getTriggerAsyncActionsCallTarget(), PArguments.create());
-
-        if (allocatedMemory + size > getContext().getOption(PythonOptions.MaxNativeMemory)) {
-            throw new OutOfMemoryError("native memory");
-        }
-        allocatedMemory += size;
+        triggerGC(size);
     }
 
-    public void increaseMemoryPressure(VirtualFrame frame, long size, BranchProfile asyncProfile) {
-        if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+    public void increaseMemoryPressure(VirtualFrame frame, PythonContext context, IndirectCallNode caller, long size) {
+        if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
 
-        doGc();
-        getContext().triggerAsyncActions(frame, asyncProfile);
-
-        if (allocatedMemory + size > getContext().getOption(PythonOptions.MaxNativeMemory)) {
-            throw new OutOfMemoryError("native memory");
+        Object savedState = IndirectCallContext.enter(frame, context, caller);
+        try {
+            triggerGC(size);
+        } finally {
+            IndirectCallContext.exit(frame, context, savedState);
         }
-        allocatedMemory += size;
+    }
+
+    @TruffleBoundary
+    private void triggerGC(long size) {
+        long delay = 0;
+        for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
+            delay += 50;
+            doGc(delay);
+            getContext().triggerAsyncActions(null, BranchProfile.getUncached());
+            if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+                allocatedMemory += size;
+                return;
+            }
+        }
+        throw new OutOfMemoryError("native memory");
     }
 
     public void reduceMemoryPressure(long size) {
@@ -651,11 +615,11 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    private static void doGc() {
+    private static void doGc(long millis) {
         LOGGER.fine("full GC due to native memory");
         System.gc();
         try {
-            Thread.sleep(50);
+            Thread.sleep(millis);
         } catch (InterruptedException x) {
             // Restore interrupt status
             Thread.currentThread().interrupt();
