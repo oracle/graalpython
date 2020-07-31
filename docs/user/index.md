@@ -18,11 +18,10 @@ For GraalVM Enterprise users, the [manual component installation](https://www.gr
 
 ## Running Python
 
-GraalVM implementation of Python targets Python 3.7 compatibility. While support for
-the Python language is still limited, you can run simple Python scripts or commands
-with the `graalpython` binary:
-
-```shell
+GraalVM implementation of Python targets Python 3.7 compatibility. While support
+for the Python language is still limited, you can run simple Python scripts or
+commands with the `graalpython` binary.
+```
 $ graalpython [options] [-c cmd | filename]
 ```
 
@@ -32,7 +31,7 @@ GraalVM supports some of the same options as Python 3.7 and some additional
 options to control the underlying Python implementation, the GraalVM tools
 and the execution engine. These can be viewed using the following command:
 
-```shell
+```
 $ graalpython --help --help:tools --help:languages
 ```
 
