@@ -396,9 +396,9 @@ public class NodeFactory {
             case "!=":
                 return BinaryComparisonNode.create(SpecialMethodNames.__NE__, SpecialMethodNames.__NE__, operator, left, right);
             case "in":
-                return ContainsNode.create(right, left);
+                return ContainsNode.create(left, right);
             case "notin":
-                return CoerceToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
+                return CoerceToBooleanNode.createIfFalseNode(ContainsNode.create(left, right));
             case "is":
                 return IsExpressionNode.create(left, right);
             case "isnot":

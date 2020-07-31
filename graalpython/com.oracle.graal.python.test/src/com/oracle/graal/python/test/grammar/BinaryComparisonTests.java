@@ -65,4 +65,10 @@ public class BinaryComparisonTests {
         assertPrints("True\nFalse\nFalse\nFalse\n", source);
     }
 
+    @Test
+    public void inEvaluationOrder() {
+        String source = "print('a') in [print('b')]";
+        assertPrints("a\nb\n", source);
+    }
+
 }
