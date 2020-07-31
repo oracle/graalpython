@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -110,6 +111,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PComplex)
@@ -827,10 +829,11 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        int hash(PComplex self) {
+        long hash(PComplex self,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             // just like CPython
-            int realHash = Double.hashCode(self.getReal());
-            int imagHash = Double.hashCode(self.getImag());
+            long realHash = lib.hash(self.getReal());
+            long imagHash = lib.hash(self.getImag());
             return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
         }
     }
