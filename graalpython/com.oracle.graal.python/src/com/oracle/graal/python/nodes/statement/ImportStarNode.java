@@ -113,7 +113,10 @@ public class ImportStarNode extends AbstractImportNode {
         Object customLocals = PArguments.getCustomLocals(frame);
         if (haveCustomLocals.profile(customLocals != null)) {
             assert customLocals instanceof PFrame.Reference;
-            locals = (PythonObject) ((PFrame.Reference) customLocals).getPyFrame().getLocals(factory());
+            PFrame pyFrame = ((PFrame.Reference) customLocals).getPyFrame();
+            if (pyFrame != null) {
+                locals = (PythonObject) pyFrame.getLocals(factory());
+            }
         }
 
         if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
