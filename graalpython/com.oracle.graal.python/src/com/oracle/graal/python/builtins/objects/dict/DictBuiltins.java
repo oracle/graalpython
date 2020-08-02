@@ -432,7 +432,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object doDictDict(VirtualFrame frame, PDict self, PDict other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetDictStorageNode getStorage,
@@ -444,7 +444,7 @@ public final class DictBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object doDictProxy(VirtualFrame frame, PDict self, PMappingproxy other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetDictStorageNode getStorage,
