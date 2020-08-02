@@ -137,19 +137,19 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -803,7 +803,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object listdir(VirtualFrame frame, Object pathArg,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String path = lib.asPath(pathArg);
@@ -918,13 +918,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
 
-        @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"}, limit = "1")
+        @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"}, limit = "3")
         Object open(VirtualFrame frame, Object pathname, long flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd,
                         @CachedLibrary("pathname") PythonObjectLibrary lib) {
             return openMode(frame, pathname, flags, 0777, dir_fd, lib);
         }
 
-        @Specialization(guards = {"isNoValue(dir_fd)"}, limit = "1")
+        @Specialization(guards = {"isNoValue(dir_fd)"}, limit = "3")
         Object openMode(VirtualFrame frame, Object pathArg, long flags, long fileMode, @SuppressWarnings("unused") PNone dir_fd,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String pathname = lib.asPath(pathArg);
@@ -1085,7 +1085,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UnlinkNode extends PythonFileNode {
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object unlink(VirtualFrame frame, Object pathArg,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String path = lib.asPath(pathArg);
@@ -1113,13 +1113,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MkdirNode extends PythonFileNode {
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object mkdir(VirtualFrame frame, Object path, @SuppressWarnings("unused") PNone mode, PNone dirFd,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
             return mkdirMode(frame, path, 511, dirFd, lib);
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object mkdirMode(VirtualFrame frame, Object pathArg, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String path = lib.asPath(pathArg);
