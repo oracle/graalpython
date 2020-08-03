@@ -544,4 +544,5 @@ public abstract class ErrorMessages {
     public static final String CAPI_LOAD_ERROR = "Could not load C API from %s.";
     public static final String NATIVE_ACCESS_NOT_ALLOWED = "Cannot run any C extensions because native access is not allowed.";
     public static final String HPY_LOAD_ERROR = "Could not load HPy C API from %s.";
+    public static final String CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = "can't convert negative value to unsigned int";
 }
