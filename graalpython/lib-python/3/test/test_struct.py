@@ -198,8 +198,8 @@ class StructTest(unittest.TestCase):
             def test_one(self, x, pack=struct.pack,
                                   unpack=struct.unpack,
                                   unhexlify=binascii.unhexlify):
-
                 format = self.format
+                print(">>>> ", format, x)
                 if self.min_value <= x <= self.max_value:
                     expected = x
                     if self.signed and x < 0:
