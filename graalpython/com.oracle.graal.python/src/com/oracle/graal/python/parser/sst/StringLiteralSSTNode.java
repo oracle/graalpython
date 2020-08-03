@@ -220,10 +220,10 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                         sb = null;
                     }
                     formatStrings.add(new StringPart(text, true));
-                    String[] literals = FormatStringParser.parse(formatStringExpressions, formatStringExprsSources, errors, text, nodeFactory, exprParser);
+                    String[] literals = FormatStringParser.parse(formatStringExpressions, formatStringExprsSources, errors, text, isRaw, nodeFactory, exprParser);
                     formatStringLiterals.ensureCapacity(formatStringLiterals.size() + literals.length);
                     for (int i = 0; i < literals.length; i++) {
-                        if (literals[i] != null) {
+                        if (literals[i] != null && !isRaw) {
                             literals[i] = StringUtils.unescapeJavaString(literals[i]);
                         }
                         formatStringLiterals.add(literals[i]);

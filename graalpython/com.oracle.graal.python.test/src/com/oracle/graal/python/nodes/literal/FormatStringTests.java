@@ -362,12 +362,12 @@ public class FormatStringTests extends ParserTestBase {
         }
     }
 
-    private static void testFormatString(String fstring, String expected) throws Exception {
+    private static void testFormatString(String fstring, String expected) {
         assert fstring.startsWith("f'") && fstring.endsWith("'");
         // remove the f'...', to extract the text of the f-string
         String text = fstring.substring(2).substring(0, fstring.length() - 3);
         ArrayList<Token> tokens = new ArrayList<>();
-        FormatStringParser.createTokens(tokens, new MockErrorCallback(), 0, text, 0);
+        FormatStringParser.createTokens(tokens, new MockErrorCallback(), 0, text, false, 0);
         ArrayList<String> expressions = FormatStringParser.createExpressionSources(text, tokens, 0, tokens.size(), tokens.size());
         int expressionsIndex = 0;
         StringBuilder actual = new StringBuilder();

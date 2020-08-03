@@ -15,6 +15,14 @@
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_compile_time_concat
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_compile_time_concat_errors
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_conversions
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_backslashes_in_string_part
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_debug_conversion
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_format_specifier_expressions
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_errors
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_global
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_lambda
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_misformed_unicode_character_name
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_no_backslashes_in_expression_part
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_del
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_dict
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_docstring
