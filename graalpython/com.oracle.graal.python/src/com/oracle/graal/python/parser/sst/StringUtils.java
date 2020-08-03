@@ -206,6 +206,9 @@ public class StringUtils {
      */
     @CompilerDirectives.TruffleBoundary
     private static int doCharacterName(String text, StringBuilder sb, int offset) {
+        if (offset >= text.length()) {
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+        }
         char ch = text.charAt(offset);
         if (ch != '{') {
             throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);

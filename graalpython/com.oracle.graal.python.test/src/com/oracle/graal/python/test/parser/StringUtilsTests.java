@@ -82,6 +82,7 @@ public class StringUtilsTests extends ParserTestBase {
 
     @Test
     public void malformedError() throws Exception {
+        checkSyntaxErrorMessage("'\\N'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
         checkSyntaxErrorMessage("'\\N {LATIN CAPITAL LETTER A}'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
         checkSyntaxErrorMessage("'\\N LATIN CAPITAL LETTER A}'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
         checkSyntaxErrorMessage("'\\N{LATIN CAPITAL LETTER A'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-24: malformed \\N character escape");
