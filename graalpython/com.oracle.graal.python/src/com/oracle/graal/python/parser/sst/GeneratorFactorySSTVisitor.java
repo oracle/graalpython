@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
+import com.oracle.graal.python.nodes.generator.GeneratorExpressionWithSideEffects;
 import com.oracle.graal.python.nodes.generator.GeneratorForNode;
 import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
@@ -80,6 +81,7 @@ import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -412,4 +414,21 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         return result;
     }
 
+    @Override
+    protected int getCurrentNumberOfYields() {
+        return generatorInfo.getYieldNodes().size();
+    }
+
+    @Override
+    protected ExpressionNode createResumableBinaryExpression(ExpressionNode left, ExpressionNode right, boolean rightCanYield, BiFunction<ExpressionNode, ExpressionNode, ExpressionNode> create) {
+        if (rightCanYield) {
+            // Make sure that left is computed only once even if right yields
+            ReadNode readLeft = makeTempLocalVariable();
+            StatementNode writeLeft = readLeft.makeWriteNode(left);
+            ExpressionNode operation = create.apply((ExpressionNode) readLeft, right);
+            return GeneratorExpressionWithSideEffects.create(operation, new StatementNode[]{writeLeft}, generatorInfo);
+        } else {
+            return create.apply(left, right);
+        }
+    }
 }

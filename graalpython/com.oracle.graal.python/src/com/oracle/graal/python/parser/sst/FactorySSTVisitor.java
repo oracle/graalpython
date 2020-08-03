@@ -123,6 +123,7 @@ import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.IntegerLiteralSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -145,6 +146,38 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         this.nodeFactory = nodeFactory;
         this.errors = errors;
         this.comprLevel = 0;
+    }
+
+    /**
+     * Create a binary expression using given function such that it can be resumed when the right
+     * subexpression yields without reexecuting the side-effects of the left subexpression
+     *
+     * @param left left expression
+     * @param right right expression
+     * @param rightCanYield whether the right expression can yield. Should be obtained using
+     *            {@link #hadYieldSince(int)}
+     * @param create function for creating the expression from left and right
+     */
+    protected ExpressionNode createResumableBinaryExpression(ExpressionNode left, ExpressionNode right, @SuppressWarnings("unused") boolean rightCanYield,
+                    BiFunction<ExpressionNode, ExpressionNode, ExpressionNode> create) {
+        return create.apply(left, right);
+    }
+
+    /**
+     * Get current number of yields to be used later by {@link #hadYieldSince(int)}.
+     */
+    protected int getCurrentNumberOfYields() {
+        return 0;
+    }
+
+    /**
+     * Whether the visitor encountered a yield since the given number of yields
+     *
+     * @param oldNmberOfYields should be obtained using {@link #getCurrentNumberOfYields()} before
+     *            visiting the expression which we want to detect yields in
+     */
+    protected boolean hadYieldSince(int oldNmberOfYields) {
+        return getCurrentNumberOfYields() > oldNmberOfYields;
     }
 
     public ExpressionNode asExpression(BlockSSTNode block) {
@@ -208,7 +241,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AndSSTNode node) {
         ExpressionNode last = (ExpressionNode) node.values[0].accept(this);
         for (int i = 1; i < node.values.length; i++) {
-            last = new AndNode(last, (ExpressionNode) node.values[i].accept(this));
+            int numYields = getCurrentNumberOfYields();
+            ExpressionNode right = (ExpressionNode) node.values[i].accept(this);
+            last = createResumableBinaryExpression(last, right, hadYieldSince(numYields), AndNode::new);
         }
         last.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return last;
@@ -318,8 +353,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(BinaryArithmeticSSTNode node) {
         ExpressionNode left = (ExpressionNode) node.left.accept(this);
+        int numYields = getCurrentNumberOfYields();
         ExpressionNode right = (ExpressionNode) node.right.accept(this);
-        ExpressionNode result = node.operation.create(left, right);
+        ExpressionNode result = createResumableBinaryExpression(left, right, hadYieldSince(numYields), node.operation::create);
         // TODO the old parser assing ss only for the first. See parser test assignment03
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -559,25 +595,26 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(ComparisonSSTNode node) {
-        String operator;
         ExpressionNode left = (ExpressionNode) node.firstValue.accept(this);
         ExpressionNode right;
         ExpressionNode result = null;
         int opLen = node.operations.length;
         for (int i = 0; i < opLen; i++) {
-            operator = node.operations[i];
+            String operator = node.operations[i];
+            int numYields = getCurrentNumberOfYields();
             right = (ExpressionNode) node.otherValues[i].accept(this);
+            boolean rightCanYield = hadYieldSince(numYields);
             ExpressionNode nextComp;
             if (right instanceof LiteralNode || right instanceof ReadNode || i == opLen - 1) {
-                nextComp = nodeFactory.createComparisonOperation(operator, left, right);
+                nextComp = createResumableBinaryExpression(left, right, rightCanYield, (l, r) -> nodeFactory.createComparisonOperation(operator, l, r));
                 left = right;
             } else {
                 ReadNode tmpVar = makeTempLocalVariable();
                 StatementNode tmpAssignment = tmpVar.makeWriteNode(right);
-                nextComp = nodeFactory.createComparisonOperation(operator, left, (ExpressionNode) tmpVar).withSideEffect(tmpAssignment);
+                nextComp = createResumableBinaryExpression(left, (ExpressionNode) tmpVar, rightCanYield, (l, r) -> nodeFactory.createComparisonOperation(operator, l, r)).withSideEffect(tmpAssignment);
                 left = (ExpressionNode) tmpVar;
             }
-            result = result == null ? nextComp : new AndNode(result, nextComp);
+            result = result == null ? nextComp : createResumableBinaryExpression(result, nextComp, rightCanYield, AndNode::new);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -1051,7 +1088,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(OrSSTNode node) {
         ExpressionNode last = (ExpressionNode) node.values[0].accept(this);
         for (int i = 1; i < node.values.length; i++) {
-            last = new OrNode(last, (ExpressionNode) node.values[i].accept(this));
+            int numYields = getCurrentNumberOfYields();
+            ExpressionNode right = (ExpressionNode) node.values[i].accept(this);
+            last = createResumableBinaryExpression(last, right, hadYieldSince(numYields), OrNode::new);
         }
         last.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return last;
