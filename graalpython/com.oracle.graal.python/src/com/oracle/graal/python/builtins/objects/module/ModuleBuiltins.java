@@ -54,30 +54,24 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -89,7 +83,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -168,7 +161,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                 }
             } else {
                 String name = getName(self, pol, hashLib, castToJavaStringNode);
-                throw this.raise(PythonBuiltinClassType.TypeError, "%s.__dict__ is not a dictionary", name);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, name);
             }
         }
 
@@ -180,7 +173,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                     return castToJavaStringNode.execute(name);
                 }
             }
-            throw raise(PythonBuiltinClassType.SystemError, "nameless module");
+            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.NAMELESS_MODULE);
         }
 
         protected static boolean isDict(Object object, IsBuiltinClassProfile profile) {
@@ -226,46 +219,6 @@ public class ModuleBuiltins extends PythonBuiltins {
         @Fallback
         Object raise(Object self, @SuppressWarnings("unused") Object dict) {
             throw raise(PythonBuiltinClassType.TypeError, "descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object", self);
-        }
-    }
-
-    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class DirNode extends PythonBuiltinNode {
-        @Specialization
-        public Object module(VirtualFrame frame, PythonModule self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getSortNode,
-                        @Cached CallNode callDirNode,
-                        @Cached CallNode callSortNode,
-                        @Cached GetDictStorageNode getDictStorageNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached PRaiseNode raiseNode) {
-            Object dict = getDictNode.executeObject(frame, self, __DICT__);
-            Object res;
-            if (dict instanceof PDict) {
-                Object dir = HashingStorageLibrary.getUncached().getItem(getDictStorageNode.execute((PHashingCollection) dict), __DIR__);
-                if (dir != null && dir != PNone.NO_VALUE) {
-                    res = callDirNode.execute(dir);
-                } else {
-                    HashingStorage storage = getDictStorageNode.execute((PHashingCollection) dict);
-                    HashingStorageIterator<Object> keys = lib.keys(storage).iterator();
-                    int len = lib.length(storage);
-                    Object[] a = new Object[len];
-                    for (int i = 0; keys.hasNext(); i++) {
-                        a[i] = keys.next();
-                    }
-                    res = PythonObjectFactory.getUncached().createList(a);
-                }
-            } else {
-                throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, self);
-            }
-            Object sort = getSortNode.executeObject(frame, res, SORT);
-            if (sort != PNone.NO_VALUE) {
-                callSortNode.execute(sort);
-            }
-            return res;
         }
     }
 
