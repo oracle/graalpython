@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.util.PythonUtils;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -617,7 +618,7 @@ public final class CApiContext extends CExtContext {
     @TruffleBoundary
     private static void doGc(long millis) {
         LOGGER.fine("full GC due to native memory");
-        System.gc();
+        PythonUtils.forceFullGC();
         try {
             Thread.sleep(millis);
         } catch (InterruptedException x) {
