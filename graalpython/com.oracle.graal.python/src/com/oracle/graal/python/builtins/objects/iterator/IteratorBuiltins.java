@@ -314,9 +314,8 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"}, limit = "getCallSiteInlineCacheMaxDepth()")
         public int lengthHint(VirtualFrame frame, PSequenceIterator self,
-                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib,
-                        @Cached ConditionProfile hasFrame) {
-            int len = lib.lengthWithFrame(self.getObject(), hasFrame, frame) - self.getIndex();
+                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib) {
+            int len = lib.lengthWithFrame(self.getObject(), frame) - self.getIndex();
             return len < 0 ? 0 : len;
         }
     }
