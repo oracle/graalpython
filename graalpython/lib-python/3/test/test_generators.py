@@ -2052,7 +2052,9 @@ RuntimeError: generator ignored GeneratorExit
 
 Our ill-behaved code should be invoked during GC:
 
->>> with support.catch_unraisable_exception() as cm:
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     g = f()
 ...     next(g)
 ...     del g
@@ -2166,7 +2168,12 @@ to test.
 ...             raise RuntimeError(message)
 ...         invoke("del failed")
 ...
->>> with support.catch_unraisable_exception() as cm:
+
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     l = Leaker()
 ...     del l
 ...
