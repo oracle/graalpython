@@ -278,6 +278,8 @@ public final class FormatStringParser {
                                 // double "\\" is skipped, note that "\\\N{...}" should still be
                                 // treated as \N escape sequence
                                 index++;
+                            } else if (lookahead(text, index, len, '{')) {
+                                StringUtils.warnInvalidEscapeSequence(errorCallback, text.charAt(index + 1));
                             } else if (lookahead(text, index, len, 'N', '{')) {
                                 // skip escape sequence \N{...}, it should not be treated as an
                                 // expression inside f-string, but \\N{...} should be left intact

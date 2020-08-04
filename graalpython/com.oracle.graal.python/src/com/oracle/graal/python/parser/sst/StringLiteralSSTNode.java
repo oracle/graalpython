@@ -197,7 +197,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                 }
                 if (!isRaw && !isFormat) {
                     try {
-                        text = StringUtils.unescapeJavaString(text);
+                        text = StringUtils.unescapeJavaString(errors, text);
                     } catch (PException e) {
                         e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
                         String message = e.getMessage();
@@ -224,7 +224,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                     formatStringLiterals.ensureCapacity(formatStringLiterals.size() + literals.length);
                     for (int i = 0; i < literals.length; i++) {
                         if (literals[i] != null && !isRaw) {
-                            literals[i] = StringUtils.unescapeJavaString(literals[i]);
+                            literals[i] = StringUtils.unescapeJavaString(errors, literals[i]);
                         }
                         formatStringLiterals.add(literals[i]);
                     }

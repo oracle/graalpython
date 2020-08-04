@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public class StringUtils {
@@ -79,11 +80,12 @@ public class StringUtils {
         return null;
     }
 
-    public static String unescapeJavaString(String st) {
+    public static String unescapeJavaString(ParserErrorCallback errorCallback, String st) {
         if (st.indexOf("\\") == -1) {
             return st;
         }
         StringBuilder sb = new StringBuilder(st.length());
+        boolean wasDeprecationWarning = false;
         for (int i = 0; i < st.length(); i++) {
             char ch = st.charAt(i);
             if (ch == '\\') {
@@ -180,6 +182,10 @@ public class StringUtils {
                         i = doCharacterName(st, sb, i + 2);
                         continue;
                     default:
+                        if (!wasDeprecationWarning) {
+                            wasDeprecationWarning = true;
+                            warnInvalidEscapeSequence(errorCallback, nextChar);
+                        }
                         sb.append(ch);
                         sb.append(nextChar);
                         i++;
@@ -190,6 +196,10 @@ public class StringUtils {
             sb.append(ch);
         }
         return sb.toString();
+    }
+
+    public static void warnInvalidEscapeSequence(ParserErrorCallback errorCallback, char nextChar) {
+        errorCallback.warn("DeprecationWarning", "invalid escape sequence '\\%c'", nextChar);
     }
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";

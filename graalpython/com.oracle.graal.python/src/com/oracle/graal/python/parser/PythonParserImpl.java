@@ -389,8 +389,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
     @Override
     @TruffleBoundary
-    public String unescapeJavaString(String str) {
-        return StringUtils.unescapeJavaString(str);
+    public String unescapeJavaString(PythonCore core, String str) {
+        return StringUtils.unescapeJavaString(core, str);
     }
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
