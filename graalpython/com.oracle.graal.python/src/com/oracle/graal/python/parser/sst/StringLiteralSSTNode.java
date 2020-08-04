@@ -196,14 +196,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                     throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), CANNOT_MIX_MESSAGE);
                 }
                 if (!isRaw && !isFormat) {
-                    try {
-                        text = StringUtils.unescapeJavaString(errors, text);
-                    } catch (PException e) {
-                        e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
-                        String message = e.getMessage();
-                        message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
-                        throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
-                    }
+                    text = unescapeString(startOffset, endOffset, source, errors, text);
                 }
                 if (isFormat) {
                     isFormatString = true;
@@ -224,7 +217,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                     formatStringLiterals.ensureCapacity(formatStringLiterals.size() + literals.length);
                     for (int i = 0; i < literals.length; i++) {
                         if (literals[i] != null && !isRaw) {
-                            literals[i] = StringUtils.unescapeJavaString(errors, literals[i]);
+                            literals[i] = unescapeString(startOffset, endOffset, source, errors, literals[i]);
                         }
                         formatStringLiterals.add(literals[i]);
                     }
@@ -252,5 +245,16 @@ public abstract class StringLiteralSSTNode extends SSTNode {
             return new FormatStringLiteralSSTNode(formatStringsArr, literals, expressions, expressionsSources, startOffset, endOffset);
         }
         return new RawStringLiteralSSTNode(sb == null ? "" : sb.toString(), startOffset, endOffset);
+    }
+
+    private static String unescapeString(int startOffset, int endOffset, Source source, ParserErrorCallback errors, String text) {
+        try {
+            return StringUtils.unescapeJavaString(errors, text);
+        } catch (PException e) {
+            e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
+            String message = e.getMessage();
+            message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
+            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
+        }
     }
 }
