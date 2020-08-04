@@ -278,10 +278,16 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     }
 
     /**
-     * @see #format_c(int)
+     * Format the value as a character (into {@link #result}).
+     *
+     * @param value to convert
      */
-    void format_c(@SuppressWarnings("unused") BigInteger value) {
-        throw unknownFormat(errors, spec.type, "integer");
+    final void format_c(BigInteger value) {
+        assert !bytes; // for bytes we use directly BytesFormatter
+        if (value.signum() < 0 || value.compareTo(LIMIT_UNICODE) >= 0) {
+            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+        }
+        result.appendCodePoint(value.intValue());
     }
 
     // Limits used in format_c(BigInteger)
@@ -347,8 +353,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
                     break;
 
                 default:
-                    // Should never get here, since this was checked in caller.
-                    throw unknownFormat(errors, spec.type, "integer");
+                    throw unknownFormat(errors, spec.type, "int");
             }
 
             // If required to, group the whole-part digits.
@@ -453,12 +458,16 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     }
 
     /**
-     * Format the value as a character (into {@link #result}). Note: 'c' format is not supported in
-     * format builtin, but supported in the printf-style formatting. This method is overridden by
-     * the {@link Traditional} subclass.
+     * Format the value as a character (into {@link #result}).
+     *
+     * @param value to convert
      */
-    void format_c(@SuppressWarnings("unused") int value) {
-        throw unknownFormat(errors, spec.type, "integer");
+    final void format_c(int value) {
+        assert !bytes; // for bytes we use directly BytesFormatter
+        if (value < 0 || value >= LIMIT_UNICODE.intValue()) {
+            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+        }
+        result.appendCodePoint(value);
     }
 
     /**
@@ -638,34 +647,6 @@ public class IntegerFormatter extends InternalFormat.Formatter {
          */
         public Traditional(PythonCore core, FormattingBuffer result, Spec spec) {
             super(core, result, spec);
-        }
-
-        /**
-         * Format the value as a character (into {@link #result}).
-         *
-         * @param value to convert
-         */
-        @Override
-        void format_c(BigInteger value) {
-            assert !bytes; // for bytes we use directly BytesFormatter
-            if (value.signum() < 0 || value.compareTo(LIMIT_UNICODE) >= 0) {
-                throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
-            }
-            result.appendCodePoint(value.intValue());
-        }
-
-        /**
-         * Format the value as a character (into {@link #result}).
-         *
-         * @param value to convert
-         */
-        @Override
-        void format_c(int value) {
-            assert !bytes; // for bytes we use directly BytesFormatter
-            if (value < 0 || value >= LIMIT_UNICODE.intValue()) {
-                throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
-            }
-            result.appendCodePoint(value);
         }
 
         @Override

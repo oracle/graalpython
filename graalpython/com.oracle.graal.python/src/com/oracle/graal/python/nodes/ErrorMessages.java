@@ -381,7 +381,6 @@ public abstract class ErrorMessages {
     public static final String NON_STRING_IN_CODE_SLOT = "non-string found in code slot";
     public static final String NOT_A_ZIP_FILE = "not a Zip file: '%s'";
     public static final String NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING = "not all arguments converted during %s formatting";
-    public static final String NOT_ALLOWED_S_S_FORMAT_SPECIFIERS_S = "%s not allowed %s%s format specifier%s";
     public static final String NOT_ENOUGH_ARGS_FOR_FORMAT_STRING = "not enough arguments for format string";
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
     public static final String NOT_SUPPORTED_BETWEEN_INSTANCES = "'%s' not supported between instances of '%p' and '%p'";
@@ -541,11 +540,14 @@ public abstract class ErrorMessages {
     public static final String POW_BASE_NOT_INVERTIBLE = "base is not invertible for the given modulus";
     public static final String POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = "0.0 cannot be raised to a negative power";
     public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
+    public static final String EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT = "'=' alignment not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
     public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
     public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";
+    public static final String ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT = "Alternate form (#) not allowed with integer format specifier 'c'";
+    public static final String ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT = "Alternate form (#) not allowed in string format specifier";
     public static final String CAPI_LOAD_ERROR = "Could not load C API from %s.";
     public static final String NATIVE_ACCESS_NOT_ALLOWED = "Cannot run any C extensions because native access is not allowed.";
     public static final String HPY_LOAD_ERROR = "Could not load HPy C API from %s.";

@@ -180,7 +180,7 @@ public final class StringBuiltins extends PythonBuiltins {
         Object format(Object self, String formatString,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
             String str = castToJavaStringNode.cast(self, INVALID_RECEIVER, __STR__, self);
-            return formatString(getCore(), formatString, str);
+            return formatString(getCore(), getAndValidateSpec(formatString), str);
         }
 
         @Fallback
@@ -188,9 +188,22 @@ public final class StringBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", formatString);
         }
 
+        private Spec getAndValidateSpec(String formatString) {
+            Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
+            if (Spec.specified(spec.type) && spec.type != 's') {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNKNOWN_FORMAT_CODE, spec.type, "str");
+            }
+            if (spec.alternate) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT);
+            }
+            if (Spec.specified(spec.align) && spec.align == '=') {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT);
+            }
+            return spec;
+        }
+
         @TruffleBoundary
-        private static Object formatString(PythonCore core, String formatString, String str) {
-            Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+        private static Object formatString(PythonCore core, Spec spec, String str) {
             TextFormatter formatter = new TextFormatter(core, spec.withDefaults(Spec.STRING));
             formatter.format(str);
             return formatter.pad().getResult();
