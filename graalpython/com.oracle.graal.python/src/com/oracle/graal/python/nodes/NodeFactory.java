@@ -255,10 +255,8 @@ public class NodeFactory {
         return DictLiteralNodeFactory.create(new ExpressionNode[0], new ExpressionNode[0]);
     }
 
-    public ExpressionNode createDictLiteral(List<ExpressionNode> keys, List<ExpressionNode> values) {
-        ExpressionNode[] convertedKeys = keys.toArray(new ExpressionNode[keys.size()]);
-        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
-        return DictLiteralNodeFactory.create(convertedKeys, convertedValues);
+    public ExpressionNode createDictLiteral(ExpressionNode[] keys, ExpressionNode[] values) {
+        return DictLiteralNodeFactory.create(keys, values);
     }
 
     public TupleLiteralNode createTupleLiteral(ExpressionNode... values) {
