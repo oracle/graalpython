@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -278,43 +277,47 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public double lengthHint(PDoubleSequenceIterator self) {
+        public int lengthHint(PDoubleSequenceIterator self) {
             int len = self.sequence.length() - self.getIndex();
             return len < 0 ? 0 : len;
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public long lengthHint(PLongSequenceIterator self) {
+        public int lengthHint(PLongSequenceIterator self) {
             int len = self.sequence.length() - self.getIndex();
             return len < 0 ? 0 : len;
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public long lengthHint(PBaseSetIterator self,
+        public int lengthHint(PBaseSetIterator self,
                         @Cached ConditionProfile profile) {
             int size = self.getSize();
             if (profile.profile(self.getSet().size() != size)) {
                 return 0;
             }
-            return size - self.getIndex();
+            int len = size - self.getIndex();
+            return len < 0 ? 0 : len;
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public Object lengthHint(PStringIterator self) {
-            return self.value.length() - self.getIndex();
+        public int lengthHint(PStringIterator self) {
+            int len = self.value.length() - self.getIndex();
+            return len < 0 ? 0 : len;
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
-        public Object lengthHint(PSequenceIterator self,
+        public int lengthHint(PSequenceIterator self,
                         @Cached SequenceNodes.LenNode lenNode) {
-            return lenNode.execute(self.getPSequence()) - self.getIndex();
+            int len = lenNode.execute(self.getPSequence()) - self.getIndex();
+            return len < 0 ? 0 : len;
         }
 
-        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
-        public Object lengthHint(VirtualFrame frame, PSequenceIterator self,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
-                        @Cached("create(__SUB__, __RSUB__)") LookupAndCallBinaryNode callSub) {
-            return callSub.executeObject(frame, callLen.executeObject(frame, self.getObject()), self.getIndex());
+        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        public int lengthHint(VirtualFrame frame, PSequenceIterator self,
+                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib,
+                        @Cached ConditionProfile hasFrame) {
+            int len = lib.lengthWithFrame(self.getObject(), hasFrame, frame) - self.getIndex();
+            return len < 0 ? 0 : len;
         }
     }
 

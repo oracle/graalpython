@@ -40,20 +40,29 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class IteratorNodes {
 
@@ -83,25 +92,53 @@ public abstract class IteratorNodes {
         int length(VirtualFrame frame, Object iterable,
                         @CachedLibrary("iterable") PythonObjectLibrary plib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary toInt,
-                        @Cached CastToJavaIntLossyNode cast,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode lenNode,
                         @Cached("create(__LENGTH_HINT__)") LookupAttributeInMRONode lenHintNode,
-                        @Cached CallUnaryMethodNode dispatchGetattribute) {
-            Object len;
+                        @Cached CallUnaryMethodNode dispatchGetattribute,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached ConditionProfile hasLenProfile,
+                        @Cached ConditionProfile hasLenghtHintProfile,
+                        @Cached PRaiseNode raiseNode) {
             Object clazz = plib.getLazyPythonClass(iterable);
             Object attrLenObj = lenNode.execute(clazz);
-            if (attrLenObj != PNone.NO_VALUE && attrLenObj != PNone.NONE) {
-                len = dispatchGetattribute.executeObject(frame, attrLenObj, iterable);
-            } else {
-                Object attrLenHintObj = lenHintNode.execute(clazz);
-                if (attrLenHintObj != PNone.NO_VALUE && attrLenHintObj != PNone.NONE) {
-                    len = dispatchGetattribute.executeObject(frame, attrLenHintObj, iterable);
-                } else {
-                    return -1;
+            if (hasLenProfile.profile(attrLenObj != PNone.NO_VALUE)) {
+                Object len = null;
+                try {
+                    len = dispatchGetattribute.executeObject(frame, attrLenObj, iterable);
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                }
+                if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
+                    if (toInt.canBeIndex(len)) {
+                        int intLen = toInt.asSize(len);
+                        if (intLen < 0) {
+                            throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                        }
+                        return intLen;
+                    } else {
+                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER, __LEN__, len);
+                    }
                 }
             }
-            if (toInt.canBeIndex(len)) {
-                return cast.execute(toInt.asIndex(len));
+            Object attrLenHintObj = lenHintNode.execute(clazz);
+            if (hasLenghtHintProfile.profile(attrLenHintObj != PNone.NO_VALUE)) {
+                Object len = null;
+                try {
+                    len = dispatchGetattribute.executeObject(frame, attrLenHintObj, iterable);
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                }
+                if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
+                    if (toInt.canBeIndex(len)) {
+                        int intLen = toInt.asSize(len);
+                        if (intLen < 0) {
+                            throw raiseNode.raise(TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
+                        }
+                        return intLen;
+                    } else {
+                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER, __LENGTH_HINT__, len);
+                    }
+                }
             }
             return -1;
         }

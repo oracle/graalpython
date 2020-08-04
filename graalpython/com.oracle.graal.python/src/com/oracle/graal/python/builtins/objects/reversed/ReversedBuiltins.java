@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
 public class ReversedBuiltins extends PythonBuiltins {
@@ -132,7 +133,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
-        public Object lengthHint(PSequenceReverseIterator self,
+        public int lengthHint(PSequenceReverseIterator self,
                         @Cached SequenceNodes.LenNode lenNode) {
             int len = lenNode.execute(self.getPSequence());
             if (len == -1) {
@@ -144,15 +145,15 @@ public class ReversedBuiltins extends PythonBuiltins {
             return self.index + 1;
         }
 
-        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
-        public Object lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
-                        @Cached("create(__ADD__, __RADD__)") LookupAndCallBinaryNode callAdd) {
-            Object len = callLen.executeObject(frame, self.getObject());
-            if (len == PNone.NO_VALUE || len == PNone.NONE) {
-                throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        public int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
+                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib,
+                        @Cached ConditionProfile hasFrame) {
+            int len = lib.lengthWithFrame(self.getObject(), hasFrame, frame);
+            if (len < self.index) {
+                return 0;
             }
-            return callAdd.executeObject(frame, self.index, 1);
+            return self.index + 1;
         }
     }
 

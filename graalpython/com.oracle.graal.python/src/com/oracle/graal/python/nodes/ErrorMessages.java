@@ -316,6 +316,7 @@ public abstract class ErrorMessages {
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
     public static final String LEN_SHOULD_RETURN_MT_ZERO = "__len__() should return >= 0";
+    public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
     public static final String LIST_LENGTH_OUT_OF_RANGE = "list length out of range";
@@ -340,6 +341,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
+    public static final String MUST_BE_INTEGER = "%s must be an integer, not %p";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
@@ -545,4 +547,5 @@ public abstract class ErrorMessages {
     public static final String NATIVE_ACCESS_NOT_ALLOWED = "Cannot run any C extensions because native access is not allowed.";
     public static final String HPY_LOAD_ERROR = "Could not load HPy C API from %s.";
     public static final String CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = "can't convert negative value to unsigned int";
+    public static final String SEND_NON_NONE_TO_UNSTARTED_GENERATOR = "can't send non-None value to a just-started generator";
 }

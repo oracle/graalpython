@@ -143,7 +143,8 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     private void catchExceptionInGeneratorCached(VirtualFrame frame) {
         ExceptNode[] exceptNodes = getExceptNodes();
         CompilerAsserts.compilationConstant(exceptNodes);
-        PException exception = gen.getActiveException(frame, activeExceptionIndex);
+        // try-except only stores PExceptions
+        PException exception = (PException) gen.getActiveException(frame, activeExceptionIndex);
         final int matchingExceptNodeIndex = gen.getIndex(frame, exceptIndex);
         assert matchingExceptNodeIndex <= exceptNodes.length;
         boolean wasHandled = false;
