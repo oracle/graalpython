@@ -124,6 +124,8 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.graal.python.runtime.formatting.TextFormatter;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -139,6 +141,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -1498,19 +1501,22 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"left.length() > 1", "right > 0"})
-        String doStringInt(String left, int right) {
-            return repeatString(left, right);
+        String doStringInt(String left, int right,
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile) {
+            return repeatString(left, right, loopProfile);
         }
 
         @Specialization(limit = "1")
         String doStringLong(String left, long right,
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Exclusive @CachedLibrary("right") PythonObjectLibrary lib) {
-            return doStringIntGeneric(left, lib.asSize(right));
+            return doStringIntGeneric(left, lib.asSize(right), loopProfile);
         }
 
         @Specialization
         String doStringObject(VirtualFrame frame, String left, Object right,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
             try {
@@ -1520,7 +1526,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 } else {
                     repeat = lib.asSize(right);
                 }
-                return doStringIntGeneric(left, repeat);
+                return doStringIntGeneric(left, repeat, loopProfile);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
                 throw raise(MemoryError);
@@ -1529,39 +1535,45 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object times,
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
-            return doStringObject(frame, selfStr, times, hasFrame, lib, typeErrorProfile);
+            return doStringObject(frame, selfStr, times, hasFrame, loopProfile, lib, typeErrorProfile);
         }
 
-        public String doStringIntGeneric(String left, int right) {
+        public String doStringIntGeneric(String left, int right, LoopConditionProfile loopProfile) {
             if (right <= 0) {
                 return "";
             }
-            return repeatString(left, right);
+            return repeatString(left, right, loopProfile);
         }
 
-        @TruffleBoundary
-        private String repeatString(String left, int times) {
+        private String repeatString(String left, int times, LoopConditionProfile loopProfile) {
             try {
-                int total = Math.multiplyExact(left.length(), times);
+                int total;
+                try {
+                    total = PythonUtils.multiplyExact(left.length(), times);
+                } catch (OverflowException ex) {
+                    throw raise(MemoryError);
+                }
                 char[] result = new char[total];
-                left.getChars(0, left.length(), result, 0);
+                PythonUtils.getChars(left, 0, left.length(), result, 0);
                 int done = left.length();
-                while (done < total) {
+                while (loopProfile.profile(done < total)) {
                     int todo = total - done;
                     int len = Math.min(done, todo);
-                    System.arraycopy(result, 0, result, done, len);
+                    PythonUtils.arraycopy(result, 0, result, done, len);
                     done += len;
                 }
                 return new String(result);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             }
         }
+
     }
 
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)

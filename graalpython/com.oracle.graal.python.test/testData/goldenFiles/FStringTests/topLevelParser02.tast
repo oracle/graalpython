@@ -37,6 +37,14 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
                     flagSlot: 0
                     FormatStringLiteralNode SourceSection: [8,17]`f'{name}'`
                       Values: <f>{name}
+                      PythonCallUnary SourceSection: [0,14]`format((name))`
+                        CallUnaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                          Identifier: format
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [8,12]`name`
+                          Frame: [0,name,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: name

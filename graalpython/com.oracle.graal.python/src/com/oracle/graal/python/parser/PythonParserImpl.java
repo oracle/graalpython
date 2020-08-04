@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
+import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
@@ -71,7 +72,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-public final class PythonParserImpl implements PythonParser, PythonCodeSerializer {
+public final class PythonParserImpl implements PythonParser, PythonCodeSerializer, FStringExprParser {
 
     private final boolean logFiles;
     private final int timeStatistics;
@@ -88,17 +89,23 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         this.timeStatistics = env.getOptions().get(PythonOptions.ParserStatistics);
     }
 
-    private static Python3Parser getPython3Parser(Source source, String sourceText, ParserErrorCallback errors) {
+    private static Python3Parser getPython3Parser(String sourceText) {
         Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(sourceText));
         lexer.removeErrorListeners();
         lexer.addErrorListener(ERROR_LISTENER);
         Python3Parser parser = new Python3Parser(new CommonTokenStream(lexer));
         parser.setBuildParseTree(false);
-        parser.setFactory(new PythonSSTNodeFactory(errors, source));
         parser.removeErrorListeners();
         parser.addErrorListener(ERROR_LISTENER);
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
+    }
+
+    @Override
+    public SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory) {
+        Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstring-expr>").build();
+        return parseWithANTLR(ParserMode.FStringExpression, PythonLanguage.getCore(), nodeFactory, source, null,
+                        null).antlrResult;
     }
 
     @Override
@@ -111,7 +118,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         CacheItem lastParserResult = cachedLastAntlrResult;
         if (!source.equals(lastParserResult.source)) {
             // we need to parse the source again
-            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source);
+            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source, this);
             lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null, null);
         }
         try {
@@ -176,7 +183,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             return new BadOPCodeNode(PythonLanguage.getCore().getLanguage());
         }
         PythonCore core = PythonLanguage.getCore();
-        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source);
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, this);
+
         sstFactory.getScopeEnvironment().setGlobalScope(globalScope);
         ParserMode mode = sstNode instanceof BlockSSTNode ? ParserMode.File : ParserMode.Deserialization;
         try {
@@ -286,13 +294,15 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             throw errors.raiseInvalidSyntax(ErrorType.Indentation, source, source.createSection(0, matcher.end(1)), "unexpected indent");
         }
         // ANTLR parsing
-        Python3Parser parser = getPython3Parser(source, sourceText, errors);
+        Python3Parser parser = getPython3Parser(sourceText);
         parser.setFactory(sstFactory);
+        parser.setParserMode(mode);
         SSTNode parserSSTResult = null;
 
         try {
             switch (mode) {
                 case Eval:
+                case FStringExpression:
                     parserSSTResult = parser.eval_input().result;
                     break;
                 case File:
@@ -344,7 +354,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
     @TruffleBoundary
     public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
-        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source);
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source, this);
         CacheItem parserSSTResult = parseWithANTLR(mode, errors, sstFactory, source, currentFrame, argumentNames);
         try {
             return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame);

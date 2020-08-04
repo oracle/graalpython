@@ -185,3 +185,24 @@ def test_overridden_str():
     assert "{0:10}".format(MyInt(2)) == "         2"
     assert format(MyInt(2), "")  == "42"
     assert format(MyInt(2), "5") == "    2"
+
+
+def test_fstring():
+    class CustomFormat:
+        def __format__(self, format_spec):
+            return format_spec
+
+    x = CustomFormat()
+    assert f'{x:={1=}}' == "=1=1"
+    # blank spaces after '=' are fine
+    assert f'{42=   :<10}' == '42=   42        '
+    # curly braces in expressions
+    assert f'{len({})}' == '0'
+    assert f'{10:#{(len({1,2,3,4,5}))}}' == '   10'
+    # square brackets in expressions
+    aligns = ['<', '>']
+    align = 0
+    assert f'{3:{aligns[align]}{5}}' == '3    '
+    # this is not walrus but 'x' with a format specifier "=10"
+    x = 20
+    assert f'{x:=10}' == '        20'

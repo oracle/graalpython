@@ -56,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -132,7 +133,7 @@ import com.oracle.truffle.api.source.SourceSection;
 public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     protected final ScopeEnvironment scopeEnvironment;
-    protected final Source source;
+    protected Source source;
     protected final NodeFactory nodeFactory;
     protected final PythonParser.ParserErrorCallback errors;
 
@@ -1149,7 +1150,14 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
-        PNode result = nodeFactory.createFormatStringLiteral(node.value);
+        ExpressionNode[] exprs = new ExpressionNode[node.expressions.length];
+        Source prev = this.source;
+        for (int i = 0; i < node.expressions.length; i++) {
+            this.source = Source.newBuilder(PythonLanguage.ID, node.expresionsSources[i], "<fstring-expr>").build();
+            exprs[i] = (ExpressionNode) node.expressions[i].accept(this);
+        }
+        this.source = prev;
+        PNode result = nodeFactory.createFormatStringLiteral(node.value, exprs, node.literals);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }

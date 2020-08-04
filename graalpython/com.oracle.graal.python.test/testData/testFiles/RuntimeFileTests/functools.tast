@@ -3271,6 +3271,27 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       YieldNode SourceSection: [10496,10508]`f"{k}={v!r}"`
                                                         flagSlot: 0
                                                         FormatStringLiteralNode SourceSection: [10496,10508]`f"{k}={v!r}"`
+                                                          PythonCallUnary SourceSection: [0,11]`format((k))`
+                                                            CallUnaryMethodNodeGen SourceSection: None
+                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                              Identifier: format
+                                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [8,9]`k`
+                                                              Frame: [0,k,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                          PythonCallUnary SourceSection: [0,17]`format(repr((v)))`
+                                                            CallUnaryMethodNodeGen SourceSection: None
+                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                              Identifier: format
+                                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                            PythonCallUnary SourceSection: [7,16]`repr((v))`
+                                                              CallUnaryMethodNodeGen SourceSection: None
+                                                              ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                                                Identifier: repr
+                                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                              ReadGeneratorFrameVariableNode SourceSection: [13,14]`v`
+                                                                Frame: [1,v,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
                                                     DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -3355,6 +3376,26 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,<return_val>,Illegal]
                                             FormatStringLiteralNode SourceSection: [10614,10656]`f"functools.{qualnam...`
+                                              PythonCallUnary SourceSection: [0,18]`format((qualname))`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                  Identifier: format
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [8,16]`qualname`
+                                                  Frame: [1,qualname,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [0,25]`format((', '.join(ar...`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                  Identifier: format
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [8,23]`', '.join(args)`
+                                                  CallUnaryMethodNodeGen SourceSection: None
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    StringLiteralNode SourceSection: [8,12]`', '`
+                                                  ReadLocalVariableNode SourceSection: [18,22]`args`
+                                                    Frame: [2,args,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [10665,10704]`return f"{qualname}(...`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -3362,6 +3403,26 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,<return_val>,Illegal]
                                           FormatStringLiteralNode SourceSection: [10672,10704]`f"{qualname}({', '.j...`
+                                            PythonCallUnary SourceSection: [0,18]`format((qualname))`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [8,16]`qualname`
+                                                Frame: [1,qualname,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            PythonCallUnary SourceSection: [0,25]`format((', '.join(ar...`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [8,23]`', '.join(args)`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                GetCallAttributeNodeGen SourceSection: None
+                                                  StringLiteralNode SourceSection: [8,12]`', '`
+                                                ReadLocalVariableNode SourceSection: [18,22]`args`
+                                                  Frame: [2,args,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3573,6 +3634,19 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FormatStringLiteralNode SourceSection: [11062,11108]`f"expected 4 items i...`
+                                            PythonCallUnary SourceSection: [0,20]`format((len(state)))...`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                Identifier: format
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [8,18]`len(state)`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [8,11]`len`
+                                                  Identifier: len
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12,17]`state`
+                                                  Frame: [1,state,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [11118,11153]`func, args, kwds, na...`
@@ -9472,6 +9546,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 FormatStringLiteralNode SourceSection: [31122,31303]`f"Invalid first argu...`
+                                                  PythonCallUnary SourceSection: [0,19]`format(repr((cls)))`
+                                                    CallUnaryMethodNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                      Identifier: format
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                    PythonCallUnary SourceSection: [7,18]`repr((cls))`
+                                                      CallUnaryMethodNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                                        Identifier: repr
+                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                      ReadLocalCellNodeGen SourceSection: [13,16]`cls`
+                                                        ReadLocalVariableNode SourceSection: None
+                                                          Frame: [0,cls,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadFromCellNodeGen SourceSection: None
                                               NoValueNode SourceSection: None
                                             BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [31334,31344]`func = cls`
@@ -9562,6 +9651,34 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             FormatStringLiteralNode SourceSection: [31588,31650]`f"Invalid annotation...`
+                                              PythonCallUnary SourceSection: [0,23]`format(repr((argname...`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                  Identifier: format
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [7,22]`repr((argname))`
+                                                  CallUnaryMethodNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                                    Identifier: repr
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [13,20]`argname`
+                                                    Frame: [4,argname,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonCallUnary SourceSection: [0,19]`format(repr((cls)))`
+                                                CallUnaryMethodNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [0,6]`format`
+                                                  Identifier: format
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonCallUnary SourceSection: [7,18]`repr((cls))`
+                                                  CallUnaryMethodNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [7,11]`repr`
+                                                    Identifier: repr
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  ReadLocalCellNodeGen SourceSection: [13,16]`cls`
+                                                    ReadLocalVariableNode SourceSection: None
+                                                      Frame: [0,cls,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadFromCellNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       SetItemNodeGen SourceSection: [31673,31693]`registry[cls] = func...`
                                         ReadLocalCellNodeGen SourceSection: None

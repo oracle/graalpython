@@ -657,7 +657,20 @@ public final class SSTDeserializer {
             String text = readString();
             value[i] = new StringPart(text, isFormatString);
         }
-        return new StringLiteralSSTNode.FormatStringLiteralSSTNode(value, startOffset, endOffset);
+        String[] literals = new String[readInt()];
+        for (int i = 0; i < literals.length; i++) {
+            String s = readString();
+            literals[i] = s.isEmpty() ? null : s;
+        }
+        SSTNode[] expressions = new SSTNode[readInt()];
+        for (int i = 0; i < expressions.length; i++) {
+            expressions[i] = readNode();
+        }
+        String[] exprsSources = new String[expressions.length];
+        for (int i = 0; i < exprsSources.length; i++) {
+            exprsSources[i] = readString();
+        }
+        return new StringLiteralSSTNode.FormatStringLiteralSSTNode(value, literals, expressions, exprsSources, startOffset, endOffset);
     }
 
     private SSTNode readSubscript() throws IOException {

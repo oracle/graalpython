@@ -47,8 +47,11 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.parser.PythonSSTNodeFactory;
+import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.source.Source;
@@ -92,10 +95,20 @@ public abstract class StringLiteralSSTNode extends SSTNode {
     public static final class FormatStringLiteralSSTNode extends StringLiteralSSTNode {
 
         protected FormatStringLiteralNode.StringPart[] value;
+        /** Either a String literal or null for slots where we should use expression value */
+        protected final String[] literals;
+        /** Expressions, the size of this array is the number of null slots in the literals array */
+        protected final SSTNode[] expressions;
+        /** Generated sources of the expressions */
+        protected final String[] expresionsSources;
 
-        protected FormatStringLiteralSSTNode(FormatStringLiteralNode.StringPart[] value, int startIndex, int endIndex) {
+        protected FormatStringLiteralSSTNode(FormatStringLiteralNode.StringPart[] value, String[] literals, SSTNode[] expressions, String[] expresionsSources, int startIndex, int endIndex) {
             super(startIndex, endIndex);
+            assert expressions.length == expresionsSources.length;
             this.value = value;
+            this.literals = literals;
+            this.expressions = expressions;
+            this.expresionsSources = expresionsSources;
         }
 
         @Override
@@ -126,11 +139,15 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         }
     }
 
-    public static StringLiteralSSTNode create(String[] values, int startOffset, int endOffset, Source source, PythonParser.ParserErrorCallback errors) {
+    public static StringLiteralSSTNode create(String[] values, int startOffset, int endOffset, Source source, ParserErrorCallback errors, PythonSSTNodeFactory nodeFactory,
+                    FStringExprParser exprParser) {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
         List<FormatStringLiteralNode.StringPart> formatStrings = null;
+        ArrayList<String> formatStringLiterals = null;
+        ArrayList<SSTNode> formatStringExpressions = null;
+        ArrayList<String> formatStringExprsSources = null;
         for (String text : values) {
             boolean isRaw = false;
             boolean isBytes = false;
@@ -178,7 +195,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                 if (bb != null) {
                     throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), CANNOT_MIX_MESSAGE);
                 }
-                if (!isRaw) {
+                if (!isRaw && !isFormat) {
                     try {
                         text = StringUtils.unescapeJavaString(text);
                     } catch (PException e) {
@@ -192,12 +209,25 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                     isFormatString = true;
                     if (formatStrings == null) {
                         formatStrings = new ArrayList<>();
+                        formatStringLiterals = new ArrayList<>();
+                        formatStringExpressions = new ArrayList<>();
+                        formatStringExprsSources = new ArrayList<>();
                     }
                     if (sb != null && sb.length() > 0) {
-                        formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
+                        String part = sb.toString();
+                        formatStrings.add(new FormatStringLiteralNode.StringPart(part, false));
+                        formatStringLiterals.add(part);
                         sb = null;
                     }
-                    formatStrings.add(new FormatStringLiteralNode.StringPart(text, true));
+                    formatStrings.add(new StringPart(text, true));
+                    String[] literals = FormatStringParser.parse(formatStringExpressions, formatStringExprsSources, errors, text, nodeFactory, exprParser);
+                    formatStringLiterals.ensureCapacity(formatStringLiterals.size() + literals.length);
+                    for (int i = 0; i < literals.length; i++) {
+                        if (literals[i] != null) {
+                            literals[i] = StringUtils.unescapeJavaString(literals[i]);
+                        }
+                        formatStringLiterals.add(literals[i]);
+                    }
                 } else {
                     if (sb == null) {
                         sb = new StringBuilder();
@@ -211,9 +241,15 @@ public abstract class StringLiteralSSTNode extends SSTNode {
             return new BytesLiteralSSTNode(bb.build(), startOffset, endOffset);
         } else if (isFormatString) {
             if (sb != null && sb.length() > 0) {
-                formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
+                String part = sb.toString();
+                formatStrings.add(new FormatStringLiteralNode.StringPart(part, false));
+                formatStringLiterals.add(part);
             }
-            return new FormatStringLiteralSSTNode(formatStrings.toArray(new FormatStringLiteralNode.StringPart[formatStrings.size()]), startOffset, endOffset);
+            StringPart[] formatStringsArr = formatStrings.toArray(new StringPart[formatStrings.size()]);
+            String[] literals = formatStringLiterals.toArray(new String[formatStringLiterals.size()]);
+            SSTNode[] expressions = formatStringExpressions.toArray(new SSTNode[formatStringExpressions.size()]);
+            String[] expressionsSources = formatStringExprsSources.toArray(new String[formatStringExprsSources.size()]);
+            return new FormatStringLiteralSSTNode(formatStringsArr, literals, expressions, expressionsSources, startOffset, endOffset);
         }
         return new RawStringLiteralSSTNode(sb == null ? "" : sb.toString(), startOffset, endOffset);
     }
