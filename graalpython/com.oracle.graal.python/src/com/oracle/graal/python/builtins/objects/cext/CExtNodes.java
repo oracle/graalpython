@@ -364,12 +364,7 @@ public abstract class CExtNodes {
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (CApiGuards.isSmallInteger(i)) {
-                if (CompilerDirectives.inInterpreter()) {
-                    return doIntegerSmall(cextContext, i, contextRef);
-                } else {
-                    // for explanation: see method doc
-                    return doIntegerSmall(cextContext, i, contextRef).copy();
-                }
+                return doIntegerSmall(cextContext, i, contextRef);
             }
             return PrimitiveNativeWrapper.createInt(i);
         }
@@ -388,12 +383,7 @@ public abstract class CExtNodes {
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (CApiGuards.isSmallLong(l)) {
-                // for explanation of this construct: see 'ToSulongNode.doInteger'
-                if (CompilerDirectives.inInterpreter()) {
-                    return doLongSmall(cextContext, l, contextRef);
-                } else {
-                    return doLongSmall(cextContext, l, contextRef).copy();
-                }
+                return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
         }
@@ -622,12 +612,7 @@ public abstract class CExtNodes {
         static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (CApiGuards.isSmallInteger(i)) {
-                // for explanation of this construct: see 'ToSulongNode.doInteger'
-                if (CompilerDirectives.inInterpreter()) {
-                    return doIntegerSmall(cextContext, i, contextRef);
-                } else {
-                    return doIntegerSmall(cextContext, i, contextRef).copy();
-                }
+                return doIntegerSmall(cextContext, i, contextRef);
             }
             return PrimitiveNativeWrapper.createInt(i);
         }
@@ -636,12 +621,7 @@ public abstract class CExtNodes {
         static PrimitiveNativeWrapper doLong(CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (CApiGuards.isSmallLong(l)) {
-                // for explanation of this construct: see 'ToSulongNode.doInteger'
-                if (CompilerDirectives.inInterpreter()) {
-                    return doLongSmall(cextContext, l, contextRef);
-                } else {
-                    return doLongSmall(cextContext, l, contextRef).copy();
-                }
+                return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
         }
