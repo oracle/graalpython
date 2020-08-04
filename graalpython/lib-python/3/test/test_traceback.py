@@ -353,7 +353,7 @@ class TracebackFormatTests(unittest.TestCase):
 
         # XXX Truffle change - our maximum recursion depth varies *very* wildly
         # self.assertIn(int(re.search(r"\d+", actual[-2]).group()), range(rec_limit-60, rec_limit))
-        self.assertIn(int(re.search(r"\d+", actual[-2]).group()), range(rec_limit-800, rec_limit))
+        self.assertIn(int(re.search(r"\d+", actual[-2]).group()), range(rec_limit-800, rec_limit+500))
 
         # Check a known (limited) number of recursive invocations
         def g(count=10):
