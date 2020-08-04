@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -247,6 +248,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return PNone.NO_VALUE;
     }
 
+    @CompilerDirectives.TruffleBoundary
     private static Object readAttributeUncached(Object object, Object key, boolean forceType) {
         if (object instanceof PythonObject) {
             PythonObject po = (PythonObject) object;

@@ -439,7 +439,12 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         public KeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
             super(store, readNode);
-            this.keyIter = keyList(store.getShape()).iterator();
+            this.keyIter = getIter(keyList(store.getShape()));
+        }
+
+        @TruffleBoundary
+        private static Iterator<Object> getIter(List<Object> keyList) {
+            return keyList.iterator();
         }
 
         @Override
@@ -494,7 +499,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             this.store = store;
             this.readNode = readNode;
             this.state = 0;
-            this.size = this.keyList.size();
+            this.size = getListSize();
         }
 
         public int getState() {
@@ -506,8 +511,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
 
         @TruffleBoundary
-        private static Iterator<Object> getList(Shape shape) {
-            return keyList(shape).iterator();
+        private int getListSize() {
+            return this.keyList.size();
         }
 
         @TruffleBoundary
