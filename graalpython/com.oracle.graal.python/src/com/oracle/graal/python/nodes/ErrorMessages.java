@@ -188,6 +188,7 @@ public abstract class ErrorMessages {
     public static final String DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED = "dictionary update sequence element #%d has length %d; 2 is required";
     public static final String DIVISION_BY_ZERO = "division by zero";
     public static final String S_DIVISION_BY_ZERO = "%s division by zero";
+    public static final String S_DIVISION_OR_MODULO_BY_ZERO = "%s division or modulo by zero";
     public static final String SUPER_NO_CLASS = "super(): no arguments";
     public static final String EMPTY_SEPARATOR = "empty separator";
     public static final String EMPTY_STR_FOR_COMPLEX = "empty string for complex()";

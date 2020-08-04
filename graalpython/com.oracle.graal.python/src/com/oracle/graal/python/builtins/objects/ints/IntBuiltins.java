@@ -133,7 +133,7 @@ public class IntBuiltins extends PythonBuiltins {
         protected void raiseDivisionByZero(boolean cond) {
             if (cond) {
                 divisionByZeroProfile.enter();
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
             }
         }
     }
