@@ -288,11 +288,11 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [1439,1446]`pattern`
-                                                Frame: [2,pattern,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1428,1435]`newline`
                                                 Frame: [4,newline,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [1439,1446]`pattern`
+                                                Frame: [2,pattern,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [1464,1528]`msg = '%s (line %d, ...`
                                             Identifier: msg

@@ -1905,11 +1905,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
-                                ReadLocalVariableNode SourceSection: [7781,7786]`roots`
-                                  Frame: [1,roots,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [7767,7773]`opname`
                                   Frame: [3,opname,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [7781,7786]`roots`
+                                  Frame: [1,roots,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
                               SetAttributeNodeGen SourceSection: [7800,7824]`opfunc.__name__ = op...`
@@ -5573,9 +5573,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
-                              ReadLocalVariableNode SourceSection: [16774,16783]`fasttypes`
-                                Frame: [4,fasttypes,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [16758,16770]`type(key[0])`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [16758,16762]`type`
@@ -5589,6 +5586,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [16767,16768]`0`
                                     Value: 0
+                              ReadLocalVariableNode SourceSection: [16774,16783]`fasttypes`
+                                Frame: [4,fasttypes,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
@@ -6652,14 +6652,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [20714,20717]`key`
+                                                  Frame: [2,key,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [20721,20726]`cache`
                                                   ReadLocalVariableNode SourceSection: None
                                                     Frame: [20,cache,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [20714,20717]`key`
-                                                  Frame: [2,key,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [21038,21042]`pass`
                                               EmptyNode SourceSection: [21038,21042]`pass`
                                             IfNode SourceSection: [21059,22667]`elif full:↵         ...`
@@ -7372,6 +7372,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [24003,24012]`candidate`
+                                                  Frame: [2,candidate,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetItemNodeGen SourceSection: [24016,24022]`s2[1:]`
                                                   ReadLocalVariableNode SourceSection: None
                                                     Frame: [3,s2,Illegal]
@@ -7382,9 +7385,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       Value: 1
                                                     EmptyNode SourceSection: None
                                                     EmptyNode SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [24003,24012]`candidate`
-                                                  Frame: [2,candidate,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [24044,24060]`candidate = None`
                                                 Identifier: candidate
@@ -8275,14 +8275,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [26961,26964]`typ`
+                                                Frame: [0,typ,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [26972,26977]`bases`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [2,bases,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [26961,26964]`typ`
-                                                Frame: [0,typ,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [26982,27005]`hasattr(typ, '__mro_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [26982,26989]`hasattr`
@@ -8460,6 +8460,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [27306,27309]`typ`
+                                                  Frame: [0,typ,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [27313,27326]`other.__mro__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __mro__
@@ -8470,9 +8473,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalVariableNode SourceSection: [27313,27318]`other`
                                                     Frame: [1,other,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [27306,27309]`typ`
-                                                  Frame: [0,typ,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -8645,14 +8645,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [27690,27693]`sub`
+                                                Frame: [8,sub,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [27701,27706]`bases`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [2,bases,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [27690,27693]`sub`
-                                                Frame: [8,sub,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [27711,27731]`issubclass(cls, sub)...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [27711,27721]`issubclass`
@@ -8715,14 +8715,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [27789,27790]`s`
+                                                              Frame: [0,s,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [27794,27802]`type_set`
                                                               ReadGeneratorFrameVariableNode SourceSection: None
                                                                 Frame: [1,type_set,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadFromCellNodeGen SourceSection: None
-                                                            ReadGeneratorFrameVariableNode SourceSection: [27789,27790]`s`
-                                                              Frame: [0,s,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                         ExpressionStatementNode SourceSection: [27763,27764]`s`
                                                           YieldNode SourceSection: [27763,27764]`s`
                                                             flagSlot: 0
@@ -8836,11 +8836,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [28075,28078]`mro`
-                                                  Frame: [6,mro,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [28061,28067]`subcls`
                                                   Frame: [9,subcls,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [28075,28078]`mro`
+                                                  Frame: [6,mro,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [28100,28118]`mro.append(subcls)`
                                               PythonCallUnary SourceSection: [28100,28118]`mro.append(subcls)`
@@ -8994,11 +8994,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [28830,28838]`registry`
-                                              Frame: [1,registry,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [28825,28826]`t`
                                               Frame: [4,t,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [28830,28838]`registry`
+                                              Frame: [1,registry,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [28843,28863]`t not in cls.__mro__...`
                                             IsBuiltinClassProfile SourceSection: None
@@ -9009,6 +9009,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [28843,28844]`t`
+                                                Frame: [4,t,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [28852,28863]`cls.__mro__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __mro__
@@ -9019,9 +9022,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [28852,28855]`cls`
                                                   Frame: [0,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [28843,28844]`t`
-                                                Frame: [4,t,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
@@ -9034,6 +9034,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [28898,28903]`match`
+                                              Frame: [3,match,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [28911,28922]`cls.__mro__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __mro__
@@ -9044,9 +9047,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalVariableNode SourceSection: [28911,28914]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [28898,28903]`match`
-                                              Frame: [3,match,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -9097,11 +9097,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [29123,29131]`registry`
-                                    Frame: [1,registry,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [29118,29119]`t`
                                     Frame: [4,t,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [29123,29131]`registry`
+                                    Frame: [1,registry,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: [29145,29154]`match = t`
                                 Identifier: match

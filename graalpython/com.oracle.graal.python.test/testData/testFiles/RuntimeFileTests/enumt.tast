@@ -779,6 +779,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [2088,2091]`key`
+                                                Frame: [1,key,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [2099,2249]`(↵                  ...`
                                                 StringLiteralNode SourceSection: [2121,2130]`'_order_'`
                                                 StringLiteralNode SourceSection: [2132,2156]`'_create_pseudo_memb...`
@@ -786,9 +789,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 StringLiteralNode SourceSection: [2203,2214]`'_missing_'`
                                                 StringLiteralNode SourceSection: [2216,2226]`'_ignore_'`
                                                 PythonObjectFactoryNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [2088,2091]`key`
-                                                Frame: [1,key,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [2267,2327]`raise ValueError('_n...`
                                             PythonCallUnary SourceSection: [2273,2327]`ValueError('_names_ ...`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -978,6 +978,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [2974,2977]`key`
+                                                Frame: [1,key,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [2981,2999]`self._member_names`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_names
@@ -988,9 +991,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [2981,2985]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [2974,2977]`key`
-                                                Frame: [1,key,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [3059,3110]`raise TypeError('Att...`
                                             PythonCallUnary SourceSection: [3065,3110]`TypeError('Attempted...`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -1015,6 +1015,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [3124,3127]`key`
+                                                  Frame: [1,key,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [3131,3143]`self._ignore`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _ignore
@@ -1025,9 +1028,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [3131,3135]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [3124,3127]`key`
-                                                  Frame: [1,key,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [3157,3161]`pass`
                                               EmptyNode SourceSection: [3157,3161]`pass`
                                             IfNode SourceSection: [3170,3691]`elif not _is_descrip...`
@@ -1053,11 +1053,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [3224,3228]`self`
-                                                        Frame: [0,self,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [3217,3220]`key`
                                                         Frame: [1,key,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [3224,3228]`self`
+                                                        Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   RaiseNodeGen SourceSection: [3295,3358]`raise TypeError('%r ...`
                                                     PythonCallUnary SourceSection: [3301,3358]`TypeError('%r alread...`
@@ -1816,12 +1816,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          StringLiteralNode SourceSection: [5833,5842]`'__doc__'`
                                           ReadLocalCellNodeGen SourceSection: [5850,5859]`classdict`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [3,classdict,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                          StringLiteralNode SourceSection: [5833,5842]`'__doc__'`
                                       SetItemNodeGen SourceSection: [5873,5913]`classdict['__doc__']...`
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
@@ -1991,12 +1991,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          StringLiteralNode SourceSection: [7187,7202]`'__reduce_ex__'`
                                           ReadLocalCellNodeGen SourceSection: [7210,7219]`classdict`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [3,classdict,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                          StringLiteralNode SourceSection: [7187,7202]`'__reduce_ex__'`
                                       IfNode SourceSection: [7233,7769]`if member_type is no...`
                                         NotNodeGen SourceSection: [7236,7261]`member_type is not o...`
                                           IsBuiltinClassProfile SourceSection: None
@@ -2062,6 +2062,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 YesNodeGen SourceSection: None
                                                                   IsBuiltinClassProfile SourceSection: None
                                                                     CachedDispatchFirst SourceSection: None
+                                                                ReadGeneratorFrameVariableNode SourceSection: [7411,7412]`m`
+                                                                  Frame: [0,m,Illegal]
+                                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                                 GetAttributeNodeGen SourceSection: [7416,7436]`member_type.__dict__...`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __dict__
@@ -2074,9 +2077,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                       Frame: [1,member_type,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     ReadFromCellNodeGen SourceSection: None
-                                                                ReadGeneratorFrameVariableNode SourceSection: [7411,7412]`m`
-                                                                  Frame: [0,m,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                               GeneratorAccessNode SourceSection: None
                                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                             Identifier: m
@@ -2449,11 +2449,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [9451,9466]`base_attributes`
-                                                    Frame: [16,base_attributes,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [9432,9443]`member_name`
                                                     Frame: [22,member_name,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [9451,9466]`base_attributes`
+                                                    Frame: [16,base_attributes,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [9484,9529]`setattr(enum_class, ...`
                                                 PythonCallTernary SourceSection: [9484,9529]`setattr(enum_class, ...`
@@ -3066,16 +3066,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [13096,13112]`cls._member_map_`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _member_map_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [13096,13099]`cls`
-                                                Frame: [0,cls,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [13079,13092]`member._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
@@ -3085,6 +3075,16 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [13079,13085]`member`
                                                 Frame: [1,member,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            GetAttributeNodeGen SourceSection: [13096,13112]`cls._member_map_`
+                                              GetFixedAttributeNodeGen SourceSection: None
+                                                Key: _member_map_
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __getattribute__
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [13096,13099]`cls`
+                                                Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
@@ -3145,6 +3145,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [13257,13261]`attr`
+                                            Frame: [1,attr,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [13265,13281]`cls._member_map_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_map_
@@ -3155,9 +3158,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadLocalVariableNode SourceSection: [13265,13268]`cls`
                                               Frame: [0,cls,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [13257,13261]`attr`
-                                            Frame: [1,attr,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [13295,13385]`raise AttributeError...`
                                         PythonCallUnary SourceSection: [13301,13385]`AttributeError(↵    ...`
                                           CallUnaryMethodNodeGen SourceSection: None
@@ -3938,11 +3938,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [15180,15190]`member_map`
-                                            Frame: [3,member_map,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15172,15176]`name`
                                             Frame: [1,name,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [15180,15190]`member_map`
+                                            Frame: [3,member_map,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [15204,15252]`raise AttributeError...`
                                         PythonCallUnary SourceSection: [15210,15252]`AttributeError('Cann...`
@@ -5027,6 +5027,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               YesNodeGen SourceSection: None
                                                                 IsBuiltinClassProfile SourceSection: None
                                                                   CachedDispatchFirst SourceSection: None
+                                                              ReadLocalVariableNode SourceSection: [20287,20293]`target`
+                                                                Frame: [5,target,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                               SetLiteralNodeGen SourceSection: [20301,20494]`{↵                  ...`
                                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                                 ObjectLiteralNode SourceSection: [20331,20335]`None`
@@ -5058,9 +5061,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20451,20455]`Enum`
                                                                     Identifier: Enum
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                              ReadLocalVariableNode SourceSection: [20287,20293]`target`
-                                                                Frame: [5,target,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                           BlockNode SourceSection: None
                                                             WriteLocalVariableNodeGen SourceSection: [20520,20536]`__new__ = target`
                                                               Identifier: __new__
@@ -5297,6 +5297,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [21649,21654]`value`
+                                                Frame: [1,value,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [21658,21680]`cls._value2member_ma...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value2member_map_
@@ -5307,9 +5310,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [21658,21661]`cls`
                                                   Frame: [0,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [21649,21654]`value`
-                                                Frame: [1,value,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [21698,21734]`return cls._value2me...`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
@@ -5852,6 +5852,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               YesNodeGen SourceSection: None
                                                                 IsBuiltinClassProfile SourceSection: None
                                                                   CachedDispatchFirst SourceSection: None
+                                                              ReadGeneratorFrameVariableNode SourceSection: [22822,22823]`m`
+                                                                Frame: [0,m,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                               GetAttributeNodeGen SourceSection: [22831,22848]`self._member_map_`
                                                                 GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: _member_map_
@@ -5864,9 +5867,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                     Frame: [2,self,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   ReadFromCellNodeGen SourceSection: None
-                                                              ReadGeneratorFrameVariableNode SourceSection: [22822,22823]`m`
-                                                                Frame: [0,m,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                           YesNodeGen SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
@@ -8701,11 +8701,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     YesNodeGen SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [29866,29873]`members`
-                                                      Frame: [1,members,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [29857,29858]`m`
                                                       Frame: [4,m,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [29866,29873]`members`
+                                                      Frame: [1,members,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 NotNodeGen SourceSection: [29878,29908]`not (m._value_ & sel...`
                                                   IsBuiltinClassProfile SourceSection: None
@@ -9134,6 +9134,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
+                                                            ReadLocalVariableNode SourceSection: [30782,30792]`flag_value`
+                                                              Frame: [7,flag_value,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             GetAttributeNodeGen SourceSection: [30800,30822]`cls._value2member_ma...`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: _value2member_map_
@@ -9144,9 +9147,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               ReadLocalVariableNode SourceSection: [30800,30803]`cls`
                                                                 Frame: [0,cls,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                            ReadLocalVariableNode SourceSection: [30782,30792]`flag_value`
-                                                              Frame: [7,flag_value,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                         NotNodeGen SourceSection: [30851,30883]`flag_value not in ne...`
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
@@ -9156,11 +9156,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
-                                                            ReadLocalVariableNode SourceSection: [30869,30883]`need_to_create`
-                                                              Frame: [3,need_to_create,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [30851,30861]`flag_value`
                                                               Frame: [7,flag_value,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ReadLocalVariableNode SourceSection: [30869,30883]`need_to_create`
+                                                              Frame: [3,need_to_create,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
@@ -10541,6 +10541,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
+                            ReadLocalVariableNode SourceSection: [34130,34135]`value`
+                              Frame: [1,value,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                             GetAttributeNodeGen SourceSection: [34139,34162]`flag._value2member_m...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: _value2member_map_
@@ -10551,9 +10554,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ReadLocalVariableNode SourceSection: [34139,34143]`flag`
                                 Frame: [0,flag,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [34130,34135]`value`
-                              Frame: [1,value,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None

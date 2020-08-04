@@ -223,6 +223,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          ReadLocalVariableNode SourceSection: [1752,1756]`name`
+                            Frame: [0,name,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [1760,1784]`_collections_abc.__a...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: __all__
@@ -233,9 +236,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadGlobalOrBuiltinNodeGen SourceSection: [1760,1776]`_collections_abc`
                               Identifier: _collections_abc
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [1752,1756]`name`
-                            Frame: [0,name,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [1794,1831]`obj = getattr(_colle...`
                           Identifier: obj
@@ -1239,11 +1239,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [4915,4919]`self`
-                                            Frame: [0,self,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [4904,4907]`key`
                                             Frame: [1,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [4915,4919]`self`
+                                            Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         BlockNode SourceSection: [4933,4964]`self.__map[key] = li...`
@@ -2857,11 +2857,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [9102,9106]`self`
-                                            Frame: [0,self,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9095,9098]`key`
                                             Frame: [1,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [9102,9106]`self`
+                                            Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [9120,9138]`result = self[key]`
@@ -2992,11 +2992,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [9515,9519]`self`
-                                            Frame: [0,self,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9508,9511]`key`
                                             Frame: [1,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [9515,9519]`self`
+                                            Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [9533,9549]`return self[key]`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -3838,11 +3838,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [12643,12647]`seen`
-                                          Frame: [6,seen,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [12635,12639]`name`
                                           Frame: [8,name,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [12643,12647]`seen`
+                                          Frame: [6,seen,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
@@ -4077,11 +4077,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [13425,13429]`seen`
-                                    Frame: [6,seen,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [13417,13421]`name`
                                     Frame: [8,name,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [13425,13429]`seen`
+                                    Frame: [6,seen,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13443,13506]`raise ValueError(f'E...`
                                 PythonCallUnary SourceSection: [13449,13506]`ValueError(f'Encount...`
@@ -6750,11 +6750,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [26463,26467]`self`
-                                                Frame: [0,self,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [26455,26459]`elem`
                                                 Frame: [1,elem,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [26463,26467]`self`
+                                                Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [26481,26506]`super().__delitem__(...`
                                             PythonCallUnary SourceSection: [26481,26506]`super().__delitem__(...`
@@ -7138,11 +7138,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [27754,27758]`self`
-                                                          Frame: [0,self,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [27742,27746]`elem`
                                                           Frame: [4,elem,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [27754,27758]`self`
+                                                          Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     BinaryComparisonNodeGen SourceSection: [27763,27772]`count > 0`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -7380,11 +7380,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [28357,28361]`self`
-                                                          Frame: [0,self,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [28345,28349]`elem`
                                                           Frame: [4,elem,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [28357,28361]`self`
+                                                          Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     BinaryComparisonNodeGen SourceSection: [28366,28375]`count < 0`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -7644,11 +7644,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         YesNodeGen SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
                                                             CachedDispatchFirst SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [29035,29039]`self`
-                                                          Frame: [0,self,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [29023,29027]`elem`
                                                           Frame: [5,elem,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [29035,29039]`self`
+                                                          Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     BinaryComparisonNodeGen SourceSection: [29044,29053]`count > 0`
                                                       LookupAndCallBinaryNodeGen SourceSection: None

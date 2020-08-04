@@ -4256,9 +4256,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [17796,17801]`_seen`
-                                                    Frame: [8,_seen,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                   PythonCallUnary SourceSection: [17765,17788]`id(exc_value.__cause...`
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17765,17767]`id`
@@ -4274,6 +4271,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [17768,17777]`exc_value`
                                                         Frame: [2,exc_value,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [17796,17801]`_seen`
+                                                    Frame: [8,_seen,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -4387,9 +4387,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [18264,18269]`_seen`
-                                                    Frame: [8,_seen,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                   PythonCallUnary SourceSection: [18231,18256]`id(exc_value.__conte...`
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [18231,18233]`id`
@@ -4405,6 +4402,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [18234,18243]`exc_value`
                                                         Frame: [2,exc_value,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [18264,18269]`_seen`
+                                                    Frame: [8,_seen,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -5202,13 +5202,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadGeneratorFrameVariableNode SourceSection: [20954,20958]`smod`
+                                                Frame: [2,smod,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [20966,20990]`("__main__", "builti...`
                                                 StringLiteralNode SourceSection: [20967,20977]`"__main__"`
                                                 StringLiteralNode SourceSection: [20979,20989]`"builtins"`
                                                 PythonObjectFactoryNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [20954,20958]`smod`
-                                                Frame: [2,smod,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           WriteGeneratorFrameVariableNodeGen SourceSection: [21004,21030]`stype = smod + '.' +...`
                                             Identifier: stype
                                             WriteGeneraterFrameSlotNodeGen SourceSection: None

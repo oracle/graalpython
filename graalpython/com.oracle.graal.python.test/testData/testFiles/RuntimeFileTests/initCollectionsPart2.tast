@@ -341,11 +341,11 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [1382,1386]`self`
-                                                Frame: [0,self,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1375,1378]`key`
                                                 Frame: [1,key,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [1382,1386]`self`
+                                                Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GetItemNodeGen SourceSection: [1362,1371]`self[key]`
                                             ReadLocalVariableNode SourceSection: None
@@ -607,14 +607,14 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                           YesNodeGen SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
-                                                          ReadGeneratorFrameVariableNode SourceSection: [1767,1768]`m`
-                                                            Frame: [0,m,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [1760,1763]`key`
                                                             ReadGeneratorFrameVariableNode SourceSection: None
                                                               Frame: [1,key,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
+                                                          ReadGeneratorFrameVariableNode SourceSection: [1767,1768]`m`
+                                                            Frame: [0,m,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                       Identifier: m
@@ -1745,10 +1745,10 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
+                                            StringLiteralNode SourceSection: [4418,4424]`'dict'`
                                             ReadLocalVariableNode SourceSection: [4428,4434]`kwargs`
                                               Frame: [1,kwargs,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            StringLiteralNode SourceSection: [4418,4424]`'dict'`
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [4448,4473]`dict = kwargs.pop('d...`
                                             Identifier: dict
@@ -1955,6 +1955,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [4904,4907]`key`
+                                            Frame: [1,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [4911,4920]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
@@ -1965,9 +1968,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [4911,4915]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [4904,4907]`key`
-                                            Frame: [1,key,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [4934,4955]`return self.data[key...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -2288,6 +2288,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [5379,5382]`key`
+                                            Frame: [1,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [5386,5395]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
@@ -2298,9 +2301,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [5386,5390]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [5379,5382]`key`
-                                            Frame: [1,key,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -3413,6 +3413,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [7200,7204]`item`
+                                            Frame: [1,item,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [7208,7217]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
@@ -3423,9 +3426,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [7208,7212]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [7200,7204]`item`
-                                            Frame: [1,item,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6351,6 +6351,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [10761,10765]`char`
+                                                Frame: [1,char,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [10769,10778]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
@@ -6361,9 +6364,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 ReadLocalVariableNode SourceSection: [10769,10773]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [10761,10765]`char`
-                                                Frame: [1,char,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None

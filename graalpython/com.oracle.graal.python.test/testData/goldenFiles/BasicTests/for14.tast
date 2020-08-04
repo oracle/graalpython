@@ -67,6 +67,9 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [91,100]`candidate`
+                                          Identifier: candidate
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GetItemNodeGen SourceSection: [104,110]`s2[1:]`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [1,s2,Illegal]
@@ -77,9 +80,6 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                               Value: 1
                                             EmptyNode SourceSection: None
                                             EmptyNode SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: [91,100]`candidate`
-                                          Identifier: candidate
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BreakNode SourceSection: [128,133]`break`
                                     BlockNode SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [65,74]`sequences`

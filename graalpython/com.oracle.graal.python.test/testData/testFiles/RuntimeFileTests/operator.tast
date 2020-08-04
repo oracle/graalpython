@@ -1765,11 +1765,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          ReadLocalVariableNode SourceSection: [3222,3223]`a`
-                            Frame: [0,a,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3217,3218]`b`
                             Frame: [1,b,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [3222,3223]`a`
+                            Frame: [0,a,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]

@@ -190,14 +190,14 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [473,476]`key`
+                                                        Frame: [1,key,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [480,492]`repr_running`
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [4,repr_running,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadFromCellNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [473,476]`key`
-                                                        Frame: [1,key,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                                   FrameReturnNode SourceSection: [510,526]`return fillvalue`
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
@@ -667,10 +667,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          StringLiteralNode SourceSection: [1651,1654]`' '`
                                           ReadLocalVariableNode SourceSection: [1658,1666]`typename`
                                             Frame: [3,typename,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          StringLiteralNode SourceSection: [1651,1654]`' '`
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [1680,1704]`parts = typename.spl...`
                                           Identifier: parts
