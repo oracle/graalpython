@@ -142,7 +142,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
                 }
                 return (val >> (longShift * index)) & longMask;
             } else {
-                byte[] bytes = ((PInt) delegate).abs().toByteArray();
+                byte[] bytes = PInt.toByteArray(((PInt) delegate).abs());
                 // the cast to int is safe since the length check already succeeded
                 return getUInt32(bytes, (int) index, longShift) & longMask;
             }

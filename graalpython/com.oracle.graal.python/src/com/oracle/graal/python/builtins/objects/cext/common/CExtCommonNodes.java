@@ -541,7 +541,8 @@ public abstract class CExtCommonNodes {
             try {
                 if (signed != 0) {
                     return obj.intValueExact();
-                } else if (obj.bitLength() <= 32) {
+                } else if (obj.bitLength() <= 32) { // investigate the use of NarrowBigIntegerNode
+                                                    // (avoid the truffle boundary)
                     if (obj.isNegative()) {
                         return raiseNegativeValue(raiseNativeNode);
                     }

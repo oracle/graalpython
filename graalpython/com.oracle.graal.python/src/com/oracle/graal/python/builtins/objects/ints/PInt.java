@@ -487,7 +487,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static byte[] toByteArray(BigInteger delegate) {
+    public static byte[] toByteArray(BigInteger delegate) {
         return delegate.toByteArray();
     }
 

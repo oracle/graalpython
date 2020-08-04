@@ -995,7 +995,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "3")
-        static Object doGeneric(String name, Object result,
+        static Object doGeneric(@SuppressWarnings("unused") String name, Object result,
                         @CachedLibrary("result") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached PRaiseNode raiseNode) {

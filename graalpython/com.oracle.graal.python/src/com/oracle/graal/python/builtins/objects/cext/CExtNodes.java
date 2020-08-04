@@ -3281,7 +3281,7 @@ public abstract class CExtNodes {
         }
 
         static boolean isFallback(Object object) {
-            return !(object instanceof PInt || object instanceof Integer || object instanceof  Long);
+            return !(object instanceof PInt || object instanceof Integer || object instanceof Long);
         }
     }
 
