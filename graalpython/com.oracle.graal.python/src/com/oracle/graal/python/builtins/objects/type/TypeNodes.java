@@ -44,9 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -95,8 +92,11 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -733,7 +733,7 @@ public abstract class TypeNodes {
                 oldParent = getBaseClassNode().execute(oldBase);
             }
 
-            if (newBase != oldBase && (newParent != oldParent || !compareSlotsFromDict(frame, newBase, oldBase))) {
+            if (newBase != oldBase && (newParent != oldParent || !sameSlotsAdded(frame, newBase, oldBase))) {
                 return false;
             }
             return true;
@@ -782,9 +782,13 @@ public abstract class TypeNodes {
             return true;
         }
 
-        private boolean compareSlotsFromDict(VirtualFrame frame, Object a, Object b) {
-            Object aSlots = getSlotsFromDict(frame, b);
-            Object bSlots = getSlotsFromDict(frame, a);
+        private boolean sameSlotsAdded(VirtualFrame frame, Object a, Object b) {
+            // !(a->tp_flags & Py_TPFLAGS_HEAPTYPE) || !(b->tp_flags & Py_TPFLAGS_HEAPTYPE))
+            if (a instanceof PythonBuiltinClass || b instanceof PythonBuiltinClass) {
+                return false;
+            }
+            Object aSlots = getSlotsFromDict(frame, a);
+            Object bSlots = getSlotsFromDict(frame, b);
             return compareSlots(a, b, aSlots, bSlots);
         }
 

@@ -49,7 +49,6 @@
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_ismount_symlinks
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_join
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_normpath
-*graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_realpath_repeated_indirect_symlinks
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_realpath_resolve_before_normalizing
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_realpath_resolve_first
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_realpath_resolve_parents

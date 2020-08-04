@@ -40,14 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -68,6 +65,9 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -161,7 +161,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                 }
             } else {
                 String name = getName(self, pol, hashLib, castToJavaStringNode);
-                throw this.raise(PythonBuiltinClassType.TypeError, "%s.__dict__ is not a dictionary", name);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, name);
             }
         }
 
@@ -173,7 +173,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                     return castToJavaStringNode.execute(name);
                 }
             }
-            throw raise(PythonBuiltinClassType.SystemError, "nameless module");
+            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.NAMELESS_MODULE);
         }
 
         protected static boolean isDict(Object object, IsBuiltinClassProfile profile) {

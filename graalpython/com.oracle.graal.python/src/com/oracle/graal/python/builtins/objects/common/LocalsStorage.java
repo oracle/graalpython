@@ -88,8 +88,12 @@ public class LocalsStorage extends HashingStorage {
     }
 
     private Object getValue(FrameSlot slot) {
+        return getValue(this.frame, slot);
+    }
+
+    private static Object getValue(MaterializedFrame frame, FrameSlot slot) {
         if (slot != null) {
-            Object value = this.frame.getValue(slot);
+            Object value = frame.getValue(slot);
             if (value instanceof PCell) {
                 return ((PCell) value).getRef();
             }
@@ -113,7 +117,7 @@ public class LocalsStorage extends HashingStorage {
         this.len = this.frame.getFrameDescriptor().getSize();
         for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
             Object identifier = slot.getIdentifier();
-            if (!FrameSlotIDs.isUserFrameSlot(identifier) || this.frame.getValue(slot) == null) {
+            if (!FrameSlotIDs.isUserFrameSlot(identifier) || getValue(frame, slot) == null) {
                 this.len--;
             }
         }
@@ -369,7 +373,7 @@ public class LocalsStorage extends HashingStorage {
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
                     if (FrameSlotIDs.isUserFrameSlot(identifier)) {
-                        Object nextValue = this.frame.getValue(nextCandidate);
+                        Object nextValue = getValue(this.frame, nextCandidate);
                         if (nextValue != null) {
                             this.nextFrameSlot = nextCandidate;
                             return true;
@@ -396,7 +400,7 @@ public class LocalsStorage extends HashingStorage {
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
                     if (FrameSlotIDs.isUserFrameSlot(identifier)) {
-                        Object nextValue = this.frame.getValue(nextCandidate);
+                        Object nextValue = getValue(this.frame, nextCandidate);
                         if (nextValue != null) {
                             this.nextFrameSlot = nextCandidate;
                             return true;

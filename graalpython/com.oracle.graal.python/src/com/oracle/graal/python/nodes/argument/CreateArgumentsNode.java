@@ -521,18 +521,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached PRaiseNode raise,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
-            boolean takesVarKwds = calleeSignature.takesVarKeywordArgs();
             String[] parameters = calleeSignature.getParameterIds();
             int positionalParamNum = parameters.length;
             String[] kwNames = calleeSignature.getKeywordNames();
-            PKeyword[] unusedKeywords = new PKeyword[keywords.length];
+            int kwLen = keywords.length;
+            PKeyword[] unusedKeywords = calleeSignature.takesVarKeywordArgs() ? new PKeyword[kwLen] : null;
             // same as above
             int k = 0;
             int additionalKwds = 0;
-            int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
-
             String lastWrongKeyword = null;
-            for (int i = 0; i < keywords.length; i++) {
+            int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
+            for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
                 String name = kwArg.getName();
                 int kwIdx = searchParamNode.execute(parameters, name);
@@ -545,13 +544,18 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
                 if (kwIdx != -1) {
                     if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), name);
+                        if (unusedKeywords != null) {
+                            unusedKeywords[k++] = kwArg;
+                        } else {
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), name);
+                        }
+                    } else {
+                        if (PArguments.getArgument(arguments, kwIdx) != null) {
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
+                        }
+                        PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
-                    if (PArguments.getArgument(arguments, kwIdx) != null) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
-                    }
-                    PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
-                } else if (takesVarKwds) {
+                } else if (unusedKeywords != null) {
                     unusedKeywords[k++] = kwArg;
                 } else {
                     additionalKwds++;

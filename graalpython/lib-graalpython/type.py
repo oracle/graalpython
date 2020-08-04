@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,7 @@ def __dir__(klass):
         # we merge classes is unimportant
         for base in bases:
             names.update(_classdir(base))
-    return list(names)
+    return sorted(list(names))
 _classdir = __dir__
 
 
@@ -70,7 +70,7 @@ def __dir__(obj):
     klass = getattr(obj, '__class__', None)
     if klass is not None:
         names.update(_classdir(klass))
-    return list(names)
+    return sorted(list(names))
 _objectdir = __dir__
 
 

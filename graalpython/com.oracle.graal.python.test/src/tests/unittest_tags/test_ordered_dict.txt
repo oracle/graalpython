@@ -38,6 +38,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_equality
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_fromkeys
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_highly_nested
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_init_calls
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_issue24347
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_issue24348
@@ -153,6 +154,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_equality
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_fromkeys
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_highly_nested
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init_calls
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24347
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24348

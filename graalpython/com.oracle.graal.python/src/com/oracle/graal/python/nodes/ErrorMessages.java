@@ -139,6 +139,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
     public static final String CANNOT_USE_TO_INITIALIZE_ARRAY = "cannot use a %p to initialize an array with typecode '%s'";
+    public static final String CANT_APPLY_THIS_S_TO_P_OBJECT = "can't apply this %s to %p object";
     public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
@@ -298,6 +299,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String IS_EMPTY = "%s is empty";
+    public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String IS_NOT_A = "%s is not a %s";
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
@@ -357,6 +359,7 @@ public abstract class ErrorMessages {
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
+    public static final String NAMELESS_MODULE = "nameless module";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
     public static final String NEGATIVE_COUNT = "negative count";

@@ -101,6 +101,8 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -484,17 +486,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached("createBinaryProfile()") ConditionProfile inGenerator,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
 
             Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
             Object keysObj = callKeysNode.executeObject(frame, localsDict);
-            return constructListNode.execute(keysObj);
+            PList list = constructListNode.execute(keysObj);
+            sortNode.sort(frame, list);
+            return list;
         }
 
         @Specialization(guards = "!isNoValue(object)")
         Object dir(VirtualFrame frame, Object object,
+                        @Cached ListBuiltins.ListSortNode sortNode,
+                        @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
-            return dirNode.executeObject(frame, object);
+            PList list = constructListNode.execute(dirNode.executeObject(frame, object));
+            sortNode.sort(frame, list);
+            return list;
         }
     }
 
